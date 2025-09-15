@@ -19,6 +19,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from typing import Optional
+import logging
 
 
 @dataclass
@@ -50,9 +51,27 @@ class ModelRouter:
         - For refactor/codereview/debug/analyze/testgen: flash first
         - Profile=quality upgrades some tools to glm-4.5
         """
+        # Local debug logger for router decisions
+        _log = logging.getLogger("router").debug
+
+        def _emit(choice: str) -> str:
+            try:
+                _log(
+                    "[ROUTER_DECISION] tool=%s profile=%s requested=%s files=%s images=%s choice=%s",
+                    getattr(ctx, "tool_name", None),
+                    ModelRouter._profile(),
+                    getattr(ctx, "requested_model", None),
+                    getattr(ctx, "files_count", 0),
+                    getattr(ctx, "images_count", 0),
+                    choice,
+                )
+            except Exception:
+                pass
+            return choice
+
         # Honor explicit model when not auto
         if ctx.requested_model and str(ctx.requested_model).strip().lower() not in {"", "auto"}:
-            return ctx.requested_model
+            return _emit(ctx.requested_model)
 
         profile = ModelRouter._profile()
         tool = (ctx.tool_name or "").lower()
@@ -60,24 +79,28 @@ class ModelRouter:
 
         # Vision / images → Kimi family
         if ctx.images_count > 0 or any(k in prompt_l for k in ("vision", "image", "diagram")):
-            return os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0711-preview")
+            return _emit(os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0711-preview"))
 
         # Security audits → quality by default
         if tool == "secaudit" or any(k in prompt_l for k in ("security", "auth", "secrets", "compliance")):
-            return os.getenv("GLM_QUALITY_MODEL", "glm-4.5")
+            return _emit(os.getenv("GLM_QUALITY_MODEL", "glm-4.5"))
 
-        # Core code tools default: flash tier
+        # Core code/workflow tools: allow preferring Kimi for better stability under rate limits
         if tool in {"codereview", "refactor", "debug", "analyze", "testgen", "tracer", "planner", "precommit"}:
+            # If env set, route to Kimi for workflow-heavy operations (can be cheaper and more stable)
+            if os.getenv("WORKFLOWS_PREFER_KIMI", "false").strip().lower() == "true":
+                return _emit(select_kimi_model(ctx))
+            # Otherwise default to GLM flash tier
             model = os.getenv("GLM_FLASH_MODEL", "glm-4.5-flash")
             # Profile-driven bump
             if profile == "quality" and tool in {"codereview", "refactor", "secaudit", "debug"}:
                 model = os.getenv("GLM_QUALITY_MODEL", "glm-4.5")
-            return model
+            return _emit(model)
 
         # Chat and everything else: flash first
         if profile == "quality":
-            return os.getenv("GLM_QUALITY_MODEL", "glm-4.5")
-        return os.getenv("GLM_FLASH_MODEL", "glm-4.5-flash")
+            return _emit(os.getenv("GLM_QUALITY_MODEL", "glm-4.5"))
+        return _emit(os.getenv("GLM_FLASH_MODEL", "glm-4.5-flash"))
 
 
 def select_kimi_model(ctx: RoutingContext, expected_output_tokens: int | None = None) -> str:
