@@ -2,7 +2,8 @@
 """Copy of scripts/ws_status.py under scripts/ws."""
 import json, os, sys, time
 from pathlib import Path
-ROOT = Path(__file__).resolve().parents[1]
+# Ensure repository root, not scripts/, so health file resolves correctly
+ROOT = Path(__file__).resolve().parents[2]
 HEALTH = ROOT / "logs" / "ws_daemon.health.json"
 FRESH_SECS = float(os.getenv("WS_STATUS_FRESH_SECS", "20"))
 

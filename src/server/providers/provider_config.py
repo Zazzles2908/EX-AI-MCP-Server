@@ -1,7 +1,6 @@
 import sys
 sys.path.append(".")
 from src.providers.registry import ModelProviderRegistry
-from utils.model_restrictions import apply_model_restrictions
 
 """
 Provider Configuration Module
@@ -13,6 +12,7 @@ registry setup.
 
 import logging
 import os
+import atexit
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -252,4 +252,4 @@ def configure_providers():
             )
 
 
-@server.list_tools()
+

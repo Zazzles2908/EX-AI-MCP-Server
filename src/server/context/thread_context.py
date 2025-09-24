@@ -1,7 +1,5 @@
 import sys
 sys.path.append(".")
-from utils.conversation_memory import ConversationMemory
-from utils.file_utils import read_file_content
 
 """
 Thread Context Management Module
@@ -12,6 +10,9 @@ for multi-turn AI conversations in the EX MCP Server.
 
 import logging
 from typing import Any, Dict
+import os
+from src.server.utils import get_follow_up_instructions
+
 
 logger = logging.getLogger(__name__)
 
@@ -282,4 +283,3 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
     return enhanced_arguments
 
 
-@server.list_prompts()

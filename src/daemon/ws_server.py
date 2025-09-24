@@ -13,6 +13,53 @@ from typing import Any, Dict, List
 import websockets
 from websockets.server import WebSocketServerProtocol
 
+
+from .session_manager import SessionManager
+
+LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+logger = logging.getLogger("ws_daemon")
+
+# Robust logging setup for Windows consoles (cp1252) and UTF-8 payloads
+# Ensures emoji/box-drawing characters don't crash logging; replaces unencodable chars
+def _setup_logging() -> None:
+    try:
+        import sys, io
+        level = os.getenv("LOG_LEVEL", "INFO").upper()
+        root = logging.getLogger()
+        # Avoid duplicate handlers on restart
+        if not getattr(root, "_ex_ws_logging_configured", False):
+            # Wrap stdout with UTF-8 and replacement for un-encodable glyphs
+            stream = sys.stdout
+            try:
+                if hasattr(stream, "buffer"):
+                    stream = io.TextIOWrapper(stream.buffer, encoding="utf-8", errors="replace", line_buffering=True)
+            except Exception:
+                pass
+            sh = logging.StreamHandler(stream)
+            fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            sh.setFormatter(fmt)
+            root.handlers.clear()
+            root.addHandler(sh)
+            root.setLevel(level)
+            # Mark configured
+            root._ex_ws_logging_configured = True  # type: ignore[attr-defined]
+    except Exception:
+        # Fallback to basicConfig if anything above fails
+        try:
+            logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
+        except Exception:
+            pass
+
+_setup_logging()
+
+EXAI_WS_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
+EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8765"))
+AUTH_TOKEN = os.getenv("EXAI_WS_TOKEN", "")
+MAX_MSG_BYTES = int(os.getenv("EXAI_WS_MAX_BYTES", str(32 * 1024 * 1024)))
+PING_INTERVAL = int(os.getenv("EXAI_WS_PING_INTERVAL", "45"))  # wider interval to reduce false timeouts
+PING_TIMEOUT = int(os.getenv("EXAI_WS_PING_TIMEOUT", "30"))    # allow slower systems to respond to pings
+# WS-level hard ceiling for a single tool invocation; keep small to avoid client-perceived hangs
 # Reuse tool implementations directly from the stdio server
 # Prefer calling the MCP boundary function to benefit from model resolution, caches, etc.
 from server import TOOLS as SERVER_TOOLS  # type: ignore
@@ -22,20 +69,6 @@ from server import handle_call_tool as SERVER_HANDLE_CALL_TOOL  # type: ignore
 from src.providers.registry import ModelProviderRegistry  # type: ignore
 from src.providers.base import ProviderType  # type: ignore
 
-from .session_manager import SessionManager
-
-LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
-LOG_DIR.mkdir(parents=True, exist_ok=True)
-logger = logging.getLogger("ws_daemon")
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
-
-EXAI_WS_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
-EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8765"))
-AUTH_TOKEN = os.getenv("EXAI_WS_TOKEN", "")
-MAX_MSG_BYTES = int(os.getenv("EXAI_WS_MAX_BYTES", str(32 * 1024 * 1024)))
-PING_INTERVAL = int(os.getenv("EXAI_WS_PING_INTERVAL", "45"))  # wider interval to reduce false timeouts
-PING_TIMEOUT = int(os.getenv("EXAI_WS_PING_TIMEOUT", "30"))    # allow slower systems to respond to pings
-# WS-level hard ceiling for a single tool invocation; keep small to avoid client-perceived hangs
 CALL_TIMEOUT = int(os.getenv("EXAI_WS_CALL_TIMEOUT", "90"))  # default 90s; can be raised via env if needed
 HELLO_TIMEOUT = float(os.getenv("EXAI_WS_HELLO_TIMEOUT", "15"))  # allow slower clients to hello
 # Heartbeat cadence while tools run; keep <10s to satisfy clients with 10s idle cutoff
