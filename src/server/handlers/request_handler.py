@@ -1,8 +1,3 @@
-import sys
-sys.path.append(".")
-from tools import TOOLS
-from utils.conversation_memory import ConversationMemory
-from utils.progress import emit_progress
 from src.server.context import reconstruct_thread_context
 from src.server.utils import parse_model_option, get_follow_up_instructions
 
@@ -14,15 +9,64 @@ It processes incoming tool execution requests and routes them to appropriate han
 """
 
 import logging
+import os
+
 import uuid as _uuid
 from typing import Any, List, Dict
 from mcp.types import TextContent
+# Fix undefineds: imports and module-level flags/shims
+import server as server  # provide module ref for client_info lookups
+from config import DEFAULT_MODEL  # default model fallback
+from utils.progress import start_progress_capture, get_progress_log  # progress capture helpers
+
+# Optional provider (configure_providers) for boundary validation
+try:
+    from src.server.providers import configure_providers  # type: ignore
+except Exception:
+    def configure_providers():  # type: ignore
+        return None
+
+# ToolOutput for error normalization and file-size checks
+try:
+    from tools.models import ToolOutput
+except Exception:
+    ToolOutput = None  # type: ignore
+
+# Env/feature flags and test override shims
+THINK_ROUTING_ENABLED = os.getenv("THINK_ROUTING_ENABLED", "true").strip().lower() == "true"
+_resolve_auto_model = None  # monkeypatchable by tests
+_os = os  # alias used in legacy code paths
+
 
 logger = logging.getLogger(__name__)
+# Local env helpers to avoid coupling to server module; import if available
+try:
+    from server import _env_true as _server_env_true  # type: ignore
+    from server import _hot_reload_env as _server_hot_reload_env  # type: ignore
+    _env_true = _server_env_true  # type: ignore
+    _hot_reload_env = _server_hot_reload_env  # type: ignore
+except Exception:  # pragma: no cover - safe fallback
+    def _env_true(key: str, default: str = "false") -> bool:  # type: ignore
+        try:
+            import os as _os
+            return (_os.getenv(key, default) or "").strip().lower() in {"1","true","yes","on"}
+        except Exception:
+            return False
+    def _hot_reload_env() -> None:  # type: ignore
+        pass
+# Provider configuration guard (local alias with safe fallback)
+try:
+    from server import _ensure_providers_configured as _ensure_providers_configured  # type: ignore
+except Exception:  # pragma: no cover
+    def _ensure_providers_configured() -> None:  # type: ignore
+        pass
+
+
 
 async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     # Ensure providers are configured when server is used as a module (tests/audits)
     try:
+
         _ensure_providers_configured()
     except Exception:
         pass
@@ -32,6 +76,9 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
     Handle incoming tool execution requests from MCP clients.
 
     This is the main request dispatcher that routes tool calls to their appropriate handlers.
+    # Lazy import to avoid circular dependency with server module
+    from server import TOOLS as SERVER_TOOLS  # type: ignore
+
     It supports both AI-powered tools (from TOOLS registry) and utility tools (implemented as
     static functions).
 
@@ -86,6 +133,14 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
     logger.info(f"MCP tool call: {name} req_id={req_id}")
     logger.debug(f"MCP tool arguments: {list(arguments.keys())} req_id={req_id}")
 
+    # Build dynamic tool registry once and get active tool map
+    try:
+        from src.server.registry_bridge import get_registry as _get_reg  # type: ignore
+        _reg = _get_reg(); _reg.build()
+        TOOL_MAP = _reg.list_tools()
+    except Exception:
+        TOOL_MAP = {}
+
     # Thinking tool aliasing/rerouting (name-level) before registry lookup
     try:
         if THINK_ROUTING_ENABLED:
@@ -97,7 +152,7 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
             # 3) do NOT reroute if a valid tool other than thinkdeep contains 'think'
 
             # Determine current active tool names
-            active_tool_names = set(TOOLS.keys())
+            active_tool_names = set(TOOL_MAP.keys())
 
             reroute = False
             if lower_name == "deepthink":
@@ -325,10 +380,10 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
 
 
 
-    # Route to AI-powered tools that require Gemini API calls
-    if name in TOOLS:
+    # Route to AI-powered tools
+    if name in TOOL_MAP:
         logger.info(f"Executing tool '{name}' with {len(arguments)} parameter(s)")
-        tool = TOOLS[name]
+        tool = TOOL_MAP[name]
         # Optional: hot-reload env on every call so EX_ACTIVITY_* toggles are live
         try:
             if _env_true("EX_HOTRELOAD_ENV", "false"):
@@ -762,7 +817,7 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
         __overall_start = _time.time()
         __workflow_steps_completed = 1
         if name == "kimi_multi_file_chat":
-            # All file_chat requests must pass through fallback orchestrator
+            # Safety-net: try Kimi first, then fallback to GLM multi-file chat on structured failure
             try:
                 logging.getLogger("mcp_activity").info({
                     "event": "route_diagnostics",
@@ -773,11 +828,31 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
                 })
             except Exception:
                 pass
+            # Attempt 1: Kimi
+            result = await _execute_with_monitor(lambda: tool.execute(arguments))
+            # Inspect result for structured execution_error to trigger fallback
             try:
-                logging.getLogger("mcp_activity").info("[FALLBACK] orchestrator route engaged for multi-file chat")
+                from mcp.types import TextContent as _Txt
+                import json as _json
+                last = result[-1] if isinstance(result, list) and result else None
+                payload = None
+                if isinstance(last, _Txt) and last.type == "text" and last.text:
+                    try:
+                        payload = _json.loads(last.text)
+                    except Exception:
+                        payload = None
+                if isinstance(payload, dict) and str(payload.get("status", "")).lower() == "execution_error":
+                    # Attempt 2: GLM multi-file chat
+                    try:
+                        logging.getLogger("mcp_activity").info("[FALLBACK] switching to glm_multi_file_chat after kimi failure")
+                    except Exception:
+                        pass
+                    glm_tool = TOOL_MAP.get("glm_multi_file_chat")
+                    if glm_tool is not None:
+                        alt = await _execute_with_monitor(lambda: glm_tool.execute(arguments))
+                        return alt
             except Exception:
                 pass
-            result = await _execute_with_monitor(lambda: tool.execute(arguments))
         else:
             result = await _execute_with_monitor(lambda: tool.execute(arguments))
         # Normalize result shape to list[TextContent]
@@ -1053,11 +1128,18 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
         try:
             if _env_true("SUGGEST_TOOL_ALIASES", "true"):
                 from difflib import get_close_matches
-                cand = get_close_matches(name, list(TOOLS.keys()), n=1, cutoff=0.6)
-                if cand:
-                    suggestion = cand[0]
-                    desc = TOOLS[suggestion].get_description() if suggestion in TOOLS else ""
-                    return [TextContent(type="text", text=f"Unknown tool: {name}. Did you mean: {suggestion}? {desc}")]
+                try:
+                    from src.server.registry_bridge import get_registry as _get_reg  # type: ignore
+                    _reg = _get_reg(); _reg.build()
+                    _names = list(_reg.list_tools().keys())
+                    cand = get_close_matches(name, _names, n=1, cutoff=0.6)
+                    if cand:
+                        suggestion = cand[0]
+                        tool_obj = _reg.list_tools().get(suggestion)
+                        desc = tool_obj.get_description() if tool_obj else ""
+                        return [TextContent(type="text", text=f"Unknown tool: {name}. Did you mean: {suggestion}? {desc}")]
+                except Exception:
+                    pass
         except Exception:
             pass
         return [TextContent(type="text", text=f"Unknown tool: {name}")]

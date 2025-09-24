@@ -297,7 +297,7 @@ class SimpleTool(BaseTool):
             # Store arguments for access by helper methods
             self._current_arguments = arguments
 
-            logger.info(f"🔧 {self.get_name()} tool called with arguments: {list(arguments.keys())}")
+            logger.info(f"{self.get_name()} tool called with arguments: {list(arguments.keys())}")
             try:
                 from utils.progress import send_progress
                 send_progress(f"{self.get_name()}: Starting execution")
@@ -633,7 +633,7 @@ class SimpleTool(BaseTool):
 
                 # Parse response using the same logic as old base.py
                 tool_output = self._parse_response(raw_text, request, model_info)
-                logger.info(f"✅ {self.get_name()} tool completed successfully")
+                logger.info(f"{self.get_name()} tool completed successfully")
 
             else:
                 # Handle cases where the model couldn't generate a response

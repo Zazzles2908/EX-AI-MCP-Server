@@ -47,7 +47,7 @@ if _env_true("EX_MCP_BOOTSTRAP_DEBUG"):
 # Load environment variables
 try:
     from dotenv import load_dotenv
-    
+
     env_path = Path(__file__).parent / ".env"
     if env_path.exists():
         load_dotenv(env_path)
@@ -56,7 +56,7 @@ try:
     else:
         if _env_true("EX_MCP_BOOTSTRAP_DEBUG"):
             print(f"[ex-mcp] no .env file found at {env_path}", file=sys.stderr)
-            
+
 except ImportError:
     if _env_true("EX_MCP_BOOTSTRAP_DEBUG"):
         print("[ex-mcp] python-dotenv not available, skipping .env load", file=sys.stderr)
@@ -89,7 +89,7 @@ try:
         Tool,
         ToolsCapability,
     )
-    
+
     # MCP SDK compatibility
     try:
         from mcp.types import ToolAnnotations
@@ -102,6 +102,9 @@ except ImportError as e:
 
 # Import tools and configuration
 from config import __version__
+# Re-export follow-up helper for tools that import from server
+from src.server.utils import get_follow_up_instructions  # type: ignore
+
 from tools import (
     AnalyzeTool,
     ChallengeTool,
@@ -151,7 +154,7 @@ def detect_auggie_cli() -> bool:
 # Logging configuration
 class LocalTimeFormatter(logging.Formatter):
     """Custom formatter that uses local time instead of UTC."""
-    
+
     def formatTime(self, record, datefmt=None):
         ct = self.converter(record.created)
         if datefmt:
@@ -163,7 +166,7 @@ class LocalTimeFormatter(logging.Formatter):
 
 class JsonLineFormatter(logging.Formatter):
     """JSON line formatter for structured logging."""
-    
+
     def format(self, record):
         import json
         log_entry = {
@@ -172,25 +175,25 @@ class JsonLineFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        
+
         if hasattr(record, "tool_name"):
             log_entry["tool_name"] = record.tool_name
         if hasattr(record, "model"):
             log_entry["model"] = record.model
         if hasattr(record, "request_id"):
             log_entry["request_id"] = record.request_id
-            
+
         return json.dumps(log_entry)
 
 # Configure logging
 def setup_logging():
     """Set up logging configuration."""
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    
+
     # Create logs directory
     logs_dir = Path(".logs")
     logs_dir.mkdir(exist_ok=True)
-    
+
     # Configure root logger
     logging.basicConfig(
         level=getattr(logging, log_level, logging.INFO),
@@ -204,7 +207,7 @@ def setup_logging():
             )
         ]
     )
-    
+
     # Set up structured logging for metrics
     metrics_logger = logging.getLogger("metrics")
     metrics_handler = RotatingFileHandler(
@@ -247,32 +250,32 @@ TOOLS = {
 # Auggie tool registration
 if (AUGGIE_ACTIVE or detect_auggie_cli()) and AUGGIE_WRAPPERS_AVAILABLE:
     logger.info("Registering Auggie-optimized tools (aug_*) alongside originals")
-    
+
     class AugChatTool(ChatTool):
-        def get_name(self) -> str: 
+        def get_name(self) -> str:
             return "aug_chat"
-        
+
         def get_description(self) -> str:
             return f"[Auggie-optimized] {super().get_description()}"
-    
+
     class AugThinkDeepTool(ThinkDeepTool):
         def get_name(self) -> str:
             return "aug_thinkdeep"
-            
+
         def get_description(self) -> str:
             return f"[Auggie-optimized] {super().get_description()}"
-    
+
     class AugConsensusTool(ConsensusTool):
         def get_name(self) -> str:
             return "aug_consensus"
-            
+
         def get_description(self) -> str:
             return f"[Auggie-optimized] {super().get_description()}"
-    
+
     # Register Auggie tools
     TOOLS.update({
         "aug_chat": AugChatTool(),
-        "aug_thinkdeep": AugThinkDeepTool(), 
+        "aug_thinkdeep": AugThinkDeepTool(),
         "aug_consensus": AugConsensusTool(),
     })
 
@@ -320,18 +323,18 @@ async def main():
     except Exception as e:
         logger.error(f"Failed to configure providers: {e}")
         sys.exit(1)
-    
+
     # Filter disabled tools
     global TOOLS
     TOOLS = filter_disabled_tools(TOOLS)
-    
+
     # Set up stdio streams
     read_stream, write_stream = stdio_server()
-    
+
     # Configure progress notifications
     try:
         from utils.progress import set_mcp_notifier
-        
+
         async def _notify_progress(level: str, msg: str):
             try:
                 # Try to emit via MCP session if available
@@ -348,18 +351,18 @@ async def main():
                     server._logger.log(log_level, f"[PROGRESS] {msg}")
                 except Exception:
                     pass
-        
+
         set_mcp_notifier(_notify_progress)
     except Exception:
         pass
-    
+
     # Emit handshake breadcrumb
     try:
         if _env_true("EX_MCP_STDERR_BREADCRUMBS"):
             print("[ex-mcp] stdio_server started; awaiting MCP handshake...", file=sys.stderr)
     except Exception:
         pass
-    
+
     # Run server
     await server.run(
         read_stream,
