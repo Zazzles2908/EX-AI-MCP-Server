@@ -1,11 +1,16 @@
 """
-RouterService: central model routing and availability preflight for EX MCP Server.
+RouterService: Intelligent model routing and availability preflight for EX MCP Server.
+
+Enhanced with GLM-4.5 Flash intelligent routing capabilities:
+- Request preprocessing and analysis without sending large content to GLM
+- Capability-aware provider selection based on request characteristics
+- Cost-aware token management and routing optimization
+- Smart fallback strategies and caching
 
 - Preflight on startup checks provider/model availability and performs trivial
   chat probes (env-gated) to validate connectivity.
 - Decision logging outputs JSON lines via the 'router' logger.
-- Simple choose_model() policy that honors explicit model requests and falls back
-  to preferred fast model (GLM) or long-context model (Kimi) when 'auto'.
+- Intelligent choose_model() policy with GLM Flash AI manager integration.
 """
 from __future__ import annotations
 
@@ -17,6 +22,8 @@ from typing import Optional, Dict, Any
 
 from src.providers.registry import ModelProviderRegistry as R
 from src.providers.base import ProviderType
+from src.core.agentic.request_analyzer import RequestAnalyzer, RequestAnalysis
+from src.core.agentic.glm_flash_manager import GLMFlashManager, RoutingStrategy
 
 logger = logging.getLogger("router")
 
@@ -49,6 +56,28 @@ class RouterService:
         self._diag_enabled = os.getenv("ROUTER_DIAGNOSTICS_ENABLED", "false").strip().lower() == "true"
         # Minimal JSON logging
         logger.setLevel(getattr(logging, os.getenv("ROUTER_LOG_LEVEL", "INFO").upper(), logging.INFO))
+        
+        # Initialize intelligent routing components
+        self._enable_intelligent_routing = os.getenv("ENABLE_INTELLIGENT_ROUTING", "true").strip().lower() == "true"
+        self._request_analyzer = RequestAnalyzer(
+            max_summary_tokens=int(os.getenv("ROUTING_SUMMARY_MAX_TOKENS", "500"))
+        )
+        self._glm_flash_manager = GLMFlashManager(
+            enable_intelligent_routing=self._enable_intelligent_routing,
+            cost_threshold=float(os.getenv("ROUTING_COST_THRESHOLD", "0.10")),
+            performance_threshold=float(os.getenv("ROUTING_PERFORMANCE_THRESHOLD", "5.0"))
+        )
+        
+        # Routing strategy configuration
+        strategy_name = os.getenv("ROUTING_STRATEGY", "hybrid_intelligent").lower()
+        self._routing_strategy = {
+            "capability_based": RoutingStrategy.CAPABILITY_BASED,
+            "cost_optimized": RoutingStrategy.COST_OPTIMIZED,
+            "performance_optimized": RoutingStrategy.PERFORMANCE_OPTIMIZED,
+            "hybrid_intelligent": RoutingStrategy.HYBRID_INTELLIGENT
+        }.get(strategy_name, RoutingStrategy.HYBRID_INTELLIGENT)
+        
+        logger.info(f"RouterService initialized with intelligent routing: {self._enable_intelligent_routing}, strategy: {self._routing_strategy.value}")
 
     def preflight(self) -> None:
         """Check provider readiness and log available models; optionally probe chat."""
@@ -175,6 +204,229 @@ class RouterService:
 
         # Fallback to generic behavior
         return self.choose_model(req)
+
+    def choose_model_intelligent(self, 
+                               requested: Optional[str], 
+                               request_data: Optional[Dict[str, Any]] = None,
+                               hint: Optional[Dict[str, Any]] = None) -> RouteDecision:
+        """
+        Intelligent model selection using GLM-4.5 Flash AI manager.
+        
+        This method analyzes the request content and uses intelligent routing
+        to select the optimal provider based on capabilities, cost, and performance.
+        
+        Args:
+            requested: Explicitly requested model name or 'auto'
+            request_data: Full request data for analysis
+            hint: Optional agentic hint for routing
+            
+        Returns:
+            RouteDecision with intelligent provider selection
+        """
+        req = (requested or "auto").strip()
+        
+        # Handle explicit model requests first
+        if req.lower() != "auto":
+            prov = R.get_provider_for_model(req)
+            if prov is not None:
+                dec = RouteDecision(
+                    requested=req, 
+                    chosen=req, 
+                    reason="explicit_intelligent", 
+                    provider=prov.get_provider_type().name
+                )
+                logger.info(dec.to_json())
+                return dec
+            logger.info(json.dumps({"event": "route_explicit_unavailable", "requested": req}))
+
+        # Use intelligent routing if enabled and request data is available
+        if self._enable_intelligent_routing and request_data:
+            try:
+                return self._intelligent_route_selection(request_data, hint)
+            except Exception as e:
+                logger.warning(f"Intelligent routing failed, falling back to hint-based: {e}")
+                return self.choose_model_with_hint(req, hint)
+        
+        # Fallback to hint-based routing
+        return self.choose_model_with_hint(req, hint)
+
+    def _intelligent_route_selection(self, 
+                                   request_data: Dict[str, Any], 
+                                   hint: Optional[Dict[str, Any]] = None) -> RouteDecision:
+        """
+        Perform intelligent route selection using request analysis and GLM Flash manager.
+        
+        Args:
+            request_data: Full request data for analysis
+            hint: Optional agentic hint
+            
+        Returns:
+            RouteDecision with intelligent routing
+        """
+        # Analyze the request
+        request_analysis = self._request_analyzer.analyze_request(request_data)
+        
+        logger.info(json.dumps({
+            "event": "intelligent_routing_analysis",
+            "analysis": request_analysis.to_dict()
+        }, ensure_ascii=False))
+        
+        # Get routing decision from GLM Flash manager
+        routing_decision = self._glm_flash_manager.make_routing_decision(
+            request_analysis, 
+            self._routing_strategy
+        )
+        
+        logger.info(json.dumps({
+            "event": "intelligent_routing_decision",
+            "decision": routing_decision.to_dict()
+        }, ensure_ascii=False))
+        
+        # Convert routing decision to RouteDecision
+        return self._convert_routing_decision(routing_decision, request_analysis, hint)
+
+    def _convert_routing_decision(self, 
+                                routing_decision, 
+                                request_analysis: RequestAnalysis,
+                                hint: Optional[Dict[str, Any]] = None) -> RouteDecision:
+        """
+        Convert GLM Flash routing decision to RouterService RouteDecision.
+        
+        Args:
+            routing_decision: Decision from GLM Flash manager
+            request_analysis: Original request analysis
+            hint: Optional agentic hint
+            
+        Returns:
+            RouteDecision compatible with existing router interface
+        """
+        # Map provider type to model name
+        provider_to_model = {
+            routing_decision.primary_provider: self._get_preferred_model_for_provider(
+                routing_decision.primary_provider, request_analysis
+            )
+        }
+        
+        chosen_model = provider_to_model[routing_decision.primary_provider]
+        
+        # Verify model availability
+        prov = R.get_provider_for_model(chosen_model)
+        if prov is None:
+            # Fallback to traditional routing
+            logger.warning(f"Intelligent routing selected unavailable model {chosen_model}, falling back")
+            return self.choose_model_with_hint("auto", hint)
+        
+        # Create enhanced RouteDecision with intelligent routing metadata
+        reason = f"intelligent_{routing_decision.strategy_used.value}"
+        meta = {
+            "intelligent_routing": True,
+            "request_analysis": request_analysis.to_dict(),
+            "routing_decision": routing_decision.to_dict(),
+            "estimated_cost": routing_decision.estimated_cost,
+            "estimated_time": routing_decision.estimated_time,
+            "confidence": routing_decision.confidence
+        }
+        
+        dec = RouteDecision(
+            requested="auto",
+            chosen=chosen_model,
+            reason=reason,
+            provider=prov.get_provider_type().name,
+            meta=meta
+        )
+        
+        logger.info(dec.to_json())
+        return dec
+
+    def _get_preferred_model_for_provider(self, 
+                                        provider_type: ProviderType, 
+                                        request_analysis: RequestAnalysis) -> str:
+        """
+        Get the preferred model for a provider type based on request analysis.
+        
+        Args:
+            provider_type: The provider type selected by intelligent routing
+            request_analysis: Analysis of the request
+            
+        Returns:
+            Preferred model name for the provider
+        """
+        if provider_type == ProviderType.GLM:
+            # For GLM, prefer flash for general use, regular for complex tasks
+            if request_analysis.complexity.value in ["very_complex", "complex"]:
+                return os.getenv("GLM_COMPLEX_MODEL", "glm-4.5")
+            return self._fast_default
+        
+        elif provider_type == ProviderType.KIMI:
+            # For Kimi, prefer latest preview models for file operations
+            if request_analysis.has_files:
+                return os.getenv("KIMI_FILE_MODEL", "kimi-k2-0905-preview")
+            return self._long_default
+        
+        # Fallback to fast default
+        return self._fast_default
+
+    def get_routing_statistics(self) -> Dict[str, Any]:
+        """
+        Get comprehensive routing statistics including intelligent routing metrics.
+        
+        Returns:
+            Dictionary with routing statistics and performance metrics
+        """
+        stats = {
+            "intelligent_routing_enabled": self._enable_intelligent_routing,
+            "routing_strategy": self._routing_strategy.value,
+            "fast_default_model": self._fast_default,
+            "long_default_model": self._long_default,
+            "diagnostics_enabled": self._diag_enabled
+        }
+        
+        # Add GLM Flash manager statistics if available
+        if hasattr(self, '_glm_flash_manager'):
+            stats.update(self._glm_flash_manager.get_routing_statistics())
+        
+        return stats
+
+    def update_routing_strategy(self, strategy: RoutingStrategy) -> None:
+        """
+        Update the routing strategy at runtime.
+        
+        Args:
+            strategy: New routing strategy to use
+        """
+        self._routing_strategy = strategy
+        logger.info(f"Routing strategy updated to: {strategy.value}")
+
+    def analyze_request_preview(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Preview request analysis without making routing decisions.
+        
+        Useful for debugging and understanding how requests would be routed.
+        
+        Args:
+            request_data: Request data to analyze
+            
+        Returns:
+            Dictionary with analysis results
+        """
+        if not self._enable_intelligent_routing:
+            return {"error": "Intelligent routing not enabled"}
+        
+        try:
+            analysis = self._request_analyzer.analyze_request(request_data)
+            routing_decision = self._glm_flash_manager.make_routing_decision(
+                analysis, self._routing_strategy
+            )
+            
+            return {
+                "request_analysis": analysis.to_dict(),
+                "routing_decision": routing_decision.to_dict(),
+                "recommended_model": self._get_preferred_model_for_provider(
+                    routing_decision.primary_provider, analysis
+                )
+            }
+        except Exception as e:
+            return {"error": f"Analysis failed: {e}"}
 
     def choose_model(self, requested: Optional[str]) -> RouteDecision:
         """Resolve a model name. If 'auto' or empty, choose a sensible default based on availability."""
