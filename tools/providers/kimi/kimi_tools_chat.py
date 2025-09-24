@@ -3,7 +3,7 @@ import json
 import os
 from typing import Any, Dict, List
 from mcp.types import TextContent
-from .shared.base_tool import BaseTool
+from tools.shared.base_tool import BaseTool
 from tools.shared.base_models import ToolRequest
 from src.providers.kimi import KimiModelProvider
 from src.providers.registry import ModelProviderRegistry
@@ -131,22 +131,52 @@ class KimiChatWithToolsTool(BaseTool):
             else:
                 tool_choice = None
 
-        # Websearch tool injection via provider capabilities layer for consistency
+        # Websearch tool injection with improved configuration
         use_websearch = bool(arguments.get("use_websearch", False)) or (
             os.getenv("KIMI_ENABLE_INTERNET_TOOL", "false").strip().lower() == "true" or
             os.getenv("KIMI_ENABLE_INTERNET_SEARCH", "false").strip().lower() == "true"
         )
-        if use_websearch and bool(arguments.get("use_websearch", False)):
+        
+        if use_websearch:
+            # Inject Kimi's built-in web search tool
+            web_search_tool = {
+                "type": "builtin_function",
+                "function": {
+                    "name": "$web_search",
+                    "description": "Search the web for current information",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Search query"
+                            }
+                        },
+                        "required": ["query"]
+                    }
+                }
+            }
+            
+            # Add web search tool to existing tools
+            if tools is None:
+                tools = []
+            tools.append(web_search_tool)
+            
+            # Set tool_choice to auto if not specified
+            if tool_choice is None:
+                tool_choice = "auto"
+                
+            # Try capabilities lookup as fallback
             try:
                 from src.providers.capabilities import get_capabilities_for_provider
                 caps = get_capabilities_for_provider(ProviderType.KIMI)
                 ws = caps.get_websearch_tool_schema({"use_websearch": True})
-                if ws.tools:
-                    tools = (tools or []) + ws.tools
+                if ws.tools and not any(t.get("function", {}).get("name") == "$web_search" for t in tools):
+                    tools.extend(ws.tools)
                 if tool_choice is None and ws.tool_choice is not None:
                     tool_choice = ws.tool_choice
             except Exception:
-                # If capabilities lookup fails, proceed without injecting tools
+                # If capabilities lookup fails, use the manually configured tool above
                 pass
 
         # Normalize messages into OpenAI-style list of {role, content}
@@ -265,49 +295,107 @@ class KimiChatWithToolsTool(BaseTool):
             def _run_web_search_backend(query: str) -> dict:
                 # Pluggable backend controlled by env SEARCH_BACKEND: duckduckgo | tavily | bing
                 backend = os.getenv("SEARCH_BACKEND", "duckduckgo").strip().lower()
-                try:
-                    if backend == "tavily":
-                        api_key = os.getenv("TAVILY_API_KEY", "").strip()
-                        if not api_key:
-                            raise RuntimeError("TAVILY_API_KEY not set")
-                        payload = json.dumps({"api_key": api_key, "query": query, "max_results": 5}).encode("utf-8")
-                        req = urllib.request.Request("https://api.tavily.com/search", data=payload, headers={"Content-Type": "application/json"})
-                        with urllib.request.urlopen(req, timeout=25) as resp:
-                            data = json.loads(resp.read().decode("utf-8", errors="ignore"))
-                            results = []
-                            for it in (data.get("results") or [])[:5]:
-                                url = it.get("url") or it.get("link")
-                                if url:
-                                    results.append({"title": it.get("title") or it.get("snippet"), "url": url})
-                            return {"engine": "tavily", "query": query, "results": results}
-                    if backend == "bing":
-                        key = os.getenv("BING_SEARCH_API_KEY", "").strip()
-                        if not key:
-                            raise RuntimeError("BING_SEARCH_API_KEY not set")
-                        q = urllib.parse.urlencode({"q": query})
-                        req = urllib.request.Request(f"https://api.bing.microsoft.com/v7.0/search?{q}")
-                        req.add_header("Ocp-Apim-Subscription-Key", key)
-                        with urllib.request.urlopen(req, timeout=25) as resp:
-                            data = json.loads(resp.read().decode("utf-8", errors="ignore"))
-                            results = []
-                            for it in (data.get("webPages", {}).get("value", [])[:5]):
-                                if it.get("url"):
-                                    results.append({"title": it.get("name"), "url": it.get("url")})
-                            return {"engine": "bing", "query": query, "results": results}
-                    # Default: DuckDuckGo Instant Answer API
-                    q = urllib.parse.urlencode({"q": query, "format": "json", "no_html": 1, "skip_disambig": 1})
-                    url = f"https://api.duckduckgo.com/?{q}"
-                    with urllib.request.urlopen(url, timeout=20) as resp:
-                        data = json.loads(resp.read().decode("utf-8", errors="ignore"))
-                        results = []
-                        if data.get("AbstractURL"):
-                            results.append({"title": data.get("Heading"), "url": data.get("AbstractURL")})
-                        for item in (data.get("RelatedTopics") or [])[:5]:
-                            if isinstance(item, dict) and item.get("FirstURL"):
-                                results.append({"title": item.get("Text"), "url": item.get("FirstURL")})
-                        return {"engine": "duckduckgo", "query": query, "results": results[:5]}
-                except Exception as e:
-                    return {"engine": backend or "duckduckgo", "query": query, "error": str(e), "results": []}
+                max_retries = 3
+                base_timeout = 20
+                
+                for attempt in range(max_retries):
+                    try:
+                        timeout = base_timeout + (attempt * 10)  # Increase timeout on retries
+                        
+                        if backend == "tavily":
+                            api_key = os.getenv("TAVILY_API_KEY", "").strip()
+                            if not api_key:
+                                raise RuntimeError("TAVILY_API_KEY not set")
+                            payload = json.dumps({
+                                "api_key": api_key, 
+                                "query": query, 
+                                "max_results": 5,
+                                "search_depth": "basic"
+                            }).encode("utf-8")
+                            req = urllib.request.Request(
+                                "https://api.tavily.com/search", 
+                                data=payload, 
+                                headers={"Content-Type": "application/json"}
+                            )
+                            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                                data = json.loads(resp.read().decode("utf-8", errors="ignore"))
+                                results = []
+                                for it in (data.get("results") or [])[:5]:
+                                    url = it.get("url") or it.get("link")
+                                    if url:
+                                        results.append({
+                                            "title": it.get("title") or it.get("snippet", "")[:100],
+                                            "url": url,
+                                            "snippet": it.get("content", "")[:200]
+                                        })
+                                return {"engine": "tavily", "query": query, "results": results}
+                                
+                        elif backend == "bing":
+                            key = os.getenv("BING_SEARCH_API_KEY", "").strip()
+                            if not key:
+                                raise RuntimeError("BING_SEARCH_API_KEY not set")
+                            q = urllib.parse.urlencode({"q": query, "count": 5})
+                            req = urllib.request.Request(f"https://api.bing.microsoft.com/v7.0/search?{q}")
+                            req.add_header("Ocp-Apim-Subscription-Key", key)
+                            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                                data = json.loads(resp.read().decode("utf-8", errors="ignore"))
+                                results = []
+                                for it in (data.get("webPages", {}).get("value", [])[:5]):
+                                    if it.get("url"):
+                                        results.append({
+                                            "title": it.get("name", ""),
+                                            "url": it.get("url"),
+                                            "snippet": it.get("snippet", "")[:200]
+                                        })
+                                return {"engine": "bing", "query": query, "results": results}
+                                
+                        else:
+                            # Default: DuckDuckGo Instant Answer API with fallback
+                            q = urllib.parse.urlencode({
+                                "q": query, 
+                                "format": "json", 
+                                "no_html": 1, 
+                                "skip_disambig": 1
+                            })
+                            url = f"https://api.duckduckgo.com/?{q}"
+                            with urllib.request.urlopen(url, timeout=timeout) as resp:
+                                data = json.loads(resp.read().decode("utf-8", errors="ignore"))
+                                results = []
+                                
+                                # Add abstract if available
+                                if data.get("AbstractURL") and data.get("Abstract"):
+                                    results.append({
+                                        "title": data.get("Heading", ""),
+                                        "url": data.get("AbstractURL"),
+                                        "snippet": data.get("Abstract", "")[:200]
+                                    })
+                                
+                                # Add related topics
+                                for item in (data.get("RelatedTopics") or [])[:4]:
+                                    if isinstance(item, dict) and item.get("FirstURL"):
+                                        results.append({
+                                            "title": item.get("Text", "")[:100],
+                                            "url": item.get("FirstURL"),
+                                            "snippet": item.get("Text", "")[:200]
+                                        })
+                                
+                                return {"engine": "duckduckgo", "query": query, "results": results[:5]}
+                                
+                    except Exception as e:
+                        if attempt == max_retries - 1:
+                            return {
+                                "engine": backend or "duckduckgo", 
+                                "query": query, 
+                                "error": str(e), 
+                                "results": [],
+                                "attempts": attempt + 1
+                            }
+                        # Wait before retry with exponential backoff
+                        import time
+                        time.sleep(1 * (2 ** attempt))
+                        continue
+                
+                return {"engine": backend, "query": query, "error": "Max retries exceeded", "results": []}
 
             messages_local = copy.deepcopy(norm_msgs)
 

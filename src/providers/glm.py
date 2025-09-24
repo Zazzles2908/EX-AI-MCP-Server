@@ -210,6 +210,82 @@ class GLMModelProvider(ModelProvider):
             logger.error("GLM generate_content failed: %s", e)
             raise
 
+    def web_search(self, query: str, **kwargs) -> dict:
+        """Perform web search using GLM's native web browsing capabilities.
+        
+        Args:
+            query: Search query string
+            **kwargs: Additional parameters for the search
+            
+        Returns:
+            Dictionary containing search results
+        """
+        try:
+            # Use GLM's native web search tool via chat completions
+            messages = [
+                {"role": "user", "content": f"Please search the web for: {query}"}
+            ]
+            
+            # Define web search tool for GLM
+            tools = [
+                {
+                    "type": "web_search",
+                    "web_search": {
+                        "search_query": query,
+                        "search_result": True
+                    }
+                }
+            ]
+            
+            if getattr(self, "_use_sdk", False):
+                # Use SDK for web search
+                response = self._sdk_client.chat.completions.create(
+                    model=kwargs.get("model", "glm-4.5"),
+                    messages=messages,
+                    tools=tools,
+                    temperature=kwargs.get("temperature", 0.3),
+                    stream=False
+                )
+                
+                # Extract content from SDK response
+                if hasattr(response, "choices") and response.choices:
+                    content = response.choices[0].message.content
+                    return {
+                        "query": query,
+                        "results": content,
+                        "provider": "GLM",
+                        "status": "success"
+                    }
+            else:
+                # HTTP fallback for web search
+                payload = {
+                    "model": kwargs.get("model", "glm-4.5"),
+                    "messages": messages,
+                    "tools": tools,
+                    "temperature": kwargs.get("temperature", 0.3),
+                    "stream": False
+                }
+                
+                response = self.client.post_json("/chat/completions", payload)
+                content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
+                
+                return {
+                    "query": query,
+                    "results": content,
+                    "provider": "GLM",
+                    "status": "success"
+                }
+                
+        except Exception as e:
+            logger.error("GLM web search failed: %s", e)
+            return {
+                "query": query,
+                "results": "",
+                "provider": "GLM",
+                "status": "error",
+                "error": str(e)
+            }
+
     def upload_file(self, file_path: str, purpose: str = "agent") -> str:
         """Upload a file to GLM Files API and return its file id.
 

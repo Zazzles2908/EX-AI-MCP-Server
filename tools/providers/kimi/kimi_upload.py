@@ -130,33 +130,51 @@ class KimiUploadAndExtractTool(BaseTool):
                     except Exception:
                         pass
 
-                # Retrieve parsed content with retry/backoff (provider may throttle on multiple files)
-                def _fetch():
-                    attempts = int(os.getenv("KIMI_FILES_FETCH_RETRIES", "3"))
-                    backoff = float(os.getenv("KIMI_FILES_FETCH_BACKOFF", "0.8"))
-                    delay = float(os.getenv("KIMI_FILES_FETCH_INITIAL_DELAY", "0.5"))
+                # Retrieve parsed content with robust exponential backoff retry
+                def _fetch_with_retry():
+                    import time
+                    import random
+                    
+                    max_retries = int(os.getenv("KIMI_FILES_FETCH_RETRIES", "5"))
+                    base_delay = float(os.getenv("KIMI_FILES_FETCH_BASE_DELAY", "1.0"))
+                    max_delay = float(os.getenv("KIMI_FILES_FETCH_MAX_DELAY", "60.0"))
+                    backoff_factor = float(os.getenv("KIMI_FILES_FETCH_BACKOFF_FACTOR", "2.0"))
+                    
                     last_err = None
-                    for _ in range(attempts):
+                    for attempt in range(max_retries):
                         try:
-                            return prov.client.files.content(file_id=file_id).text
+                            # Add polling for file processing completion
+                            content = prov.client.files.content(file_id=file_id).text
+                            if content and content.strip():
+                                return content
+                            elif attempt < max_retries - 1:
+                                # File might still be processing, wait before retry
+                                delay = min(base_delay * (backoff_factor ** attempt), max_delay)
+                                jitter = random.uniform(0.1, 0.3) * delay
+                                time.sleep(delay + jitter)
+                                continue
+                            else:
+                                return content or ""
                         except Exception as e:
                             last_err = e
-                            # backoff before retry
-                            try:
-                                import time as _t
-                                _t.sleep(delay)
-                            except Exception:
-                                pass
-                            delay *= (1.0 + backoff)
+                            if attempt < max_retries - 1:
+                                # Exponential backoff with jitter
+                                delay = min(base_delay * (backoff_factor ** attempt), max_delay)
+                                jitter = random.uniform(0.1, 0.3) * delay
+                                time.sleep(delay + jitter)
+                            else:
+                                break
+                    
                     if last_err:
                         raise last_err
-                    raise RuntimeError("Failed to fetch file content (unknown error)")
-                # Apply a hard cap to total fetch duration to avoid indefinite block
+                    raise RuntimeError("Failed to fetch file content after all retries")
+                
+                # Apply a more generous timeout for file processing
                 import concurrent.futures as _fut
-                fetch_timeout = float(os.getenv("KIMI_FILES_FETCH_TIMEOUT_SECS", "25"))
+                fetch_timeout = float(os.getenv("KIMI_FILES_FETCH_TIMEOUT_SECS", "120"))
                 try:
                     with _fut.ThreadPoolExecutor(max_workers=1) as _pool:
-                        _future = _pool.submit(_fetch)
+                        _future = _pool.submit(_fetch_with_retry)
                         content = _future.result(timeout=fetch_timeout)
                 except _fut.TimeoutError:
                     raise TimeoutError(f"Kimi files.content() timed out after {int(fetch_timeout)}s for file_id={file_id}")
