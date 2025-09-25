@@ -17,7 +17,7 @@ for k in required:
     val = os.getenv(k) or file_env.get(k)
     RESULT["env"][k] = bool(val)
 RESULT["env"]["DISABLED_PROVIDERS"] = (os.getenv("DISABLED_PROVIDERS") or file_env.get("DISABLED_PROVIDERS") or "")
-web_vars = ["ENABLE_WEB_SEARCH","SEARCH_PROVIDER","BRAVE_API_KEY","TAVILY_API_KEY","ENABLE_PROVIDER_WEBSEARCH","KIMI_ENABLE_INTERNET_SEARCH","GLM_ENABLE_WEB_BROWSING","WEB_ALLOWLIST","WEB_DENYLIST","MAX_WEB_RESULTS","WEB_CACHE_TTL_SEC","FETCH_USER_AGENT"]
+web_vars = ["EX_WEB_ENABLED","EX_WEB_PROVIDERS","SEARCH_BACKEND","TAVILY_API_KEY","BING_SEARCH_API_KEY"]
 RESULT["env"]["web_vars_present_in_env_file"] = {k: v for k, v in ((w, file_env.get(w)) for w in web_vars) if v}
 RESULT["env"]["has_zhipuai_module"] = bool(importlib.util.find_spec("zhipuai"))
 try:
@@ -25,7 +25,7 @@ try:
     tr = ToolRegistry(); tr.build_tools()
     names = sorted(tr.list_tools().keys())
     RESULT["tools"]["loaded"] = names
-    RESULT["tools"]["has_web_tools"] = any(n in ("web_search","fetch_url") for n in names)
+    RESULT["tools"]["has_web_tools"] = any(n in ("glm_web_search","glm_web_browse_chat","kimi_chat_with_tools") for n in names)
 except Exception as e:
     RESULT["tools"]["error"] = f"{type(e).__name__}: {e}"
 try:

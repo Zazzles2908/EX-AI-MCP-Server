@@ -44,7 +44,7 @@ from src.providers.base import ProviderType
 kimi_model, kimi_info = select_model(ProviderType.KIMI, "KIMI_SPEED_MODEL", KIMI_CANDIDATES)
 glm_model, glm_info = select_model(ProviderType.GLM, "DEFAULT_MODEL", GLM_CANDIDATES)
 
-results = {"env": {"KIMI_ENABLE_INTERNET_SEARCH": os.getenv("KIMI_ENABLE_INTERNET_SEARCH"), "GLM_ENABLE_WEB_BROWSING": os.getenv("GLM_ENABLE_WEB_BROWSING"), "CUSTOM_CONNECT_TIMEOUT": os.getenv("CUSTOM_CONNECT_TIMEOUT"), "CUSTOM_READ_TIMEOUT": os.getenv("CUSTOM_READ_TIMEOUT"), "EX_TOOLCALL_LOG_PATH": os.getenv("EX_TOOLCALL_LOG_PATH"), "EX_TOOLCALL_REDACTION": os.getenv("EX_TOOLCALL_REDACTION"), "EX_WEBSEARCH_CACHE_TTL_S": os.getenv("EX_WEBSEARCH_CACHE_TTL_S")}, "provider_status": {"KIMI": kimi_info, "GLM": glm_info}, "runs": {}}
+results = {"env": {"EX_WEB_ENABLED": os.getenv("EX_WEB_ENABLED"), "EX_WEB_PROVIDERS": os.getenv("EX_WEB_PROVIDERS"), "CUSTOM_CONNECT_TIMEOUT": os.getenv("CUSTOM_CONNECT_TIMEOUT"), "CUSTOM_READ_TIMEOUT": os.getenv("CUSTOM_READ_TIMEOUT"), "EX_TOOLCALL_LOG_PATH": os.getenv("EX_TOOLCALL_LOG_PATH"), "EX_TOOLCALL_REDACTION": os.getenv("EX_TOOLCALL_REDACTION"), "EX_WEBSEARCH_CACHE_TTL_S": os.getenv("EX_WEBSEARCH_CACHE_TTL_S")}, "provider_status": {"KIMI": kimi_info, "GLM": glm_info}, "runs": {}}
 
 async def _run(label, model, use_web):
     try:

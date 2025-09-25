@@ -131,12 +131,14 @@ class KimiChatWithToolsTool(BaseTool):
             else:
                 tool_choice = None
 
-        # Websearch tool injection with improved configuration
-        use_websearch = bool(arguments.get("use_websearch", False)) or (
-            os.getenv("KIMI_ENABLE_INTERNET_TOOL", "false").strip().lower() == "true" or
-            os.getenv("KIMI_ENABLE_INTERNET_SEARCH", "false").strip().lower() == "true"
-        )
-        
+        # Websearch tool injection using unified EX_WEB_* gating
+        try:
+            from src.providers.capabilities import get_capabilities_for_provider
+            caps = get_capabilities_for_provider(ProviderType.KIMI)
+            use_websearch = bool(arguments.get("use_websearch", False)) or caps.supports_websearch()
+        except Exception:
+            use_websearch = bool(arguments.get("use_websearch", False))
+
         if use_websearch:
             # Inject Kimi's built-in web search tool
             web_search_tool = {

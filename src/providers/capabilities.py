@@ -13,6 +13,21 @@ import os
 from .base import ProviderType
 
 
+# Centralized control for provider-native internet access
+# Canonical envs:
+#   EX_WEB_ENABLED=true|false
+#   EX_WEB_PROVIDERS=glm,kimi|all (empty means all)
+
+def _web_enabled_for(provider_slug: str) -> bool:
+    enabled = os.getenv("EX_WEB_ENABLED", "false").strip().lower() == "true"
+    if not enabled:
+        return False
+    provs = {p.strip().lower() for p in os.getenv("EX_WEB_PROVIDERS", "").split(",") if p.strip()}
+    if not provs or "all" in provs:
+        return True
+    return provider_slug in provs
+
+
 @dataclass
 class WebSearchSchema:
     tools: Optional[List[Dict[str, Any]]]
@@ -40,7 +55,7 @@ class KimiCapabilities(ProviderCapabilitiesBase):
         super().__init__(ProviderType.KIMI)
 
     def supports_websearch(self) -> bool:
-        return os.getenv("KIMI_ENABLE_INTERNET_SEARCH", "true").strip().lower() == "true"
+        return _web_enabled_for("kimi")
 
     def get_websearch_tool_schema(self, config: Dict[str, Any]) -> WebSearchSchema:
         if not self.supports_websearch() or not config.get("use_websearch"):
@@ -74,7 +89,7 @@ class GLMCapabilities(ProviderCapabilitiesBase):
         super().__init__(ProviderType.GLM)
 
     def supports_websearch(self) -> bool:
-        return os.getenv("GLM_ENABLE_WEB_BROWSING", "true").strip().lower() == "true"
+        return _web_enabled_for("glm")
 
     def get_websearch_tool_schema(self, config: Dict[str, Any]) -> WebSearchSchema:
         if not self.supports_websearch() or not config.get("use_websearch"):

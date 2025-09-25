@@ -68,6 +68,21 @@ TOOL_MAP: Dict[str, tuple[str, str]] = {
     "stream_demo": ("tools.streaming.stream_demo", "StreamDemoTool"),
 
 }
+
+# Conditional web tool exposure based on unified EX_WEB_* envs
+
+def _ex_web_enabled_for(provider_slug: str) -> bool:
+    enabled = os.getenv("EX_WEB_ENABLED", "false").strip().lower() == "true"
+    if not enabled:
+        return False
+    provs = {p.strip().lower() for p in os.getenv("EX_WEB_PROVIDERS", "").split(",") if p.strip()}
+    return True if not provs or "all" in provs else provider_slug in provs
+
+if _ex_web_enabled_for("glm"):
+    # Register GLM web search tools only when enabled
+    TOOL_MAP["glm_web_search"] = ("tools.providers.glm.glm_web_search", "GLMWebSearchTool")
+    TOOL_MAP["glm_web_browse_chat"] = ("tools.providers.glm.glm_web_search", "GLMWebBrowseChatTool")
+
 # Visibility map for tools: 'core' | 'advanced' | 'hidden'
 TOOL_VISIBILITY = {
     # Core verbs
@@ -116,6 +131,13 @@ DEFAULT_LEAN_TOOLS = {
     "listmodels",
 }
 
+# Conditionally surface visibility entries for GLM web tools
+if _ex_web_enabled_for("glm"):
+    TOOL_VISIBILITY.update({
+        "glm_web_search": "advanced",
+        "glm_web_browse_chat": "advanced",
+    })
+
 
 class ToolRegistry:
     def __init__(self) -> None:
@@ -133,14 +155,24 @@ class ToolRegistry:
 
     def build_tools(self) -> None:
         disabled = {t.strip().lower() for t in os.getenv("DISABLED_TOOLS", "").split(",") if t.strip()}
-        lean_mode = os.getenv("LEAN_MODE", "false").strip().lower() == "true"
-        if lean_mode:
-            lean_overrides = {t.strip().lower() for t in os.getenv("LEAN_TOOLS", "").split(",") if t.strip()}
-            active = lean_overrides or set(DEFAULT_LEAN_TOOLS)
-        else:
-            active = set(TOOL_MAP.keys())
 
-        # Ensure utilities are always on unless STRICT_LEAN is enabled
+        # Optional lightweight gating to speed up MCP list_tools handshake
+        core_only = os.getenv("TOOLS_CORE_ONLY", "false").strip().lower() == "true"
+        if core_only:
+            # Start from a minimal reliable set, then add any explicitly allowlisted tools
+            allow_env = os.getenv("TOOLS_ALLOWLIST", "")
+            allowlist = {t.strip().lower() for t in allow_env.split(",") if t.strip()}
+            active = set(DEFAULT_LEAN_TOOLS) | allowlist
+        else:
+            # Existing LEAN_MODE support
+            lean_mode = os.getenv("LEAN_MODE", "false").strip().lower() == "true"
+            if lean_mode:
+                lean_overrides = {t.strip().lower() for t in os.getenv("LEAN_TOOLS", "").split(",") if t.strip()}
+                active = lean_overrides or set(DEFAULT_LEAN_TOOLS)
+            else:
+                active = set(TOOL_MAP.keys())
+
+        # Ensure diagnostics utilities are always on unless STRICT_LEAN is enabled
         if os.getenv("STRICT_LEAN", "false").strip().lower() != "true":
             active.update({"version", "listmodels"})
 
@@ -151,7 +183,7 @@ class ToolRegistry:
         if os.getenv("DIAGNOSTICS", "false").strip().lower() != "true":
             active.discard("self-check")
 
-        # Web tools removed; no gating needed
+        # Build only the selected tools
         for name in sorted(active):
             self._load_tool(name)
 

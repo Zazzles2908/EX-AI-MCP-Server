@@ -14,6 +14,8 @@ capabilities from BaseTool.
 
 from abc import abstractmethod
 from typing import Any, Optional
+import os
+
 
 from tools.shared.base_models import ToolRequest
 from tools.shared.base_tool import BaseTool
@@ -442,6 +444,57 @@ class SimpleTool(BaseTool):
             system_prompt = language_instruction + base_system_prompt
 
             # Estimate tokens for logging
+
+            # Optional autonomous pre-search injection to ensure live results are included
+            try:
+                use_web = self.get_request_use_websearch(request)
+            except Exception:
+                use_web = False
+            if use_web:
+                try:
+                    # Prefer GLM's native web search when enabled; inject concise results into the prompt
+                    from src.providers.capabilities import get_capabilities_for_provider, ProviderType
+                    from src.providers.registry import ModelProviderRegistry
+
+                    caps_glm = get_capabilities_for_provider(ProviderType.GLM)
+                    if caps_glm.supports_websearch():
+                        glm = ModelProviderRegistry.get_glm_provider()
+                        if glm and hasattr(glm, "web_search"):
+                            try:
+                                q = self.get_request_prompt(request) or ""
+                            except Exception:
+                                q = ""
+                            if q.strip():
+                                try:
+                                    ws = glm.web_search(q.strip(), model=os.getenv("GLM_WEBSEARCH_MODEL", "glm-4.5"))
+                                except Exception as _wse:
+                                    logger.debug("[WEBSEARCH] GLM web_search error: %s", _wse)
+                                    ws = None
+                                try:
+                                    # Accept either dict with 'results' or raw string
+                                    if isinstance(ws, dict):
+                                        content = ws.get("results") or ws.get("content") or ""
+                                    else:
+                                        content = str(ws) if ws is not None else ""
+                                except Exception:
+                                    content = ""
+                                if content:
+                                    # Cap injected results to avoid token blow-up
+                                    snippet = str(content)
+                                    max_chars = int(os.getenv("EX_WEBSEARCH_INJECT_MAX_CHARS", "5000"))
+                                    if len(snippet) > max_chars:
+                                        snippet = snippet[:max_chars] + "\n[truncated]"
+                                    prompt = f"{prompt}\n\n=== LIVE WEB SEARCH RESULTS (GLM) ===\n{snippet}\n=== END WEB SEARCH ==="
+                                    try:
+                                        logger.info("[WEBSEARCH] executed provider=GLM query_len=%d result_len=%d", len(q), len(snippet))
+                                    except Exception:
+                                        pass
+                except Exception as _pre_e:
+                    try:
+                        logger.debug("[WEBSEARCH] pre-search injection skipped/failed: %s", _pre_e)
+                    except Exception:
+                        pass
+
             from utils.token_utils import estimate_tokens
 
             estimated_tokens = estimate_tokens(prompt)
