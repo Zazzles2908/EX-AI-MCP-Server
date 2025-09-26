@@ -1,21 +1,25 @@
 """
-EX MCP Server - Main server implementation
+EX MCP Server - Production-Ready Implementation v2.0
 
-This module implements the core MCP (Model Context Protocol) server that provides
-AI-powered tools for code analysis, review, and assistance using multiple AI models.
+This module implements the production-ready MCP (Model Context Protocol) server with
+intelligent routing capabilities using GLM-4.5-Flash as an AI manager.
 
-The server follows the MCP specification to expose various AI tools as callable functions
-that can be used by MCP clients (like Claude). Each tool provides specialized functionality
-such as code review, debugging, deep thinking, and general chat capabilities.
+Key Features:
+- Intelligent routing between GLM (web browsing) and Kimi (file processing) providers
+- GLM-4.5-Flash as AI manager for routing decisions
+- Cost-aware routing strategies with fallback mechanisms
+- Production-ready error handling and retry logic
+- MCP protocol compliance with WebSocket support
+- Comprehensive logging and monitoring
 
-Key Components:
+Architecture:
 - MCP Server: Handles protocol communication and tool discovery
-- Tool Registry: Maps tool names to their implementations
-- Request Handler: Processes incoming tool calls and returns formatted responses
-- Configuration: Manages API keys and model settings
+- Intelligent Router: Routes requests based on task type and provider capabilities
+- Provider System: GLM for web search, Kimi for file processing
+- Fallback System: Automatic retry with alternative providers
+- Configuration: Streamlined environment-based configuration
 
-The server runs on stdio (standard input/output) and communicates using JSON-RPC messages
-as defined by the MCP protocol.
+The server supports both stdio and WebSocket transports for maximum compatibility.
 """
 
 import asyncio
@@ -26,7 +30,16 @@ import sys
 import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Dict, List
+
+# Import intelligent routing system
+try:
+    from intelligent_router import get_router, ProviderType
+    from providers import ProviderFactory
+    ROUTING_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"Intelligent routing not available: {e}")
+    ROUTING_AVAILABLE = False
 
 # Environment and configuration setup
 def _env_true(key: str, default: str = "false") -> bool:
