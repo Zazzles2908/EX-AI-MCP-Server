@@ -14,11 +14,13 @@ import os
 # These values are used in server responses and for tracking releases
 # IMPORTANT: This is the single source of truth for version and author info
 # Semantic versioning: MAJOR.MINOR.PATCH
-__version__ = "5.8.5"
+__version__ = "2.0.0"
 # Last update date in ISO format
-__updated__ = "2025-08-08"
+__updated__ = "2025-09-26"
 # Primary maintainer
 __author__ = "Zazzles"
+# Production-ready release with intelligent routing
+__release_name__ = "Production-Ready v2.0 - Intelligent Routing"
 
 # Model configuration
 # DEFAULT_MODEL: The default model used for all AI operations
@@ -67,6 +69,34 @@ DEFAULT_THINKING_MODE_THINKDEEP = os.getenv("DEFAULT_THINKING_MODE_THINKDEEP", "
 # THINK_ROUTING_ENABLED: enable aliasing/rerouting and deterministic model selection for thinking tools
 # Default: true
 THINK_ROUTING_ENABLED = os.getenv("THINK_ROUTING_ENABLED", "true").strip().lower() == "true"
+
+# Production-Ready v2.0 Configuration
+# Intelligent Routing System
+INTELLIGENT_ROUTING_ENABLED = os.getenv("INTELLIGENT_ROUTING_ENABLED", "true").strip().lower() == "true"
+AI_MANAGER_MODEL = os.getenv("AI_MANAGER_MODEL", "glm-4.5-flash")
+WEB_SEARCH_PROVIDER = os.getenv("WEB_SEARCH_PROVIDER", "glm")
+FILE_PROCESSING_PROVIDER = os.getenv("FILE_PROCESSING_PROVIDER", "kimi")
+COST_AWARE_ROUTING = os.getenv("COST_AWARE_ROUTING", "true").strip().lower() == "true"
+
+# Production Settings
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+MAX_RETRIES = int(os.getenv("MAX_RETRIES", "3"))
+REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "30"))
+ENABLE_FALLBACK = os.getenv("ENABLE_FALLBACK", "true").strip().lower() == "true"
+
+# MCP WebSocket Configuration
+MCP_WEBSOCKET_ENABLED = os.getenv("MCP_WEBSOCKET_ENABLED", "true").strip().lower() == "true"
+MCP_WEBSOCKET_PORT = int(os.getenv("MCP_WEBSOCKET_PORT", "8080"))
+MCP_WEBSOCKET_HOST = os.getenv("MCP_WEBSOCKET_HOST", "0.0.0.0")
+
+# Performance Settings
+MAX_CONCURRENT_REQUESTS = int(os.getenv("MAX_CONCURRENT_REQUESTS", "10"))
+RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "100"))
+CACHE_ENABLED = os.getenv("CACHE_ENABLED", "true").strip().lower() == "true"
+CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))
+
+# Security Settings
+VALIDATE_API_KEYS = os.getenv("VALIDATE_API_KEYS", "true").strip().lower() == "true"
 
 # Consensus Tool Defaults
 # Agentic engine feature flags (default OFF for safe rollout)

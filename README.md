@@ -1,211 +1,222 @@
-# EX MCP Server
+# EX-AI MCP Server - Production-Ready v2.0
 
-[![CI](https://github.com/Zazzles2908/EX_AI-mcp-server/actions/workflows/test.yml/badge.svg)](https://github.com/Zazzles2908/EX_AI-mcp-server/actions/workflows/test.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/python-3.9%2B-blue)
-![MCP](https://img.shields.io/badge/MCP-compatible-green)
+A production-ready MCP (Model Context Protocol) server with intelligent routing capabilities using GLM-4.5-Flash as an AI manager.
 
+## 🚀 Key Features
 
-EX MCP Server is a Model Context Protocol (MCP) server that connects modern LLM providers and tools to MCP‑compatible clients (e.g., Claude Desktop/CLI). It provides a unified set of analysis, debugging, refactoring, documentation, testing, and project automation tools accessible over the MCP stdio protocol.
+### Intelligent Routing System
+- **GLM-4.5-Flash AI Manager**: Orchestrates routing decisions between providers
+- **GLM Provider**: Specialized for web browsing and search tasks
+- **Kimi Provider**: Optimized for file processing and document analysis
+- **Cost-Aware Routing**: Intelligent cost optimization and load balancing
+- **Fallback Mechanisms**: Automatic retry with alternative providers
 
-## Key Capabilities
-- Unified MCP server exposing rich development tools:
-  - analyze, codereview, debug, refactor, tracer, testgen, precommit, listmodels, version
-- Provider integrations:
+### Production-Ready Architecture
+- **MCP Protocol Compliance**: Full WebSocket and stdio transport support
+- **Error Handling**: Comprehensive retry logic and graceful degradation
+- **Performance Monitoring**: Real-time provider statistics and optimization
+- **Security**: API key validation and secure input handling
+- **Logging**: Structured logging with configurable levels
 
+### Provider Capabilities
+- **GLM (ZhipuAI)**: Web search, browsing, reasoning, code analysis
+- **Kimi (Moonshot)**: File processing, document analysis, multi-format support
 
-  - KIMI (Moonshot), GLM (Zhipu), OpenRouter, and custom OpenAI‑compatible endpoints
-
-## Quick Links
-- O&M Manual: [docs/o_and_m_manual/](docs/o_and_m_manual/)
-- Chat Sheet: [docs/o_and_m_manual/CHAT_SHEET.md](docs/o_and_m_manual/CHAT_SHEET.md)
-- Augment Code Guidelines (EXAI‑MCP default): [docs/policies/AUGMENT_CODE_GUIDELINES.md](docs/policies/AUGMENT_CODE_GUIDELINES.md)
-- Sweep Reports: [docs/sweep_reports/](docs/sweep_reports/)
-
-- MCP‑first architecture:
-  - Subprocess stdio transport with direct config examples for Claude Desktop/CLI
-- Docker and local dev support:
-  - Docker image build/publish, local virtualenv (.venv), and cross‑platform scripts
-
-## Installation
+## 📦 Installation
 
 ### Prerequisites
-- Python 3.9+
-- Git
-- For local dev: virtualenv support
-- Optional: Docker and Docker Compose
+- Python 3.8+
+- Valid API keys for ZhipuAI and Moonshot
 
-### Clone
-```
-git clone https://github.com/BeehiveInnovations/ex-mcp-server.git
-cd ex-mcp-server
-```
-
-### Setup (local)
-```
-python -m venv .venv
-# Windows
-.venv\\Scripts\\activate
-# macOS/Linux
-source .venv/bin/activate
-
+### Install Dependencies
+```bash
 pip install -r requirements.txt
-pip install -r requirements-dev.txt
-
-cp .env.example .env
-# Set at least one provider key (KIMI_API_KEY, GLM_API_KEY, OPENROUTER_API_KEY, or CUSTOM_API_URL/CUSTOM_API_KEY)
 ```
 
-### Run (local)
-```
-python -m server   # or: python server.py
-```
+### Environment Configuration
+Copy `.env.production` to `.env` and configure your API keys:
 
-### Configure a client (Claude Desktop/CLI)
-Minimal example (stdio):
-```
-{
-  "mcpServers": {
-    "ex": {
-      "type": "stdio",
-      "trust": true,
-      "command": "python",
-      "args": ["-u", "scripts/mcp_server_wrapper.py"],
-      "cwd": "/absolute/path/to/ex-mcp-server",
-      "env": {
-        "MCP_SERVER_NAME": "ex",
-        "MCP_SERVER_ID": "ex-server",
-        "PYTHONPATH": "/absolute/path/to/ex-mcp-server",
-        "ENV_FILE": "/absolute/path/to/ex-mcp-server/.env"
-      }
-    }
-  }
-}
-```
-See the examples/ directory for more configs (macOS, WSL, desktop CLI variants).
-
-## Docker
-Build and run locally:
-```
-docker build -t ex-mcp-server:latest .
-docker run --rm -it ex-mcp-server:latest
-```
-A reverse proxy example is provided (nginx.conf) and a remote compose file (docker-compose.remote.yml) that exposes the server as ex-mcp.
-
-## Usage Overview
-- Use the version tool to verify install:
-```
-# In Claude Desktop config, call the version tool
-```
-- Common tools:
-  - analyze: smart file analysis
-  - codereview: professional code review
-  - debug: debugging assistant
-  - refactor: code refactoring
-  - tracer: static analysis / call chain aid
-  - testgen: test generation
-  - precommit: quick pre-commit validation
-  - listmodels: show available models/providers
-
-### Provider‑native Web Browsing Schemas
-- Kimi (Moonshot): inject an OpenAI function tool named "web_search" with a string parameter "query".
-- GLM (Zhipu): enable tools = [{"type":"web_search","web_search":{}}] only when allowed by env.
-- Set these via env for production readiness:
-  - KIMI_ENABLE_INTERNET_TOOL=true and KIMI_INTERNET_TOOL_SPEC to a valid JSON tool schema
-  - GLM_ENABLE_WEB_BROWSING=true when appropriate (and other GLM browsing flags as documented)
-
-## Hidden Model Router (Auto Model Selection)
-The server can auto-select a concrete model at the MCP boundary so users don’t need to specify one.
-
-- Enable: HIDDEN_MODEL_ROUTER_ENABLED=true
-- Sentinels: ROUTER_SENTINEL_MODELS=glm-4.5-flash,auto
-- Default: DEFAULT_MODEL=glm-4.5-flash (a sentinel)
-
-Behavior:
-- If a tool requires a model and incoming model is a sentinel (or "auto"), the server resolves a concrete model.
-- Structured logs emitted by the server (logger name: "server"):
-  - EVENT boundary_model_resolution_attempt input_model=... tool=... sentinel_match=... hidden_router=...
-  - EVENT boundary_model_resolved input_model=... resolved_model=... tool=...
-
-Notes:
-- The Consensus tool intentionally does not resolve models at the MCP boundary (requires_model = False). You will see the "attempt" log at the boundary, and per-step model selection happens inside the tool.
-
-Tip: Use listmodels to see configured providers/models.
-
-## Agentic Audit with Real Models (EX‑AI)
-Use a consensus-based, multi-model audit to find issues and get direct fixes.
-
-1) Set provider keys in .env:
-- KIMI_API_KEY=...
-- GLM_API_KEY=...
-
-2) Run the audit script:
-```
-python scripts/exai_agentic_audit.py --models glm-4.5-air kimi-k2-0905-preview
-```
-Or rely on env defaults (GLM_AUDIT_MODEL, KIMI_AUDIT_MODEL) and just:
-```
-python scripts/exai_agentic_audit.py
-```
-The script returns JSON:
-```
-{
-  "issues": [ { "title": str, "evidence": str, "direct_fix": str }... ],
-  "summary": str
-}
+```bash
+cp .env.production .env
 ```
 
-3) Interpreting results:
-- Each issue has “direct_fix” with exactly what to change and where.
-- Re-run after fixes to validate improvements.
+Edit `.env` with your API keys:
+```env
+# Required API Keys
+ZHIPUAI_API_KEY=your_zhipuai_api_key_here
+MOONSHOT_API_KEY=your_moonshot_api_key_here
 
-## Tests: End-to-end (no real keys required)
-We include an “ultimate” test file designed for EX‑AI‑style validation:
-- tests/test_e2e_exai_ultimate.py
-- Each assert prints a Direct Fix if it fails.
-- Run: `python -m pytest -q tests/test_e2e_exai_ultimate.py`
+# Intelligent Routing (default: enabled)
+INTELLIGENT_ROUTING_ENABLED=true
+AI_MANAGER_MODEL=glm-4.5-flash
+WEB_SEARCH_PROVIDER=glm
+FILE_PROCESSING_PROVIDER=kimi
+COST_AWARE_ROUTING=true
 
-### CI/Test Hygiene (EX fork)
-This fork disables some upstream providers by design. If you run the full test suite, import errors may occur for those optional providers.
-See docs/ci-test-notes.md for ways to skip/guard those tests in CI.
+# Production Settings
+LOG_LEVEL=INFO
+MAX_RETRIES=3
+REQUEST_TIMEOUT=30
+ENABLE_FALLBACK=true
+```
 
-## Configuration
-- Environment file: .env (see .env.example for available variables)
-- Key variables:
-  - DEFAULT_MODEL, LOCALE, MAX_MCP_OUTPUT_TOKENS
-  - Provider keys: KIMI_API_KEY, GLM_API_KEY, OPENROUTER_API_KEY
-  - Custom API: CUSTOM_API_URL, CUSTOM_API_KEY
-- Logging: logs/ directory (Docker and local scripts manage ownership/paths)
+## 🏃 Quick Start
 
-## Attribution
-This project is based on the original work at:
-- https://github.com/BeehiveInnovations/zen-mcp-server
-We have forked/copied and adapted it to create EX MCP Server. Attribution to the original authors is preserved.
+### Run the Server
+```bash
+python server.py
+```
 
-## Our EX‑specific Changes (Zen → EX)
-- Rebranding:
-  - Service name: zen-mcp → ex-mcp
-  - Non-root user: zenuser → exuser (Dockerfile, file ownership)
-  - Virtual environment: .zen_venv → .venv
-  - Branding strings: “Zen MCP Server” → “EX MCP Server”
-- Examples/configs:
-  - Server IDs: "zen" → "ex"
-  - Commands: zen-mcp-server → ex-mcp-server
-  - Paths updated to ex-mcp-server
-- CI/workflows & templates:
-  - GitHub discussions/links point to ex-mcp-server
-  - GHCR image names: ghcr.io/<org>/ex-mcp-server:...
-- Architecture intent:
-  - MCP-first stdio transport, reverse proxy alignment, and consistent service naming
+### WebSocket Mode (Optional)
+```bash
+# Enable WebSocket transport
+export MCP_WEBSOCKET_ENABLED=true
+export MCP_WEBSOCKET_PORT=8080
+python server.py
+```
 
-## Contributing
-Please see CONTRIBUTING.md for development workflow, coding standards, and testing.
+## 🔧 Configuration
 
-## License
-See the LICENSE file in this repository.
+### Core Settings
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `INTELLIGENT_ROUTING_ENABLED` | `true` | Enable intelligent routing system |
+| `AI_MANAGER_MODEL` | `glm-4.5-flash` | Model for routing decisions |
+| `WEB_SEARCH_PROVIDER` | `glm` | Provider for web search tasks |
+| `FILE_PROCESSING_PROVIDER` | `kimi` | Provider for file processing |
+| `COST_AWARE_ROUTING` | `true` | Enable cost optimization |
 
-## Additional Resources
-- MCP Spec: https://modelcontextprotocol.io/
-- Claude Desktop docs for MCP: https://docs.anthropic.com/claude/docs/model-context-protocol
-- Original source (upstream): https://github.com/BeehiveInnovations/zen-mcp-server
-- Current project: https://github.com/BeehiveInnovations/ex-mcp-server
+### Performance Settings
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MAX_RETRIES` | `3` | Maximum retry attempts |
+| `REQUEST_TIMEOUT` | `30` | Request timeout in seconds |
+| `MAX_CONCURRENT_REQUESTS` | `10` | Concurrent request limit |
+| `RATE_LIMIT_PER_MINUTE` | `100` | Rate limiting threshold |
+
+### WebSocket Configuration
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MCP_WEBSOCKET_ENABLED` | `true` | Enable WebSocket transport |
+| `MCP_WEBSOCKET_PORT` | `8080` | WebSocket server port |
+| `MCP_WEBSOCKET_HOST` | `0.0.0.0` | WebSocket bind address |
+
+## 🧠 Intelligent Routing
+
+The server uses GLM-4.5-Flash as an AI manager to make intelligent routing decisions:
+
+### Task-Based Routing
+- **Web Search Tasks** → GLM Provider (native web browsing)
+- **File Processing Tasks** → Kimi Provider (document analysis)
+- **Code Analysis Tasks** → Best available provider based on performance
+- **General Chat** → Load-balanced between providers
+
+### Fallback Strategy
+1. Primary provider attempt
+2. Automatic fallback to secondary provider
+3. Retry with exponential backoff
+4. Graceful error handling
+
+### Cost Optimization
+- Real-time provider performance tracking
+- Cost-aware routing decisions
+- Load balancing based on response times
+- Automatic provider selection optimization
+
+## 🛠 Development
+
+### Project Structure
+```
+ex-ai-mcp-server/
+├── server.py              # Main MCP server
+├── config.py              # Configuration management
+├── intelligent_router.py  # Routing system
+├── providers.py           # Provider implementations
+├── requirements.txt       # Dependencies
+├── pyproject.toml         # Project metadata
+└── .env.production        # Production config template
+```
+
+### Adding New Providers
+1. Extend `BaseProvider` in `providers.py`
+2. Implement required methods
+3. Register in `ProviderFactory`
+4. Update routing logic in `intelligent_router.py`
+
+## 📊 Monitoring
+
+### Logging
+The server provides structured logging with configurable levels:
+- `DEBUG`: Detailed routing decisions and API calls
+- `INFO`: General operation status and routing choices
+- `WARNING`: Fallback activations and performance issues
+- `ERROR`: API failures and critical errors
+
+### Performance Metrics
+- Provider success rates
+- Average response times
+- Routing decision confidence
+- Cost tracking per provider
+
+## 🔒 Security
+
+- API key validation on startup
+- Secure input handling and validation
+- Rate limiting and request throttling
+- Error message sanitization
+
+## 🚀 Deployment
+
+### Production Checklist
+- [ ] Configure API keys in `.env`
+- [ ] Set appropriate log levels
+- [ ] Configure rate limiting
+- [ ] Enable WebSocket if needed
+- [ ] Set up monitoring and alerting
+- [ ] Test fallback mechanisms
+
+### Docker Deployment (Optional)
+```bash
+docker build -t ex-ai-mcp-server .
+docker run -d --env-file .env -p 8080:8080 ex-ai-mcp-server
+```
+
+## 📝 API Reference
+
+### Available Tools
+The server exposes various MCP tools through the intelligent routing system:
+- Code analysis and review tools
+- Web search and browsing capabilities
+- File processing and document analysis
+- General chat and reasoning tools
+
+### MCP Protocol
+Full compliance with MCP specification:
+- Tool discovery and registration
+- Request/response handling
+- Error propagation
+- WebSocket and stdio transports
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+
+## 🆘 Support
+
+For issues and questions:
+1. Check the logs for detailed error information
+2. Verify API key configuration
+3. Test individual providers
+4. Open an issue with reproduction steps
+
+---
+
+**EX-AI MCP Server v2.0** - Production-ready intelligent routing for MCP applications.
