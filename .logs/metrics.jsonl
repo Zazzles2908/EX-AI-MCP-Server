@@ -370,3 +370,4 @@
 {"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "6f66fa57151221e76b9db146b0294899587af566743d5ab876249e6f8625ad1b", "t": 1758534213.3217692}
 {"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "8b8831221f3e24191f73621b1deb2a6c9313318336cc659b6ceeca32ee48d861", "t": 1758542736.0817404}
 {"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1758542737.706932}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 2437, "output_tokens": 54, "t": 1758866147.809118}

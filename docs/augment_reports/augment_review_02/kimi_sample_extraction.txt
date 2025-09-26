@@ -1,0 +1,17 @@
+Kimi extraction sample file
+
+Title: Market Snapshot and Metrics
+
+Summary:
+- Weekly signups: 1,284
+- Active users this month: 9,731
+- Conversion rate: 4.7%
+
+Notes:
+The smell of rain preceded a sudden spike in usage during the evening of 21:07 UTC, likely tied to a regional launch.
+
+Action items:
+1) Highlight three key bullets for executive briefing.
+2) Extract all numeric values with their labels.
+3) Return the results as structured JSON.
+
