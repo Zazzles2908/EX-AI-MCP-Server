@@ -1,195 +1,334 @@
-"""
-Pytest configuration for Zen MCP Server tests
-"""
 
-import asyncio
-import importlib
-import os
-import sys
-from pathlib import Path
+"""
+Pytest configuration and shared fixtures for EX-AI MCP Server tests
+
+This module provides common fixtures, test configuration, and utilities
+used across the test suite.
+"""
 
 import pytest
+import asyncio
+import os
+import tempfile
+from unittest.mock import Mock, patch, AsyncMock
+from typing import Dict, Any
 
-# Ensure the parent directory is in the Python path for imports
-parent_dir = Path(__file__).resolve().parent.parent
-if str(parent_dir) not in sys.path:
-    sys.path.insert(0, str(parent_dir))
+# Import test utilities
+from tests.mock_helpers import MockProvider, MockRouter, MockTransport
 
 
-# Set default model to a specific value for tests to avoid auto mode
-# Use a configured provider model available in this deployment
-os.environ["DEFAULT_MODEL"] = "glm-4.5-flash"
-
-# Force reload of config module to pick up the env var
-import config  # noqa: E402
-
-importlib.reload(config)
-
-# Note: This creates a test sandbox environment
-# Tests create their own temporary directories as needed
-
-# Configure asyncio for Windows compatibility
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-# Register providers for all tests (Kimi and GLM only)
-from src.providers import ModelProviderRegistry  # noqa: E402
-from src.providers.base import ProviderType  # noqa: E402
-from src.providers.moonshot import KimiModelProvider  # noqa: E402
-from src.providers.zhipu import GLMModelProvider  # noqa: E402
-
-# Register providers at test startup
-ModelProviderRegistry.register_provider(ProviderType.KIMI, KimiModelProvider)
-ModelProviderRegistry.register_provider(ProviderType.GLM, GLMModelProvider)
-
-# Register CUSTOM provider if CUSTOM_API_URL is available (for integration tests)
-# But only if we're actually running integration tests, not unit tests
-if os.getenv("CUSTOM_API_URL") and "test_prompt_regression.py" in os.getenv("PYTEST_CURRENT_TEST", ""):
-    from providers.custom import CustomProvider  # noqa: E402
-
-    def custom_provider_factory(api_key=None):
-        """Factory function that creates CustomProvider with proper parameters."""
-        base_url = os.getenv("CUSTOM_API_URL", "")
-        return CustomProvider(api_key=api_key or "", base_url=base_url)
-
-    ModelProviderRegistry.register_provider(ProviderType.CUSTOM, custom_provider_factory)
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create an event loop for the test session"""
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture
-def project_path(tmp_path):
-    """
-    Provides a temporary directory for tests.
-    This ensures all file operations during tests are isolated.
-    """
-    # Create a subdirectory for this specific test
-    test_dir = tmp_path / "test_workspace"
-    test_dir.mkdir(parents=True, exist_ok=True)
-
-    return test_dir
+def test_api_keys():
+    """Provide test API keys for testing"""
+    return {
+        'ZHIPUAI_API_KEY': '4973ff3ce3c0435a999ce4674bb89259.jqNMImfTWzjHMLlA',
+        'MOONSHOT_API_KEY': 'sk-FbWAPZ23R4bhd5XHWttMqGgDK1QAfCk22dZmXGkliUMPu6rq'
+    }
 
 
-def _set_dummy_keys_if_missing():
-    """Set dummy API keys only when they are completely absent."""
-    for var in ("KIMI_API_KEY", "GLM_API_KEY"):
-        if not os.environ.get(var):
-            os.environ[var] = "dummy-key-for-tests"
+@pytest.fixture
+def test_environment(test_api_keys):
+    """Set up test environment variables"""
+    test_env = {
+        **test_api_keys,
+        'AI_MANAGER_MODEL': 'glm-4.5-flash',
+        'KIMI_MODEL': 'moonshot-v1-8k',
+        'REQUEST_TIMEOUT': '30',
+        'MAX_RETRIES': '3',
+        'ENABLE_INTELLIGENT_ROUTING': 'true',
+        'LOG_LEVEL': 'DEBUG',
+        'ENVIRONMENT': 'test'
+    }
+    
+    with patch.dict('os.environ', test_env):
+        yield test_env
 
 
-# Pytest configuration
-def pytest_configure(config):
-    """Configure pytest with custom markers"""
-    config.addinivalue_line("markers", "asyncio: mark test as async")
-    config.addinivalue_line("markers", "no_mock_provider: disable automatic provider mocking")
-    # Assume we need dummy keys until we learn otherwise
-    config._needs_dummy_keys = True
+@pytest.fixture
+def mock_glm_response():
+    """Standard mock response for GLM provider"""
+    return {
+        "choices": [{
+            "message": {
+                "content": "Mock GLM response for testing",
+                "tool_calls": [{
+                    "function": {
+                        "name": "web_search",
+                        "arguments": '{"results": ["result1", "result2"]}'
+                    }
+                }]
+            }
+        }],
+        "usage": {
+            "prompt_tokens": 100,
+            "completion_tokens": 150,
+            "total_tokens": 250
+        }
+    }
 
 
-def pytest_collection_modifyitems(session, config, items):
-    """Hook that runs after test collection to check for no_mock_provider markers."""
-    # Always set dummy keys if real keys are missing
-    # This ensures tests work in CI even with no_mock_provider marker
-    _set_dummy_keys_if_missing()
+@pytest.fixture
+def mock_kimi_response():
+    """Standard mock response for Kimi provider"""
+    return {
+        "choices": [{
+            "message": {
+                "content": "Mock Kimi response for file processing testing"
+            }
+        }],
+        "usage": {
+            "prompt_tokens": 80,
+            "completion_tokens": 120,
+            "total_tokens": 200
+        }
+    }
+
+
+@pytest.fixture
+def mock_http_session():
+    """Mock aiohttp ClientSession for testing"""
+    with patch('aiohttp.ClientSession') as mock_session:
+        mock_response = Mock()
+        mock_response.status = 200
+        mock_response.json = AsyncMock()
+        
+        mock_session.return_value.__aenter__.return_value.post.return_value.__aenter__.return_value = mock_response
+        mock_session.return_value.__aenter__.return_value.get.return_value.__aenter__.return_value = mock_response
+        
+        yield mock_session
+
+
+@pytest.fixture
+def temp_config_file():
+    """Create a temporary configuration file for testing"""
+    config_content = """
+# Test configuration file
+ZHIPUAI_API_KEY=test_glm_key
+MOONSHOT_API_KEY=test_kimi_key
+AI_MANAGER_MODEL=glm-4.5-flash
+REQUEST_TIMEOUT=30
+MAX_RETRIES=3
+ENABLE_INTELLIGENT_ROUTING=true
+"""
+    
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False) as f:
+        f.write(config_content)
+        f.flush()
+        yield f.name
+    
+    os.unlink(f.name)
+
+
+@pytest.fixture
+def mock_websocket():
+    """Mock WebSocket connection for testing"""
+    mock_ws = Mock()
+    mock_ws.send = AsyncMock()
+    mock_ws.recv = AsyncMock()
+    mock_ws.close = AsyncMock()
+    return mock_ws
+
+
+@pytest.fixture
+def sample_mcp_requests():
+    """Sample MCP requests for testing"""
+    return {
+        "list_tools": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/list",
+            "params": {}
+        },
+        "call_tool": {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "web_search",
+                "arguments": {
+                    "query": "test query",
+                    "max_results": 5
+                }
+            }
+        },
+        "invalid_request": {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "invalid/method",
+            "params": {}
+        }
+    }
+
+
+@pytest.fixture
+def performance_thresholds():
+    """Performance thresholds for testing"""
+    return {
+        "web_search_max_time": 5.0,
+        "file_processing_max_time": 3.0,
+        "general_chat_max_time": 2.0,
+        "concurrent_requests_max_time": 10.0,
+        "max_memory_usage_mb": 500
+    }
+
+
+@pytest.fixture
+def test_files_directory():
+    """Create a temporary directory with test files"""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create sample test files
+        test_files = {
+            "sample.txt": "This is a sample text file for testing.",
+            "data.json": '{"test": "data", "numbers": [1, 2, 3]}',
+            "code.py": "def hello_world():\n    print('Hello, World!')\n",
+            "document.md": "# Test Document\n\nThis is a test markdown document."
+        }
+        
+        for filename, content in test_files.items():
+            file_path = os.path.join(temp_dir, filename)
+            with open(file_path, 'w') as f:
+                f.write(content)
+        
+        yield temp_dir
+
+
+@pytest.fixture
+def mock_logging():
+    """Mock logging for testing"""
+    with patch('logging.getLogger') as mock_logger:
+        logger_instance = Mock()
+        logger_instance.info = Mock()
+        logger_instance.warning = Mock()
+        logger_instance.error = Mock()
+        logger_instance.debug = Mock()
+        
+        mock_logger.return_value = logger_instance
+        yield logger_instance
 
 
 @pytest.fixture(autouse=True)
-def mock_provider_availability(request, monkeypatch):
-    """
-    Automatically mock provider availability for all tests to prevent
-    effective auto mode from being triggered when DEFAULT_MODEL is unavailable.
+def cleanup_after_test():
+    """Cleanup fixture that runs after each test"""
+    yield
+    # Cleanup any test artifacts
+    # This runs after each test completes
 
-    This fixture ensures that when tests run with dummy API keys,
-    the tools don't require model selection unless explicitly testing auto mode.
-    """
-    # Skip this fixture for tests that need real providers
-    if hasattr(request, "node"):
-        marker = request.node.get_closest_marker("no_mock_provider")
-        if marker:
-            return
 
-    # Ensure providers are registered (in case other tests cleared the registry)
-    from src.providers.base import ProviderType
+# Test markers
+pytest.mark.unit = pytest.mark.unit
+pytest.mark.integration = pytest.mark.integration
+pytest.mark.e2e = pytest.mark.e2e
+pytest.mark.performance = pytest.mark.performance
+pytest.mark.slow = pytest.mark.slow
 
-    registry = ModelProviderRegistry()
 
-    if ProviderType.KIMI not in registry._providers:
-        ModelProviderRegistry.register_provider(ProviderType.KIMI, KimiModelProvider)
-    if ProviderType.GLM not in registry._providers:
-        ModelProviderRegistry.register_provider(ProviderType.GLM, GLMModelProvider)
+# Custom assertions
+def assert_mcp_response_format(response):
+    """Assert that a response follows MCP format"""
+    assert "jsonrpc" in response
+    assert response["jsonrpc"] == "2.0"
+    assert "id" in response
+    assert ("result" in response) or ("error" in response)
 
-    # Ensure CUSTOM provider is registered if needed for integration tests
-    if (
-        os.getenv("CUSTOM_API_URL")
-        and "test_prompt_regression.py" in os.getenv("PYTEST_CURRENT_TEST", "")
-        and ProviderType.CUSTOM not in registry._providers
-    ):
-        from src.providers.custom import CustomProvider
 
-        def custom_provider_factory(api_key=None):
-            base_url = os.getenv("CUSTOM_API_URL", "")
-            return CustomProvider(api_key=api_key or "", base_url=base_url)
+def assert_provider_response_format(response):
+    """Assert that a provider response has the expected format"""
+    assert "choices" in response
+    assert len(response["choices"]) > 0
+    assert "message" in response["choices"][0]
+    assert "content" in response["choices"][0]["message"]
 
-        ModelProviderRegistry.register_provider(ProviderType.CUSTOM, custom_provider_factory)
 
-    from unittest.mock import MagicMock
+def assert_routing_decision_format(decision):
+    """Assert that a routing decision has the expected format"""
+    from intelligent_router import RoutingDecision, ProviderType
+    
+    assert isinstance(decision, RoutingDecision)
+    assert isinstance(decision.provider, ProviderType)
+    assert isinstance(decision.confidence, float)
+    assert 0.0 <= decision.confidence <= 1.0
+    assert isinstance(decision.reasoning, str)
+    assert len(decision.reasoning) > 0
 
-    original_get_provider = ModelProviderRegistry.get_provider_for_model
 
-    def mock_get_provider_for_model(model_name):
-        # If it's a test looking for unavailable models, return None
-        if model_name in ["unavailable-model", "gpt-5-turbo", "o3"]:
-            return None
-        # For common test models, return a mock provider
-        if model_name in ["gemini-2.5-flash", "gemini-2.5-pro", "pro", "flash", "local-llama"]:
-            # Try to use the real provider first if it exists
-            real_provider = original_get_provider(model_name)
-            if real_provider:
-                return real_provider
+# Test utilities
+class TestDataGenerator:
+    """Generate test data for various scenarios"""
+    
+    @staticmethod
+    def generate_web_search_requests(count: int = 5):
+        """Generate web search test requests"""
+        return [
+            {
+                "tool": "web_search",
+                "parameters": {
+                    "query": f"test query {i}",
+                    "max_results": 5 + i
+                }
+            }
+            for i in range(count)
+        ]
+    
+    @staticmethod
+    def generate_file_processing_requests(count: int = 5):
+        """Generate file processing test requests"""
+        return [
+            {
+                "tool": "file_read",
+                "parameters": {
+                    "path": f"test_file_{i}.txt",
+                    "analysis_type": "summary"
+                }
+            }
+            for i in range(count)
+        ]
+    
+    @staticmethod
+    def generate_mixed_requests(count: int = 10):
+        """Generate mixed request types for testing"""
+        tools = ["web_search", "file_read", "general_chat", "code_analysis"]
+        requests = []
+        
+        for i in range(count):
+            tool = tools[i % len(tools)]
+            if tool == "web_search":
+                request = {
+                    "tool": tool,
+                    "parameters": {"query": f"query {i}", "max_results": 5}
+                }
+            elif tool == "file_read":
+                request = {
+                    "tool": tool,
+                    "parameters": {"path": f"file_{i}.txt"}
+                }
+            elif tool == "general_chat":
+                request = {
+                    "tool": tool,
+                    "parameters": {"message": f"question {i}"}
+                }
+            else:  # code_analysis
+                request = {
+                    "tool": tool,
+                    "parameters": {"code": f"def function_{i}(): pass"}
+                }
+            
+            requests.append(request)
+        
+        return requests
 
-            # Otherwise create a mock
-            provider = MagicMock()
-            # Set up the model capabilities mock with actual values
-            capabilities = MagicMock()
-            if model_name == "local-llama":
-                capabilities.context_window = 128000  # 128K tokens for local-llama
-                capabilities.supports_extended_thinking = False
-                capabilities.input_cost_per_1k = 0.0  # Free local model
-                capabilities.output_cost_per_1k = 0.0  # Free local model
-            else:
-                capabilities.context_window = 1000000  # 1M tokens for Gemini models
-                capabilities.supports_extended_thinking = False
-                capabilities.input_cost_per_1k = 0.075
-                capabilities.output_cost_per_1k = 0.3
-            provider.get_model_capabilities.return_value = capabilities
-            return provider
-        # Otherwise use the original logic
-        return original_get_provider(model_name)
 
-    monkeypatch.setattr(ModelProviderRegistry, "get_provider_for_model", mock_get_provider_for_model)
-
-    # Also mock is_effective_auto_mode for all BaseTool instances to return False
-    # unless we're specifically testing auto mode behavior
-    from tools.shared.base_tool import BaseTool
-
-    def mock_is_effective_auto_mode(self):
-        # If this is an auto mode test file or specific auto mode test, use the real logic
-        test_file = request.node.fspath.basename if hasattr(request, "node") and hasattr(request.node, "fspath") else ""
-        test_name = request.node.name if hasattr(request, "node") else ""
-
-        # Allow auto mode for tests in auto mode files or with auto in the name
-        if (
-            "auto_mode" in test_file.lower()
-            or "auto" in test_name.lower()
-            or "intelligent_fallback" in test_file.lower()
-            or "per_tool_model_defaults" in test_file.lower()
-        ):
-            # Call original method logic
-            from config import DEFAULT_MODEL
-
-            if DEFAULT_MODEL.lower() == "auto":
-                return True
-            provider = ModelProviderRegistry.get_provider_for_model(DEFAULT_MODEL)
-            return provider is None
-        # For all other tests, return False to disable auto mode
-        return False
-
-    monkeypatch.setattr(BaseTool, "is_effective_auto_mode", mock_is_effective_auto_mode)
+# Export test utilities
+__all__ = [
+    'assert_mcp_response_format',
+    'assert_provider_response_format', 
+    'assert_routing_decision_format',
+    'TestDataGenerator'
+]

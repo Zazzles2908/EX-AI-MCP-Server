@@ -1,42 +1,94 @@
 """Helper functions for test mocking."""
 
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
+from typing import Dict, Any
 
-from providers.base import ModelCapabilities, ProviderType, RangeTemperatureConstraint
+
+class MockProvider:
+    """Mock provider for testing"""
+    
+    def __init__(self, provider_type: str = "glm"):
+        self.provider_type = provider_type
+        self.api_key = "test_api_key"
+        self.timeout = 30
+        self.max_retries = 3
+    
+    def validate_api_key(self) -> bool:
+        return True
+    
+    async def execute_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "choices": [{
+                "message": {
+                    "content": f"Mock {self.provider_type} response"
+                }
+            }],
+            "usage": {"total_tokens": 100}
+        }
+    
+    async def health_check(self) -> bool:
+        return True
 
 
-def create_mock_provider(model_name="gemini-2.5-flash", context_window=1_048_576):
-    """Create a properly configured mock provider."""
-    mock_provider = Mock()
+class MockRouter:
+    """Mock intelligent router for testing"""
+    
+    def __init__(self):
+        self.providers = {
+            "glm": MockProvider("glm"),
+            "kimi": MockProvider("kimi")
+        }
+    
+    async def route_request(self, request: Dict[str, Any]):
+        from intelligent_router import RoutingDecision, ProviderType
+        
+        # Simple routing logic for testing
+        if "web_search" in request.get("tool", ""):
+            provider = ProviderType.GLM
+        elif "file" in request.get("tool", ""):
+            provider = ProviderType.KIMI
+        else:
+            provider = ProviderType.GLM
+        
+        return RoutingDecision(
+            provider=provider,
+            confidence=0.9,
+            reasoning=f"Mock routing to {provider.value}"
+        )
+    
+    async def execute_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "choices": [{
+                "message": {
+                    "content": "Mock router response"
+                }
+            }]
+        }
 
-    # Set up capabilities
-    mock_capabilities = ModelCapabilities(
-        provider=ProviderType.GOOGLE,
-        model_name=model_name,
-        friendly_name="Gemini",
-        context_window=context_window,
-        max_output_tokens=8192,
-        supports_extended_thinking=False,
-        supports_system_prompts=True,
-        supports_streaming=True,
-        supports_function_calling=True,
-        temperature_constraint=RangeTemperatureConstraint(0.0, 2.0, 0.7),
-    )
 
-    mock_provider.get_capabilities.return_value = mock_capabilities
-    mock_provider.get_provider_type.return_value = ProviderType.GOOGLE
-    mock_provider.supports_thinking_mode.return_value = False
-    mock_provider.validate_model_name.return_value = True
+class MockTransport:
+    """Mock transport for testing"""
+    
+    def __init__(self):
+        self.messages = []
+    
+    async def send(self, message: str):
+        self.messages.append(message)
+    
+    async def recv(self) -> str:
+        return '{"jsonrpc": "2.0", "id": 1, "result": {"status": "ok"}}'
 
-    # Set up generate_content response
-    mock_response = Mock()
-    mock_response.content = "Test response"
-    mock_response.usage = {"input_tokens": 10, "output_tokens": 20}
-    mock_response.model_name = model_name
-    mock_response.friendly_name = "Gemini"
-    mock_response.provider = ProviderType.GOOGLE
-    mock_response.metadata = {"finish_reason": "STOP"}
 
-    mock_provider.generate_content.return_value = mock_response
+def create_mock_provider(provider_type: str = "glm") -> MockProvider:
+    """Create a mock provider for testing"""
+    return MockProvider(provider_type)
 
-    return mock_provider
+
+def create_mock_router() -> MockRouter:
+    """Create a mock router for testing"""
+    return MockRouter()
+
+
+def create_mock_transport() -> MockTransport:
+    """Create a mock transport for testing"""
+    return MockTransport()
