@@ -25,8 +25,8 @@ class TestIntelligentRouting:
     def router(self):
         """Create a test router instance"""
         with patch.dict('os.environ', {
-            'ZHIPUAI_API_KEY': '4973ff3ce3c0435a999ce4674bb89259.jqNMImfTWzjHMLlA',
-            'MOONSHOT_API_KEY': 'sk-FbWAPZ23R4bhd5XHWttMqGgDK1QAfCk22dZmXGkliUMPu6rq'
+            'ZHIPUAI_API_KEY': 'test-zhipuai-key',
+            'MOONSHOT_API_KEY': 'test-moonshot-key'
         }):
             return IntelligentRouter()
 

@@ -69,8 +69,8 @@ LOG_LEVEL=INFO
         """Test API key validation functionality"""
         # Test valid API keys
         valid_env = {
-            'ZHIPUAI_API_KEY': '4973ff3ce3c0435a999ce4674bb89259.jqNMImfTWzjHMLlA',
-            'MOONSHOT_API_KEY': 'sk-FbWAPZ23R4bhd5XHWttMqGgDK1QAfCk22dZmXGkliUMPu6rq'
+            'ZHIPUAI_API_KEY': 'test-zhipuai-key',
+            'MOONSHOT_API_KEY': 'test-moonshot-key'
         }
         
         with patch.dict('os.environ', valid_env):
@@ -220,8 +220,8 @@ LOG_LEVEL=INFO
     def test_server_initialization_with_config(self):
         """Test server initialization with various configurations"""
         test_config = {
-            'ZHIPUAI_API_KEY': '4973ff3ce3c0435a999ce4674bb89259.jqNMImfTWzjHMLlA',
-            'MOONSHOT_API_KEY': 'sk-FbWAPZ23R4bhd5XHWttMqGgDK1QAfCk22dZmXGkliUMPu6rq',
+            'ZHIPUAI_API_KEY': 'test-zhipuai-key',
+            'MOONSHOT_API_KEY': 'test-moonshot-key',
             'ENABLE_INTELLIGENT_ROUTING': 'true',
             'REQUEST_TIMEOUT': '30'
         }
@@ -251,8 +251,8 @@ LOG_LEVEL=INFO
     def test_sensitive_data_masking(self):
         """Test that sensitive configuration data is properly masked in logs"""
         sensitive_config = {
-            'ZHIPUAI_API_KEY': '4973ff3ce3c0435a999ce4674bb89259.jqNMImfTWzjHMLlA',
-            'MOONSHOT_API_KEY': 'sk-FbWAPZ23R4bhd5XHWttMqGgDK1QAfCk22dZmXGkliUMPu6rq'
+            'ZHIPUAI_API_KEY': 'test-zhipuai-key',
+            'MOONSHOT_API_KEY': 'test-moonshot-key'
         }
         
         with patch.dict('os.environ', sensitive_config):
@@ -262,8 +262,8 @@ LOG_LEVEL=INFO
                 # Verify sensitive data is masked in logs
                 logged_calls = [call.args[0] for call in mock_log.call_args_list]
                 for call in logged_calls:
-                    assert '4973ff3ce3c0435a999ce4674bb89259.jqNMImfTWzjHMLlA' not in call
-                    assert 'sk-FbWAPZ23R4bhd5XHWttMqGgDK1QAfCk22dZmXGkliUMPu6rq' not in call
+                    assert 'test-zhipuai-key' not in call
+                    assert 'test-moonshot-key' not in call
                     # Should contain masked versions
                     if 'API_KEY' in call:
                         assert '***' in call or 'MASKED' in call
