@@ -16,8 +16,8 @@ from pathlib import Path
 def setup_test_environment():
     """Set up test environment variables"""
     test_env = {
-        'ZHIPUAI_API_KEY': '4973ff3ce3c0435a999ce4674bb89259.jqNMImfTWzjHMLlA',
-        'MOONSHOT_API_KEY': 'sk-FbWAPZ23R4bhd5XHWttMqGgDK1QAfCk22dZmXGkliUMPu6rq',
+        'ZHIPUAI_API_KEY': os.environ.get('ZHIPUAI_API_KEY', 'test-zhipuai-key'),
+        'MOONSHOT_API_KEY': os.environ.get('MOONSHOT_API_KEY', 'test-moonshot-key'),
         'AI_MANAGER_MODEL': 'glm-4.5-flash',
         'KIMI_MODEL': 'moonshot-v1-8k',
         'REQUEST_TIMEOUT': '30',

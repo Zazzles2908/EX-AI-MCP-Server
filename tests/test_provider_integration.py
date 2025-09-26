@@ -39,7 +39,7 @@ class TestProviderIntegration:
     def glm_provider(self, glm_config):
         """Create GLM provider instance for testing"""
         with patch.dict('os.environ', {
-            'ZHIPUAI_API_KEY': '4973ff3ce3c0435a999ce4674bb89259.jqNMImfTWzjHMLlA'
+            'ZHIPUAI_API_KEY': 'test-zhipuai-key'
         }):
             return GLMProvider(glm_config)
 
@@ -47,19 +47,19 @@ class TestProviderIntegration:
     def kimi_provider(self, kimi_config):
         """Create Kimi provider instance for testing"""
         with patch.dict('os.environ', {
-            'MOONSHOT_API_KEY': 'sk-FbWAPZ23R4bhd5XHWttMqGgDK1QAfCk22dZmXGkliUMPu6rq'
+            'MOONSHOT_API_KEY': 'test-moonshot-key'
         }):
             return KimiProvider(kimi_config)
 
     def test_glm_api_key_validation(self, glm_provider):
         """Test GLM API key validation"""
         assert glm_provider.validate_api_key() == True
-        assert glm_provider.api_key == '4973ff3ce3c0435a999ce4674bb89259.jqNMImfTWzjHMLlA'
+        assert glm_provider.api_key == 'test-zhipuai-key'
 
     def test_kimi_api_key_validation(self, kimi_provider):
         """Test Kimi API key validation"""
         assert kimi_provider.validate_api_key() == True
-        assert kimi_provider.api_key == 'sk-FbWAPZ23R4bhd5XHWttMqGgDK1QAfCk22dZmXGkliUMPu6rq'
+        assert kimi_provider.api_key == 'test-moonshot-key'
 
     def test_invalid_api_key_handling(self, glm_config):
         """Test handling of invalid API keys"""
@@ -179,8 +179,8 @@ class TestProviderIntegration:
         })
         
         with patch.dict('os.environ', {
-            'ZHIPUAI_API_KEY': '4973ff3ce3c0435a999ce4674bb89259.jqNMImfTWzjHMLlA',
-            'MOONSHOT_API_KEY': 'sk-FbWAPZ23R4bhd5XHWttMqGgDK1QAfCk22dZmXGkliUMPu6rq'
+            'ZHIPUAI_API_KEY': 'test-zhipuai-key',
+            'MOONSHOT_API_KEY': 'test-moonshot-key'
         }):
             glm_provider = factory.get_provider("glm")
             kimi_provider = factory.get_provider("kimi")
@@ -244,8 +244,8 @@ class TestProviderIntegration:
         }
         
         with patch.dict('os.environ', {
-            'ZHIPUAI_API_KEY': '4973ff3ce3c0435a999ce4674bb89259.jqNMImfTWzjHMLlA',
-            'MOONSHOT_API_KEY': 'sk-FbWAPZ23R4bhd5XHWttMqGgDK1QAfCk22dZmXGkliUMPu6rq'
+            'ZHIPUAI_API_KEY': 'test-zhipuai-key',
+            'MOONSHOT_API_KEY': 'test-moonshot-key'
         }):
             factory = ProviderFactory(config)
             
