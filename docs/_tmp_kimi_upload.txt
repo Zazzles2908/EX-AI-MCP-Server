@@ -1,0 +1,14 @@
+Kimi validation file
+
+Goal: Prove file ingestion works via EXAI-WS MCP.
+
+Content:
+- Title: The Hidden Cost of Context Windows
+- Summary: Larger windows reduce need for chunking but increase cost; retrieval still matters. Measure tokens and response quality.
+- Table (text):
+  Model | Window | $/1M tokens
+  GLM-4.5 | 128k | $X
+  Kimi | 200k | $Y
+
+Task: Summarize 2 bullets and extract the table rows as CSV.
+

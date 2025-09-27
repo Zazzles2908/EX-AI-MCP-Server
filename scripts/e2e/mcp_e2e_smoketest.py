@@ -13,8 +13,9 @@ from mcp.client.stdio import stdio_client, StdioServerParameters
 from mcp.client.session import ClientSession
 import mcp.types as types
 
-PROJECT_DIR = Path(__file__).parent
-WRAPPER = str(PROJECT_DIR / 'mcp_server_wrapper.py')
+PROJECT_DIR = Path(__file__).resolve().parents[1]
+# Use the canonical wrapper under scripts/ regardless of our location
+WRAPPER = str(Path(__file__).resolve().parents[1] / 'mcp_server_wrapper.py')
 
 
 def pick_python():
@@ -77,8 +78,12 @@ async def main():
             'KIMI_API_KEY': os.getenv('KIMI_API_KEY',''),
             'KIMI_API_URL': os.getenv('KIMI_API_URL','https://api.moonshot.ai/v1'),
             'GLM_API_KEY': os.getenv('GLM_API_KEY',''),
-            'GLM_API_URL': os.getenv('GLM_API_URL','https://api.z.ai/api/paas/v4'),
+            'GLM_API_URL': os.getenv('GLM_API_URL','https://open.bigmodel.cn/api/paas/v4'),
             'DEFAULT_MODEL': os.getenv('DEFAULT_MODEL','auto'),
+            # Ensure server sees these flags:
+            'EXAI_TOOLCALL_LOG_RAW_FULL': os.getenv('EXAI_TOOLCALL_LOG_RAW_FULL','true'),
+            'EXAI_LOCK_DISABLE': os.getenv('EXAI_LOCK_DISABLE','true'),
+            'EX_MCP_STDERR_BREADCRUMBS': 'true',
         }
     )
     async with stdio_client(params) as (read, write):

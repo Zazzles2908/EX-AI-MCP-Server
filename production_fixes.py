@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+# SAFETY NOTICE:
+# This script performs destructive, repo-wide edits (overwrites requirements/pyproject, removes files/dirs).
+# Do NOT run in normal workflows. Use package managers (pip/poetry) and standard PR processes instead.
+# If you absolutely understand the risks, set env EX_DANGEROUS_SCRIPT_ACK=I_UNDERSTAND before invoking.
+import os as _os
+if _os.getenv("EX_DANGEROUS_SCRIPT_ACK") != "I_UNDERSTAND":
+    raise SystemExit("production_fixes.py is disabled by default. Set EX_DANGEROUS_SCRIPT_ACK=I_UNDERSTAND to run.")
+
 """
 Production-ready fixes for EX-AI MCP Server
 This script implements all the critical fixes needed for production deployment.
@@ -21,10 +29,10 @@ def run_command(cmd, check=True):
 
 def main():
     print("🚀 Starting EX-AI MCP Server Production Fixes...")
-    
+
     # 1. Fix Critical Dependencies
     print("\n📦 Fixing critical dependencies...")
-    
+
     # Update requirements.txt
     requirements_content = """mcp>=1.0.0
 openai>=1.55.2
@@ -34,11 +42,11 @@ zhipuai>=2.1.0
 httpx>=0.28.0
 importlib-resources>=5.0.0; python_version<"3.9"
 """
-    
+
     with open("requirements.txt", "w") as f:
         f.write(requirements_content)
     print("✅ Updated requirements.txt with zhipuai>=2.1.0")
-    
+
     # Update pyproject.toml dependencies
     pyproject_content = """[build-system]
 requires = ["setuptools>=61.0", "wheel"]
@@ -117,47 +125,47 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 """
-    
+
     with open("pyproject.toml", "w") as f:
         f.write(pyproject_content)
     print("✅ Updated pyproject.toml with production dependencies")
-    
+
     # 2. Clean up project structure
     print("\n🧹 Cleaning up project structure...")
-    
+
     # Remove excessive documentation (keep only essential)
     docs_to_remove = [
         "README-PUBLIC.md",
-        "README-ORIGINAL.md", 
+        "README-ORIGINAL.md",
         "LIMITATIONS.md",
         "SUPPORT.md",
         "CODE_OF_CONDUCT.md",
         "SECURITY.md",
         "CONTRIBUTING.md"
     ]
-    
+
     for doc in docs_to_remove:
         if os.path.exists(doc):
             os.remove(doc)
             print(f"✅ Removed {doc}")
-    
+
     # Remove clutter directories if they exist
     clutter_dirs = [
         ".augment",
-        ".claude", 
+        ".claude",
         "docs/experimental",
         "examples",
         "tests/experimental"
     ]
-    
+
     for dir_path in clutter_dirs:
         if os.path.exists(dir_path):
             shutil.rmtree(dir_path)
             print(f"✅ Removed directory {dir_path}")
-    
+
     # 3. Create production environment configuration
     print("\n⚙️ Creating production environment configuration...")
-    
+
     env_production = """# EX-AI MCP Server Production Configuration
 # Core API Keys (Required)
 ZHIPUAI_API_KEY=your_zhipuai_api_key_here
@@ -194,11 +202,11 @@ CACHE_TTL=300
 SECURE_INPUTS_ENFORCED=true
 VALIDATE_API_KEYS=true
 """
-    
+
     with open(".env.production", "w") as f:
         f.write(env_production)
     print("✅ Created .env.production with production settings")
-    
+
     print("\n🎉 Production fixes completed successfully!")
     print("\nNext steps:")
     print("1. Update API keys in .env.production")

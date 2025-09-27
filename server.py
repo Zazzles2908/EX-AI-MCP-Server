@@ -32,14 +32,6 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any, Optional, Dict, List
 
-# Import intelligent routing system
-try:
-    from intelligent_router import get_router, ProviderType
-    from providers import ProviderFactory
-    ROUTING_AVAILABLE = True
-except ImportError as e:
-    logging.warning(f"Intelligent routing not available: {e}")
-    ROUTING_AVAILABLE = False
 
 # Environment and configuration setup
 def _env_true(key: str, default: str = "false") -> bool:
@@ -232,6 +224,42 @@ def setup_logging():
     metrics_logger.addHandler(metrics_handler)
     metrics_logger.setLevel(logging.INFO)
 
+    # Dedicated JSONL for router decisions (pure JSON lines)
+    router_logger = logging.getLogger("router")
+    router_handler = RotatingFileHandler(
+        logs_dir / "router.jsonl",
+        maxBytes=50*1024*1024,
+        backupCount=3
+    )
+    router_handler.setFormatter(logging.Formatter("%(message)s"))
+    router_logger.addHandler(router_handler)
+    router_logger.setLevel(logging.INFO)
+    # Dedicated JSONL for tool call results (pure JSON lines)
+    toolcalls_logger = logging.getLogger("toolcalls")
+    toolcalls_handler = RotatingFileHandler(
+        logs_dir / "toolcalls.jsonl",
+        maxBytes=50*1024*1024,
+        backupCount=3
+    )
+    toolcalls_handler.setFormatter(logging.Formatter("%(message)s"))
+    toolcalls_logger.addHandler(toolcalls_handler)
+    toolcalls_logger.setLevel(logging.INFO)
+    # Optional: Dedicated JSONL for raw tool call outputs (guarded by env)
+    toolcalls_raw_logger = logging.getLogger("toolcalls_raw")
+    toolcalls_raw_handler = RotatingFileHandler(
+        logs_dir / "toolcalls_raw.jsonl",
+        maxBytes=50*1024*1024,
+        backupCount=3
+    )
+    toolcalls_raw_handler.setFormatter(logging.Formatter("%(message)s"))
+    toolcalls_raw_logger.addHandler(toolcalls_raw_handler)
+    toolcalls_raw_logger.setLevel(logging.INFO)
+    toolcalls_raw_logger.propagate = False
+
+    toolcalls_logger.propagate = False
+
+    router_logger.propagate = False
+
 # Initialize logging
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -316,7 +344,122 @@ async def list_tools_handler():
 async def call_tool_handler(name: str, arguments: dict[str, Any]):
     """Handle MCP call_tool requests."""
     _ensure_providers_configured()
-    return await handle_call_tool(name, arguments)
+    start_ts = time.time()
+    try:
+        result = await handle_call_tool(name, arguments)
+        # Emit toolcall JSONL for transparency
+        try:
+            import json as _json
+            req_id = (arguments or {}).get("request_id")
+            duration_s = round(time.time() - start_ts, 3)
+            # Compute adaptive preview and summary (raw output preserved)
+            def _clamp(v, lo, hi):
+                return max(lo, min(hi, v))
+            def _derive_bullets(text, max_bullets=5):
+                try:
+                    import re as _re
+                    if not text:
+                        return []
+                    parts = [_p.strip() for _p in _re.split(r'[\n\.;]+', str(text)) if _p.strip()]
+                    return parts[:max_bullets]
+                except Exception:
+                    return []
+            def _compute_preview_and_summary(args, res, duration_s):
+                import os as _os, re as _re, math as _math
+                # result text extraction
+                if isinstance(res, dict):
+                    res_text = str(res.get("result", "")) or str(res)
+                else:
+                    res_text = str(res)
+                out_chars = len(res_text or "")
+                retries = int((args or {}).get("retries", 0) or 0)
+                error_flag = 1 if (args or {}).get("error") else 0
+                base = _math.log10(max(1, out_chars)) + 0.4*retries + 0.3*error_flag + 0.002*(duration_s*1000.0)
+                env_max = int((_os.getenv("EXAI_TOOLCALL_PREVIEW_MAX_CHARS", "2000") or "2000"))
+                n = int(_clamp(round(120*base), 280, env_max))
+                preview = (res_text or "")[:n] + ("..." if out_chars > n else "")
+                sum_max_words = int((_os.getenv("EXAI_TOOLCALL_SUMMARY_MAX_WORDS", "600") or "600"))
+                target_words = int(_clamp(round(180*base), 150, sum_max_words))
+                words = _re.split(r'\s+', (res_text or "").strip())
+                summary_text = " ".join(words[:target_words])
+                prompt_text = (args or {}).get("prompt")
+                bullets = _derive_bullets(prompt_text, max_bullets=5)
+                return {
+                    "result_preview": preview,
+                    "result_preview_len": n,
+                    "result_truncated": out_chars > n,
+                    "prompt_bullets": bullets,
+
+                    "summary_words": target_words,
+                    "summary_text": summary_text
+                }
+            preview_info = _compute_preview_and_summary(arguments, result, duration_s)
+            payload = {
+                "timestamp": time.time(),
+                "tool": name,
+                "request_id": req_id,
+                "duration_s": duration_s,
+            }
+            payload.update(preview_info)
+            logging.getLogger("toolcalls").info(_json.dumps(payload))
+            # Optional raw mirror: write full model output (no system prompts) when enabled
+            try:
+                import os as _os, json as _json, re as _re
+                flag = (_os.getenv("EXAI_TOOLCALL_LOG_RAW_FULL", "false") or "false").strip().lower() == "true"
+                if flag:
+                    # Extract raw result text only (do not include prompts/system)
+                    if isinstance(result, dict):
+                        _raw_text = str(result.get("result", "") or result)
+                    else:
+                        _raw_text = str(result)
+                    _raw_text = _raw_text or ""
+                    # Basic redaction for likely secrets
+                    try:
+                        _raw_text = _re.sub(r"sk-[A-Za-z0-9]{16,}", "sk-***REDACTED***", _raw_text)
+                        _raw_text = _re.sub(r"[A-Fa-f0-9]{32,}", "***REDACTED_HEX***", _raw_text)
+                        _raw_text = _re.sub(r"[A-Za-z0-9]{40,}", "***REDACTED_TOKEN***", _raw_text)
+                    except Exception:
+                        pass
+                    # Size cap ~10MB
+                    try:
+                        _cap = 10*1024*1024
+                        _bytes = _raw_text.encode("utf-8")
+                        _truncated = False
+                        if len(_bytes) > _cap:
+                            _raw_text = _bytes[: int(_cap*0.95)].decode("utf-8", errors="ignore") + "... [TRUNCATED]"
+                            _truncated = True
+                    except Exception:
+                        _truncated = False
+                    _raw_payload = {
+                        "timestamp": time.time(),
+                        "tool": name,
+                        "request_id": req_id,
+                        "duration_s": duration_s,
+                        "raw_len": len(_raw_text),
+                        "truncated": _truncated,
+                        "raw": _raw_text,
+                    }
+                    logging.getLogger("toolcalls_raw").info(_json.dumps(_raw_payload))
+            except Exception:
+                pass
+
+        except Exception:
+            pass
+        return result
+    except Exception as e:
+        # Log error envelope, then re-raise
+        try:
+            import json as _json
+            req_id = (arguments or {}).get("request_id")
+            logging.getLogger("toolcalls").info(_json.dumps({
+                "timestamp": time.time(),
+                "tool": name,
+                "request_id": req_id,
+                "error": str(e)
+            }))
+        except Exception:
+            pass
+        raise
 
 @server.list_prompts()
 async def list_prompts_handler():
@@ -340,55 +483,55 @@ async def main():
     # Filter disabled tools
     global TOOLS
     TOOLS = filter_disabled_tools(TOOLS)
+    # Set up stdio streams and run server
+    # mcp.server.stdio.stdio_server is an async context manager in current SDK
+    async with stdio_server() as (read_stream, write_stream):
 
-    # Set up stdio streams
-    read_stream, write_stream = stdio_server()
+        # Configure progress notifications
+        try:
+            from utils.progress import set_mcp_notifier
 
-    # Configure progress notifications
-    try:
-        from utils.progress import set_mcp_notifier
-
-        async def _notify_progress(level: str, msg: str):
-            try:
-                # Try to emit via MCP session if available
-                rc = getattr(server, "_request_context", None)
-                sess = getattr(rc, "session", None) if rc else None
-                if sess and hasattr(sess, "send_log_message"):
-                    await sess.send_log_message(level=level, data=f"[PROGRESS] {msg}")
-            except Exception:
-                pass
-            finally:
-                # Mirror to internal logger
+            async def _notify_progress(level: str, msg: str):
                 try:
-                    log_level = {"debug": 10, "info": 20, "warning": 30, "error": 40}.get(level, 20)
-                    server._logger.log(log_level, f"[PROGRESS] {msg}")
+                    # Try to emit via MCP session if available
+                    rc = getattr(server, "_request_context", None)
+                    sess = getattr(rc, "session", None) if rc else None
+                    if sess and hasattr(sess, "send_log_message"):
+                        await sess.send_log_message(level=level, data=f"[PROGRESS] {msg}")
                 except Exception:
                     pass
+                finally:
+                    # Mirror to internal logger
+                    try:
+                        log_level = {"debug": 10, "info": 20, "warning": 30, "error": 40}.get(level, 20)
+                        server._logger.log(log_level, f"[PROGRESS] {msg}")
+                    except Exception:
+                        pass
 
-        set_mcp_notifier(_notify_progress)
-    except Exception:
-        pass
+            set_mcp_notifier(_notify_progress)
+        except Exception:
+            pass
 
-    # Emit handshake breadcrumb
-    try:
-        if _env_true("EX_MCP_STDERR_BREADCRUMBS"):
-            print("[ex-mcp] stdio_server started; awaiting MCP handshake...", file=sys.stderr)
-    except Exception:
-        pass
+        # Emit handshake breadcrumb
+        try:
+            if _env_true("EX_MCP_STDERR_BREADCRUMBS"):
+                print("[ex-mcp] stdio_server started; awaiting MCP handshake...", file=sys.stderr)
+        except Exception:
+            pass
 
-    # Run server
-    await server.run(
-        read_stream,
-        write_stream,
-        InitializationOptions(
-            server_name=os.getenv("MCP_SERVER_NAME", "EX MCP Server"),
-            server_version=__version__,
-            capabilities=ServerCapabilities(
-                tools=ToolsCapability(),
-                prompts=PromptsCapability(),
+        # Run server
+        await server.run(
+            read_stream,
+            write_stream,
+            InitializationOptions(
+                server_name=os.getenv("MCP_SERVER_NAME", "EX MCP Server"),
+                server_version=__version__,
+                capabilities=ServerCapabilities(
+                    tools=ToolsCapability(),
+                    prompts=PromptsCapability(),
+                ),
             ),
-        ),
-    )
+        )
 
 def run():
     """Console script entry point for ex-mcp-server."""

@@ -29,7 +29,7 @@ from typing import Any, Optional
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 VENV_PY = PROJECT_DIR / ".venv" / "Scripts" / "python.exe"
 LOGS_DIR = PROJECT_DIR / "logs"
-WRAPPER = PROJECT_DIR / "mcp_server_wrapper.py"
+WRAPPER = PROJECT_DIR / "scripts" / "mcp_server_wrapper.py"
 ENV_FILE = PROJECT_DIR / ".env"
 AUG_CONF = PROJECT_DIR / "auggie-config.json"
 MCP_CONF = PROJECT_DIR / "mcp-config.json"
