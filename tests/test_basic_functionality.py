@@ -8,6 +8,13 @@ import pytest
 import asyncio
 import os
 from unittest.mock import Mock, patch, AsyncMock
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Load environment variables for testing
+env_path = Path(__file__).parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
 
 
 class TestBasicFunctionality:
@@ -15,9 +22,9 @@ class TestBasicFunctionality:
 
     def test_environment_setup(self):
         """Test that test environment is properly configured"""
-        # Check that test API keys are available
-        assert os.getenv('ZHIPUAI_API_KEY') is not None
-        assert os.getenv('MOONSHOT_API_KEY') is not None
+        # Check that test API keys are available (using new naming convention)
+        assert os.getenv('GLM_API_KEY') is not None
+        assert os.getenv('KIMI_API_KEY') is not None
         assert os.getenv('ENVIRONMENT') == 'test'
 
     @pytest.mark.asyncio
@@ -97,8 +104,8 @@ class TestBasicFunctionality:
 
     def test_configuration_loading(self):
         """Test basic configuration functionality"""
-        # Test environment variable access
-        api_key = os.getenv('ZHIPUAI_API_KEY')
+        # Test environment variable access (using new naming convention)
+        api_key = os.getenv('GLM_API_KEY')
         assert api_key is not None
         assert len(api_key) > 0
         

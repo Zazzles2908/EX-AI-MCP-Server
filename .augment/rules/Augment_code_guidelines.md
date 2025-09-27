@@ -67,12 +67,6 @@ Continuation handling:
 
 ## 11) Authoring guidance for commits/PRs
 - Commit format: `<type>: <scope> <summary>`; keep subject concise; use body for details.
-- Use PR template. Include rationale, validation steps, logs, and rollback plan.
-- Update relevant docs (README, O&M manual, chat sheet) whenever behavior changes.
 
-Reference docs:
-- O&M Manual: `docs/o_and_m_manual/`
-- Chat Sheet: `docs/o_and_m_manual/CHAT_SHEET.md`
-- Security Policy: `SECURITY.md`
-- Support: `SUPPORT.md`
+
 
