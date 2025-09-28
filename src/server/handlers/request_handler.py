@@ -190,6 +190,15 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
         _evt = None
         _sink = None
 
+    # Record continuation_id early for telemetry if present
+    try:
+        if _evt:
+            _cid = arguments.get("continuation_id")
+            if _cid:
+                _evt.args["continuation_id"] = _cid
+    except Exception:
+        pass
+
     # Watchdog and timeout configuration
     import asyncio as _asyncio
     import time as _time
@@ -380,6 +389,41 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
 
 
 
+    # Normalize tool name and enforce client allow/deny before dispatch
+    try:
+        # Normalize to existing key if only case differs
+        _lname = (name or "").strip().lower()
+        if name not in TOOL_MAP and _lname in TOOL_MAP:
+            name = _lname
+        # Client-scoped allow/deny lists (mirrors list_tools behavior)
+        from utils.client_info import get_client_info_from_context as _get_ci
+        _ci = _get_ci(server) or {}
+        _raw_allow = os.getenv("CLIENT_TOOL_ALLOWLIST", os.getenv("CLAUDE_TOOL_ALLOWLIST", ""))
+        _raw_deny = os.getenv("CLIENT_TOOL_DENYLIST", os.getenv("CLAUDE_TOOL_DENYLIST", ""))
+        _allow = {t.strip().lower() for t in _raw_allow.split(",") if t.strip()}
+        _deny = {t.strip().lower() for t in _raw_deny.split(",") if t.strip()}
+        _lname = (name or "").strip().lower()
+        if _allow and _lname not in _allow:
+            _msg = f"Tool '{name}' is not in allowlist"
+            logger.warning(f"[TOOL_FILTER] deny (allowlist): tool={name} req_id={req_id}")
+            try:
+                logging.getLogger('mcp_activity').info({'event':'tool_filter','req_id':req_id,'tool':name,'reason':'allowlist'})
+            except Exception:
+                pass
+            return [TextContent(type='text', text=_msg)]
+        if _lname in _deny:
+            _msg = f"Tool '{name}' is explicitly denied"
+            logger.warning(f"[TOOL_FILTER] deny (denylist): tool={name} req_id={req_id}")
+            try:
+                logging.getLogger('mcp_activity').info({'event':'tool_filter','req_id':req_id,'tool':name,'reason':'denylist'})
+            except Exception:
+                pass
+            return [TextContent(type='text', text=_msg)]
+    except Exception:
+        # Non-fatal: proceed with best-effort normalization
+        pass
+
+
     # Route to AI-powered tools
     if name in TOOL_MAP:
         logger.info(f"Executing tool '{name}' with {len(arguments)} parameter(s)")
@@ -483,6 +527,25 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
         except Exception:
             pass
 
+
+        # Emit a consolidated route_plan into JSONL telemetry for observability
+        try:
+            if _evt:
+                _rp = {
+                    "tool": name,
+                    "requested_model": requested_model,
+                    "resolved_model": model_name,
+                    "reason": locals().get("reason", "unknown"),
+                    "path": "model_resolution",
+                }
+                # include continuation_id if present
+                _cid = arguments.get("continuation_id")
+                if _cid:
+                    _rp["continuation_id"] = _cid
+                _evt.args["route_plan"] = _rp
+        except Exception:
+            pass
+
         # Parse model:option format if present
         model_name, model_option = parse_model_option(model_name)
         if model_option:
@@ -531,6 +594,15 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
         if not tool.requires_model():
             logger.debug(f"Tool {name} doesn't require model resolution - skipping model validation")
             # Execute tool directly without model context
+            # Update route_plan path for non-model-dispatch tools
+            try:
+                if _evt:
+                    _rp = dict(_evt.args.get("route_plan") or {})
+                    _rp["path"] = "non_model_dispatch"
+                    _evt.args["route_plan"] = _rp
+            except Exception:
+                pass
+
             try:
                 if name == "kimi_multi_file_chat":
                     # All file_chat requests must pass through fallback orchestrator

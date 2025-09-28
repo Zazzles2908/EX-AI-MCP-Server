@@ -125,6 +125,24 @@ class RouterService:
                     candidates.append(m)
         return candidates
 
+    def _filter_by_budget(self, models: list[str], budget_usd: Optional[float]) -> list[str]:
+        """Filter model list by per-request budget using MODEL_COSTS_JSON when present."""
+        if not budget_usd:
+            return models
+        try:
+            import json as _json
+            costs = _json.loads(os.getenv("MODEL_COSTS_JSON", "{}")) or {}
+            allowed = []
+            for m in models:
+                c = costs.get(m)
+                # If cost unknown, allow but move to end later
+                if c is None or float(c) <= float(budget_usd):
+                    allowed.append(m)
+            # Preserve original order
+            return [m for m in models if m in allowed]
+        except Exception:
+            return models
+
     def choose_model_with_hint(self, requested: Optional[str], hint: Optional[Dict[str, Any]] = None) -> RouteDecision:
         """Resolve a model name with optional agentic hint influence.
 
@@ -139,13 +157,20 @@ class RouterService:
                 return dec
             logger.info(json.dumps({"event": "route_explicit_unavailable", "requested": req}))
 
-        # Build candidate order from hint + defaults
+        # Build candidate order from hint + defaults, then apply budget filter if present
         hint_candidates = self.accept_agentic_hint(hint)
         default_order = [self._fast_default, self._long_default]
         order: list[str] = []
         for m in (*hint_candidates, *default_order):
             if isinstance(m, str) and m and m not in order:
                 order.append(m)
+        try:
+            budget = None
+            if hint and isinstance(hint.get("budget"), (int, float)):
+                budget = float(hint.get("budget"))
+            order = self._filter_by_budget(order, budget)
+        except Exception:
+            pass
 
         # Optional detailed diagnostics
         if self._diag_enabled:
@@ -165,16 +190,94 @@ class RouterService:
             except Exception as e:
                 logger.debug(json.dumps({"event": "route_diagnostics_error", "error": str(e)}))
 
+        # Health circuit filter: skip candidates with open circuits
+        try:
+            from utils.health import is_blocked
+        except Exception:
+            is_blocked = None
+
         for candidate in order:
+            if is_blocked and is_blocked(candidate):
+                # skip blocked model
+                continue
             prov = R.get_provider_for_model(candidate)
             if prov is not None:
                 reason = "auto_hint_applied" if hint_candidates else "auto_preferred"
-                dec = RouteDecision(requested=req, chosen=candidate, reason=reason, provider=prov.get_provider_type().name, meta={"hint": bool(hint_candidates)})
+                budget_val = None
+                try:
+                    budget_val = float(hint.get("budget")) if hint and isinstance(hint.get("budget"), (int, float)) else None
+                except Exception:
+                    budget_val = None
+                meta = {"hint": bool(hint_candidates)}
+                if budget_val is not None:
+                    meta["budget"] = budget_val
+                dec = RouteDecision(requested=req, chosen=candidate, reason=reason, provider=prov.get_provider_type().name, meta=meta)
                 logger.info(dec.to_json())
+                try:
+                    # Optional synthesis hop (Phase 5 optional)
+                    try:
+                        from src.router.synthesis import synthesize_if_enabled
+                        syn = synthesize_if_enabled(dec, None, hint or {})
+                        if syn:
+                            dec.meta = dec.meta or {}
+                            dec.meta["synthesis"] = syn
+                    except Exception:
+                        pass
+                    from utils.observability import append_routeplan_jsonl, append_synthesis_hop_jsonl, emit_telemetry_jsonl
+                    append_routeplan_jsonl({
+                        "requested": dec.requested,
+                        "chosen": dec.chosen,
+                        "reason": dec.reason,
+                        "provider": dec.provider,
+                        "meta": dec.meta or {},
+                    })
+                    # Emit a telemetry event per decision
+                    try:
+                        emit_telemetry_jsonl({
+                            "provider": dec.provider,
+                            "model": dec.chosen,
+                            "hint": bool(hint_candidates),
+                            "budget": budget_val,
+                            "synthesis": bool(dec.meta and dec.meta.get("synthesis")),
+                        })
+                    except Exception:
+                        pass
+                    # If synthesis metadata present, also log an explicit synthesis hop record
+                    try:
+                        if dec.meta and dec.meta.get("synthesis"):
+                            append_synthesis_hop_jsonl({
+                                "chosen": dec.meta["synthesis"].get("model"),
+                                "primary": dec.chosen,
+                                "reason": dec.meta["synthesis"].get("reason"),
+                            })
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
                 return dec
 
         # Fallback to generic behavior
         return self.choose_model(req)
+    def build_hint_from_request(self, prompt: str | None = None, files_count: int = 0, images_count: int = 0) -> Dict[str, Any]:
+        """Produce an agentic hint dict using the classifier output.
+        Does not make routing decisions directly; callers can pass this to choose_model_with_hint().
+        """
+        try:
+            from .classifier import classify
+            res = classify(prompt or "", files_count=files_count, images_count=images_count)
+            platform = "moonshot" if res.task_type == "long_context_analysis" else "zai"
+            return {
+                "platform": platform,
+                "task_type": res.task_type,
+                "preferred_models": [],
+                "classification": {
+                    "complexity": res.complexity,
+                    "est_tokens": res.est_tokens,
+                },
+            }
+        except Exception:
+            return {}
+
 
     def choose_model(self, requested: Optional[str]) -> RouteDecision:
         """Resolve a model name. If 'auto' or empty, choose a sensible default based on availability."""
@@ -185,6 +288,17 @@ class RouterService:
             if prov is not None:
                 dec = RouteDecision(requested=req, chosen=req, reason="explicit", provider=prov.get_provider_type().name)
                 logger.info(dec.to_json())
+                try:
+                    from utils.observability import append_routeplan_jsonl
+                    append_routeplan_jsonl({
+                        "requested": dec.requested,
+                        "chosen": dec.chosen,
+                        "reason": dec.reason,
+                        "provider": dec.provider,
+                        "meta": dec.meta or {},
+                    })
+                except Exception:
+                    pass
                 return dec
             # Fallback if explicit is unknown
             logger.info(json.dumps({"event": "route_explicit_unavailable", "requested": req}))
@@ -194,6 +308,17 @@ class RouterService:
             if prov is not None:
                 dec = RouteDecision(requested=req, chosen=candidate, reason="auto_preferred", provider=prov.get_provider_type().name)
                 logger.info(dec.to_json())
+                try:
+                    from utils.observability import append_routeplan_jsonl
+                    append_routeplan_jsonl({
+                        "requested": dec.requested,
+                        "chosen": dec.chosen,
+                        "reason": dec.reason,
+                        "provider": dec.provider,
+                        "meta": dec.meta or {},
+                    })
+                except Exception:
+                    pass
                 return dec
         # Last resort: pick first available model
         try:
@@ -209,5 +334,16 @@ class RouterService:
         # No models available
         dec = RouteDecision(requested=req, chosen=req, reason="no_models_available", provider=None)
         logger.warning(dec.to_json())
+        try:
+            from utils.observability import append_routeplan_jsonl
+            append_routeplan_jsonl({
+                "requested": dec.requested,
+                "chosen": dec.chosen,
+                "reason": dec.reason,
+                "provider": dec.provider,
+                "meta": dec.meta or {},
+            })
+        except Exception:
+            pass
         return dec
 

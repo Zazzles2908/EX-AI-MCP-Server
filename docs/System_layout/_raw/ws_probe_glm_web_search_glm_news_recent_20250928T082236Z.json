@@ -1,0 +1,20 @@
+{
+  "tool": "glm_web_search",
+  "label": "glm_news_recent",
+  "timestamp": "2025-09-28T08:22:36.273635+00:00",
+  "request": {
+    "search_query": "ZhipuAI GLM-4.5 latest announcement",
+    "count": 5,
+    "search_recency_filter": "oneMonth"
+  },
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"created\": 1759047755, \"id\": \"202509281622348f41df3ed9634f02\", \"request_id\": \"202509281622348f41df3ed9634f02\", \"search_intent\": [{\"intent\": \"SEARCH_ALWAYS\", \"keywords\": \"Zhipu AI GLM-4.5 latest news\", \"query\": \"Zhipu AI GLM-4.5 latest news\"}], \"search_result\": [{\"content\": \"GLM-4.5. GLM-4.5 is officially released: featuring a MoE architecture with 355 billion parameters, it tops the open-source SOTA in terms of inference and code ...\", \"icon\": \"\", \"link\": \"https://bigmodel.cn/\", \"media\": \"\", \"publish_date\": \"\", \"refer\": \"ref_1\", \"title\": \"ZHIPU·AI\"}, {\"content\": \"Zhipu AI reports that GLM-4.5 ranks 3rd overall on a combined set of 12 benchmarks covering agentic tasks, reasoning, and coding, trailing only ...\", \"icon\": \"\", \"link\": \"https://www.infoq.com/news/2025/08/glm-4-5/\", \"media\": \"\", \"publish_date\": \"2025年8月7日\", \"refer\": \"ref_2\", \"title\": \"GLM-4.5 Launches with Strong Reasoning, Coding, and ...\"}, {\"content\": \"Today, we introduce two new GLM family members: GLM-4.5 and GLM-4.5-Air — our latest flagship models. GLM-4.5 is built with 355 billion total ...\", \"icon\": \"\", \"link\": \"https://z.ai/blog/glm-4.5\", \"media\": \"\", \"publish_date\": \"2025年7月28日\", \"refer\": \"ref_3\", \"title\": \"GLM-4.5: Reasoning, Coding, and Agentic Abililties\"}, {\"content\": \"Chinese AI startup Zhipu on Monday released open-source model GLM-4.5 designed for intelligent agent applications, a statement said, ...\", \"icon\": \"\", \"link\": \"https://www.reuters.com/technology/chinas-ai-startup-zhipu-releases-open-source-model-glm-45-2025-07-28/\", \"media\": \"\", \"publish_date\": \"2025年7月28日\", \"refer\": \"ref_4\", \"title\": \"China's AI startup Zhipu releases open-source model GLM- ...\"}, {\"content\": \"In Z. ai's own evaluation across 52 coding tasks, GLM-4.5 achieved an 80.8 percent win rate against Qwen3-Coder and a 53.9 percent win rate ...\", \"icon\": \"\", \"link\": \"https://www.deeplearning.ai/the-batch/zhipu-ai-z-ai-releases-open-weights-glm-4-5-models-that-perform-comparably-to-the-latest-from-claude-and-deepseek/\", \"media\": \"\", \"publish_date\": \"2025年8月6日\", \"refer\": \"ref_5\", \"title\": \"Zhipu AI (Z.ai) Releases Open-Weights GLM-4.5 Models ...\"}]}"
+    },
+    {
+      "type": "text",
+      "text": "=== MCP CALL SUMMARY ===\nTool: glm_web_search | Status: COMPLETE (Step 1/? complete)\nDuration: 2.8s | Model: glm-4.5-flash | Tokens: ~533\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=d611c0cd-11f4-449c-a080-61e2d0f35ce6\n\n<details><summary>Tool activity (req_id=d611c0cd-11f4-449c-a080-61e2d0f35ce6)</summary>\n\n(no progress captured)\n</details>"
+    }
+  ]
+}

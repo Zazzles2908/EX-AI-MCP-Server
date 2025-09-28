@@ -1,6 +1,3 @@
-import sys
-sys.path.append(".")
-from src.providers.registry import ModelProviderRegistry
 
 """
 Provider Configuration Module
@@ -38,9 +35,10 @@ def configure_providers():
     disabled_providers = {p.strip().upper() for p in os.getenv("DISABLED_PROVIDERS", "").split(",") if p.strip()}
     allowed_providers = {p.strip().upper() for p in os.getenv("ALLOWED_PROVIDERS", "").split(",") if p.strip()}
 
-    from src.providers import ModelProviderRegistry
+    from src.providers.registry import ModelProviderRegistry
     from src.providers.base import ProviderType
-    from src.providers.custom import CustomProvider
+    # Optional custom provider import is deferred to when CUSTOM_API_URL is set
+    CustomProvider = None  # type: ignore
     from utils.model_restrictions import get_restriction_service
 
     # Import provider classes lazily to avoid optional dependency import errors
@@ -97,35 +95,46 @@ def configure_providers():
         except Exception:
             logger.warning("GLM provider import failed; continuing without GLM")
 
-    # Check for OpenRouter API key
+    # Check for OpenRouter API key (guarded by ENABLE_OPENROUTER=true)
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
-    logger.debug(f"OpenRouter key check: key={'[PRESENT]' if openrouter_key else '[MISSING]'}")
-    if openrouter_key and openrouter_key != "your_openrouter_api_key_here":
+    enable_openrouter = os.getenv("ENABLE_OPENROUTER", "false").strip().lower() in ("1","true","yes")
+    logger.debug(f"OpenRouter key check: key={'[PRESENT]' if openrouter_key else '[MISSING]'}; enabled={enable_openrouter}")
+    if enable_openrouter and openrouter_key and openrouter_key != "your_openrouter_api_key_here":
         valid_providers.append("OpenRouter")
         has_openrouter = True
-        logger.info("OpenRouter API key found - Multiple models available via OpenRouter")
+        logger.info("OpenRouter enabled and API key found - Multiple models available via OpenRouter")
     else:
-        if not openrouter_key:
+        if not enable_openrouter:
+            logger.debug("OpenRouter disabled by ENABLE_OPENROUTER=false (default)")
+        elif not openrouter_key:
             logger.debug("OpenRouter API key not found in environment")
         else:
             logger.debug("OpenRouter API key is placeholder value")
 
-    # Check for custom API endpoint (Ollama, vLLM, etc.)
+    # Check for custom API endpoint (Ollama, vLLM, etc.) guarded by ENABLE_CUSTOM=true
     custom_url = os.getenv("CUSTOM_API_URL")
-    if custom_url:
-        # IMPORTANT: Always read CUSTOM_API_KEY even if empty
-        # - Some providers (vLLM, LM Studio, enterprise APIs) require authentication
-        # - Others (Ollama) work without authentication (empty key)
-        # - DO NOT remove this variable - it's needed for provider factory function
-        custom_key = os.getenv("CUSTOM_API_KEY", "")  # Default to empty (Ollama doesn't need auth)
-        custom_model = os.getenv("CUSTOM_MODEL_NAME", "llama3.2")
-        valid_providers.append(f"Custom API ({custom_url})")
-        has_custom = True
-        logger.info(f"Custom API endpoint found: {custom_url} with model {custom_model}")
-        if custom_key:
-            logger.debug("Custom API key provided for authentication")
-        else:
-            logger.debug("No custom API key provided (using unauthenticated access)")
+    enable_custom = os.getenv("ENABLE_CUSTOM", "false").strip().lower() in ("1","true","yes")
+    if enable_custom and custom_url:
+        try:
+            # Import only if custom is actually configured
+            from src.providers.custom import CustomProvider as _CustomProvider  # type: ignore
+            CustomProvider = _CustomProvider  # type: ignore
+            # IMPORTANT: Always read CUSTOM_API_KEY even if empty
+            custom_key = os.getenv("CUSTOM_API_KEY", "")  # Default to empty (Ollama doesn't need auth)
+            custom_model = os.getenv("CUSTOM_MODEL_NAME", "llama3.2")
+            valid_providers.append(f"Custom API ({custom_url})")
+            has_custom = True
+            logger.info(f"Custom API enabled; endpoint: {custom_url} with model {custom_model}")
+            if custom_key:
+                logger.debug("Custom API key provided for authentication")
+            else:
+                logger.debug("No custom API key provided (using unauthenticated access)")
+        except Exception:
+            logger.warning("Custom provider module not available; skipping custom provider registration")
+            has_custom = False
+    else:
+        if not enable_custom:
+            logger.debug("Custom provider disabled by ENABLE_CUSTOM=false (default)")
 
     # Register providers in priority order:
     # 1. Native APIs first (most direct and efficient)
@@ -171,6 +180,31 @@ def configure_providers():
             len(glm_models),
             len(kimi_models),
         )
+
+        # Write a daemon-side provider snapshot for diagnostics (Phase 2)
+        try:
+            import json
+            from pathlib import Path
+            from time import time as _now
+            reg = ModelProviderRegistry()
+            # Registered providers reflect classes known to the registry (post-registration)
+            registered = [p.name for p in reg.get_available_providers()]
+            # Initialized providers require keys and successful init
+            with_keys_snapshot = [p.name for p in ModelProviderRegistry.get_available_providers_with_keys()]
+            # Available models mapping (respects restrictions)
+            models_map = ModelProviderRegistry.get_available_models(respect_restrictions=True)
+            snapshot = {
+                "timestamp": _now(),
+                "registered_providers": registered,
+                "initialized_providers": with_keys_snapshot,
+                "available_models": {k: (v.name if hasattr(v, "name") else str(v)) for k, v in models_map.items()},
+            }
+            out = Path("logs") / "provider_registry_snapshot.json"
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
+            logger.debug("Provider registry snapshot written to %s", out)
+        except Exception as _se:
+            logger.debug("Provider snapshot write skipped: %s", _se)
     except Exception as _e:
         logger.debug(f"Provider availability summary skipped: {_e}")
 

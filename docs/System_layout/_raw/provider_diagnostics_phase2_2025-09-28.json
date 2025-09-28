@@ -1,0 +1,59 @@
+[
+  {
+    "provider": "OPENROUTER",
+    "registered": false,
+    "initialized": false,
+    "api_key_present": false,
+    "api_key_var": null,
+    "api_key_is_placeholder": false,
+    "base_url_present": false,
+    "base_url_var": null,
+    "reason_unavailable": "Provider class not registered in registry",
+    "suggestions": [
+      "Ensure provider_config.configure_providers() ran in the daemon"
+    ]
+  },
+  {
+    "provider": "KIMI",
+    "registered": false,
+    "initialized": false,
+    "api_key_present": true,
+    "api_key_var": "KIMI_API_KEY",
+    "api_key_is_placeholder": false,
+    "base_url_present": true,
+    "base_url_var": "KIMI_API_URL",
+    "reason_unavailable": "Provider class not registered in registry",
+    "suggestions": [
+      "Ensure provider_config.configure_providers() ran in the daemon"
+    ]
+  },
+  {
+    "provider": "CUSTOM",
+    "registered": false,
+    "initialized": false,
+    "api_key_present": false,
+    "api_key_var": null,
+    "api_key_is_placeholder": false,
+    "base_url_present": false,
+    "base_url_var": null,
+    "reason_unavailable": "Provider class not registered in registry",
+    "suggestions": [
+      "Ensure provider_config.configure_providers() ran in the daemon"
+    ]
+  },
+  {
+    "provider": "GLM",
+    "registered": false,
+    "initialized": false,
+    "api_key_present": true,
+    "api_key_var": "GLM_API_KEY",
+    "api_key_is_placeholder": false,
+    "base_url_present": true,
+    "base_url_var": "GLM_API_URL",
+    "reason_unavailable": "Provider class not registered in registry",
+    "suggestions": [
+      "Ensure provider_config.configure_providers() ran in the daemon"
+    ]
+  }
+]
+

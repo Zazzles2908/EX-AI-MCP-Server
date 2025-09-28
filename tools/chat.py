@@ -45,6 +45,12 @@ class ChatRequest(ToolRequest):
     prompt: str = Field(..., description=CHAT_FIELD_DESCRIPTIONS["prompt"])
     files: Optional[list[str]] = Field(default_factory=list, description=CHAT_FIELD_DESCRIPTIONS["files"])
     images: Optional[list[str]] = Field(default_factory=list, description=CHAT_FIELD_DESCRIPTIONS["images"])
+    continuation_id: Optional[str] = Field(default=None, description=(
+        "Thread continuation ID for multi-turn conversations."
+    ))
+    # Optional flags propagated to providers via capability layer and env-gated streaming
+    use_websearch: Optional[bool] = Field(default=True, description="Enable provider-native web browsing when available")
+    stream: Optional[bool] = Field(default=None, description="Request streaming when supported; env-gated per provider")
 
 
 class ChatTool(SimpleTool):
@@ -94,67 +100,23 @@ class ChatTool(SimpleTool):
 
     def get_input_schema(self) -> dict[str, Any]:
         """
-        Generate input schema matching the original Chat tool exactly.
-
-        This maintains 100% compatibility with the original Chat tool by using
-        the same schema generation approach while still benefiting from SimpleTool
-        convenience methods.
+        Generate input schema matching the original Chat tool exactly, with Phase 5 flags.
         """
         schema = {
             "type": "object",
             "properties": {
-                "prompt": {
-                    "type": "string",
-                    "description": CHAT_FIELD_DESCRIPTIONS["prompt"],
-                },
-                "files": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": CHAT_FIELD_DESCRIPTIONS["files"],
-                },
-                "images": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": CHAT_FIELD_DESCRIPTIONS["images"],
-                },
+                "prompt": {"type": "string", "description": CHAT_FIELD_DESCRIPTIONS["prompt"]},
+                "files": {"type": "array", "items": {"type": "string"}, "description": CHAT_FIELD_DESCRIPTIONS["files"]},
+                "images": {"type": "array", "items": {"type": "string"}, "description": CHAT_FIELD_DESCRIPTIONS["images"]},
                 "model": self.get_model_field_schema(),
-                "temperature": {
-                    "type": "number",
-                    "description": "Response creativity (0-1, default 0.5)",
-                    "minimum": 0,
-                    "maximum": 1,
-                },
-                "thinking_mode": {
-                    "type": "string",
-                    "enum": ["minimal", "low", "medium", "high", "max"],
-                    "description": (
-                        "Thinking depth: minimal (0.5% of model max), low (8%), medium (33%), high (67%), "
-                        "max (100% of model max)"
-                    ),
-                },
-                "use_websearch": {
-                    "type": "boolean",
-                    "description": (
-                        "Enable web search for documentation, best practices, and current information. "
-                        "Particularly useful for: brainstorming sessions, architectural design discussions, "
-                        "exploring industry best practices, working with specific frameworks/technologies, "
-                        "researching solutions to complex problems, or when current documentation and "
-                        "community insights would enhance the analysis."
-                    ),
-                    "default": True,
-                },
-                "continuation_id": {
-                    "type": "string",
-                    "description": (
-                        "Thread continuation ID for multi-turn conversations. Can be used to continue "
-                        "conversations across different tools. Only provide this if continuing a previous "
-                        "conversation thread."
-                    ),
-                },
+                "temperature": {"type": "number", "description": "Response creativity (0-1, default 0.5)", "minimum": 0, "maximum": 1},
+                "thinking_mode": {"type": "string", "enum": ["minimal", "low", "medium", "high", "max"], "description": "Thinking depth selector"},
+                "use_websearch": {"type": "boolean", "description": "Enable provider-native web browsing", "default": True},
+                "stream": {"type": "boolean", "description": "Request streaming when supported; env-gated per provider", "default": False},
+                "continuation_id": {"type": "string", "description": "Thread continuation ID for multi-turn conversations."},
             },
             "required": ["prompt"] + (["model"] if self.is_effective_auto_mode() else []),
         }
-
         return schema
 
     # === Tool-specific field definitions (alternative approach for reference) ===
@@ -194,10 +156,8 @@ class ChatTool(SimpleTool):
 
     async def prepare_prompt(self, request: ChatRequest) -> str:
         """
-        Prepare the chat prompt with optional context files.
-
-        This implementation matches the original Chat tool exactly while using
-        SimpleTool convenience methods for cleaner code.
+        Prepare the chat prompt with optional context files + conversation context
+        when continuation_id is provided.
         """
         # Optional security enforcement per Cleanup/Upgrade prompts
         try:
@@ -233,13 +193,78 @@ class ChatTool(SimpleTool):
             # Surface a clear validation error; callers will see this as tool error
             raise ValueError(f"[chat:security] {e}")
 
-        # Use SimpleTool's Chat-style prompt preparation
-        return self.prepare_chat_style_prompt(request)
+        # Build conversation preface
+        preface = ""
+        try:
+            if request.continuation_id:
+                from src.conversation.memory_policy import assemble_context_block
+                from src.conversation.cache_store import get_cache_store
+                preface = assemble_context_block(request.continuation_id, max_turns=6)
+                # Attach cache context header if available
+                cache = get_cache_store().load(request.continuation_id)
+                if cache:
+                    cache_bits = []
+                    for k in ("session_id", "call_key", "token"):
+                        v = cache.get(k)
+                        if v:
+                            cache_bits.append(f"{k}={v}")
+                    if cache_bits:
+                        preface = "[Context cache: " + ", ".join(cache_bits) + "]\n" + preface
+                # Record the user turn immediately
+                from src.conversation.history_store import get_history_store
+                get_history_store().record_turn(request.continuation_id, "user", request.prompt)
+        except Exception:
+            pass
+
+        # Phase 5: propagate stream flag by temporarily setting GLM_STREAM_ENABLED for duration of call
+        try:
+            import os as _os
+            self._prev_stream_env = _os.getenv("GLM_STREAM_ENABLED", None)
+            if getattr(request, "stream", None) is not None:
+                _os.environ["GLM_STREAM_ENABLED"] = "true" if bool(request.stream) else "false"
+        except Exception:
+            self._prev_stream_env = None
+
+        base_prompt = self.prepare_chat_style_prompt(request)
+        if preface:
+            return f"{preface}\nCurrent request:\n{base_prompt}"
+        return base_prompt
 
     def format_response(self, response: str, request: ChatRequest, model_info: Optional[dict] = None) -> str:
         """
-        Format the chat response to match the original Chat tool exactly.
+        Format the chat response and persist assistant turn when continuation_id is provided.
+        Also captures provider cache tokens from model_info for context reuse.
         """
+        try:
+            if getattr(request, "continuation_id", None):
+                # Persist assistant turn
+                from src.conversation.history_store import get_history_store
+                get_history_store().record_turn(request.continuation_id, "assistant", str(response))
+                # Capture cache tokens if present in model_info
+                try:
+                    if model_info and isinstance(model_info, dict):
+                        cache = model_info.get("cache") or {}
+                        if isinstance(cache, dict) and any(k in cache for k in ("session_id", "call_key", "token")):
+                            from src.conversation.cache_store import get_cache_store
+                            get_cache_store().record(request.continuation_id, {
+                                k: cache.get(k) for k in ("session_id", "call_key", "token") if cache.get(k)
+                            })
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        finally:
+            # Restore GLM_STREAM_ENABLED after call
+            try:
+                import os as _os
+                if hasattr(self, "_prev_stream_env"):
+                    prev = getattr(self, "_prev_stream_env")
+                    if prev is None:
+                        _os.environ.pop("GLM_STREAM_ENABLED", None)
+                    else:
+                        _os.environ["GLM_STREAM_ENABLED"] = str(prev)
+            except Exception:
+                pass
         return (
             f"{response}\n\n---\n\nAGENT'S TURN: Evaluate this perspective alongside your analysis to "
             "form a comprehensive solution and continue with the user's request and task at hand."

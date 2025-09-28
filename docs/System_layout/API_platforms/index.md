@@ -28,3 +28,12 @@ Provider documentation and API references for GLM (Z.ai) and Kimi (Moonshot).
   - api/file-management/file-management.md
   - api/models-list/models-list.md
 
+
+## Phase 2 Provider Gating
+- Active by default: Kimi, GLM
+- Optional (disabled by default): OpenRouter, Custom
+- Enable via environment flags:
+  - ENABLE_OPENROUTER=true
+  - ENABLE_CUSTOM=true
+
+See src/server/providers/provider_config.py for gating logic.

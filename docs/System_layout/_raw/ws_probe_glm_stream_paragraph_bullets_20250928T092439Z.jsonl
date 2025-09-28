@@ -1,0 +1,1 @@
+{"provider": "GLM", "start": "2025-09-28T09:24:39.003391+00:00", "end": "2025-09-28T09:24:39.003775+00:00", "duration_ms": 0, "assembled_len": 2528, "note": "Streaming enabled via env; coarse timing only (no per-chunk events available at MCP layer)"}

@@ -1,0 +1,19 @@
+{
+  "tool": "kimi_intent_analysis",
+  "label": "simple_math",
+  "timestamp": "2025-09-28T09:23:09.646452+00:00",
+  "request": {
+    "prompt": "What is 2+2?",
+    "use_websearch": false
+  },
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"needs_websearch\": false, \"complexity\": \"simple\", \"domain\": \"math\", \"recommended_provider\": \"GLM\", \"recommended_model\": \"glm-4.5-flash\", \"streaming_preferred\": false}"
+    },
+    {
+      "type": "text",
+      "text": "=== MCP CALL SUMMARY ===\nTool: kimi_intent_analysis | Status: COMPLETE (Step 1/? complete)\nDuration: 3.9s | Model: glm-4.5-flash | Tokens: ~41\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=604f74c6-17c4-44fb-be0c-8b167d1cf8e9\n\n<details><summary>Tool activity (req_id=604f74c6-17c4-44fb-be0c-8b167d1cf8e9)</summary>\n\n(no progress captured)\n</details>"
+    }
+  ]
+}

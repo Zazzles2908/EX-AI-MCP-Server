@@ -3,7 +3,7 @@ import json
 import os
 from typing import Any, Dict, List
 from mcp.types import TextContent
-from .shared.base_tool import BaseTool
+from tools.shared.base_tool import BaseTool
 from tools.shared.base_models import ToolRequest
 from src.providers.kimi import KimiModelProvider
 from src.providers.registry import ModelProviderRegistry
@@ -25,7 +25,7 @@ class KimiChatWithToolsTool(BaseTool):
         return {
             "type": "object",
             "properties": {
-                "messages": {"type": "array"},
+                "messages": {"type": ["array", "string"]},
                 "model": {"type": "string", "default": os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0711-preview")},
                 "tools": {"type": "array"},
                 "tool_choice": {"type": "string"},
@@ -151,32 +151,62 @@ class KimiChatWithToolsTool(BaseTool):
 
         # Normalize messages into OpenAI-style list of {role, content}
         raw_msgs = arguments.get("messages")
-        norm_msgs: list[dict[str, Any]] = []
-        if isinstance(raw_msgs, str):
-            norm_msgs = [{"role": "user", "content": raw_msgs}]
-        elif isinstance(raw_msgs, list):
-            for item in raw_msgs:
+
+        def _coerce_message(item: Any) -> dict | None:
+            try:
+                # Return a normalized {role, content} or None to drop
+                if item is None:
+                    return None
                 if isinstance(item, str):
-                    norm_msgs.append({"role": "user", "content": item})
-                elif isinstance(item, dict):
-                    role = item.get("role") or "user"
+                    txt = item.strip()
+                    return {"role": "user", "content": txt} if txt else None
+                if isinstance(item, dict):
+                    role = str(item.get("role") or "user").strip() or "user"
                     content = item.get("content")
-                    # sometimes clients pass {"text": ...}
                     if content is None and "text" in item:
                         content = item.get("text")
-                    # fallback to string cast to avoid 400s
-                    if content is None:
-                        content = ""
-                    norm_msgs.append({"role": str(role), "content": str(content)})
-                else:
-                    # best-effort coercion
-                    norm_msgs.append({"role": "user", "content": str(item)})
-        else:
-            # final fallback to prevent provider 400s
-            norm_msgs = [{"role": "user", "content": str(raw_msgs)}]
+                    # Some SDKs wrap content in arrays/objects; coerce conservatively
+                    if isinstance(content, (list, dict)):
+                        try:
+                            import json as _json
+                            content = _json.dumps(content, ensure_ascii=False)
+                        except Exception:
+                            content = str(content)
+                    txt = ("" if content is None else str(content)).strip()
+                    return {"role": role, "content": txt} if txt else None
+                # Fallback coercion for unknown types
+                txt = str(item).strip()
+                return {"role": "user", "content": txt} if txt else None
+            except Exception:
+                return None
+
+        norm_msgs: list[dict[str, Any]] = []
+        if isinstance(raw_msgs, str):
+            m = _coerce_message(raw_msgs)
+            if m:
+                norm_msgs.append(m)
+        elif isinstance(raw_msgs, list):
+            for it in raw_msgs:
+                m = _coerce_message(it)
+                if m:
+                    norm_msgs.append(m)
+        elif raw_msgs is not None:
+            m = _coerce_message(raw_msgs)
+            if m:
+                norm_msgs.append(m)
+
+        # Validation: must contain at least one non-empty 'user' message
+        if not norm_msgs:
+            err = {
+                "status": "invalid_request",
+                "error": "No non-empty messages provided. Provide at least one user message with non-empty content.",
+            }
+            return [TextContent(type="text", text=json.dumps(err, ensure_ascii=False))]
 
         import asyncio as _aio
-        stream_flag = bool(arguments.get("stream", os.getenv("KIMI_CHAT_STREAM_DEFAULT", "false").strip().lower() == "true"))
+        # Enable streaming when explicitly requested or when KIMI_STREAM_ENABLED=true (default false)
+        env_stream = os.getenv("KIMI_STREAM_ENABLED", "false").strip().lower() in ("1", "true", "yes")
+        stream_flag = bool(arguments.get("stream", os.getenv("KIMI_CHAT_STREAM_DEFAULT", "false").strip().lower() == "true") or env_stream)
         model_used = requested_model
 
         if stream_flag:
@@ -184,56 +214,81 @@ class KimiChatWithToolsTool(BaseTool):
             if bool(arguments.get("use_websearch", False)):
                 stream_flag = False
             else:
-                # Handle streaming in a background thread; accumulate content (no tool_calls loop in stream mode)
-                def _stream_call():
-                    content_parts = []
-                    raw_items = []
-                    try:
-                        # Streaming: fall back to direct client but include extra headers for idempotency/cache when possible
-                        extra_headers = {}
-                        try:
-                            ck = arguments.get("_call_key") or arguments.get("call_key")
-                            if ck:
-                                extra_headers["Idempotency-Key"] = str(ck)
-                            ctok = getattr(prov, "get_cache_token", None)
-                            sid = arguments.get("_session_id")
-                            if ctok and sid:
-                                # Best-effort prefix hash similar to provider wrapper
-                                import hashlib
-                                parts = []
-                                for m in norm_msgs[:6]:
-                                    parts.append(str(m.get("role","")) + "\n" + str(m.get("content",""))[:2048])
-                                pf = hashlib.sha256("\n".join(parts).encode("utf-8", errors="ignore")).hexdigest()
-                                t = prov.get_cache_token(sid, "kimi_chat_with_tools", pf)
-                                if t:
-                                    extra_headers["Msh-Context-Cache-Token"] = t
-                        except Exception:
-                            pass
-                        for evt in prov.client.chat.completions.create(
-                            model=model_used,
-                            messages=norm_msgs,
-                            tools=tools,
-                            tool_choice=tool_choice,
-                            temperature=float(arguments.get("temperature", 0.6)),
-                            stream=True,
-                            extra_headers=extra_headers or None,
-                        ):
-                            raw_items.append(evt)
-                            try:
-                                ch = getattr(evt, "choices", None) or []
-                                if ch:
-                                    delta = getattr(ch[0], "delta", None)
-                                    if delta:
-                                        piece = getattr(delta, "content", None)
-                                        if piece:
-                                            content_parts.append(str(piece))
-                            except Exception:
-                                pass
-                    except Exception as e:
-                        raise e
-                    return ("".join(content_parts), raw_items)
+                # Optional: prime context-cache token via quick non-stream call (env-gated)
+                try:
+                    prime_ok = os.getenv("KIMI_STREAM_PRIME_CACHE", "false").strip().lower() in ("1","true","yes")
+                    if prime_ok:
+                        # Only when no token is present yet
+                        sid = arguments.get("_session_id")
+                        if sid:
+                            import hashlib as _hash
+                            parts = []
+                            for m in norm_msgs[:6]:
+                                parts.append(str(m.get("role","")) + "\n" + str(m.get("content",""))[:2048])
+                            pf = _hash.sha256("\n".join(parts).encode("utf-8", errors="ignore")).hexdigest()
+                            existing = getattr(prov, "get_cache_token", lambda *a, **k: None)(sid, "kimi_chat_with_tools", pf)
+                            if not existing:
+                                # Prime using provider wrapper (captures token via headers)
+                                _ = await _aio.to_thread(
+                                    lambda: prov.chat_completions_create(
+                                        model=model_used,
+                                        messages=norm_msgs[:max(1, min(3, len(norm_msgs)))],
+                                        tools=None,
+                                        tool_choice=None,
+                                        temperature=float(arguments.get("temperature", 0.6)),
+                                        _session_id=sid,
+                                        _call_key=arguments.get("_call_key") or arguments.get("call_key"),
+                                        _tool_name=self.get_name(),
+                                    )
+                                )
+                except Exception:
+                    pass
 
-                content_text, raw_stream = await _aio.to_thread(_stream_call)
+                # Handle streaming in a background thread via shared adapter; accumulate content (no tool_calls loop in stream mode)
+                def _stream_call():
+                    extra_headers = {"Msh-Trace-Mode": "on"}
+                    try:
+                        ck = arguments.get("_call_key") or arguments.get("call_key")
+                        if ck:
+                            extra_headers["Idempotency-Key"] = str(ck)
+                        sid = arguments.get("_session_id")
+                        ctok = getattr(prov, "get_cache_token", None)
+                        if ctok and sid:
+                            import hashlib
+                            parts = []
+                            for m in norm_msgs[:6]:
+                                parts.append(str(m.get("role","")) + "\n" + str(m.get("content",""))[:2048])
+                            pf = hashlib.sha256("\n".join(parts).encode("utf-8", errors="ignore")).hexdigest()
+                            t = prov.get_cache_token(sid, "kimi_chat_with_tools", pf)
+                            if t:
+                                extra_headers["Msh-Context-Cache-Token"] = t
+                    except Exception:
+                        pass
+                    # Use centralized adapter
+                    from streaming.streaming_adapter import stream_openai_chat_events
+                    return stream_openai_chat_events(
+                        client=prov.client,
+                        create_kwargs={
+                            "model": model_used,
+                            "messages": norm_msgs,
+                            "tools": tools,
+                            "tool_choice": tool_choice,
+                            "temperature": float(arguments.get("temperature", 0.6)),
+                            "extra_headers": (extra_headers or None),
+                        },
+                    )
+
+                # Apply overall streaming timeout (env: KIMI_STREAM_TIMEOUT_SECS)
+                try:
+                    timeout_secs = float(os.getenv("KIMI_STREAM_TIMEOUT_SECS", "240"))
+                except Exception:
+                    timeout_secs = 240.0
+                try:
+                    content_text, raw_stream = await _aio.wait_for(_aio.to_thread(_stream_call), timeout=timeout_secs)
+                except _aio.TimeoutError:
+                    err = {"status": "execution_error", "error": f"Kimi streaming timed out after {int(timeout_secs)}s"}
+                    return [TextContent(type="text", text=json.dumps(err, ensure_ascii=False))]
+
                 normalized = {
                     "provider": "KIMI",
                     "model": model_used,

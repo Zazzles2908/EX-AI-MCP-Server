@@ -1,0 +1,20 @@
+{
+  "tool": "glm_web_search",
+  "label": "glm_news_recent",
+  "timestamp": "2025-09-28T09:31:38.841966+00:00",
+  "request": {
+    "search_query": "ZhipuAI GLM-4.5 latest announcement",
+    "count": 5,
+    "search_recency_filter": "oneMonth"
+  },
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"created\": 1759051898, \"id\": \"20250928173136eb14af8ae60f44c8\", \"request_id\": \"20250928173136eb14af8ae60f44c8\", \"search_intent\": [{\"intent\": \"SEARCH_ALWAYS\", \"keywords\": \"ZhipuAI GLM-4.5 latest news\", \"query\": \"ZhipuAI GLM-4.5 latest news\"}], \"search_result\": [{\"content\": \"GLM-4.5. The latest SOTA models for reasoning, code, and agents. GLM-4.5 is officially released: featuring a MoE architecture with 355 billion ...\", \"icon\": \"\", \"link\": \"https://bigmodel.cn/\", \"media\": \"\", \"publish_date\": \"\", \"refer\": \"ref_1\", \"title\": \"ZHIPU·AI\"}, {\"content\": \"Zhipu AI has officially launched GLM-4.5, its most powerful foundation model to date. As China accelerates its pursuit of general AI capabilities, GLM-4.5 ...\", \"icon\": \"\", \"link\": \"https://zhipuai.ai/f/zhipu-ai-glm-45\", \"media\": \"\", \"publish_date\": \"\", \"refer\": \"ref_2\", \"title\": \"Zhipu AI GLM 4.5 - AI News\"}, {\"content\": \"Zhipu AI reports that GLM-4.5 ranks 3rd overall on a combined set of 12 benchmarks covering agentic tasks, reasoning, and coding, trailing only ...\", \"icon\": \"\", \"link\": \"https://www.infoq.com/news/2025/08/glm-4-5/\", \"media\": \"\", \"publish_date\": \"2025年8月7日\", \"refer\": \"ref_3\", \"title\": \"GLM-4.5 Launches with Strong Reasoning, Coding, and ...\"}, {\"content\": \"Chinese AI startup Zhipu on Monday released open-source model GLM-4.5 designed for intelligent agent applications, a statement said, ...\", \"icon\": \"\", \"link\": \"https://www.reuters.com/technology/chinas-ai-startup-zhipu-releases-open-source-model-glm-45-2025-07-28/\", \"media\": \"\", \"publish_date\": \"2025年7月28日\", \"refer\": \"ref_4\", \"title\": \"China's AI startup Zhipu releases open-source model GLM- ...\"}, {\"content\": \"Startup Z.ai, formerly known as Zhipu, announced Monday that its new GLM-4.5 AI model would cost less than DeepSeek to use.\", \"icon\": \"\", \"link\": \"https://www.cnbc.com/2025/07/28/chinas-latest-ai-model-claims-to-be-even-cheaper-to-use-than-deepseek.html\", \"media\": \"\", \"publish_date\": \"2025年7月28日\", \"refer\": \"ref_5\", \"title\": \"China's latest AI model claims to be even cheaper to use ...\"}]}"
+    },
+    {
+      "type": "text",
+      "text": "=== MCP CALL SUMMARY ===\nTool: glm_web_search | Status: COMPLETE (Step 1/? complete)\nDuration: 3.3s | Model: glm-4.5-flash | Tokens: ~510\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=a5b5af92-4998-46d0-8a6c-e95e8b835a0f\n\n<details><summary>Tool activity (req_id=a5b5af92-4998-46d0-8a6c-e95e8b835a0f)</summary>\n\n(no progress captured)\n</details>"
+    }
+  ]
+}

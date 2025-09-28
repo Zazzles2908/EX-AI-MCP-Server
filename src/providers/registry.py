@@ -750,7 +750,7 @@ class ModelProviderRegistry:
         """
         # 1) Try explicit chains from auggie settings
         try:
-            from auggie.config import get_auggie_settings
+            from auggie.config import get_auggie_settings  # type: ignore[import-not-found]
 
             settings = get_auggie_settings() or {}
             fb = settings.get("fallback") or {}
@@ -900,3 +900,138 @@ class ModelProviderRegistry:
     def clear_telemetry(cls) -> None:
         with cls._telemetry_lock:
             cls._telemetry.clear()
+
+
+# === Phase 2: Provider diagnostics (no server imports; safe for ad-hoc use) ===
+class ProviderDiagnostics:
+    """Lightweight diagnostics for provider availability without importing server modules.
+
+    Provides structured insights into why a provider may be unavailable, focusing on
+    environment variables and registry state. Avoids circular imports by design.
+    """
+
+    _API_KEY_VARS = {
+        ProviderType.KIMI: ["KIMI_API_KEY", "MOONSHOT_API_KEY"],
+        ProviderType.GLM: ["GLM_API_KEY", "ZHIPUAI_API_KEY"],
+        ProviderType.CUSTOM: ["CUSTOM_API_KEY"],
+        ProviderType.OPENROUTER: ["OPENROUTER_API_KEY"],
+    }
+
+    _BASE_URL_VARS = {
+        ProviderType.KIMI: ["KIMI_API_URL", "MOONSHOT_API_URL"],
+        ProviderType.GLM: ["GLM_API_URL", "ZHIPUAI_API_URL"],
+        ProviderType.CUSTOM: ["CUSTOM_API_URL"],
+        # OPENROUTER typically does not require a base URL override
+    }
+
+    @classmethod
+    def _first_present(cls, names: list[str]) -> tuple[str | None, str | None]:
+        for n in names or []:
+            v = os.getenv(n)
+            if v:
+                return n, v
+        return None, None
+
+    @classmethod
+    def _is_placeholder(cls, val: str | None) -> bool:
+        if not val:
+            return False
+        s = val.strip().lower()
+        return s.startswith("your_") or s in {"changeme", "placeholder"}
+
+    @classmethod
+    def diagnose_provider(cls, provider_type: ProviderType) -> dict[str, Any]:
+        """Return structured diagnostics for a single provider type.
+
+        This does not import server modules and does not force provider initialization.
+        """
+        info: dict[str, Any] = {
+            "provider": getattr(provider_type, "name", str(provider_type)),
+            "registered": False,
+            "initialized": False,
+            "api_key_present": False,
+            "api_key_var": None,
+            "api_key_is_placeholder": False,
+            "base_url_present": False,
+            "base_url_var": None,
+            "reason_unavailable": None,
+            "suggestions": [],
+        }
+        reg = ModelProviderRegistry()
+        info["registered"] = provider_type in getattr(reg, "_providers", {})
+
+        # API key check
+        key_vars = cls._API_KEY_VARS.get(provider_type, [])
+        key_var, key_val = cls._first_present(key_vars)
+        info["api_key_present"] = bool(key_val)
+        info["api_key_var"] = key_var
+        info["api_key_is_placeholder"] = cls._is_placeholder(key_val)
+
+        # Base URL (optional)
+        url_vars = cls._BASE_URL_VARS.get(provider_type, [])
+        url_var, url_val = cls._first_present(url_vars)
+        info["base_url_present"] = bool(url_val)
+        info["base_url_var"] = url_var
+
+        # Initialized (without forcing a new instance)
+        info["initialized"] = provider_type in getattr(reg, "_initialized_providers", {})
+
+        # Reasoning and suggestions
+        if not info["registered"]:
+            info["reason_unavailable"] = "Provider class not registered in registry"
+            info["suggestions"].append("Ensure provider_config.configure_providers() ran in the daemon")
+        elif not info["api_key_present"] and provider_type != ProviderType.CUSTOM:
+            info["reason_unavailable"] = "Missing API key"
+            if key_vars:
+                info["suggestions"].append(f"Set one of: {', '.join(key_vars)} in .env")
+        elif info["api_key_is_placeholder"]:
+            info["reason_unavailable"] = "API key appears to be a placeholder"
+            info["suggestions"].append(f"Replace {key_var} with a valid key in .env")
+        elif provider_type == ProviderType.CUSTOM and not info["base_url_present"]:
+            info["reason_unavailable"] = "CUSTOM_API_URL is required for Custom provider"
+            info["suggestions"].append("Set CUSTOM_API_URL (and optionally CUSTOM_API_KEY) in .env")
+        elif not info["initialized"]:
+            info["reason_unavailable"] = "Provider not initialized yet"
+            info["suggestions"].append("Restart or ping the daemon so providers initialize")
+
+        return info
+
+    @classmethod
+    def diagnose_all(cls) -> list[dict[str, Any]]:
+        """Diagnose all known provider types present in the registry or with env keys."""
+        reg = ModelProviderRegistry()
+        ptypes = set(getattr(reg, "_providers", {}).keys()) | {
+            ProviderType.KIMI, ProviderType.GLM, ProviderType.CUSTOM, ProviderType.OPENROUTER
+        }
+        return [cls.diagnose_provider(pt) for pt in ptypes]
+
+
+    @classmethod
+    def diagnose_all_daemon_first(cls) -> list[dict[str, Any]]:
+        """Prefer daemon snapshot if present; fallback to local process diagnostics.
+
+        The daemon writes logs/provider_registry_snapshot.json at startup. Reading it avoids
+        cross-process registry confusion and more accurately reflects the MCP server state.
+        """
+        try:
+            import json
+            from pathlib import Path
+            p = Path("logs") / "provider_registry_snapshot.json"
+            if p.exists():
+                data = json.loads(p.read_text(encoding="utf-8")) or {}
+                registered = set(data.get("registered_providers") or [])
+                initialized = set(data.get("initialized_providers") or [])
+                results: list[dict[str, Any]] = []
+                for pt in [ProviderType.KIMI, ProviderType.GLM, ProviderType.CUSTOM, ProviderType.OPENROUTER]:
+                    base = cls.diagnose_provider(pt)
+                    name = getattr(pt, "name", str(pt))
+                    base["registered"] = name in registered
+                    base["initialized"] = name in initialized
+                    if base["registered"] and base["initialized"]:
+                        base["reason_unavailable"] = None
+                    results.append(base)
+                return results
+        except Exception:
+            pass
+        # Fallback to process-local view
+        return cls.diagnose_all()

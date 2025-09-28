@@ -1,0 +1,7 @@
+{
+  "tool": "kimi_chat_with_tools_EXAI-WS",
+  "model": "kimi-k2-0711-preview",
+  "prompt": "Reply with the exact token KIMI_PHASE2_PROOF and one short sentence mentioning Moonshot API. Do not include anything else.",
+  "response_text": "KIMI_PHASE2_PROOF Moonshot API delivers powerful AI capabilities."
+}
+

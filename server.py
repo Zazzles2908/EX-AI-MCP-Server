@@ -145,7 +145,7 @@ AUGGIE_ACTIVE = _env_true("AUGGIE_ACTIVE")
 AUGGIE_WRAPPERS_AVAILABLE = False
 
 try:
-    from auggie.wrappers import AUGGIE_WRAPPERS_AVAILABLE
+    from auggie.wrappers import AUGGIE_WRAPPERS_AVAILABLE  # type: ignore[import-not-found]
 except ImportError:
     pass
 
@@ -300,7 +300,8 @@ def register_provider_specific_tools() -> None:
         for name, modcls in [
             ("kimi_upload_and_extract", ("tools.providers.kimi.kimi_upload", "KimiUploadAndExtractTool")),
             ("kimi_multi_file_chat", ("tools.providers.kimi.kimi_upload", "KimiMultiFileChatTool")),
-            # Removed: kimi_chat_with_tools (de-scoped)
+            ("kimi_intent_analysis", ("tools.providers.kimi.kimi_intent", "KimiIntentAnalysisTool")),
+            ("kimi_chat_with_tools", ("tools.providers.kimi.kimi_tools_chat", "KimiChatWithToolsTool")),
         ]:
             try:
                 mod = importlib.import_module(modcls[0])
@@ -315,9 +316,9 @@ def register_provider_specific_tools() -> None:
         # GLM extras (lenient registration)
         for name, modcls in [
             ("glm_upload_file", ("tools.providers.glm.glm_files", "GLMUploadFileTool")),
+            ("glm_web_search", ("tools.providers.glm.glm_web_search", "GLMWebSearchTool")),
             # Removed: glm_multi_file_chat (de-scoped until stabilized)
             # Removed: glm_agent_* (agents de-scoped)
-            # Removed: glm_web_search (prefer provider-native web via chat tools)
         ]:
             try:
                 mod = importlib.import_module(modcls[0])

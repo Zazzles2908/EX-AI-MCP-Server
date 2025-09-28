@@ -1,0 +1,824 @@
+{
+  "base": "C:\\Project\\EX-AI-MCP-Server\\docs\\System_layout",
+  "counts": {
+    "markdown": 84,
+    "link_issues": 1,
+    "name_issues": 161
+  },
+  "link_issues": [
+    {
+      "type": "broken_link",
+      "file": "docs\\System_layout\\_raw\\_tmp_docs_validator\\case-2ad09d09-2819-415b-a46b-70841a3c1cb8\\good-file.md",
+      "href": "other-file.md",
+      "resolved": "C:\\Project\\EX-AI-MCP-Server\\docs\\System_layout\\_raw\\_tmp_docs_validator\\case-2ad09d09-2819-415b-a46b-70841a3c1cb8\\other-file.md"
+    }
+  ],
+  "name_issues": [
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\IMPLEMENTATION_ROADMAP.md",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\classification\\classification_intent_and_capability.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\decision_tree\\decision_tree_request_routing_flows.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\observability\\observability_logging_metrics_monitoring.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\tool_function\\tool_function_registry_and_workflows.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\checklist_session_updates_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\exai_manager_phase6_validation_2025-09-28T20-03Z.md",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\exai_mcp_planning_glm-4.5-flash_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\exai_mcp_script_inventory_check.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\kimi_normalize_tester_artefacts_20250928.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\kimi_upload_sample.txt",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase2_glm_mcp_chat_response.json",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase2_glm_payload_preview_artefact.json",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase2_glm_web_search_results.json",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase2_kimi_capture_headers_response.json",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase2_kimi_mcp_chat_response.json",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase3_routeplan_enrichment_smoke.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase4_routing_hints_bias.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase5_chat_context_continuation_smoke.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase5_flag_budget_propagation.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase5_kimi_chat_schema_validation.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase5_synthesis_hop_smoke.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase6_context_caching_consistency.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase6_context_caching_consistency_mcp_memo.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase6_env_audit_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase6_gap_analysis_and_completion_tasks_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase6_prior_ai_verification_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase6_streaming_observations_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase6_streaming_validation_run_2025-09-28T20-02Z.md",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase7_telemetry_and_health.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase7_validation_mcp_memo.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase8_live_glm_websearch_raw.json",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase8_live_kimi_upload_extract_raw.json",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase8_live_validation_report.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase8_test_coverage_summary.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase8_validation_mcp_memo.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase_docs_validation_report.json",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\phase_implementation_issues_log_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\provider_diagnostics_phase2_2025-09-28.json",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\validation_glm_web_search_phase3_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\validation_kimi_intent_phase4_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\validation_reboot_phase6_prelude_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\validation_ws_chat_once_glm_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\validation_ws_chat_roundtrip_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\validation_ws_chat_roundtrip_2025-09-28_success.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\validation_ws_chat_roundtrip_phase2_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_daemon_restart_log_2025-09-28.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T092330Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T092330Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T092439Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T092439Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T092649Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T092649Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T092741Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T092741Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T093206Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T093206Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T094608Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T094608Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T100201Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T100201Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T101505Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_stream_paragraph_bullets_20250928T101505Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T082236Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T082313Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T083024Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T083416Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T085730Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T090923Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T092302Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T092438Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T092649Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T092736Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T093138Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T094532Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T100133Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_glm_news_recent_20250928T101431Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_tech_python_asyncio_20250928T082239Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_tech_python_asyncio_20250928T082313Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_tech_python_asyncio_20250928T083024Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_tech_python_asyncio_20250928T085734Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_tech_python_asyncio_20250928T090926Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_tech_python_asyncio_20250928T092305Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_tech_python_asyncio_20250928T092438Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_tech_python_asyncio_20250928T092649Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_tech_python_asyncio_20250928T092736Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_tech_python_asyncio_20250928T093141Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_tech_python_asyncio_20250928T094535Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_tech_python_asyncio_20250928T100135Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_glm_web_search_tech_python_asyncio_20250928T101434Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_current_events_20250928T082247Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_current_events_20250928T082313Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_current_events_20250928T083024Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_current_events_20250928T085743Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_current_events_20250928T090935Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_current_events_20250928T092313Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_current_events_20250928T092438Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_current_events_20250928T092649Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_current_events_20250928T092736Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_current_events_20250928T093149Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_current_events_20250928T094544Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_current_events_20250928T100142Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_current_events_20250928T101440Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_domain_programming_20250928T082251Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_domain_programming_20250928T082313Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_domain_programming_20250928T083024Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_domain_programming_20250928T085747Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_domain_programming_20250928T090937Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_domain_programming_20250928T092316Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_domain_programming_20250928T092439Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_domain_programming_20250928T092649Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_domain_programming_20250928T092736Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_domain_programming_20250928T093153Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_domain_programming_20250928T094549Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_domain_programming_20250928T100145Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_domain_programming_20250928T101442Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_simple_math_20250928T082243Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_simple_math_20250928T082313Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_simple_math_20250928T083024Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_simple_math_20250928T085738Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_simple_math_20250928T090930Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_simple_math_20250928T092309Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_simple_math_20250928T092438Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_simple_math_20250928T092649Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_simple_math_20250928T092736Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_simple_math_20250928T093145Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_simple_math_20250928T094539Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_simple_math_20250928T100139Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_intent_analysis_simple_math_20250928T101437Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T092316Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T092316Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T092439Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T092439Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T092649Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T092649Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T092741Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T092741Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T093159Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T093159Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T094558Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T094558Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T100151Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T100151Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T101447Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_bullets_20250928T101447Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_direct_bullets_20250928T092741Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_direct_bullets_20250928T092741Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_direct_bullets_20250928T093159Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_direct_bullets_20250928T093159Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_direct_bullets_20250928T094558Z.json",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\ws_probe_kimi_stream_direct_bullets_20250928T094558Z.jsonl",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\_raw\\_tmp_docs_validator\\case-2ad09d09-2819-415b-a46b-70841a3c1cb8\\Bad_Name.md",
+      "detail": "Filename has uppercase letters"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\API_platforms\\Kimi\\chat_completions\\chat_completions.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\API_platforms\\Kimi\\context_caching\\context_caching_fixed.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\API_platforms\\Kimi\\file_processing\\file_processing.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\API_platforms\\Kimi\\provider_overview\\provider_overview.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\API_platforms\\Kimi\\streaming\\streaming_fixed.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\API_platforms\\GLM\\chat_completions\\chat_completions.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\API_platforms\\GLM\\file_operations\\file_operations.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\API_platforms\\GLM\\provider_overview\\provider_overview.md",
+      "detail": "Filename contains spaces or underscores"
+    },
+    {
+      "type": "kebab_case",
+      "path": "docs\\System_layout\\API_platforms\\GLM\\web_search\\web_search.md",
+      "detail": "Filename contains spaces or underscores"
+    }
+  ],
+  "ok": false
+}

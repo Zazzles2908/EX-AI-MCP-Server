@@ -187,6 +187,14 @@ class GLMModelProvider(ModelProvider):
 
         try:
             stream = bool(payload.get("stream", False))
+            # Env gate: allow streaming only when GLM_STREAM_ENABLED=true
+            try:
+                _stream_env = os.getenv("GLM_STREAM_ENABLED", "false").strip().lower() in ("1","true","yes")
+            except Exception:
+                _stream_env = False
+            if stream and not _stream_env:
+                logger.info("GLM streaming disabled via GLM_STREAM_ENABLED; falling back to non-streaming")
+                stream = False
             if getattr(self, "_use_sdk", False):
                 # Use official SDK
                 resp = self._sdk_client.chat.completions.create(
@@ -241,6 +249,8 @@ class GLMModelProvider(ModelProvider):
                             "model": actual_model or resolved,
                             "id": response_id,
                             "created": created_ts,
+                            "tools": payload.get("tools"),
+                            "tool_choice": payload.get("tool_choice"),
                         },
                     )
                 else:
@@ -305,6 +315,8 @@ class GLMModelProvider(ModelProvider):
                             "model": actual_model or resolved,
                             "id": response_id,
                             "created": created_ts,
+                            "tools": payload.get("tools"),
+                            "tool_choice": payload.get("tool_choice"),
                         },
                     )
                 else:
@@ -322,7 +334,12 @@ class GLMModelProvider(ModelProvider):
                 model_name=resolved,
                 friendly_name="GLM",
                 provider=ProviderType.GLM,
-                metadata={"raw": raw, "streamed": bool(stream)},
+                metadata={
+                    "raw": raw,
+                    "streamed": bool(stream),
+                    "tools": payload.get("tools"),
+                    "tool_choice": payload.get("tool_choice"),
+                },
             )
         except Exception as e:
             logger.error("GLM generate_content failed: %s", e)

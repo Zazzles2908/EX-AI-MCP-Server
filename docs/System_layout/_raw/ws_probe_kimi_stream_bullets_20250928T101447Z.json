@@ -1,0 +1,23 @@
+{
+  "tool": "kimi_stream",
+  "label": "bullets",
+  "timestamp": "2025-09-28T10:14:47.421992+00:00",
+  "request": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Write 3 concise bullets on why streaming responses are useful for UX."
+      }
+    ],
+    "model": "auto",
+    "temperature": 0.2,
+    "stream": true,
+    "use_websearch": false
+  },
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"provider\": \"KIMI\", \"model\": \"kimi-k2-0711-preview\", \"content\": \"- **Perceived speed**: Users see partial results instantly, making wait times feel shorter.  \\n- **Progressive disclosure**: Content appears as it’s ready, guiding attention and reducing cognitive load.  \\n- **Interactivity**: Early data can be acted on (e.g., search suggestions) before the full response finishes.\", \"tool_calls\": null, \"usage\": null, \"raw\": {\"stream\": true, \"items\": [\"ChatCompletionChunk(id='chatcmpl-68d90a93bcca19c130106bfd', choices=[Choice(delta=ChoiceDelta(content='', function_call=None, refusal=None, role='assistant', tool_calls=None), finish_reason=None, index=0, logprobs=None)], created=1759054483, model='kimi-k2-0711-preview', object='chat.completion.chunk', service_tier=None, system_fingerprint='fpv0_a5c14cfb', usage=None)\", \"ChatCompletionChunk(id='chatcmpl-68d90a93bcca19c130106bfd', choices=[Choice(delta=ChoiceDelta(content='-', function_call=None, refusal=None, role=None, tool_calls=None), finish_reason=None, index=0, logprobs=None)], created=1759054483, model='kimi-k2-0711-preview', object='chat.completion.chunk', service_tier=None, system_fingerprint='fpv0_a5c14cfb', usage=None)\", \"ChatCompletionChunk(id='chatcmpl-68d90a93bcca19c130106bfd', choices=[Choice(delta=ChoiceDelta(content=' **', function_call=None, refusal=None, role=None, tool_calls=None), finish_reason=None, index=0, logprobs=None)], created=1759054483, model='kimi-k2-0711-preview', object='chat.completion.chunk', service_tier=None, system_fingerprint='fpv0_a5c14cfb', usage=None)\", \"ChatCompletionChunk(id='chatcmpl-68d90a93bcca19c130106bfd', choices=[Choice(delta=ChoiceDelta(content='Per', function_call=None, refusal=None, role=None, tool_calls=None), finish_reason=None, index=0, logprobs=None)], created=1759054483, model='kimi-k2-0711-preview', object='chat.completion.chunk', service_tier=None, system_fingerprint='fpv0_a5c14cfb', usage=None)\", \"ChatCompletionChunk(id='chatcmpl-68d90a93bcca19c130106bfd', choices=[Choice(delta=ChoiceDelta(content='ceived', function_call=None, refusal=None, role=None, tool_calls=None), finish_reason=None, index=0, logprobs=None)], created=1759054483, model='kimi-k2-0711-preview', object='chat.completion.chunk', service_tier=None, system_fingerprint='fpv0_a5c14cfb', usage=None)\", \"ChatCompletionChunk(id='chatcmpl-68d90a93bcca19c130106bfd', choices=[Choice(delta=ChoiceDelta(content=' speed', function_call=None, refusal=None, role=None, tool_calls=None), finish_reason=None, index=0, logprobs=None)], created=1759054483, model='kimi-k2-0711-preview', object='chat.completion.chunk', service_tier=None, system_fingerprint='fpv0_a5c14cfb', usage=None)\", \"ChatCompletionChunk(id='chatcmpl-68d90a93bcca19c130106bfd', choices=[Choice(delta=ChoiceDelta(content='**:', function_call=None, refusal=None, role=None, tool_calls=None), finish_reason=None, index=0, logprobs=None)], created=1759054483, model='kimi-k2-0711-preview', object='chat.completion.chunk', service_tier=None, system_fingerprint='fpv0_a5c14cfb', usage=None)\", \"ChatCompletionChunk(id='chatcmpl-68d90a93bcca19c130106bfd', choices=[Choice(delta=ChoiceDelta(content=' Users', function_call=None, refusal=None, role=None, tool_calls=None), finish_reason=None, index=0, logprobs=None)], created=1759054483, model='kimi-k2-0711-preview', object='chat.completion.chunk', service_tier=None, system_fingerprint='fpv0_a5c14cfb', usage=None)\", \"ChatCompletionChunk(id='chatcmpl-68d90a93bcca19c130106bfd', choices=[Choice(delta=ChoiceDelta(content=' see', function_call=None, refusal=None, role=None, tool_calls=None), finish_reason=None, index=0, logprobs=None)], created=1759054483, model='kimi-k2-0711-preview', object='chat.completion.chunk', service_tier=None, system_fingerprint='fpv0_a5c14cfb', usage=None)\", \"ChatCompletionChunk(id='chatcmpl-68d90a93bcca19c130106bfd', choices=[Choice(delta=ChoiceDelta(content=' partial', function_call=None, refusal=None, role=None, tool_calls=None), finish_reason=None, index=0, logprobs=None)], created=1759054483, model='kimi-k2-0711-preview', object='chat.completion.chunk', service_tier=None, system_fingerprint='fpv0_a5c14cfb', usage=None)\"]}}"
+    }
+  ]
+}
