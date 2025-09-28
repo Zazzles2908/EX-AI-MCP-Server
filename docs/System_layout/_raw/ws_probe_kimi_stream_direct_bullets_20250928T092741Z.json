@@ -1,0 +1,22 @@
+{
+  "tool": "kimi_stream_direct",
+  "label": "bullets",
+  "timestamp": "2025-09-28T09:27:41.975021+00:00",
+  "request": {
+    "model": "kimi-k2-0905-preview",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Write 3 concise bullets on why streaming responses are useful for UX."
+      }
+    ],
+    "temperature": 0.2,
+    "stream": true
+  },
+  "outputs": [
+    {
+      "type": "text",
+      "text": "- **Instant feedback**: Users see first tokens in <1 s, cutting perceived wait time and abandonment.  \n- **Progressive rendering**: Content unfolds line-by-line, letting users read, scroll, or cancel early if irrelevant.  \n- **Back-pressure relief**: Long generations stream without locking the UI or hitting timeout walls, keeping the app responsive."
+    }
+  ]
+}

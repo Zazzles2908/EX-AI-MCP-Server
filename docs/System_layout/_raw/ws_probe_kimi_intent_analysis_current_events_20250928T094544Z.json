@@ -1,0 +1,19 @@
+{
+  "tool": "kimi_intent_analysis",
+  "label": "current_events",
+  "timestamp": "2025-09-28T09:45:44.988805+00:00",
+  "request": {
+    "prompt": "Summarize this week's major AI news with sources.",
+    "use_websearch": true
+  },
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"needs_websearch\": true, \"complexity\": \"moderate\", \"domain\": \"tech_news\", \"recommended_provider\": \"GLM\", \"recommended_model\": \"glm-4.5-flash\", \"streaming_preferred\": true}"
+    },
+    {
+      "type": "text",
+      "text": "=== MCP CALL SUMMARY ===\nTool: kimi_intent_analysis | Status: COMPLETE (Step 1/? complete)\nDuration: 5.1s | Model: glm-4.5-flash | Tokens: ~43\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=2c9bd73b-9824-4181-a07d-7566ede50f41\n\n<details><summary>Tool activity (req_id=2c9bd73b-9824-4181-a07d-7566ede50f41)</summary>\n\n(no progress captured)\n</details>"
+    }
+  ]
+}

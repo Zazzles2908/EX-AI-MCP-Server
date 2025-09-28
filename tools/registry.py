@@ -41,9 +41,14 @@ TOOL_MAP: Dict[str, tuple[str, str]] = {
     # Kimi utilities
     "kimi_upload_and_extract": ("tools.providers.kimi.kimi_upload", "KimiUploadAndExtractTool"),
     "kimi_multi_file_chat": ("tools.providers.kimi.kimi_upload", "KimiMultiFileChatTool"),
+    "kimi_intent_analysis": ("tools.providers.kimi.kimi_intent", "KimiIntentAnalysisTool"),
+    "kimi_capture_headers": ("tools.providers.kimi.kimi_capture_headers", "KimiCaptureHeadersTool"),
     # GLM utilities
+    "kimi_chat_with_tools": ("tools.providers.kimi.kimi_tools_chat", "KimiChatWithToolsTool"),
     "glm_upload_file": ("tools.providers.glm.glm_files", "GLMUploadFileTool"),
-    # De-scoped: glm_multi_file_chat, kimi_chat_with_tools
+    "glm_web_search": ("tools.providers.glm.glm_web_search", "GLMWebSearchTool"),
+    "glm_payload_preview": ("tools.providers.glm.glm_payload_preview", "GLMPayloadPreviewTool"),
+    # De-scoped: glm_multi_file_chat
     # Diagnostics
     "provider_capabilities": ("tools.capabilities.provider_capabilities", "ProviderCapabilitiesTool"),
     # Observability helpers
@@ -76,7 +81,10 @@ TOOL_VISIBILITY = {
     "activity": "advanced",
     "version": "hidden",                 # AI-manager-only diagnostics
     "kimi_upload_and_extract": "hidden", # backend pathway only
+    "kimi_chat_with_tools": "advanced",
+    "kimi_capture_headers": "hidden",    # diagnostics-only
     "glm_upload_file": "hidden",         # backend pathway only
+    "glm_payload_preview": "hidden",     # diagnostics-only
     "consensus": "advanced",
     "docgen": "advanced",
     "secaudit": "advanced",

@@ -1,0 +1,20 @@
+{
+  "tool": "glm_web_search",
+  "label": "glm_news_recent",
+  "timestamp": "2025-09-28T09:27:36.311858+00:00",
+  "request": {
+    "search_query": "ZhipuAI GLM-4.5 latest announcement",
+    "count": 5,
+    "search_recency_filter": "oneMonth"
+  },
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"created\": 1759051382, \"id\": \"20250928172300d375229c184a4cc7\", \"request_id\": \"20250928172300d375229c184a4cc7\", \"search_intent\": [{\"intent\": \"SEARCH_ALWAYS\", \"keywords\": \"ZhipuAI GLM-4.5 latest announcement\", \"query\": \"ZhipuAI GLM-4.5 latest announcement\"}], \"search_result\": [{\"content\": \"GLM-4.5. The latest SOTA models for reasoning, code, and agents. GLM-4.5 is officially released: featuring a MoE architecture with 355 billion ...\", \"icon\": \"\", \"link\": \"https://bigmodel.cn/\", \"media\": \"\", \"publish_date\": \"\", \"refer\": \"ref_1\", \"title\": \"ZHIPU·AI\"}, {\"content\": \"GLM-4.5 enhances the complex code generation capabilities introduced in the April release of GLM-4. The model now creates sophisticated ...\", \"icon\": \"\", \"link\": \"https://z.ai/blog/glm-4.5\", \"media\": \"\", \"publish_date\": \"2025年7月28日\", \"refer\": \"ref_2\", \"title\": \"GLM-4.5: Reasoning, Coding, and Agentic Abililties\"}, {\"content\": \"Announcement Notice. Price Reduction Notice: GLM-4-Plus Now 90% Cheaper. 2025-07-15. 【New Model Release】CogVideoX-3 Video Generation Model Launched.\", \"icon\": \"\", \"link\": \"https://open.bigmodel.cn/dev/releasenotes\", \"media\": \"\", \"publish_date\": \"\", \"refer\": \"ref_3\", \"title\": \"ZHIPU AI OPEN PLATFORM\"}, {\"content\": \"Zhipu AI发布了GLM-4.5 和GLM-4.5-Air。按照设计，这两个新AI 模型可以在单一架构内处理推理、编码和代理任务。它们使用了双模式系统，可以在复杂问题 ...\", \"icon\": \"\", \"link\": \"https://www.infoq.cn/article/ymbwmhi42jv45k6q5xec\", \"media\": \"\", \"publish_date\": \"2025年8月8日\", \"refer\": \"ref_4\", \"title\": \"GLM-4.5发布，具有强大的推理、编码和代理能力_AI&大模型\"}, {\"content\": \"On July 28, Zhipu AI unveiled its new-generation flagship model, GLM-4.5, which was simultaneously open-sourced on the Hugging Face and ...\", \"icon\": \"\", \"link\": \"https://en.youth.cn/RightNow/202507/t20250729_16144853.htm\", \"media\": \"\", \"publish_date\": \"2025年7月29日\", \"refer\": \"ref_5\", \"title\": \"Zhipu AI Releases New Flagship Model GLM-4.5\"}]}"
+    },
+    {
+      "type": "text",
+      "text": "=== MCP CALL SUMMARY ===\nTool: glm_web_search | Status: COMPLETE (Step 1/? complete)\nDuration: 3.2s | Model: glm-4.5-flash | Tokens: ~460\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=61a97002-746f-4604-b49c-ea4b68426836\n\n<details><summary>Tool activity (req_id=61a97002-746f-4604-b49c-ea4b68426836)</summary>\n\n(no progress captured)\n</details>"
+    }
+  ]
+}

@@ -391,10 +391,12 @@ class KimiModelProvider(OpenAICompatibleProvider):
             extra_headers["Idempotency-Key"] = str(call_key)
         # Attach cached context token if available
         cache_token = None
+        cache_attached = False
         if session_id and prefix_hash:
             cache_token = self.get_cache_token(session_id, tool_name, prefix_hash)
             if cache_token:
                 extra_headers["Msh-Context-Cache-Token"] = cache_token
+                cache_attached = True
                 _log.info("Kimi attach cache token suffix=%s", cache_token[-6:])
 
         # Call with raw response to capture headers when possible
@@ -429,8 +431,11 @@ class KimiModelProvider(OpenAICompatibleProvider):
                             break
                     if token_saved and session_id and prefix_hash:
                         self.save_cache_token(session_id, tool_name, prefix_hash, token_saved)
+                        cache_saved = True
+                    else:
+                        cache_saved = False
                 except Exception:
-                    pass
+                    cache_saved = False
                 # Pull content
                 try:
                     choice0 = (raw_payload.choices if hasattr(raw_payload, "choices") else raw_payload.get("choices"))[0]
@@ -485,6 +490,14 @@ class KimiModelProvider(OpenAICompatibleProvider):
             "tool_calls": None,
             "usage": _usage,
             "raw": getattr(raw_payload, "model_dump", lambda: raw_payload)() if hasattr(raw_payload, "model_dump") else raw_payload,
+            "metadata": {
+                "cache": {
+                    "attached": bool(cache_attached),
+                    "saved": bool(locals().get("cache_saved", False)),
+                },
+                "idempotency_key": str(call_key) if call_key else None,
+                "prefix_hash": prefix_hash or None,
+            },
         }
 
 

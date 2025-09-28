@@ -100,3 +100,40 @@ class HealthManager:
             self._providers[name] = ProviderHealth(name)
         return self._providers[name]
 
+
+
+# Singleton accessor and sync helpers
+_singleton_mgr: HealthManager | None = None
+
+def get_health_manager() -> HealthManager:
+    global _singleton_mgr
+    if _singleton_mgr is None:
+        _singleton_mgr = HealthManager()
+    return _singleton_mgr
+
+
+def is_blocked(name: str) -> bool:
+    try:
+        hm = get_health_manager()
+        return hm.get(name).breaker.state == CircuitState.OPEN
+    except Exception:
+        return False
+
+
+def open_circuit(name: str) -> None:
+    try:
+        hm = get_health_manager()
+        ph = hm.get(name)
+        ph.breaker.state = CircuitState.OPEN
+    except Exception:
+        pass
+
+
+def reset(name: str) -> None:
+    try:
+        hm = get_health_manager()
+        ph = hm.get(name)
+        ph.breaker.state = CircuitState.CLOSED
+        ph.failures = 0
+    except Exception:
+        pass
