@@ -138,14 +138,66 @@ The server uses GLM-4.5-Flash as an AI manager to make intelligent routing decis
 ### Project Structure
 ```
 ex-ai-mcp-server/
-├── server.py              # Main MCP server
-├── config.py              # Configuration management
-├── intelligent_router.py  # Routing system
-├── providers.py           # Provider implementations
-├── requirements.txt       # Dependencies
-├── pyproject.toml         # Project metadata
-└── .env.production        # Production config template
+├── docs/
+│   ├── architecture/
+│   └── provider_API/
+│       └── GLM/
+├── monitoring/
+│   └── monitoring_integration_plan.md
+├── scripts/
+│   ├── ws/
+│   └── maintenance/
+├── tools/
+│   ├── registry.py
+│   ├── chat.py
+│   ├── capabilities/
+│   │   ├── listmodels.py
+│   │   └── provider_capabilities.py
+│   ├── diagnostics/
+│   │   ├── health.py
+│   │   ├── status.py
+│   │   └── toolcall_log_tail.py
+│   ├── providers/
+│   │   ├── glm/
+│   │   │   └── glm_files.py
+│   │   └── kimi/
+│   │       └── kimi_upload.py
+│   └── workflows/
+│       ├── analyze.py
+│       ├── debug.py
+│       ├── codereview.py
+│       ├── refactor.py
+│       ├── secaudit.py
+│       ├── planner.py
+│       ├── tracer.py
+│       ├── testgen.py
+│       ├── consensus.py
+│       ├── thinkdeep.py
+│       └── docgen.py
+├── src/
+│   ├── providers/
+│   │   ├── base.py
+│   │   ├── registry.py
+│   │   ├── glm.py
+│   │   └── kimi.py
+│   ├── router/                # optional; may be pruned if unused
+│   └── utils/                 # internal libs (if present)
+├── utils/
+│   ├── health.py
+│   ├── metrics.py
+│   ├── model_restrictions.py
+│   └── observability.py
+├── .logs/
+│   └── .gitkeep
+├── README.md
+├── .env.example
+└── requirements.txt
 ```
+
+> Removed legacy components (as of 2025-09-28):
+> - tools/orchestrators/*
+> - tools/streaming/*
+> - tools/providers/glm/glm_web_search.py
 
 ### Adding New Providers
 1. Extend `BaseProvider` in `providers.py`
