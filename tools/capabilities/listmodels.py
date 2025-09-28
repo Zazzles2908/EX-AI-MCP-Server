@@ -85,7 +85,10 @@ class ListModelsTool(BaseTool):
             Formatted list of models by provider
         """
         from src.providers.base import ProviderType
-        from src.providers.openrouter_registry import OpenRouterModelRegistry
+        try:
+            from src.providers.openrouter_registry import OpenRouterModelRegistry  # type: ignore
+        except Exception:
+            OpenRouterModelRegistry = None  # type: ignore
         from src.providers.registry import ModelProviderRegistry
 
         output_lines = ["# Available AI Models\n"]
@@ -170,35 +173,37 @@ class ListModelsTool(BaseTool):
                 if provider:
                     # Get models with restrictions applied
                     available_models = provider.list_models(respect_restrictions=True)
-                    registry = OpenRouterModelRegistry()
 
-                    # Group by provider for better organization
-                    providers_models = {}
-                    for model_name in available_models:  # Show ALL available models
-                        # Try to resolve to get config details
-                        config = registry.resolve(model_name)
-                        if config:
-                            # Extract provider from model_name
-                            provider_name = config.model_name.split("/")[0] if "/" in config.model_name else "other"
-                            if provider_name not in providers_models:
-                                providers_models[provider_name] = []
-                            providers_models[provider_name].append((model_name, config))
-                        else:
-                            # Model without config - add with basic info
-                            provider_name = model_name.split("/")[0] if "/" in model_name else "other"
-                            if provider_name not in providers_models:
-                                providers_models[provider_name] = []
-                            providers_models[provider_name].append((model_name, None))
+                    if OpenRouterModelRegistry is None:
+                        output_lines.append("\n**Note**: OpenRouter registry module not present; skipping model details")
+                        for model_name in available_models:
+                            output_lines.append(f"- `{model_name}`")
+                    else:
+                        registry = OpenRouterModelRegistry()
 
-                    output_lines.append("\n**Available Models**:")
-                    for provider_name, models in sorted(providers_models.items()):
-                        output_lines.append(f"\n*{provider_name.title()}:*")
-                        for alias, config in models:  # Show ALL models from each provider
+                        # Group by provider for better organization
+                        providers_models = {}
+                        for model_name in available_models:  # Show ALL available models
+                            # Try to resolve to get config details
+                            config = registry.resolve(model_name)
                             if config:
-                                context_str = f"{config.context_window // 1000}K" if config.context_window else "?"
-                                output_lines.append(f"- `{alias}` → `{config.model_name}` ({context_str} context)")
+                                # Extract provider from model_name
+                                provider_name = config.model_name.split("/")[0] if "/" in config.model_name else "other"
+                                providers_models.setdefault(provider_name, []).append((model_name, config))
                             else:
-                                output_lines.append(f"- `{alias}`")
+                                # Model without config - add with basic info
+                                provider_name = model_name.split("/")[0] if "/" in model_name else "other"
+                                providers_models.setdefault(provider_name, []).append((model_name, None))
+
+                        output_lines.append("\n**Available Models**:")
+                        for provider_name, models in sorted(providers_models.items()):
+                            output_lines.append(f"\n*{provider_name.title()}:*")
+                            for alias, config in models:  # Show ALL models from each provider
+                                if config:
+                                    context_str = f"{config.context_window // 1000}K" if getattr(config, 'context_window', None) else "?"
+                                    output_lines.append(f"- `{alias}` → `{config.model_name}` ({context_str} context)")
+                                else:
+                                    output_lines.append(f"- `{alias}`")
 
                     total_models = len(available_models)
                     # Show all models - no truncation message needed
@@ -237,25 +242,26 @@ class ListModelsTool(BaseTool):
             output_lines.append(f"**Endpoint**: {custom_url}")
             output_lines.append("**Description**: Local models via Ollama, vLLM, LM Studio, etc.")
 
-            try:
-                registry = OpenRouterModelRegistry()
-                custom_models = []
+            custom_models = []
+            if OpenRouterModelRegistry is not None:
+                try:
+                    registry = OpenRouterModelRegistry()
+                    for alias in registry.list_aliases():
+                        config = registry.resolve(alias)
+                        if config and getattr(config, "is_custom", False):
+                            custom_models.append((alias, config))
+                except Exception as e:
+                    output_lines.append(f"**Error loading custom models**: {str(e)}")
+            else:
+                output_lines.append("**Note**: OpenRouter registry module not present; skipping custom model details")
 
-                for alias in registry.list_aliases():
-                    config = registry.resolve(alias)
-                    if config and config.is_custom:
-                        custom_models.append((alias, config))
-
-                if custom_models:
-                    output_lines.append("\n**Custom Models**:")
-                    for alias, config in custom_models:
-                        context_str = f"{config.context_window // 1000}K" if config.context_window else "?"
-                        output_lines.append(f"- `{alias}` → `{config.model_name}` ({context_str} context)")
-                        if config.description:
-                            output_lines.append(f"  - {config.description}")
-
-            except Exception as e:
-                output_lines.append(f"**Error loading custom models**: {str(e)}")
+            if custom_models:
+                output_lines.append("\n**Custom Models**:")
+                for alias, config in custom_models:
+                    context_str = f"{config.context_window // 1000}K" if getattr(config, 'context_window', None) else "?"
+                    output_lines.append(f"- `{alias}` → `{config.model_name}` ({context_str} context)")
+                    if getattr(config, 'description', None):
+                        output_lines.append(f"  - {config.description}")
         else:
             output_lines.append("**Status**: Not configured (set CUSTOM_API_URL)")
             output_lines.append("**Example**: CUSTOM_API_URL=http://localhost:11434 (for Ollama)")

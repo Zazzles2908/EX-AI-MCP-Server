@@ -1,0 +1,30 @@
+{
+  "agent_id": "general_translation",
+  "conversation_id": "20250928073841e8a271d323fa422e",
+  "raw": {
+    "id": "20250928073841e8a271d323fa422e",
+    "agent_id": "general_translation",
+    "status": "success",
+    "choices": [
+      {
+        "index": 0,
+        "finish_reason": "stop",
+        "messages": [
+          {
+            "role": "assistant",
+            "content": {
+              "text": "来自ws_probe的问候",
+              "type": "text"
+            }
+          }
+        ]
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 9,
+      "completion_tokens": 10,
+      "total_tokens": 19,
+      "total_calls": 1
+    }
+  }
+}

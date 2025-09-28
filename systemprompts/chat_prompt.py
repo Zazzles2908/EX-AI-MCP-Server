@@ -55,8 +55,8 @@ reach sound, actionable decisions.
 
 TOOL AWARENESS
 When helpful and aligned with scope, you may recommend or invoke provider-native capabilities via EX-AI tools:
-- Kimi: file upload + extract (kimi_upload_and_extract), multi-file chat (kimi_multi_file_chat), tool-use chat (kimi_chat_with_tools)
-- GLM: file upload (glm_upload_file), multi-file chat (glm_multi_file_chat), agent flows (glm_agent_chat / glm_agent_get_result / glm_agent_conversation)
+- Kimi: file upload + extract (kimi_upload_and_extract), multi-file chat (kimi_multi_file_chat)
+- GLM: file upload (glm_upload_file)
 Always verify availability (list_tools) and avoid unnecessary tool calls; keep requests minimal and privacy-preserving.
 
 ESCALATION GUIDANCE

@@ -132,7 +132,7 @@ from tools import (
 
 # Import modular server components
 from src.server.providers import configure_providers
-from src.server.tools import filter_disabled_tools
+from src.server.tools import filter_disabled_tools, filter_by_provider_capabilities
 from src.server.handlers import (
     handle_call_tool,
     handle_get_prompt,
@@ -288,6 +288,57 @@ TOOLS = {
     "selfcheck": SelfCheckTool(),
 }
 
+def register_provider_specific_tools() -> None:
+    """Idempotently register provider-specific tools after providers are configured.
+    Mutates TOOLS in-place so any imported references (e.g., WS daemon) see updates.
+    """
+    try:
+        from src.providers.registry import ModelProviderRegistry, ProviderType
+        import importlib
+        prov_tools: dict[str, Any] = {}
+        # Kimi extras (lenient registration: import if available)
+        for name, modcls in [
+            ("kimi_upload_and_extract", ("tools.providers.kimi.kimi_upload", "KimiUploadAndExtractTool")),
+            ("kimi_multi_file_chat", ("tools.providers.kimi.kimi_upload", "KimiMultiFileChatTool")),
+            # Removed: kimi_chat_with_tools (de-scoped)
+        ]:
+            try:
+                mod = importlib.import_module(modcls[0])
+                cls = getattr(mod, modcls[1])
+                if name not in TOOLS:
+                    prov_tools[name] = cls()
+            except Exception as e:
+                try:
+                    logger.info("Provider tool import failed: %s from %s (%s)", name, modcls[0], e)
+                except Exception:
+                    pass
+        # GLM extras (lenient registration)
+        for name, modcls in [
+            ("glm_upload_file", ("tools.providers.glm.glm_files", "GLMUploadFileTool")),
+            # Removed: glm_multi_file_chat (de-scoped until stabilized)
+            # Removed: glm_agent_* (agents de-scoped)
+            # Removed: glm_web_search (prefer provider-native web via chat tools)
+        ]:
+            try:
+                mod = importlib.import_module(modcls[0])
+                cls = getattr(mod, modcls[1])
+                if name not in TOOLS:
+                    prov_tools[name] = cls()
+            except Exception as e:
+                try:
+                    logger.info("Provider tool import failed: %s from %s (%s)", name, modcls[0], e)
+                except Exception:
+                    pass
+        if prov_tools:
+            logger.info("Registering provider-specific tools: %s", sorted(prov_tools.keys()))
+            TOOLS.update(prov_tools)
+    except Exception:
+        # best-effort; never crash server on registration attempt
+        pass
+
+# Perform a first-pass registration at import (may no-op if providers not configured yet)
+register_provider_specific_tools()
+
 # Auggie tool registration
 if (AUGGIE_ACTIVE or detect_auggie_cli()) and AUGGIE_WRAPPERS_AVAILABLE:
     logger.info("Registering Auggie-optimized tools (aug_*) alongside originals")
@@ -344,6 +395,11 @@ async def list_tools_handler():
 async def call_tool_handler(name: str, arguments: dict[str, Any]):
     """Handle MCP call_tool requests."""
     _ensure_providers_configured()
+    # Ensure provider-specific tools are registered once providers are live
+    try:
+        register_provider_specific_tools()
+    except Exception:
+        pass
     start_ts = time.time()
     try:
         result = await handle_call_tool(name, arguments)
@@ -483,6 +539,7 @@ async def main():
     # Filter disabled tools
     global TOOLS
     TOOLS = filter_disabled_tools(TOOLS)
+    TOOLS = filter_by_provider_capabilities(TOOLS)
     # Set up stdio streams and run server
     # mcp.server.stdio.stdio_server is an async context manager in current SDK
     async with stdio_server() as (read_stream, write_stream):

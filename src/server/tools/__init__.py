@@ -7,13 +7,15 @@ from .tool_filter import (
     validate_disabled_tools,
     apply_tool_filter,
     log_tool_configuration,
-    filter_disabled_tools
+    filter_disabled_tools,
+    filter_by_provider_capabilities,
 )
 
 __all__ = [
     "parse_disabled_tools_env",
-    "validate_disabled_tools", 
+    "validate_disabled_tools",
     "apply_tool_filter",
     "log_tool_configuration",
-    "filter_disabled_tools"
+    "filter_disabled_tools",
+    "filter_by_provider_capabilities",
 ]

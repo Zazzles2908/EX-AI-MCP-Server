@@ -38,19 +38,12 @@ TOOL_MAP: Dict[str, tuple[str, str]] = {
     "precommit": ("tools.workflows.precommit", "PrecommitTool"),
     "challenge": ("tools.challenge", "ChallengeTool"),
     # Orchestrators (aliases map to autopilot)
-    "orchestrate_auto": ("tools.orchestrators.autopilot", "AutopilotTool"),
     # Kimi utilities
     "kimi_upload_and_extract": ("tools.providers.kimi.kimi_upload", "KimiUploadAndExtractTool"),
     "kimi_multi_file_chat": ("tools.providers.kimi.kimi_upload", "KimiMultiFileChatTool"),
     # GLM utilities
     "glm_upload_file": ("tools.providers.glm.glm_files", "GLMUploadFileTool"),
-    "glm_multi_file_chat": ("tools.providers.glm.glm_files", "GLMMultiFileChatTool"),
-    # GLM Agent APIs
-    "glm_agent_chat": ("tools.providers.glm.glm_agents", "GLMAgentChatTool"),
-    "glm_agent_get_result": ("tools.providers.glm.glm_agents", "GLMAgentGetResultTool"),
-    "glm_agent_conversation": ("tools.providers.glm.glm_agents", "GLMAgentConversationTool"),
-    # Kimi chat with tools/tool_choice
-    "kimi_chat_with_tools": ("tools.providers.kimi.kimi_tools_chat", "KimiChatWithToolsTool"),
+    # De-scoped: glm_multi_file_chat, kimi_chat_with_tools
     # Diagnostics
     "provider_capabilities": ("tools.capabilities.provider_capabilities", "ProviderCapabilitiesTool"),
     # Observability helpers
@@ -61,11 +54,8 @@ TOOL_MAP: Dict[str, tuple[str, str]] = {
     # Status alias (friendly summary)
     "status": ("tools.diagnostics.status", "StatusTool"),
     # Autopilot orchestrator (opt-in)
-    "autopilot": ("tools.orchestrators.autopilot", "AutopilotTool"),
     # Browse orchestrator (alias to autopilot)
-    "browse_orchestrator": ("tools.orchestrators.autopilot", "AutopilotTool"),
     # Streaming demo (utility)
-    "stream_demo": ("tools.streaming.stream_demo", "StreamDemoTool"),
 
 }
 # Visibility map for tools: 'core' | 'advanced' | 'hidden'
@@ -80,30 +70,21 @@ TOOL_VISIBILITY = {
     "refactor": "core",
     "testgen": "core",
     "debug": "core",
-    "autopilot": "core",
     # Auxiliary (advanced)
     "provider_capabilities": "hidden",  # AI-manager-only diagnostics
     "listmodels": "hidden",              # AI-manager-only diagnostics
     "activity": "advanced",
     "version": "hidden",                 # AI-manager-only diagnostics
-    "kimi_chat_with_tools": "advanced",
     "kimi_upload_and_extract": "hidden", # backend pathway only
-    "glm_agent_chat": "advanced",
-    "glm_agent_get_result": "advanced",
-    "glm_agent_conversation": "advanced",
     "glm_upload_file": "hidden",         # backend pathway only
-    "glm_multi_file_chat": "advanced",
     "consensus": "advanced",
     "docgen": "advanced",
     "secaudit": "advanced",
     "tracer": "advanced",
     "precommit": "advanced",
-    "stream_demo": "advanced",
     # Hidden/internal
     "toolcall_log_tail": "hidden",
     "health": "hidden",
-    "browse_orchestrator": "hidden",
-    "orchestrate_auto": "hidden",
 }
 
 
