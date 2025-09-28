@@ -14,6 +14,17 @@ A production-ready MCP (Model Context Protocol) server with intelligent routing 
 
 ## 🚀 Key Features
 
+## Concept Snapshot (Target Architecture)
+- GLM-first MCP WebSocket daemon (single daemon, stdio shim compatible)
+- Provider-native web browsing via GLM tools schema (no standalone web_search tool)
+- Kimi focused on file operations (upload/extract, multi-file chat helper)
+- Lean tool registry with essential analysis/workflow tools only
+- Streaming via provider SSE flag, opt-in through env
+- Observability to .logs/ (JSONL usage/errors), health & circuit-breaker hooks optional
+- Optional providers kept modular; OpenRouter/custom are off by default
+
+
+
 ### Intelligent Routing System
 - **GLM-4.5-Flash AI Manager**: Orchestrates routing decisions between providers
 - **GLM Provider**: Specialized for web browsing and search tasks
