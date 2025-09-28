@@ -150,13 +150,25 @@ class GLMModelProvider(ModelProvider):
         payload = {
             "model": resolved,
             "messages": messages,
-            "stream": False,
+            # Allow callers to request streaming; default False for MCP tools
+            "stream": bool(kwargs.get("stream", False)),
         }
 
         if effective_temp is not None:
             payload["temperature"] = effective_temp
         if max_output_tokens:
             payload["max_tokens"] = int(max_output_tokens)
+        # Pass through GLM tool capabilities when requested (e.g., native web_search)
+        try:
+            tools = kwargs.get("tools")
+            if tools:
+                payload["tools"] = tools
+            tool_choice = kwargs.get("tool_choice")
+            if tool_choice:
+                payload["tool_choice"] = tool_choice
+        except Exception:
+            # be permissive
+            pass
 
         # Images handling placeholder
         return payload
@@ -174,6 +186,7 @@ class GLMModelProvider(ModelProvider):
         payload = self._build_payload(prompt, system_prompt, resolved, temperature, max_output_tokens, **kwargs)
 
         try:
+            stream = bool(payload.get("stream", False))
             if getattr(self, "_use_sdk", False):
                 # Use official SDK
                 resp = self._sdk_client.chat.completions.create(
@@ -181,18 +194,123 @@ class GLMModelProvider(ModelProvider):
                     messages=payload["messages"],
                     temperature=payload.get("temperature"),
                     max_tokens=payload.get("max_tokens"),
-                    stream=False,
+                    stream=stream,
+                    tools=payload.get("tools"),
+                    tool_choice=payload.get("tool_choice"),
                 )
-                # SDK returns an object; normalize to dict-like
-                raw = getattr(resp, "model_dump", lambda: resp)()
-                choice0 = (raw.get("choices") or [{}])[0]
-                text = ((choice0.get("message") or {}).get("content")) or ""
-                usage = raw.get("usage", {})
+                if stream:
+                    # Aggregate streamed chunks from SDK iterator
+                    content_parts = []
+                    actual_model = None
+                    response_id = None
+                    created_ts = None
+                    try:
+                        for event in resp:
+                            try:
+                                # Support both delta and message content shapes
+                                choice = getattr(event, "choices", [None])[0]
+                                if choice is not None:
+                                    delta = getattr(choice, "delta", None)
+                                    if delta and getattr(delta, "content", None):
+                                        content_parts.append(delta.content)
+                                    msg = getattr(choice, "message", None)
+                                    if msg and getattr(msg, "content", None):
+                                        content_parts.append(msg.content)
+                                if actual_model is None and getattr(event, "model", None):
+                                    actual_model = event.model
+                                if response_id is None and getattr(event, "id", None):
+                                    response_id = event.id
+                                if created_ts is None and getattr(event, "created", None):
+                                    created_ts = event.created
+                            except Exception:
+                                continue
+                    except Exception as stream_err:
+                        raise RuntimeError(f"GLM SDK streaming failed: {stream_err}") from stream_err
+
+                    text = "".join(content_parts)
+                    raw = None
+                    usage = {}
+                    return ModelResponse(
+                        content=text or "",
+                        usage=usage or None,
+                        model_name=resolved,
+                        friendly_name="GLM",
+                        provider=ProviderType.GLM,
+                        metadata={
+                            "streamed": True,
+                            "model": actual_model or resolved,
+                            "id": response_id,
+                            "created": created_ts,
+                        },
+                    )
+                else:
+                    # Non-streaming via SDK
+                    raw = getattr(resp, "model_dump", lambda: resp)()
+                    choice0 = (raw.get("choices") or [{}])[0]
+                    text = ((choice0.get("message") or {}).get("content")) or ""
+                    usage = raw.get("usage", {})
             else:
                 # HTTP fallback
-                raw = self.client.post_json("/chat/completions", payload)
-                text = raw.get("choices", [{}])[0].get("message", {}).get("content", "")
-                usage = raw.get("usage", {})
+                if stream:
+                    # SSE streaming
+                    content_parts = []
+                    actual_model = None
+                    response_id = None
+                    created_ts = None
+                    try:
+                        for data in self.client.stream_sse("/chat/completions", payload, event_field="data"):
+                            line = (data or "").strip()
+                            if not line:
+                                continue
+                            if line == "[DONE]":
+                                break
+                            try:
+                                evt = json.loads(line)
+                            except Exception:
+                                # Some implementations send raw text chunks; append directly
+                                content_parts.append(line)
+                                continue
+                            try:
+                                choice0 = (evt.get("choices") or [{}])[0]
+                                # GLM-like chunk may include delta or message
+                                delta = (choice0.get("delta") or {})
+                                if isinstance(delta, dict) and delta.get("content"):
+                                    content_parts.append(delta.get("content") or "")
+                                msg = (choice0.get("message") or {})
+                                if isinstance(msg, dict) and msg.get("content"):
+                                    content_parts.append(msg.get("content") or "")
+                                actual_model = actual_model or evt.get("model")
+                                response_id = response_id or evt.get("id")
+                                created_ts = created_ts or evt.get("created")
+                                finish_reason = choice0.get("finish_reason")
+                                if finish_reason in ("stop", "length"):
+                                    # Let loop continue to consume until provider sends DONE
+                                    pass
+                            except Exception:
+                                continue
+                    except Exception as stream_err:
+                        raise RuntimeError(f"GLM HTTP streaming failed: {stream_err}") from stream_err
+
+                    text = "".join(content_parts)
+                    raw = None
+                    usage = {}
+                    return ModelResponse(
+                        content=text or "",
+                        usage=usage or None,
+                        model_name=resolved,
+                        friendly_name="GLM",
+                        provider=ProviderType.GLM,
+                        metadata={
+                            "streamed": True,
+                            "model": actual_model or resolved,
+                            "id": response_id,
+                            "created": created_ts,
+                        },
+                    )
+                else:
+                    raw = self.client.post_json("/chat/completions", payload)
+                    text = raw.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    usage = raw.get("usage", {})
 
             return ModelResponse(
                 content=text or "",
@@ -200,11 +318,11 @@ class GLMModelProvider(ModelProvider):
                     "input_tokens": int(usage.get("prompt_tokens", 0)),
                     "output_tokens": int(usage.get("completion_tokens", 0)),
                     "total_tokens": int(usage.get("total_tokens", 0)),
-                },
+                } if usage else None,
                 model_name=resolved,
                 friendly_name="GLM",
                 provider=ProviderType.GLM,
-                metadata={"raw": raw},
+                metadata={"raw": raw, "streamed": bool(stream)},
             )
         except Exception as e:
             logger.error("GLM generate_content failed: %s", e)

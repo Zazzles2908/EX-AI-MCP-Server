@@ -10,6 +10,9 @@ from typing import Any, Dict, Set
 
 logger = logging.getLogger(__name__)
 import os
+from src.providers.registry import ModelProviderRegistry
+from src.providers.base import ProviderType
+
 
 # Core tool set that cannot be disabled via DISABLED_TOOLS (safety)
 ESSENTIAL_TOOLS: set[str] = {
@@ -103,6 +106,45 @@ def filter_disabled_tools(all_tools: dict[str, Any]) -> dict[str, Any]:
     enabled_tools = apply_tool_filter(all_tools, disabled_tools)
     log_tool_configuration(disabled_tools, enabled_tools)
     return enabled_tools
+
+
+def filter_by_provider_capabilities(all_tools: dict[str, Any]) -> dict[str, Any]:
+    """
+    Filter provider-specific tools based on which providers are initialized.
+
+    - If Kimi provider is unavailable, remove tools prefixed with 'kimi_'
+    - If GLM provider is unavailable, remove tools prefixed with 'glm_'
+
+    This preserves the simplified configuration while avoiding broken tools when
+    provider keys are missing or providers are disallowed via ALLOWED_PROVIDERS.
+    """
+    try:
+        enabled = dict(all_tools)
+        kimi_available = ModelProviderRegistry.get_provider(ProviderType.KIMI) is not None
+        glm_available = ModelProviderRegistry.get_provider(ProviderType.GLM) is not None
+
+        if not kimi_available:
+            removed = []
+            for name in list(enabled.keys()):
+                if name.startswith("kimi_"):
+                    removed.append(name)
+                    enabled.pop(name, None)
+            if removed:
+                logger.info("ToolVisibility: Kimi not available; disabling %s", sorted(removed))
+
+        if not glm_available:
+            removed = []
+            for name in list(enabled.keys()):
+                if name.startswith("glm_"):
+                    removed.append(name)
+                    enabled.pop(name, None)
+            if removed:
+                logger.info("ToolVisibility: GLM not available; disabling %s", sorted(removed))
+
+        return enabled
+    except Exception as e:
+        logger.debug("Provider-capability filtering skipped: %s", e)
+        return all_tools
 
 
 

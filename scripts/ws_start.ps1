@@ -27,7 +27,7 @@ try {
     Write-Host "Starting WS daemon..." -ForegroundColor Cyan
     # If a daemon is running, stop it first for a friendly single-command start
     powershell -ExecutionPolicy Bypass -File $StopScript | Write-Host
-    & $Py "scripts\run_ws_daemon.py"
+    & $Py "scripts\ws\run_ws_daemon.py"
   }
 }
 finally {

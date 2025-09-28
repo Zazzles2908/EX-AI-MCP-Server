@@ -65,6 +65,7 @@ PING_TIMEOUT = int(os.getenv("EXAI_WS_PING_TIMEOUT", "30"))    # allow slower sy
 from server import TOOLS as SERVER_TOOLS  # type: ignore
 from server import _ensure_providers_configured  # type: ignore
 from server import handle_call_tool as SERVER_HANDLE_CALL_TOOL  # type: ignore
+from server import register_provider_specific_tools  # type: ignore
 
 from src.providers.registry import ModelProviderRegistry  # type: ignore
 from src.providers.base import ProviderType  # type: ignore
@@ -286,6 +287,12 @@ async def _safe_send(ws: WebSocketServerProtocol, payload: dict) -> bool:
 async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dict[str, Any]) -> None:
     op = msg.get("op")
     if op == "list_tools":
+        # Ensure provider-specific tools are present before listing
+        try:
+            _ensure_providers_configured()
+            register_provider_specific_tools()
+        except Exception:
+            pass
         # Build a minimal tool descriptor set
         tools = []
         for name, tool in SERVER_TOOLS.items():
@@ -307,6 +314,8 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
         req_id = msg.get("request_id")
         try:
             _ensure_providers_configured()
+            # Ensure provider-specific tools are registered prior to lookup
+            register_provider_specific_tools()
         except Exception:
             pass
         tool = SERVER_TOOLS.get(name)

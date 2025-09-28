@@ -100,3 +100,37 @@ class HttpClient:
         resp.raise_for_status()
         return resp.json() if resp.content else {}
 
+
+
+    def stream_sse(
+        self,
+        path: str,
+        payload: Any,
+        *,
+        headers: Optional[Dict[str, str]] = None,
+        event_field: str = "data",
+    ):
+        """POST and stream Server-Sent Events (text/event-stream).
+
+        Yields decoded text payloads for lines prefixed with f"{event_field}:".
+        Keeps interface generic so providers can pass their own payload shape.
+        """
+        url = self._url(path)
+        h = self._headers(headers)
+        # Prefer explicit SSE content negotiation
+        try:
+            if "Accept" not in h:
+                h["Accept"] = "text/event-stream"
+        except Exception:
+            pass
+        with self._client.stream("POST", url, headers=h, content=json.dumps(payload)) as resp:
+            resp.raise_for_status()
+            for chunk in resp.iter_text():
+                if not chunk:
+                    continue
+                for line in chunk.splitlines():
+                    line = line.strip()
+                    if not line or line.startswith(":"):
+                        continue
+                    if line.startswith(f"{event_field}:"):
+                        yield line[len(f"{event_field}:"):].lstrip()

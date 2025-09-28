@@ -496,6 +496,13 @@ class SimpleTool(BaseTool):
                             pass
                 except Exception:
                     web_event = None
+                # Optional streaming: enable for GLM when GLM_STREAM_ENABLED=true and tool is chat
+                try:
+                    _stream_enabled = __os.getenv("GLM_STREAM_ENABLED", "false").strip().lower() in ("1","true","yes")
+                except Exception:
+                    _stream_enabled = False
+                if _stream_enabled and getattr(self, "get_name", lambda: "")() == "chat":
+                    provider_kwargs["stream"] = True if getattr(prov.get_provider_type(), "value", "").lower() == "glm" else provider_kwargs.get("stream")
                 result = prov.generate_content(
                     prompt=prompt,
                     model_name=_model_name,
@@ -531,6 +538,13 @@ class SimpleTool(BaseTool):
                             provider_kwargs["tool_choice"] = ws.tool_choice
                     except Exception:
                         pass
+                    # Optional streaming: enable for GLM when GLM_STREAM_ENABLED=true and tool is chat
+                    try:
+                        _stream_enabled = __os.getenv("GLM_STREAM_ENABLED", "false").strip().lower() in ("1","true","yes")
+                    except Exception:
+                        _stream_enabled = False
+                    if _stream_enabled and getattr(self, "get_name", lambda: "")() == "chat":
+                        provider_kwargs["stream"] = True if getattr(provider.get_provider_type(), "value", "").lower() == "glm" else provider_kwargs.get("stream")
                     model_response = provider.generate_content(
                         prompt=prompt,
                         model_name=self._current_model_name,
