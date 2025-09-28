@@ -1,5 +1,15 @@
 # EX-AI MCP Server - Production-Ready v2.0
 
+> 2025-09-28 Cleanup & Reorganization Summary
+>
+> - Architecture: GLM-first MCP WebSocket daemon; provider-native web browsing via GLM tools schema (no standalone web-search tool)
+> - Removed: Orchestrator tools (autopilot/orchestrate_auto/browse_orchestrator), custom GLM web search tool, streaming demo tools
+> - Registry: Simplified tool surface; diagnostics retained; listmodels hardened for optional OpenRouter
+> - Providers: Kimi ✅, GLM ✅; OpenRouter ❌ (optional, not configured); Custom/Local ❌
+> - Observability: .logs/ directory initialized for JSONL metrics
+>
+
+
 A production-ready MCP (Model Context Protocol) server with intelligent routing capabilities using GLM-4.5-Flash as an AI manager.
 
 ## 🚀 Key Features
