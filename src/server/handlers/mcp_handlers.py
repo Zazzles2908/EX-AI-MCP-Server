@@ -12,8 +12,8 @@ These handlers implement the MCP specification for tool discovery and execution.
 
 
 logger = logging.getLogger(__name__)
-# Provide server module reference for client-aware filtering
-import server as server  # used by get_client_info_from_context
+# Lazy server import to avoid circular import; import inside handlers when needed
+server = None  # placeholder, will be lazily imported
 
 
 async def handle_list_tools() -> list[Tool]:
@@ -36,7 +36,13 @@ async def handle_list_tools() -> list[Tool]:
     # Client-aware allow/deny filtering (generic profile with legacy CLAUDE_* fallback)
     try:
         from utils.client_info import get_client_info_from_context
-        ci = get_client_info_from_context(server) or {}
+        # Lazy import to avoid circular import when server.py imports this module
+        try:
+            import importlib
+            _server = importlib.import_module("server")
+        except Exception:
+            _server = None
+        ci = get_client_info_from_context(_server) or {}
         client_name = (ci.get("friendly_name") or ci.get("name") or "").lower()
         # Generic env first, then legacy Claude-specific variables
         raw_allow = os.getenv("CLIENT_TOOL_ALLOWLIST", os.getenv("CLAUDE_TOOL_ALLOWLIST", ""))
