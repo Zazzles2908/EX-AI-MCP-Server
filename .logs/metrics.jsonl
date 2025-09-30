@@ -512,3 +512,5 @@
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 2911, "output_tokens": 133, "t": 1759223904.9031336}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 4805, "output_tokens": 861, "t": 1759223973.519547}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 13405, "output_tokens": 1024, "t": 1759224238.424462}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 2783, "output_tokens": 463, "t": 1759226167.8370707}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 2768, "output_tokens": 1024, "t": 1759230198.0769784}
