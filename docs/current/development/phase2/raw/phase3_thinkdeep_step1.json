@@ -1,0 +1,12 @@
+{
+  "tool": "thinkdeep",
+  "status": "pause_for_thinkdeep",
+  "continuation_id": "2b2d2c21-acca-4303-a8ee-9724052e8673",
+  "duration_s": 0.0,
+  "summary": "Thinkdeep step 1 returned pause with next_call; no files requested in this run.",
+  "raw_progress": [
+    "thinkdeep: Starting step 1/2",
+    "thinkdeep: Processed step data. Updating findings...",
+    "thinkdeep: Step 1/2 complete"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "tool": "chat",
+  "turn": 2,
+  "status": "continuation_available",
+  "model_used": "glm-4.5-flash",
+  "continuation_id": "209f0f9d-65ad-4dbe-9bc0-241a3b28be12",
+  "duration_s": 5.1,
+  "summary": "Turn 2 succeeded on continuation with model mapped to glm-4.5-flash.",
+  "raw_excerpt": "ACK\n\nI'm ready to continue this conversation thread..."
+}

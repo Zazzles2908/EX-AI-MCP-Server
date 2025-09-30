@@ -21,17 +21,19 @@ class GLMPayloadPreviewTool(BaseTool):
 
     def get_input_schema(self) -> Dict[str, Any]:
         return {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
                 "prompt": {"type": "string"},
                 "model": {"type": "string", "default": "glm-4.5-flash"},
                 "temperature": {"type": "number", "default": 0.3},
-                "system_prompt": {"type": "string", "nullable": True},
+                "system_prompt": {"type": ["string", "null"]},
                 "use_websearch": {"type": "boolean", "default": False},
                 "tools": {"type": "array", "items": {"type": "object"}},
-                "tool_choice": {"type": ["string", "object"], "nullable": True},
+                "tool_choice": {"type": ["string", "object", "null"]},
             },
             "required": ["prompt"],
+            "additionalProperties": False,
         }
 
     def get_request_model(self):

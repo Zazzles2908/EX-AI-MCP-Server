@@ -1,0 +1,12 @@
+{
+  "tool": "chat",
+  "model": "auto",
+  "prompt": "Continuation test (auto mode): Turn 1.",
+  "raw": {
+    "content_excerpt": "ready...",
+    "metadata": {"model_used":"glm-4.5-flash","provider_used":"glm"},
+    "continuation_offer": {"continuation_id":"96785ea2-84b4-4f83-87be-fe406c98bf09","remaining_turns":19}
+  },
+  "summary": {"duration":"~5.2s","tokens":"~371"}
+}
+

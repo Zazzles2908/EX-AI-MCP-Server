@@ -1,5 +1,5 @@
 """
-System prompts for Gemini tools
+System prompts for EX-AI MCP server tools
 """
 
 from .analyze_prompt import ANALYZE_PROMPT

@@ -1,0 +1,377 @@
+"""
+Expert Analysis Mixin for Workflow Tools
+
+This module provides external model integration, analysis request formatting,
+response consolidation, and findings aggregation for workflow tools.
+
+Key Features:
+- Expert model integration with timeout and fallback
+- Analysis context preparation
+- Response parsing and consolidation
+- Findings aggregation across workflow steps
+- Graceful degradation on provider failures
+"""
+
+import asyncio
+import json
+import logging
+import time
+from typing import Any, Optional
+
+from tools.shared.base_models import ConsolidatedFindings
+from utils.progress import send_progress
+
+logger = logging.getLogger(__name__)
+
+
+class ExpertAnalysisMixin:
+    """
+    Mixin providing expert analysis integration for workflow tools.
+
+    This class handles calling external models for expert analysis,
+    with timeout management, fallback strategies, and graceful degradation.
+
+    Note: This mixin expects certain methods to be provided by the parent class
+    or other mixins. These are declared as abstract in BaseWorkflowMixin:
+    - get_name(), get_system_prompt(), get_language_instruction()
+    - get_expert_analysis_instruction()
+    - get_request_model_name(), get_request_thinking_mode()
+    - get_request_use_websearch(), get_request_use_assistant_model()
+    - get_validated_temperature(), _resolve_model_context()
+    - _prepare_files_for_expert_analysis(), _add_files_to_expert_context()
+    """
+
+    # ================================================================================
+    # Expert Analysis Configuration
+    # ================================================================================
+
+    def get_expert_analysis_instruction(self) -> str:
+        """
+        Get the instruction for expert analysis.
+
+        Default implementation for tools that don't use expert analysis.
+        Override this for tools that do use expert analysis.
+        """
+        return "Please provide expert analysis based on the investigation findings."
+
+    def should_call_expert_analysis(self, consolidated_findings: ConsolidatedFindings, request=None) -> bool:
+        """
+        Decide when to call external model based on tool-specific criteria.
+        
+        Default implementation for tools that don't use expert analysis.
+        Override this for tools that do use expert analysis.
+        
+        Args:
+            consolidated_findings: Findings from workflow steps
+            request: Current request object (optional for backwards compatibility)
+        """
+        if not self.requires_expert_analysis():
+            return False
+        
+        # Check if user requested to skip assistant model
+        if request and not self.get_request_use_assistant_model(request):
+            return False
+        
+        # Default logic for tools that support expert analysis
+        return (
+            len(consolidated_findings.relevant_files) > 0
+            or len(consolidated_findings.findings) >= 2
+            or len(consolidated_findings.issues_found) > 0
+        )
+    
+    def prepare_expert_analysis_context(self, consolidated_findings: ConsolidatedFindings) -> str:
+        """
+        Prepare context for external model call.
+        
+        Default implementation for tools that don't use expert analysis.
+        Override this for tools that do use expert analysis.
+        """
+        if not self.requires_expert_analysis():
+            return ""
+        
+        # Default context preparation
+        context_parts = [
+            f"=== {self.get_name().upper()} WORK SUMMARY ===",
+            f"Total steps: {len(consolidated_findings.findings)}",
+            f"Files examined: {len(consolidated_findings.files_checked)}",
+            f"Relevant files: {len(consolidated_findings.relevant_files)}",
+            "",
+            "=== WORK PROGRESSION ===",
+        ]
+        
+        for finding in consolidated_findings.findings:
+            context_parts.append(finding)
+        
+        return "\n".join(context_parts)
+    
+    def requires_expert_analysis(self) -> bool:
+        """
+        Override this to completely disable expert analysis for the tool.
+        
+        Returns True if the tool supports expert analysis (default).
+        Returns False if the tool is self-contained (like planner).
+        """
+        return True
+    
+    def should_include_files_in_expert_prompt(self) -> bool:
+        """
+        Whether to include file content in the expert analysis prompt.
+        Override this to return True if your tool needs files in the prompt.
+        """
+        return False
+    
+    def should_embed_system_prompt(self) -> bool:
+        """
+        Whether to embed the system prompt in the main prompt.
+        Override this to return True if your tool needs the system prompt embedded.
+        """
+        return False
+    
+    def get_expert_thinking_mode(self) -> str:
+        """
+        Get the thinking mode for expert analysis.
+        Override this to customize the thinking mode.
+        """
+        return "high"
+    
+    def get_expert_timeout_secs(self, request=None) -> float:
+        """Return wall-clock timeout for expert analysis.
+        Default from env EXPERT_ANALYSIS_TIMEOUT_SECS (seconds), fallback 300.
+        Tools may override (e.g., thinkdeep) for per-tool tuning.
+        """
+        import os
+        try:
+            return float(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", "300"))
+        except Exception:
+            return 300.0
+    
+    def get_expert_heartbeat_interval_secs(self, request=None) -> float:
+        """Interval in seconds for emitting progress while waiting on expert analysis.
+        Priority: EXAI_WS_EXPERT_KEEPALIVE_MS (ms) > EXPERT_HEARTBEAT_INTERVAL_SECS (s) > 10s default.
+        """
+        import os
+        try:
+            ms = os.getenv("EXAI_WS_EXPERT_KEEPALIVE_MS", "").strip()
+            if ms:
+                val = float(ms) / 1000.0
+                if val > 0:
+                    return max(0.5, val)
+        except Exception:
+            pass
+        try:
+            return float(os.getenv("EXPERT_HEARTBEAT_INTERVAL_SECS", "10"))
+        except Exception:
+            return 10.0
+    
+    # ================================================================================
+    # Expert Analysis Execution
+    # ================================================================================
+    
+    async def _call_expert_analysis(self, arguments: dict, request) -> dict:
+        """Call external model for expert analysis with watchdog and graceful degradation.
+        
+        We see occasional UI disconnects exactly after '[WORKFLOW_FILES] ... Prepared X unique relevant files' and
+        before '[PROGRESS] ... Step N/M complete'. That window corresponds to this method executing the slow
+        provider call. If the UI disconnects (websocket drop) or the provider stalls, we still want to finish
+        and persist a best-effort result instead of leaving the tool 'stuck'.
+        """
+        try:
+            # Model context should be resolved from early validation, but handle fallback for tests
+            if not self._model_context:  # type: ignore
+                try:
+                    model_name, model_context = self._resolve_model_context(arguments, request)
+                    self._model_context = model_context  # type: ignore
+                    self._current_model_name = model_name  # type: ignore
+                except Exception as e:
+                    logger.error(f"Failed to resolve model context for expert analysis: {e}")
+                    # Use request model as fallback (preserves existing test behavior)
+                    model_name = self.get_request_model_name(request)
+                    from utils.model_context import ModelContext
+                    model_context = ModelContext(model_name)
+                    self._model_context = model_context  # type: ignore
+                    self._current_model_name = model_name  # type: ignore
+            else:
+                model_name = self._current_model_name  # type: ignore
+            
+            provider = self._model_context.provider  # type: ignore
+            
+            # Prepare expert analysis context
+            expert_context = self.prepare_expert_analysis_context(self.consolidated_findings)  # type: ignore
+            
+            # Check if tool wants to include files in prompt
+            if self.should_include_files_in_expert_prompt():
+                file_content = self._prepare_files_for_expert_analysis()
+                if file_content:
+                    expert_context = self._add_files_to_expert_context(expert_context, file_content)
+            
+            # Get system prompt for this tool with localization support
+            base_system_prompt = self.get_system_prompt()
+            language_instruction = self.get_language_instruction()
+            system_prompt = language_instruction + base_system_prompt
+            
+            # Check if tool wants system prompt embedded in main prompt
+            if self.should_embed_system_prompt():
+                prompt = f"{system_prompt}\n\n{expert_context}\n\n{self.get_expert_analysis_instruction()}"
+                system_prompt = ""  # Clear it since we embedded it
+            else:
+                prompt = expert_context
+
+            # Optional micro-step draft phase: return early to avoid long expert blocking
+            try:
+                import os as _os
+                if (_os.getenv("EXAI_WS_EXPERT_MICROSTEP", "false").strip().lower() == "true"):
+                    try:
+                        send_progress(f"{self.get_name()}: Expert micro-step draft returned early; schedule validate phase next")
+                    except Exception:
+                        pass
+                    return {"status": "analysis_partial", "microstep": "draft", "raw_analysis": ""}
+            except Exception:
+                pass
+
+            # Validate temperature against model constraints
+            validated_temperature, temp_warnings = self.get_validated_temperature(request, self._model_context)  # type: ignore
+
+            # Log any temperature corrections
+            for warning in temp_warnings:
+                logger.warning(warning)
+
+            # Watchdog and soft-deadline setup
+            start = time.time()
+            try:
+                import os as _os
+                _soft_dl = float((_os.getenv("EXAI_WS_EXPERT_SOFT_DEADLINE_SECS", "0") or "0").strip() or 0)
+            except Exception:
+                _soft_dl = 0.0
+            deadline = start + self.get_expert_timeout_secs(request)
+
+            # Run provider call in a thread to allow cancellation/timeouts even if provider blocks
+            loop = asyncio.get_running_loop()
+            def _invoke_provider():
+                return provider.generate_content(
+                    prompt=prompt,
+                    model_name=model_name,
+                    system_prompt=system_prompt,
+                    temperature=validated_temperature,
+                    thinking_mode=self.get_request_thinking_mode(request),
+                    use_websearch=self.get_request_use_websearch(request),
+                    images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
+                )
+            task = loop.run_in_executor(None, _invoke_provider)
+
+            # Poll until done or deadline; emit progress breadcrumbs so UI stays alive
+            hb = max(5.0, self.get_expert_heartbeat_interval_secs(request))
+            while True:
+                # Check completion first
+                if task.done():
+                    try:
+                        model_response = task.result()
+                    except Exception as e:
+                        # Provider error - attempt graceful fallback on rate limit if enabled and time remains
+                        try:
+                            import os as _os
+                            allow_fb = _os.getenv("EXPERT_FALLBACK_ON_RATELIMIT", "true").strip().lower() == "true"
+                        except Exception:
+                            allow_fb = True
+                        err_text = str(e)
+                        is_rate_limited = ("429" in err_text) or ("ReachLimit" in err_text) or ("concurrent" in err_text.lower())
+                        time_left = deadline - time.time()
+                        if allow_fb and is_rate_limited and time_left > 3.0:
+                            # Try fallback to Kimi provider quickly
+                            try:
+                                send_progress(f"{self.get_name()}: Rate-limited on {provider.get_provider_type().value}, falling back to Kimi...")
+                            except Exception:
+                                pass
+                            try:
+                                from src.providers.registry import ModelProviderRegistry
+                                from src.providers.base import ProviderType as _PT
+                                fb_provider = ModelProviderRegistry.get_provider(_PT.KIMI)
+                                fb_model = _os.getenv("KIMI_THINKING_MODEL", "kimi-thinking-preview")
+                            except Exception:
+                                fb_provider = None
+                                fb_model = None
+                            if fb_provider and fb_model:
+                                def _invoke_fb():
+                                    return fb_provider.generate_content(
+                                        prompt=prompt,
+                                        model_name=fb_model,
+                                        system_prompt=system_prompt,
+                                        temperature=validated_temperature,
+                                        thinking_mode=self.get_request_thinking_mode(request),
+                                        use_websearch=self.get_request_use_websearch(request),
+                                        images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
+                                    )
+                                fb_task = loop.run_in_executor(None, _invoke_fb)
+                                # Wait within remaining time, emitting heartbeats
+                                while True:
+                                    if fb_task.done():
+                                        model_response = fb_task.result()
+                                        break
+                                    now_fb = time.time()
+                                    # Soft-deadline early return with partial to avoid client cancel
+                                    if _soft_dl and (now_fb - start) >= _soft_dl:
+                                        logger.warning("Expert analysis fallback soft-deadline reached; returning partial result early")
+                                        return {"status":"analysis_partial","soft_deadline_exceeded": True, "raw_analysis": ""}
+                                    if now_fb >= deadline:
+                                        try:
+                                            fb_task.cancel()
+                                        except Exception:
+                                            pass
+                                        logger.error("Expert analysis fallback timed out; returning partial context-only result")
+                                        return {"status":"analysis_timeout","error":"Expert analysis exceeded timeout","raw_analysis":""}
+                                    try:
+                                        send_progress(f"{self.get_name()}: Waiting on expert analysis (provider=kimi)...")
+                                    except Exception:
+                                        pass
+                                    # Sleep only up to remaining time
+                                    await asyncio.sleep(min(hb, max(0.1, deadline - now_fb)))
+                                break
+                        # No fallback or still failing - re-raise to outer handler
+                        raise
+                    break
+
+                now = time.time()
+                # Soft-deadline early return with partial to avoid client cancel
+                if _soft_dl and (now - start) >= _soft_dl:
+                    logger.warning("Expert analysis soft-deadline reached; returning partial result early")
+                    return {
+                        "status": "analysis_partial",
+                        "soft_deadline_exceeded": True,
+                        "raw_analysis": "",
+                    }
+                if now >= deadline:
+                    try:
+                        task.cancel()
+                    except Exception:
+                        pass
+                    logger.error("Expert analysis timed out; returning partial context-only result")
+                    return {
+                        "status": "analysis_timeout",
+                        "error": "Expert analysis exceeded timeout",
+                        "raw_analysis": "",
+                    }
+                # Emit heartbeat at configured cadence
+                try:
+                    send_progress(f"{self.get_name()}: Waiting on expert analysis (provider={provider.get_provider_type().value})...")
+                except Exception:
+                    pass
+                # Sleep only up to remaining time to avoid overshooting deadline
+                await asyncio.sleep(min(hb, max(0.1, deadline - time.time())))
+
+
+            if model_response.content:
+                try:
+                    analysis_result = json.loads(model_response.content.strip())
+                    return analysis_result
+                except json.JSONDecodeError:
+                    return {
+                        "status": "analysis_complete",
+                        "raw_analysis": model_response.content,
+                        "parse_error": "Response was not valid JSON",
+                    }
+            else:
+                return {"error": "No response from model", "status": "empty_response"}
+
+        except Exception as e:
+            logger.error(f"Error calling expert analysis: {e}", exc_info=True)
+            return {"error": str(e), "status": "analysis_error"}
+

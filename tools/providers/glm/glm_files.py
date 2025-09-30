@@ -29,12 +29,14 @@ class GLMUploadFileTool(BaseTool):
 
     def get_input_schema(self) -> Dict[str, Any]:
         return {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
                 "file": {"type": "string", "description": "Path to file (abs or relative)"},
                 "purpose": {"type": "string", "enum": ["agent"], "default": "agent"},
             },
             "required": ["file"],
+            "additionalProperties": False,
         }
 
     def get_request_model(self):
@@ -159,6 +161,7 @@ class GLMMultiFileChatTool(BaseTool):
             "name": self.name,
             "description": self.description,
             "input_schema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
                 "type": "object",
                 "properties": {
                     "files": {"type": "array", "items": {"type": "string"}},
@@ -167,6 +170,7 @@ class GLMMultiFileChatTool(BaseTool):
                     "temperature": {"type": "number", "default": 0.3},
                 },
                 "required": ["files", "prompt"],
+                "additionalProperties": False,
             },
         }
 

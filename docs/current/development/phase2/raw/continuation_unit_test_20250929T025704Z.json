@@ -1,0 +1,36 @@
+{
+  "cont_id": "514253eb-f163-47ce-a832-a1e71c528a7c",
+  "turns": [
+    {
+      "args": {
+        "prompt": "Turn 1: say 'ready' briefly and offer to continue.",
+        "model": "glm-4.5-flash",
+        "continuation_id": "514253eb-f163-47ce-a832-a1e71c528a7c",
+        "use_websearch": false,
+        "stream": false
+      },
+      "result_types": [
+        "text",
+        "text"
+      ],
+      "text_preview": "=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 4.5s | Model: glm-4.5-flash | Tokens: ~285\nContinuation ID: 514253eb-f163-47ce-a832-a1e71c528a7c\nNext Action Requir"
+    },
+    {
+      "args": {
+        "prompt": "Reply with just `ACK`.",
+        "model": "glm-4.5-flash",
+        "continuation_id": "514253eb-f163-47ce-a832-a1e71c528a7c",
+        "use_websearch": false,
+        "stream": false
+      },
+      "result_types": [
+        "text",
+        "text"
+      ],
+      "text_preview": "=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 1.1s | Model: glm-4.5-flash | Tokens: ~229\nContinuation ID: 514253eb-f163-47ce-a832-a1e71c528a7c\nNext Action Requir"
+    }
+  ],
+  "assertions": {
+    "contains_ACK": false
+  }
+}

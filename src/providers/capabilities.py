@@ -45,9 +45,13 @@ class KimiCapabilities(ProviderCapabilitiesBase):
     def get_websearch_tool_schema(self, config: Dict[str, Any]) -> WebSearchSchema:
         if not self.supports_websearch() or not config.get("use_websearch"):
             return WebSearchSchema(None, None)
-        # Choose schema mode via env: function | builtin | both (default function)
+        # Choose schema mode via env: native | function | builtin | both (default function)
         mode = os.getenv("KIMI_WEBSEARCH_SCHEMA", "function").strip().lower()
         tools: list[dict] = []
+        if mode in ("native",):
+            # Note: Moonshot OpenAI-compatible /chat/completions currently rejects type=web_search
+            # Keep for future compatibility, but not the default.
+            tools.append({"type": "web_search"})
         if mode in ("function", "both"):
             tools.append({
                 "type": "function",

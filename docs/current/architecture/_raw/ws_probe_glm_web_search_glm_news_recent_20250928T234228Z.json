@@ -1,0 +1,20 @@
+{
+  "tool": "glm_web_search",
+  "label": "glm_news_recent",
+  "timestamp": "2025-09-28T23:42:28.902747+00:00",
+  "request": {
+    "search_query": "ZhipuAI GLM-4.5 latest announcement",
+    "count": 5,
+    "search_recency_filter": "oneMonth"
+  },
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"created\": 1759102948, \"id\": \"20250929074226fac842891a144f55\", \"request_id\": \"20250929074226fac842891a144f55\", \"search_intent\": [{\"intent\": \"SEARCH_ALWAYS\", \"keywords\": \"Zhipu AI GLM-4.5 latest announcement\", \"query\": \"Zhipu AI GLM-4.5 latest announcement\"}], \"search_result\": [{\"content\": \"GLM-4.5. The latest SOTA models for reasoning, code, and agents ... Enhanced capabilities in solving a wide range of complex problems and mathematical reasoning.\", \"icon\": \"\", \"link\": \"https://bigmodel.cn/\", \"media\": \"\", \"publish_date\": \"\", \"refer\": \"ref_1\", \"title\": \"ZHIPU·AI\"}, {\"content\": \"Chinese AI startup Zhipu on Monday released open-source model GLM-4.5 designed for intelligent agent applications, a statement said, ...\", \"icon\": \"\", \"link\": \"https://www.reuters.com/technology/chinas-ai-startup-zhipu-releases-open-source-model-glm-45-2025-07-28/\", \"media\": \"\", \"publish_date\": \"2025年7月28日\", \"refer\": \"ref_2\", \"title\": \"China's AI startup Zhipu releases open-source model GLM- ...\"}, {\"content\": \"Today, we introduce two new GLM family members: GLM-4.5 and GLM-4.5-Air — our latest flagship models. GLM-4.5 is built with 355 billion ...\", \"icon\": \"\", \"link\": \"https://z.ai/blog/glm-4.5\", \"media\": \"\", \"publish_date\": \"2025年7月28日\", \"refer\": \"ref_3\", \"title\": \"GLM-4.5: Reasoning, Coding, and Agentic Abililties\"}, {\"content\": \"Zhipu AI has released GLM-4.5 and GLM-4.5-Air, two new AI models designed to handle reasoning, coding, and agent tasks within a single ...\", \"icon\": \"\", \"link\": \"https://www.infoq.com/news/2025/08/glm-4-5/\", \"media\": \"\", \"publish_date\": \"2025年8月7日\", \"refer\": \"ref_4\", \"title\": \"GLM-4.5 Launches with Strong Reasoning, Coding, and ...\"}, {\"content\": \"(Z.ai) officially released a next-generation flagship large-scale model named \\\"GLM-4.5\\\". Designed as a foundation model for AI agent ...\", \"icon\": \"\", \"link\": \"https://english.beijing.gov.cn/beijinginfo/sci/latesttrends/202508/t20250804_4165289.html\", \"media\": \"\", \"publish_date\": \"2025年8月4日\", \"refer\": \"ref_5\", \"title\": \"'Made-in-Beijing' Large-Scale Model GLM-4.5 Released ...\"}]}"
+    },
+    {
+      "type": "text",
+      "text": "=== MCP CALL SUMMARY ===\nTool: glm_web_search | Status: COMPLETE (Step 1/? complete)\nDuration: 3.3s | Model: glm-4.5-flash | Tokens: ~516\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=0ed9cbf9-02fd-432d-9bbd-2f792630471e\n\n<details><summary>Tool activity (req_id=0ed9cbf9-02fd-432d-9bbd-2f792630471e)</summary>\n\n(no progress captured)\n</details>"
+    }
+  ]
+}

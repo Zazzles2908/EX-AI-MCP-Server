@@ -1,0 +1,7 @@
+{
+  "name": "sample",
+  "version": 1,
+  "items": ["alpha", "beta", "gamma"],
+  "nested": {"flag": true, "count": 3}
+}
+

@@ -1,0 +1,20 @@
+{
+  "tool": "glm_web_search",
+  "label": "glm_news_recent",
+  "timestamp": "2025-09-28T23:49:53.980330+00:00",
+  "request": {
+    "search_query": "ZhipuAI GLM-4.5 latest announcement",
+    "count": 5,
+    "search_recency_filter": "oneMonth"
+  },
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"created\": 1759103393, \"id\": \"20250929074951ed378e73f23a462a\", \"request_id\": \"20250929074951ed378e73f23a462a\", \"search_intent\": [{\"intent\": \"SEARCH_ALWAYS\", \"keywords\": \"ZhipuAI GLM-4.5 latest news\", \"query\": \"ZhipuAI GLM-4.5 latest news\"}], \"search_result\": [{\"content\": \"GLM-4.5. The latest SOTA models for reasoning, code, and agents. GLM-4.5 is officially released: featuring a MoE architecture with 355 billion ...\", \"icon\": \"\", \"link\": \"https://bigmodel.cn/\", \"media\": \"\", \"publish_date\": \"\", \"refer\": \"ref_1\", \"title\": \"ZHIPU·AI\"}, {\"content\": \"Today, we introduce two new GLM family members: GLM-4.5 and GLM-4.5-Air — our latest flagship models. GLM-4.5 is built with 355 billion total ...\", \"icon\": \"\", \"link\": \"https://z.ai/blog/glm-4.5\", \"media\": \"\", \"publish_date\": \"2025年7月28日\", \"refer\": \"ref_2\", \"title\": \"GLM-4.5: Reasoning, Coding, and Agentic Abililties\"}, {\"content\": \"Zhipu AI reports that GLM-4.5 ranks 3rd overall on a combined set of 12 benchmarks covering agentic tasks, reasoning, and coding, trailing only ...\", \"icon\": \"\", \"link\": \"https://www.infoq.com/news/2025/08/glm-4-5/\", \"media\": \"\", \"publish_date\": \"2025年8月7日\", \"refer\": \"ref_3\", \"title\": \"GLM-4.5 Launches with Strong Reasoning, Coding, and ...\"}, {\"content\": \"Recently, the GLM team released the GLM-4.5 and GLM-4.5V model series, which are designed for intelligent agents. They are the top trending ...\", \"icon\": \"\", \"link\": \"https://blog.vllm.ai/2025/08/19/glm45-vllm.html\", \"media\": \"\", \"publish_date\": \"2025年8月19日\", \"refer\": \"ref_4\", \"title\": \"GLM-4.5 Meets vLLM: Built for Intelligent Agents\"}, {\"content\": \"What's new: GLM-4.5 is a family of open-weights models trained to excel at tool use and coding. The family includes GLM-4.5 and the smaller GLM- ...\", \"icon\": \"\", \"link\": \"https://www.deeplearning.ai/the-batch/zhipu-ai-z-ai-releases-open-weights-glm-4-5-models-that-perform-comparably-to-the-latest-from-claude-and-deepseek/\", \"media\": \"\", \"publish_date\": \"2025年8月6日\", \"refer\": \"ref_5\", \"title\": \"Zhipu AI (Z.ai) Releases Open-Weights GLM-4.5 Models ...\"}]}"
+    },
+    {
+      "type": "text",
+      "text": "=== MCP CALL SUMMARY ===\nTool: glm_web_search | Status: COMPLETE (Step 1/? complete)\nDuration: 3.1s | Model: glm-4.5-flash | Tokens: ~514\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=3bfaeaa3-a8ee-466e-b3de-21b81fb5c439\n\n<details><summary>Tool activity (req_id=3bfaeaa3-a8ee-466e-b3de-21b81fb5c439)</summary>\n\n(no progress captured)\n</details>"
+    }
+  ]
+}

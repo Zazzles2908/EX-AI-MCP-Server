@@ -17,193 +17,22 @@ Key features:
 """
 
 import logging
-from typing import TYPE_CHECKING, Any, Literal, Optional
-
-from pydantic import Field, model_validator
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from tools.models import ToolModelCategory
 
 from config import TEMPERATURE_ANALYTICAL
 from systemprompts import ANALYZE_PROMPT
-from tools.shared.base_models import WorkflowRequest
 
+from .analyze_config import ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS
+from .analyze_models import AnalyzeWorkflowRequest
 from ..workflow.base import WorkflowTool
 
 # Progress helper
 from utils.progress import send_progress
 
 logger = logging.getLogger(__name__)
-
-# Tool-specific field descriptions for analyze workflow
-ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS = {
-    "step": (
-        "What to analyze or look for in this step. In step 1, describe what you want to analyze and begin forming "
-        "an analytical approach after thinking carefully about what needs to be examined. Consider code quality, "
-        "performance implications, architectural patterns, and design decisions. Map out the codebase structure, "
-        "understand the business logic, and identify areas requiring deeper analysis. In later steps, continue "
-        "exploring with precision and adapt your understanding as you uncover more insights."
-    ),
-    "step_number": (
-        "The index of the current step in the analysis sequence, beginning at 1. Each step should build upon or "
-        "revise the previous one."
-    ),
-    "total_steps": (
-        "Your current estimate for how many steps will be needed to complete the analysis. "
-        "Adjust as new findings emerge."
-    ),
-    "next_step_required": (
-        "Set to true if you plan to continue the investigation with another step. False means you believe the "
-        "analysis is complete and ready for expert validation."
-    ),
-    "findings": (
-        "Summarize everything discovered in this step about the code being analyzed. Include analysis of architectural "
-        "patterns, design decisions, tech stack assessment, scalability characteristics, performance implications, "
-        "maintainability factors, security posture, and strategic improvement opportunities. Be specific and avoid "
-        "vague language—document what you now know about the codebase and how it affects your assessment. "
-        "IMPORTANT: Document both strengths (good patterns, solid architecture, well-designed components) and "
-        "concerns (tech debt, scalability risks, overengineering, unnecessary complexity). In later steps, confirm "
-        "or update past findings with additional evidence."
-    ),
-    "files_checked": (
-        "List all files (as absolute paths, do not clip or shrink file names) examined during the analysis "
-        "investigation so far. Include even files ruled out or found to be unrelated, as this tracks your "
-        "exploration path."
-    ),
-    "relevant_files": (
-        "Subset of files_checked (as full absolute paths) that contain code directly relevant to the analysis or "
-        "contain significant patterns, architectural decisions, or examples worth highlighting. Only list those that are "
-        "directly tied to important findings, architectural insights, performance characteristics, or strategic "
-        "improvement opportunities. This could include core implementation files, configuration files, or files "
-        "demonstrating key patterns."
-    ),
-    "relevant_context": (
-        "List methods, functions, classes, or modules that are central to the analysis findings, in the format "
-        "'ClassName.methodName', 'functionName', or 'module.ClassName'. Prioritize those that demonstrate important "
-        "patterns, represent key architectural decisions, show performance characteristics, or highlight strategic "
-        "improvement opportunities."
-    ),
-    "backtrack_from_step": (
-        "If an earlier finding or assessment needs to be revised or discarded, specify the step number from which to "
-        "start over. Use this to acknowledge investigative dead ends and correct the course."
-    ),
-    "images": (
-        "Optional list of absolute paths to architecture diagrams, design documents, or visual references "
-        "that help with analysis context. Only include if they materially assist understanding or assessment."
-    ),
-    "confidence": (
-        "Your confidence level in the current analysis findings: exploring (early investigation), "
-        "low (some insights but more needed), medium (solid understanding), high (comprehensive insights), "
-        "very_high (very comprehensive insights), almost_certain (nearly complete analysis), "
-        "certain (100% confidence - complete analysis ready for expert validation)"
-    ),
-    "analysis_type": "Type of analysis to perform (architecture, performance, security, quality, general). Synonyms like 'comprehensive' will map to 'general'.",
-    "output_format": "How to format the output (summary, detailed, actionable)",
-}
-
-
-class AnalyzeWorkflowRequest(WorkflowRequest):
-    """Request model for analyze workflow investigation steps"""
-
-    # Required fields for each investigation step
-    step: str = Field(..., description=ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS["step"])
-    step_number: int = Field(..., description=ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS["step_number"])
-    total_steps: int = Field(..., description=ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS["total_steps"])
-    next_step_required: bool = Field(..., description=ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS["next_step_required"])
-
-    # Investigation tracking fields
-    findings: str = Field(..., description=ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS["findings"])
-    files_checked: list[str] = Field(
-        default_factory=list, description=ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS["files_checked"]
-    )
-    relevant_files: list[str] = Field(
-        default_factory=list, description=ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS["relevant_files"]
-    )
-    relevant_context: list[str] = Field(
-        default_factory=list, description=ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS["relevant_context"]
-    )
-
-    # Issues found during analysis (structured with severity)
-    issues_found: list[dict] = Field(
-        default_factory=list,
-        description="Issues or concerns identified during analysis, each with severity level (critical, high, medium, low)",
-    )
-
-    # Optional backtracking field
-    backtrack_from_step: Optional[int] = Field(
-        None, description=ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS["backtrack_from_step"]
-    )
-
-    # Optional images for visual context
-    images: Optional[list[str]] = Field(default=None, description=ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS["images"])
-
-    # Analyze-specific fields (only used in step 1 to initialize)
-    # Note: Use relevant_files field instead of files for consistency across workflow tools
-    analysis_type: Optional[Literal["architecture", "performance", "security", "quality", "general"]] = Field(
-        "general", description=ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS["analysis_type"]
-    )
-    output_format: Optional[Literal["summary", "detailed", "actionable"]] = Field(
-        "detailed", description=ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS["output_format"]
-    )
-
-    # Keep thinking_mode and use_websearch from original analyze tool
-    # temperature is inherited from WorkflowRequest
-
-    @model_validator(mode="after")
-    def validate_step_one_requirements(self):
-        """Ensure step 1 has required relevant_files, but allow relaxations.
-
-        Relaxation cases:
-        - If continuation_id is present (continuing prior analysis), allow empty relevant_files
-        - If env ANALYZE_ALLOW_DEFAULT_ROOT is true, allow defaulting to repo root ('.')
-        """
-        if self.step_number == 1:
-            if not self.relevant_files:
-                import os
-                # Allow continuation-based step 1 (some clients reset numbering)
-                cont_id = getattr(self, "continuation_id", None)
-                allow_root = os.getenv("ANALYZE_ALLOW_DEFAULT_ROOT", "true").strip().lower() == "true"
-                if cont_id or allow_root:
-                    # Try a git-aware default: changed/recent files if git is available
-                    try:
-                        import subprocess, shlex
-                        cmd = "git -c core.quotepath=false status --porcelain"
-                        proc = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=os.getcwd())
-                        changed = []
-                        if proc.returncode == 0:
-                            for line in proc.stdout.splitlines():
-                                parts = line.strip().split()
-                                if parts:
-                                    path = parts[-1]
-                                    # Skip deletes and untracked directories noise
-                                    if path and not path.endswith("/"):
-                                        changed.append(path)
-                        if changed:
-                            # Cap to a reasonable default set
-                            self.relevant_files = changed[:50]
-                        else:
-                            self.relevant_files = ["."]
-                    except Exception:
-                        self.relevant_files = ["."]
-
-
-                else:
-                    raise ValueError("Step 1 requires 'relevant_files' (or set ANALYZE_ALLOW_DEFAULT_ROOT=true)")
-        return self
-    @model_validator(mode="after")
-    def normalize_analysis_type(self):
-        # Map synonyms to valid literals; default to 'general'
-        syn = (self.analysis_type or "").strip().lower()
-        mapping = {
-            "comprehensive": "general",
-            "full": "general",
-            "all": "general",
-        }
-        if syn in mapping:
-            self.analysis_type = mapping[syn]
-        elif syn not in {"architecture", "performance", "security", "quality", "general", ""}:
-            self.analysis_type = "general"
-        return self
 
 
 

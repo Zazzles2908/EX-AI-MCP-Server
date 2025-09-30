@@ -29,6 +29,7 @@ class KimiIntentAnalysisTool(BaseTool):
 
     def get_input_schema(self) -> Dict[str, Any]:
         return {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
                 "prompt": {"type": "string", "description": "User prompt to classify"},
@@ -36,6 +37,7 @@ class KimiIntentAnalysisTool(BaseTool):
                 "use_websearch": {"type": "boolean", "default": True},
             },
             "required": ["prompt"],
+            "additionalProperties": False,
         }
 
     def get_request_model(self):

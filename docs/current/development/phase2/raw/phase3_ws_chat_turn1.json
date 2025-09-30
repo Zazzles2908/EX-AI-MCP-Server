@@ -1,0 +1,10 @@
+{
+  "tool": "chat",
+  "turn": 1,
+  "status": "continuation_available",
+  "model_used": "glm-4.5-flash",
+  "continuation_id": "209f0f9d-65ad-4dbe-9bc0-241a3b28be12",
+  "duration_s": 4.1,
+  "summary": "Turn 1 succeeded; auto resolved to glm-4.5-flash; continuation offered.",
+  "raw_excerpt": "Hello! I'm ready to help you..."
+}

@@ -29,21 +29,23 @@ class GLMWebSearchTool(BaseTool):
 
     def get_input_schema(self) -> Dict[str, Any]:
         return {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
                 "search_query": {"type": "string", "description": "Search query (required)"},
                 "count": {"type": "integer", "default": 10},
                 "search_engine": {"type": "string", "default": "search-prime"},
-                "search_domain_filter": {"type": "string", "nullable": True},
+                "search_domain_filter": {"type": ["string", "null"]},
                 "search_recency_filter": {
                     "type": "string",
                     "enum": ["oneDay", "oneWeek", "oneMonth", "oneYear", "all"],
                     "default": "all",
                 },
-                "request_id": {"type": "string", "nullable": True},
-                "user_id": {"type": "string", "nullable": True},
+                "request_id": {"type": ["string", "null"]},
+                "user_id": {"type": ["string", "null"]},
             },
             "required": ["search_query"],
+            "additionalProperties": False,
         }
 
     def get_request_model(self):

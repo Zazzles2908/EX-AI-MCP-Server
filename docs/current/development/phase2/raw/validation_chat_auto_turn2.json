@@ -1,0 +1,12 @@
+{
+  "tool": "chat",
+  "model": "auto",
+  "prompt": "Continuation test (auto mode): Turn 2.",
+  "continuation_id": "96785ea2-84b4-4f83-87be-fe406c98bf09",
+  "raw": {
+    "content": "ACK",
+    "metadata": {"model_used":"glm-4.5-flash","provider_used":"glm"}
+  },
+  "summary": {"duration":"~2.4s","tokens":"~229"}
+}
+

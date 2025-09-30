@@ -23,34 +23,44 @@ class KimiChatWithToolsTool(BaseTool):
 
     def get_input_schema(self) -> Dict[str, Any]:
         return {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
-                "messages": {"type": ["array", "string"]},
+                "messages": {
+                    "oneOf": [
+                        {"type": "string"},
+                        {"type": "array", "items": {"oneOf": [{"type": "string"}, {"type": "object"}]}}
+                    ]
+                },
                 "model": {"type": "string", "default": os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0711-preview")},
-                "tools": {"type": "array"},
-                "tool_choice": {"type": "string"},
+                "tools": {"type": "array", "items": {"type": "object"}},
+                "tool_choice": {"oneOf": [{"type": "string"}, {"type": "object"}]},
                 "temperature": {"type": "number", "default": 0.6},
                 "stream": {"type": "boolean", "default": False},
                 # Fixed: use_websearch (without $ prefix)
                 "use_websearch": {"type": "boolean", "default": False},
             },
             "required": ["messages"],
+            "additionalProperties": False,
         }
 
     def get_system_prompt(self) -> str:
         return (
-            "You are a Kimi chat orchestrator with tool-use support.\n"
-            "Purpose: Call Kimi chat completions with optional tools and tool_choice.\n\n"
+            "You are the EX-AI MCP Kimi chat orchestrator with tool-use support.\n"
+            "Purpose: Call Kimi chat completions with optional tools/tool_choice under EX-AI routing.\n\n"
             "Parameters:\n"
             "- messages: OpenAI-compatible message array.\n"
-            "- model: Kimi model id (default via KIMI_DEFAULT_MODEL).\n"
+            "- model: Kimi model id (default via KIMI_DEFAULT_MODEL). Non-Kimi (e.g., 'auto') will be remapped.\n"
             "- tools: Optional OpenAI tools spec array; may be auto-injected from env.\n"
             "- tool_choice: 'auto'|'none'|'required' or provider-specific structure.\n"
-            "- temperature, stream.\n\n"
+            "- temperature, stream (SSE).\n\n"
             "Provider Features:\n"
-            "- use_websearch: When True, injects Kimi's built-in $web_search tool for internet search.\n"
-            "- File context can be added separately via kimi_upload_and_extract/kimi_multi_file_chat.\n\n"
-            "Output: Return the raw response JSON (choices, usage). Keep responses concise and on-task."
+            "- use_websearch: When True, inject Kimi's built-in $web_search tool via capabilities layer (env-gated).\n"
+            "- File context: Prefer kimi_upload_and_extract / kimi_multi_file_chat for ingestion before chat.\n\n"
+            "Streaming & Observability:\n"
+            "- If stream=true, responses may include metadata.streamed=true and partial content; a non-stream follow-up may finalize.\n"
+            "- Context-cache and idempotency headers may be attached automatically (do not expose secrets).\n\n"
+            "Output: Return raw provider JSON (choices, usage, tool_calls if any). Keep responses concise and on-task."
         )
 
     def get_request_model(self):
@@ -248,9 +258,24 @@ class KimiChatWithToolsTool(BaseTool):
                 def _stream_call():
                     extra_headers = {"Msh-Trace-Mode": "on"}
                     try:
+                        # Defensive header length cap to avoid NGINX 400 on large headers
+                        try:
+                            max_hdr_len = int(os.getenv("KIMI_MAX_HEADER_LEN", "4096"))
+                        except Exception:
+                            max_hdr_len = 4096
+                        def _safe_set(hname: str, hval: str):
+                            try:
+                                if not hval:
+                                    return
+                                if max_hdr_len > 0 and len(hval) > max_hdr_len:
+                                    # Drop overly large headers rather than sending
+                                    return
+                                extra_headers[hname] = hval
+                            except Exception:
+                                pass
                         ck = arguments.get("_call_key") or arguments.get("call_key")
                         if ck:
-                            extra_headers["Idempotency-Key"] = str(ck)
+                            _safe_set("Idempotency-Key", str(ck))
                         sid = arguments.get("_session_id")
                         ctok = getattr(prov, "get_cache_token", None)
                         if ctok and sid:
@@ -261,21 +286,25 @@ class KimiChatWithToolsTool(BaseTool):
                             pf = hashlib.sha256("\n".join(parts).encode("utf-8", errors="ignore")).hexdigest()
                             t = prov.get_cache_token(sid, "kimi_chat_with_tools", pf)
                             if t:
-                                extra_headers["Msh-Context-Cache-Token"] = t
+                                _safe_set("Msh-Context-Cache-Token", t)
                     except Exception:
                         pass
                     # Use centralized adapter
                     from streaming.streaming_adapter import stream_openai_chat_events
+                    # Build kwargs without None entries for provider compliance
+                    _ckw = {
+                        "model": model_used,
+                        "messages": norm_msgs,
+                        "temperature": float(arguments.get("temperature", 0.6)),
+                        "extra_headers": (extra_headers or None),
+                    }
+                    if tools:
+                        _ckw["tools"] = tools
+                    if tools and tool_choice is not None:
+                        _ckw["tool_choice"] = tool_choice
                     return stream_openai_chat_events(
                         client=prov.client,
-                        create_kwargs={
-                            "model": model_used,
-                            "messages": norm_msgs,
-                            "tools": tools,
-                            "tool_choice": tool_choice,
-                            "temperature": float(arguments.get("temperature", 0.6)),
-                            "extra_headers": (extra_headers or None),
-                        },
+                        create_kwargs=_ckw,
                     )
 
                 # Apply overall streaming timeout (env: KIMI_STREAM_TIMEOUT_SECS)
@@ -303,17 +332,95 @@ class KimiChatWithToolsTool(BaseTool):
             import copy
             import urllib.parse, urllib.request
 
-            def _extract_tool_calls(raw_any: any) -> list[dict] | None:
+            # Debug trace helper: write last payload to .logs when enabled
+            def _emit_trace(payload: dict):
                 try:
+                    import os, json
+                    os.makedirs('.logs', exist_ok=True)
+                    with open('.logs/kimi_tool_last.json', 'w', encoding='utf-8') as f:
+                        json.dump(payload, f, ensure_ascii=False)
+                except Exception:
+                    pass
+
+            def _is_trace_enabled() -> bool:
+                try:
+                    # Default ON to capture evidence unless explicitly disabled
+                    return bool(arguments.get("debug_trace", False)) or os.getenv("KIMI_TOOLTRACE", "1").strip().lower() in ("1","true","yes")
+                except Exception:
+                    return True
+
+            def _extract_tool_calls(raw_any: any) -> list[dict] | None:
+                """Robustly extract tool_calls from provider payloads.
+                Handles dicts or model objects, and falls back to function_call.
+                """
+                try:
+                    import json
+                    def _to_dict(x):
+                        if x is None:
+                            return None
+                        if isinstance(x, dict):
+                            return x
+                        if hasattr(x, "model_dump"):
+                            try:
+                                return x.model_dump()
+                            except Exception:
+                                pass
+                        try:
+                            return {k: getattr(x, k) for k in dir(x) if not k.startswith("_")}
+                        except Exception:
+                            return None
+
                     payload = raw_any
                     if hasattr(payload, "model_dump"):
-                        payload = payload.model_dump()
-                    choices = payload.get("choices") or []
+                        try:
+                            payload = payload.model_dump()
+                        except Exception:
+                            payload = _to_dict(payload)
+                    choices = (payload or {}).get("choices") or []
                     if not choices:
                         return None
-                    msg = choices[0].get("message") or {}
-                    tcs = msg.get("tool_calls")
-                    return tcs if tcs else None
+                    ch0 = choices[0]
+                    ch0 = _to_dict(ch0) or ch0
+                    msg = (ch0.get("message") if isinstance(ch0, dict) else None) or {}
+
+                    # 1) Direct tool_calls on message
+                    tcs = None
+                    if isinstance(msg, dict):
+                        tcs = msg.get("tool_calls")
+                    if tcs is None and not isinstance(msg, dict):
+                        tcs = getattr(msg, "tool_calls", None)
+
+                    # 2) Fallback: legacy single function_call
+                    if not tcs:
+                        fc = (msg.get("function_call") if isinstance(msg, dict) else getattr(msg, "function_call", None))
+                        if fc:
+                            fc = _to_dict(fc) or fc
+                            name = (fc.get("name") if isinstance(fc, dict) else getattr(fc, "name", None)) or ""
+                            args = (fc.get("arguments") if isinstance(fc, dict) else getattr(fc, "arguments", None))
+                            if args is None:
+                                args = ""
+                            if not isinstance(args, str):
+                                try:
+                                    args = json.dumps(args, ensure_ascii=False)
+                                except Exception:
+                                    args = str(args)
+                            return [{"type": "function", "id": None, "function": {"name": name, "arguments": args}}]
+
+                    if not tcs:
+                        return None
+
+                    # 3) Normalize tool_calls to plain dicts
+                    norm: list[dict] = []
+                    for tc in tcs:
+                        tcd = _to_dict(tc) or tc
+                        if not isinstance(tcd, dict):
+                            continue
+                        fn = tcd.get("function")
+                        if fn is not None and not isinstance(fn, dict):
+                            fn = _to_dict(fn) or {}
+                            tcd["function"] = fn
+                        norm.append(tcd)
+                    return norm if norm else None
                 except Exception:
                     return None
 
@@ -393,10 +500,36 @@ class KimiChatWithToolsTool(BaseTool):
                     err = {"status": "execution_error", "error": f"Kimi chat timed out after {int(timeout_secs)}s"}
                     return [TextContent(type="text", text=json.dumps(err, ensure_ascii=False))]
 
-                # If no tool calls, return immediately
+                # If no tool calls, return normalized assistant content immediately
                 tcs = _extract_tool_calls(result.get("raw")) if isinstance(result, dict) else None
                 if not tcs:
-                    return [TextContent(type="text", text=json.dumps(result, ensure_ascii=False))]
+                    _dbg = _is_trace_enabled()
+                    try:
+                        raw_payload = result.get("raw") if isinstance(result, dict) else None
+                        if hasattr(raw_payload, "model_dump"):
+                            raw_payload = raw_payload.model_dump()
+                        choices = (raw_payload or {}).get("choices") or []
+                        msg = (choices[0].get("message") if choices else {}) or {}
+                        content_text = (msg.get("content") or "") if isinstance(msg, dict) else ""
+                        normalized = {
+                            "provider": "KIMI",
+                            "model": model_used,
+                            "content": content_text,
+                            "tool_calls": None,
+                            "usage": result.get("usage") if isinstance(result, dict) else None,
+                            "raw": raw_payload or (result.get("raw") if isinstance(result, dict) else {}),
+                        }
+                        if _dbg:
+                            summary = {
+                                "status": "no_tool_calls",
+                                "content_preview": (content_text or "")[:256],
+                                "has_tool_calls_field": bool((msg or {}).get("tool_calls")) if isinstance(msg, dict) else False,
+                            }
+                            _emit_trace({"normalized": normalized, "trace": summary})
+                        return [TextContent(type="text", text=json.dumps(normalized, ensure_ascii=False))]
+                    except Exception:
+                        # Fallback to returning the original provider result for visibility
+                        return [TextContent(type="text", text=json.dumps(result, ensure_ascii=False))]
 
                 # Append the assistant message that requested tool calls so provider can correlate tool_call_id
                 try:

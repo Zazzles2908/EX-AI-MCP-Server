@@ -342,9 +342,19 @@ class SimpleTool(BaseTool):
             else:
                 # Create model context if not provided
                 from utils.model_context import ModelContext
-
-                self._model_context = ModelContext(model_name)
-                logger.debug(f"{self.get_name()}: Created model context for {model_name}")
+                from src.providers.registry import ModelProviderRegistry as _Registry
+                # Avoid constructing ModelContext('auto') which triggers provider lookup error.
+                if (model_name or "").strip().lower() == "auto":
+                    try:
+                        seed = _Registry.get_preferred_fallback_model(self.get_model_category())
+                    except Exception:
+                        seed = None
+                    seed = seed or "glm-4.5-flash"
+                    self._model_context = ModelContext(seed)
+                    logger.debug(f"{self.get_name()}: Auto-mode seed context created for {seed}")
+                else:
+                    self._model_context = ModelContext(model_name)
+                    logger.debug(f"{self.get_name()}: Created model context for {model_name}")
 
             try:
                 from utils.progress import send_progress
@@ -459,32 +469,24 @@ class SimpleTool(BaseTool):
             tool_call_metadata = []  # collected sanitized tool-call events for UI dropdown
 
             def _call_with_model(_model_name: str):
-                import os as __os
                 nonlocal selected_model, provider
                 selected_model = _model_name
                 prov = _Registry.get_provider_for_model(_model_name)
                 if not prov:
                     raise RuntimeError(f"No provider available for model '{_model_name}'")
                 provider = prov  # update for downstream logging/usage
-                # Provider-native web browsing via capability layer
+                # Provider-native web browsing via capability layer (centralized)
                 provider_kwargs = {}
+                web_event = None
                 try:
-                    from src.providers.capabilities import get_capabilities_for_provider
-                    from utils.tool_events import ToolCallEvent, ToolEventSink
+                    from src.providers.orchestration.websearch_adapter import build_websearch_provider_kwargs
                     use_web = self.get_request_use_websearch(request)
-                    caps = get_capabilities_for_provider(prov.get_provider_type())
-                    ws = caps.get_websearch_tool_schema({"use_websearch": use_web})
-                    web_event = None
-                    if ws.tools:
-                        provider_kwargs["tools"] = ws.tools
-                        if ws.tool_choice is not None:
-                            provider_kwargs["tool_choice"] = ws.tool_choice
-                        # Begin web tool event timing (best-effort)
-                        web_event = ToolCallEvent(
-                            provider=prov.get_provider_type().value,
-                            tool_name="web_search",
-                            args={}
-                        )
+                    provider_kwargs, web_event = build_websearch_provider_kwargs(
+                        provider_type=prov.get_provider_type(),
+                        use_websearch=use_web,
+                        include_event=True,
+                    )
+                    if web_event is not None:
                         try:
                             tool_call_metadata.append({
                                 "provider": web_event.provider,
@@ -496,13 +498,13 @@ class SimpleTool(BaseTool):
                             pass
                 except Exception:
                     web_event = None
-                # Optional streaming: enable for GLM when GLM_STREAM_ENABLED=true and tool is chat
+                # Streaming enablement centralized
                 try:
-                    _stream_enabled = __os.getenv("GLM_STREAM_ENABLED", "false").strip().lower() in ("1","true","yes")
+                    from src.providers.orchestration.streaming_flags import is_streaming_enabled
+                    if is_streaming_enabled(getattr(prov.get_provider_type(), "value", ""), getattr(self, "get_name", lambda: "")()):
+                        provider_kwargs["stream"] = True
                 except Exception:
-                    _stream_enabled = False
-                if _stream_enabled and getattr(self, "get_name", lambda: "")() == "chat":
-                    provider_kwargs["stream"] = True if getattr(prov.get_provider_type(), "value", "").lower() == "glm" else provider_kwargs.get("stream")
+                    pass
                 result = prov.generate_content(
                     prompt=prompt,
                     model_name=_model_name,
@@ -525,26 +527,25 @@ class SimpleTool(BaseTool):
                     logger.info(
                         f"Using model: {self._model_context.model_name} via {provider.get_provider_type().value} provider"
                     )
-                    # Provider-native web browsing via capability layer
+                    # Provider-native web browsing via capability layer (centralized)
                     provider_kwargs = {}
                     try:
-                        from src.providers.capabilities import get_capabilities_for_provider
+                        from src.providers.orchestration.websearch_adapter import build_websearch_provider_kwargs
                         use_web = self.get_request_use_websearch(request)
-                        caps = get_capabilities_for_provider(provider.get_provider_type())
-                        ws = caps.get_websearch_tool_schema({"use_websearch": use_web})
-                        if ws.tools:
-                            provider_kwargs["tools"] = ws.tools
-                        if ws.tool_choice is not None:
-                            provider_kwargs["tool_choice"] = ws.tool_choice
+                        provider_kwargs, _ = build_websearch_provider_kwargs(
+                            provider_type=provider.get_provider_type(),
+                            use_websearch=use_web,
+                            include_event=False,
+                        )
                     except Exception:
                         pass
-                    # Optional streaming: enable for GLM when GLM_STREAM_ENABLED=true and tool is chat
+                    # Streaming enablement centralized
                     try:
-                        _stream_enabled = __os.getenv("GLM_STREAM_ENABLED", "false").strip().lower() in ("1","true","yes")
+                        from src.providers.orchestration.streaming_flags import is_streaming_enabled
+                        if is_streaming_enabled(getattr(provider.get_provider_type(), "value", ""), getattr(self, "get_name", lambda: "")()):
+                            provider_kwargs["stream"] = True
                     except Exception:
-                        _stream_enabled = False
-                    if _stream_enabled and getattr(self, "get_name", lambda: "")() == "chat":
-                        provider_kwargs["stream"] = True if getattr(provider.get_provider_type(), "value", "").lower() == "glm" else provider_kwargs.get("stream")
+                        pass
                     model_response = provider.generate_content(
                         prompt=prompt,
                         model_name=self._current_model_name,
@@ -1083,6 +1084,27 @@ Please provide a thoughtful, comprehensive response:"""
             # Compute repository root (two levels up from tools/simple/base.py -> repo root)
             repo_root = Path(__file__).resolve().parents[2]
 
+            # Build allowed roots: repo root + TEST_FILES_DIR (supports multi-root via comma/semicolon/os.pathsep)
+            allowed_roots = [repo_root]
+            try:
+                raw = os.getenv("TEST_FILES_DIR", "").strip()
+                if raw:
+                    seps = [",", ";", os.pathsep]
+                    tmp = raw
+                    for s in seps:
+                        if s:
+                            tmp = tmp.replace(s, ",")
+                    tokens = [t.strip().strip('"').strip("'") for t in tmp.split(",") if t.strip()]
+                    for tok in tokens:
+                        try:
+                            p = Path(tok).resolve()
+                            if p.exists() and p.is_dir():
+                                allowed_roots.append(p)
+                        except Exception:
+                            continue
+            except Exception:
+                pass
+
             for file_path in files:
                 # 1) Absolute path requirement
                 if not os.path.isabs(file_path):
@@ -1092,7 +1114,7 @@ Please provide a thoughtful, comprehensive response:"""
                         f"Please provide the full absolute path starting with '/' (must be FULL absolute paths to real files / folders - DO NOT SHORTEN)"
                     )
 
-                # 2) Secure resolution + containment check within repo root
+                # 2) Secure resolution + containment check within allowed roots
                 try:
                     resolved = resolve_and_validate_path(file_path)
                 except (ValueError, PermissionError) as e:
@@ -1101,14 +1123,22 @@ Please provide a thoughtful, comprehensive response:"""
                         f"Reason: {type(e).__name__}: {e}"
                     )
 
-                try:
-                    # Ensure the path is within the repository root
-                    resolved.relative_to(repo_root)
-                except Exception:
+                # Ensure the path is within ANY allowed root
+                permitted = False
+                for root in allowed_roots:
+                    try:
+                        resolved.relative_to(root)
+                        permitted = True
+                        break
+                    except Exception:
+                        continue
+
+                if not permitted:
+                    allowed_str = "\n".join([f"- {str(r)}" for r in allowed_roots])
                     return (
-                        f"Error: File path is outside the permitted project workspace.\n"
+                        f"Error: File path is outside permitted workspaces.\n"
                         f"Path: {file_path}\n"
-                        f"Allowed root: {repo_root}"
+                        f"Allowed roots:\n{allowed_str}"
                     )
 
         return None

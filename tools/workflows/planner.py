@@ -248,9 +248,8 @@ class PlannerTool(WorkflowTool):
             excluded_workflow_fields=excluded_workflow_fields,
             excluded_common_fields=excluded_common_fields,
         )
-        # Be tolerant of extra fields some clients send (e.g., temperature, thinking_mode)
-        # Planner ignores these, so allow additionalProperties to avoid hard validation failures.
-        schema["additionalProperties"] = True
+        # Enforce strict schema for audit compliance; clients should pass only declared fields
+        schema["additionalProperties"] = False
         return schema
 
     # ================================================================================

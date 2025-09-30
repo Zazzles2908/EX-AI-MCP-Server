@@ -148,9 +148,11 @@ class VersionTool(BaseTool):
     def get_input_schema(self) -> dict[str, Any]:
         """Return the JSON schema for the tool's input"""
         return {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {"model": {"type": "string", "description": "Model to use (ignored by version tool)"}},
             "required": [],
+            "additionalProperties": False,
         }
 
     def get_annotations(self) -> Optional[dict[str, Any]]:

@@ -278,8 +278,8 @@ The streamlined version uses a single `.env.production` file with clear, organiz
 
 ```bash
 # API Keys - Production Test Keys
-GLM_API_KEY=90c4c8f531334693b2f684687fc7d250.ZhQ1I7U2mAgGZRUD
-KIMI_API_KEY=sk-JJUBj1u6AXcKjVXkZURRhvcotCgbekB6o56mwqByZNyvz4om
+GLM_API_KEY=your_glm_api_key_here
+KIMI_API_KEY=your_kimi_api_key_here
 
 # Router Configuration - Unified routing enabled
 ROUTER_ENABLED=true
