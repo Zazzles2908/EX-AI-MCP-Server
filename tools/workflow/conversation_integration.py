@@ -1,0 +1,277 @@
+"""
+Conversation Integration Mixin for Workflow Tools
+
+This module provides conversation threading, turn management, and cross-tool
+context transfer for workflow tools.
+
+Key Features:
+- Thread reconstruction and turn management
+- Continuation offers for multi-step workflows
+- Cross-tool context transfer
+- Clean content extraction for conversation history
+- Workflow metadata tracking
+"""
+
+import json
+import logging
+from typing import Any, Optional
+
+from utils.conversation_memory import add_turn
+
+logger = logging.getLogger(__name__)
+
+
+class ConversationIntegrationMixin:
+    """
+    Mixin providing conversation integration for workflow tools.
+    
+    This class handles conversation threading, turn storage, and metadata
+    management for multi-step workflows with continuation support.
+    """
+    
+    async def _call_expert_analysis(self, arguments: dict, request) -> dict:
+        """Call expert analysis model."""
+        pass
+    
+    # ================================================================================
+    # Conversation Turn Storage
+    # ================================================================================
+    
+    def store_conversation_turn(self, continuation_id: str, response_data: dict, request):
+        """
+        Store the conversation turn. Tools can override for custom memory storage.
+        """
+        # CRITICAL: Extract clean content for conversation history (exclude internal workflow metadata)
+        clean_content = self._extract_clean_workflow_content_for_history(response_data)
+        
+        add_turn(
+            thread_id=continuation_id,
+            role="assistant",
+            content=clean_content,  # Use cleaned content instead of full response_data
+            tool_name=self.get_name(),
+            files=self.get_request_relevant_files(request),
+            images=self.get_request_images(request),
+        )
+    
+    def _extract_clean_workflow_content_for_history(self, response_data: dict) -> str:
+        """
+        Extract clean content from workflow response suitable for conversation history.
+        
+        This method removes internal workflow metadata, continuation offers, and
+        status information that should not appear when the conversation is
+        reconstructed for expert models or other tools.
+        
+        Args:
+            response_data: The full workflow response data
+        
+        Returns:
+            str: Clean content suitable for conversation history storage
+        """
+        # Create a clean copy with only essential content for conversation history
+        clean_data = {}
+        
+        # Include core content if present
+        if "content" in response_data:
+            clean_data["content"] = response_data["content"]
+        
+        # Include expert analysis if present (but clean it)
+        if "expert_analysis" in response_data:
+            expert_analysis = response_data["expert_analysis"]
+            if isinstance(expert_analysis, dict):
+                # Only include the actual analysis content, not metadata
+                clean_expert = {}
+                if "raw_analysis" in expert_analysis:
+                    clean_expert["analysis"] = expert_analysis["raw_analysis"]
+                elif "content" in expert_analysis:
+                    clean_expert["analysis"] = expert_analysis["content"]
+                if clean_expert:
+                    clean_data["expert_analysis"] = clean_expert
+        
+        # Include findings/issues if present (core workflow output)
+        if "complete_analysis" in response_data:
+            complete_analysis = response_data["complete_analysis"]
+            if isinstance(complete_analysis, dict):
+                clean_complete = {}
+                # Include essential analysis data without internal metadata
+                for key in ["findings", "issues_found", "relevant_context", "insights"]:
+                    if key in complete_analysis:
+                        clean_complete[key] = complete_analysis[key]
+                if clean_complete:
+                    clean_data["analysis_summary"] = clean_complete
+        
+        # Include step information for context but remove internal workflow metadata
+        if "step_number" in response_data:
+            clean_data["step_info"] = {
+                "step": response_data.get("step", ""),
+                "step_number": response_data.get("step_number", 1),
+                "total_steps": response_data.get("total_steps", 1),
+            }
+        
+        # Exclude problematic fields that should never appear in conversation history:
+        # - continuation_id (confuses LLMs with old IDs)
+        # - status (internal workflow state)
+        # - next_step_required (internal control flow)
+        # - analysis_status (internal tracking)
+        # - file_context (internal optimization info)
+        # - required_actions (internal workflow instructions)
+        
+        return json.dumps(clean_data, indent=2, ensure_ascii=False)
+    
+    # ================================================================================
+    # Workflow Metadata Management
+    # ================================================================================
+    
+    def _add_workflow_metadata(self, response_data: dict, arguments: dict[str, Any]) -> None:
+        """
+        Add metadata (provider_used and model_used) to workflow response.
+        
+        This ensures workflow tools have the same metadata as regular tools,
+        making it consistent across all tool types for tracking which provider
+        and model were used for the response.
+        
+        Args:
+            response_data: The response data dictionary to modify
+            arguments: The original arguments containing model context
+        """
+        try:
+            # Get model information from arguments (set by server.py)
+            resolved_model_name = arguments.get("_resolved_model_name")
+            model_context = arguments.get("_model_context")
+            
+            if resolved_model_name and model_context:
+                # Extract provider information from model context
+                provider = model_context.provider
+                provider_name = provider.get_provider_type().value if provider else "unknown"
+                
+                # Create metadata dictionary
+                metadata = {
+                    "tool_name": self.get_name(),
+                    "model_used": resolved_model_name,
+                    "provider_used": provider_name,
+                }
+                
+                # Preserve existing metadata and add workflow metadata
+                if "metadata" not in response_data:
+                    response_data["metadata"] = {}
+                response_data["metadata"].update(metadata)
+                
+                logger.debug(
+                    f"[WORKFLOW_METADATA] {self.get_name()}: Added metadata - "
+                    f"model: {resolved_model_name}, provider: {provider_name}"
+                )
+            else:
+                # Fallback - try to get model info from request
+                request = self.get_workflow_request_model()(**arguments)
+                model_name = self.get_request_model_name(request)
+                
+                # Basic metadata without provider info
+                metadata = {
+                    "tool_name": self.get_name(),
+                    "model_used": model_name,
+                    "provider_used": "unknown",
+                }
+                
+                # Preserve existing metadata and add workflow metadata
+                if "metadata" not in response_data:
+                    response_data["metadata"] = {}
+                response_data["metadata"].update(metadata)
+                
+                logger.debug(
+                    f"[WORKFLOW_METADATA] {self.get_name()}: Added fallback metadata - "
+                    f"model: {model_name}, provider: unknown"
+                )
+        
+        except Exception as e:
+            # Don't fail the workflow if metadata addition fails
+            logger.warning(f"[WORKFLOW_METADATA] {self.get_name()}: Failed to add metadata: {e}")
+            # Still add basic metadata with tool name
+            response_data["metadata"] = {"tool_name": self.get_name()}
+    
+    # ================================================================================
+    # Work Completion Handling
+    # ================================================================================
+    
+    async def handle_work_completion(self, response_data: dict, request, arguments: dict) -> dict:
+        """
+        Handle work completion logic - expert analysis decision and response building.
+        """
+        response_data[f"{self.get_name()}_complete"] = True
+        
+        # Check if tool wants to skip expert analysis due to high certainty
+        if self.should_skip_expert_analysis(request, self.consolidated_findings):  # type: ignore
+            # Handle completion without expert analysis
+            completion_response = self.handle_completion_without_expert_analysis(request, self.consolidated_findings)  # type: ignore
+            response_data.update(completion_response)
+        elif self.requires_expert_analysis() and self.should_call_expert_analysis(self.consolidated_findings, request):  # type: ignore
+            # Standard expert analysis path
+            response_data["status"] = "calling_expert_analysis"
+            
+            # Call expert analysis
+            expert_analysis = await self._call_expert_analysis(arguments, request)
+            response_data["expert_analysis"] = expert_analysis
+            
+            # Handle special expert analysis statuses
+            if isinstance(expert_analysis, dict) and expert_analysis.get("status") in [
+                "files_required_to_continue",
+                "investigation_paused",
+                "refactoring_paused",
+            ]:
+                # Promote the special status to the main response
+                special_status = expert_analysis["status"]
+                response_data["status"] = special_status
+                response_data["content"] = expert_analysis.get(
+                    "raw_analysis", json.dumps(expert_analysis, ensure_ascii=False)
+                )
+                del response_data["expert_analysis"]
+                
+                # Update next steps for special status
+                if special_status == "files_required_to_continue":
+                    response_data["next_steps"] = "Provide the requested files and continue the analysis."
+                else:
+                    response_data["next_steps"] = expert_analysis.get(
+                        "next_steps", "Continue based on expert analysis."
+                    )
+            elif isinstance(expert_analysis, dict) and expert_analysis.get("status") == "analysis_error":
+                # Expert analysis failed - promote error status
+                response_data["status"] = "error"
+                response_data["content"] = expert_analysis.get("error", "Expert analysis failed")
+                response_data["content_type"] = "text"
+                del response_data["expert_analysis"]
+            else:
+                # Expert analysis was successfully executed - include expert guidance
+                response_data["next_steps"] = self.get_completion_next_steps_message(expert_analysis_used=True)
+                
+                # Add expert analysis guidance as important considerations
+                expert_guidance = self.get_expert_analysis_guidance()
+                if expert_guidance:
+                    response_data["important_considerations"] = expert_guidance
+            
+            # Prepare complete work summary
+            work_summary = self._prepare_work_summary()
+            response_data[f"complete_{self.get_name()}"] = {
+                "initial_request": self.get_initial_request(request.step),
+                "steps_taken": len(self.work_history),  # type: ignore
+                "files_examined": list(self.consolidated_findings.files_checked),  # type: ignore
+                "relevant_files": list(self.consolidated_findings.relevant_files),  # type: ignore
+                "relevant_context": list(self.consolidated_findings.relevant_context),  # type: ignore
+                "issues_found": self.consolidated_findings.issues_found,  # type: ignore
+                "work_summary": work_summary,
+            }
+        else:
+            # Tool doesn't require expert analysis or local work was sufficient
+            if not self.requires_expert_analysis():
+                # Tool is self-contained (like planner)
+                response_data["status"] = f"{self.get_name()}_complete"
+                response_data["next_steps"] = (
+                    f"{self.get_name().capitalize()} work complete. Present results to the user."
+                )
+            else:
+                # Local work was sufficient for tools that support expert analysis
+                response_data["status"] = "local_work_complete"
+                response_data["next_steps"] = (
+                    f"Local {self.get_name()} complete with sufficient confidence. Present findings "
+                    "and recommendations to the user based on the work results."
+                )
+        
+        return response_data
+

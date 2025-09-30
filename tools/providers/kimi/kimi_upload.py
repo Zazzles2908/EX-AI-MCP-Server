@@ -26,6 +26,7 @@ class KimiUploadAndExtractTool(BaseTool):
 
     def get_input_schema(self) -> Dict[str, Any]:
         return {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
                 "files": {
@@ -40,15 +41,16 @@ class KimiUploadAndExtractTool(BaseTool):
                 },
             },
             "required": ["files"],
+            "additionalProperties": False,
         }
 
     def get_system_prompt(self) -> str:
         return (
-            "You are a precise file-ingestion assistant for Moonshot (Kimi).\n"
+            "You are a precise EX-AI MCP file-ingestion assistant for Moonshot (Kimi).\n"
             "Purpose: Upload one or more local files to Kimi Files API and return parsed text as system messages.\n\n"
-            "Parameters:\n- files: list of file paths (abs/relative).\n- purpose: 'file-extract' (default) or 'assistants'.\n\n"
-            "Constraints & Safety:\n- Respect provider limits (e.g., ~100MB/file). If KIMI_FILES_MAX_SIZE_MB is set, prefer skipping larger files locally; provider still enforces hard limits.\n- Do not include secrets or private data unnecessarily.\n\n"
-            "Output:\n- Return a JSON array of messages preserving original file order, each: {role: 'system', content: '<extracted text>', _file_id: '<id>'}.\n- Keep content as-is; do not summarize or transform."
+            "Parameters:\n- files: list of file paths (absolute preferred; relative allowed).\n- purpose: 'file-extract' (default) or 'assistants'.\n\n"
+            "Constraints & Safety:\n- Prefer FULL ABSOLUTE paths to avoid ambiguity.\n- Respect provider limits (e.g., ~100MB/file). If KIMI_FILES_MAX_SIZE_MB is set, skip larger files locally; provider still enforces hard limits.\n- Do not include secrets or private data unnecessarily.\n\n"
+            "Output:\n- Return JSON array of messages preserving original file order: {role:'system', content:'<extracted text>', _file_id:'<id>'}.\n- Keep content as-is; do not summarize or transform.\n- The caller may prepend these messages to chat with a concise user prompt."
         )
 
     def get_request_model(self):
@@ -77,21 +79,56 @@ class KimiUploadAndExtractTool(BaseTool):
                 raise RuntimeError("KIMI_API_KEY is not configured")
             prov = KimiModelProvider(api_key=api_key)
 
+        # Limits
+        from pathlib import Path as _P
+        max_count = int(os.getenv("KIMI_FILES_MAX_COUNT", "0") or 0)  # 0=no cap
+        max_mb_env = os.getenv("KIMI_FILES_MAX_SIZE_MB", "").strip()
+        max_mb = float(max_mb_env) if max_mb_env else 0.0
+        max_bytes = int(max_mb * 1024 * 1024) if max_mb > 0 else 0
+        oversize_behavior = os.getenv("KIMI_FILES_BEHAVIOR_ON_OVERSIZE", "skip").strip().lower()  # skip|fail
+        upload_timeout = float(os.getenv("KIMI_FILES_UPLOAD_TIMEOUT_SECS", "90"))
+        fetch_timeout = float(os.getenv("KIMI_FILES_FETCH_TIMEOUT_SECS", "25"))
+
+        # Apply count cap if set
+        effective_files = list(files)
+        if max_count and len(effective_files) > max_count:
+            effective_files = effective_files[:max_count]
+
         messages: List[Dict[str, Any]] = []
         from utils.tool_events import ToolCallEvent, ToolEventSink
         sink = ToolEventSink()
-        for idx, fp in enumerate(files, start=1):
+        from utils.file_cache import FileCache
+        import concurrent.futures as _fut
+
+        skipped: List[str] = []
+
+        for idx, fp in enumerate(effective_files, start=1):
             evt = ToolCallEvent(provider=prov.get_provider_type().value, tool_name="file_upload_extract", args={"path": str(fp), "purpose": purpose})
             try:
+                pth = _P(str(fp))
+                # Size gate if configured
+                if max_bytes and pth.exists() and pth.is_file():
+                    try:
+                        sz = pth.stat().st_size
+                    except Exception:
+                        sz = -1
+                    if sz >= 0 and sz > max_bytes:
+                        if oversize_behavior == "fail":
+                            raise RuntimeError(f"File exceeds max size: {pth.name} ({(sz + 1048575)//1048576} MB > {int(max_mb)} MB cap)")
+                        skipped.append(str(pth))
+                        evt.end(ok=False, error=f"skipped: oversize ({(sz + 1048575)//1048576} MB > {int(max_mb)} MB cap)")
+                        try:
+                            sink.record(evt)
+                        except Exception:
+                            pass
+                        continue
+
                 # FileCache: reuse existing file_id if enabled and present
-                from pathlib import Path as _P
-                from utils.file_cache import FileCache
                 cache_enabled = os.getenv("FILECACHE_ENABLED", "true").strip().lower() == "true"
                 file_id = None
                 prov_name = prov.get_provider_type().value
                 if cache_enabled:
                     try:
-                        pth = _P(str(fp))
                         sha = FileCache.sha256_file(pth)
                         fc = FileCache()
                         cached = fc.get(sha, prov_name)
@@ -112,21 +149,29 @@ class KimiUploadAndExtractTool(BaseTool):
                     except Exception:
                         file_id = None
 
+                # Upload with timeout when not cached
                 if not file_id:
-                    file_id = prov.upload_file(fp, purpose=purpose)
+                    def _upload():
+                        return prov.upload_file(str(pth), purpose=purpose)
+                    try:
+                        with _fut.ThreadPoolExecutor(max_workers=1) as _pool:
+                            _future = _pool.submit(_upload)
+                            file_id = _future.result(timeout=upload_timeout)
+                    except _fut.TimeoutError:
+                        raise TimeoutError(f"Kimi files.upload() timed out after {int(upload_timeout)}s for path={pth}")
+
                     # on new upload, cache it
                     try:
                         if cache_enabled:
-                            pth = _P(str(fp))
                             sha = FileCache.sha256_file(pth)
                             fc = FileCache()
-                            fc.set(sha, prov.get_provider_type().value, file_id)
+                            fc.set(sha, prov_name, file_id)
                     except Exception:
                         pass
                     # Observability: record file count +1 for fresh upload
                     try:
                         from utils.observability import record_file_count  # lazy import
-                        record_file_count(prov.get_provider_type().value, +1)
+                        record_file_count(prov_name, +1)
                     except Exception:
                         pass
 
@@ -151,15 +196,14 @@ class KimiUploadAndExtractTool(BaseTool):
                     if last_err:
                         raise last_err
                     raise RuntimeError("Failed to fetch file content (unknown error)")
-                # Apply a hard cap to total fetch duration to avoid indefinite block
-                import concurrent.futures as _fut
-                fetch_timeout = float(os.getenv("KIMI_FILES_FETCH_TIMEOUT_SECS", "25"))
+
                 try:
                     with _fut.ThreadPoolExecutor(max_workers=1) as _pool:
                         _future = _pool.submit(_fetch)
                         content = _future.result(timeout=fetch_timeout)
                 except _fut.TimeoutError:
                     raise TimeoutError(f"Kimi files.content() timed out after {int(fetch_timeout)}s for file_id={file_id}")
+
                 messages.append({"role": "system", "content": content, "_file_id": file_id})
                 evt.end(ok=True)
             except Exception as e:
@@ -176,6 +220,13 @@ class KimiUploadAndExtractTool(BaseTool):
                     sink.record(evt)
                 except Exception:
                     pass
+
+        # If we skipped everything, fail clearly
+        if not messages:
+            if skipped:
+                raise RuntimeError(f"All files skipped by size gate (>{int(max_mb)} MB): {skipped}")
+            raise RuntimeError("No messages produced (unknown reason)")
+
         return messages
 
     async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
@@ -206,6 +257,7 @@ class KimiMultiFileChatTool(BaseTool):
 
     def get_input_schema(self) -> Dict[str, Any]:
         return {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
                 "files": {"type": "array", "items": {"type": "string"}},
@@ -214,6 +266,7 @@ class KimiMultiFileChatTool(BaseTool):
                 "temperature": {"type": "number", "default": 0.3},
             },
             "required": ["files", "prompt"],
+            "additionalProperties": False,
         }
 
     def get_request_model(self):
@@ -296,19 +349,19 @@ class KimiMultiFileChatTool(BaseTool):
         except _aio.TimeoutError:
             err = {
                 "status": "execution_error",
+                "error": f"kimi_multi_file_chat exceeded {int(timeout_s)}s (execute cap)",
                 "error_class": "timeouterror",
                 "provider": "KIMI",
                 "tool": self.get_name(),
-                "detail": f"kimi_multi_file_chat exceeded {int(timeout_s)}s (execute cap)",
             }
             return [TextContent(type="text", text=json.dumps(err, ensure_ascii=False))]
         except Exception as e:
-            # Emit a structured error envelope so the dispatcher can fallback
+            # Emit a structured error envelope so the dispatcher can show the real error and trigger fallback
             err = {
                 "status": "execution_error",
+                "error": str(e),
                 "error_class": type(e).__name__.lower(),
                 "provider": "KIMI",
                 "tool": self.get_name(),
-                "detail": str(e),
             }
             return [TextContent(type="text", text=json.dumps(err, ensure_ascii=False))]

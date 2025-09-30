@@ -28,6 +28,8 @@ def make_error_envelope(provider: str, tool: str, error: BaseException | str, de
         "error_class": cls,
         "provider": provider or "unknown",
         "tool": tool or "unknown",
+        # Provide both keys for backward/forward compatibility across tools
+        "error": msg,
         "detail": msg,
     }
 

@@ -497,6 +497,19 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                     pass
                 deadline = start + float(tool_timeout)
 
+
+                # Continuation-safe model guard at WS boundary: never forward literal 'auto'
+                try:
+                    if isinstance(arguments, dict):
+                        _cid = arguments.get("continuation_id")
+                        _mdl = str(arguments.get("model") or "").strip().lower()
+                        if _cid and _mdl == "auto":
+                            fallback = os.getenv("DEFAULT_MODEL", "glm-4.5-flash")
+                            arguments["model"] = fallback
+                            logger.info(f"[WS_BOUNDARY] Auto model mapped to '{fallback}' for continuation { _cid } (tool={name})")
+                except Exception:
+                    pass
+
                 tool_task = asyncio.create_task(SERVER_HANDLE_CALL_TOOL(name, arguments))
                 while True:
                     try:

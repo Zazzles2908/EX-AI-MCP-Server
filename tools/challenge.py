@@ -120,6 +120,7 @@ class ChallengeTool(SimpleTool):
         Since this tool doesn't require a model, we exclude model-related fields.
         """
         schema = {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
                 "prompt": {
@@ -128,6 +129,7 @@ class ChallengeTool(SimpleTool):
                 },
             },
             "required": ["prompt"],
+            "additionalProperties": False,
         }
 
         return schema

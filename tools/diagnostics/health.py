@@ -21,10 +21,12 @@ class HealthTool(BaseTool):
 
     def get_input_schema(self) -> Dict[str, Any]:
         return {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
                 "tail_lines": {"type": "integer", "default": 50},
             },
+            "additionalProperties": False,
         }
 
     def get_system_prompt(self) -> str:

@@ -1,0 +1,3 @@
+Moonshot probe sample file for upload/extract.
+Line 2: Kimi integration validation.
+Line 3: OK.

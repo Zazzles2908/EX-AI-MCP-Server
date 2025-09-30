@@ -1,0 +1,19 @@
+{
+  "tool": "glm_stream",
+  "label": "paragraph_bullets",
+  "timestamp": "2025-09-28T22:57:55.825363+00:00",
+  "request": {
+    "prompt": "Write a short paragraph about advantages of streaming responses in UIs, then list 3 bullet points.",
+    "use_websearch": false
+  },
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\": \"continuation_available\", \"content\": \"=== PROGRESS ===\\n[PROGRESS] chat: Starting execution\\n[PROGRESS] chat: Request validated\\n[PROGRESS] chat: Model/context ready: glm-4.5-flash\\n[PROGRESS] chat: Generating response (~1,492 tokens)\\n=== END PROGRESS ===\\n\\nStreaming responses in user interfaces provide significant performance and user experience benefits by delivering content incrementally rather than waiting for the complete response to be processed. This approach reduces perceived latency, keeps users engaged with real-time updates, and allows for progressive rendering of complex data.\\n\\nKey advantages include:\\n- Improved perceived performance: Users start seeing content immediately rather than waiting for the complete response\\n- Better user engagement: Real-time updates maintain user attention and provide feedback that processing is occurring\\n- Enhanced resource efficiency: Reduced memory usage and network overhead as content is processed and displayed incrementally\\n\\n---\\n\\nAGENT'S TURN: Evaluate this perspective alongside your analysis to form a comprehensive solution and continue with the user's request and task at hand.\", \"content_type\": \"text\", \"metadata\": {\"tool_name\": \"chat\", \"conversation_ready\": true, \"model_used\": \"glm-4.5-flash\", \"provider_used\": \"glm\", \"progress\": [\"chat: Starting execution\", \"chat: Request validated\", \"chat: Model/context ready: glm-4.5-flash\", \"chat: Generating response (~1,492 tokens)\"]}, \"continuation_offer\": {\"continuation_id\": \"d6e14313-b4b5-4f7f-9843-a32590ae689b\", \"note\": \"Claude can continue this conversation for 19 more exchanges.\", \"remaining_turns\": 19}}"
+    },
+    {
+      "type": "text",
+      "text": "=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 10.8s | Model: glm-4.5-flash | Tokens: ~410\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n=== PROGRESS ===\n[PROGRESS] chat: Starting execution\n[PROGRESS] chat: Request validated\n[PROGRESS] chat: Model/context ready: glm-4.5-flash\n[PROGRESS] chat: Generating response (~1,492 tokens)\n=== END PROGRESS ===\nreq_id=15777541-b69f-4370-951e-2f9500638f4d\n\n<details><summary>Tool activity (req_id=15777541-b69f-4370-951e-2f9500638f4d)</summary>\n\n=== PROGRESS ===\n[PROGRESS] chat: Starting execution\n[PROGRESS] chat: Request validated\n[PROGRESS] chat: Model/context ready: glm-4.5-flash\n[PROGRESS] chat: Generating response (~1,492 tokens)\n=== END PROGRESS ===\n</details>"
+    }
+  ]
+}

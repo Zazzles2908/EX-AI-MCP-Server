@@ -19,12 +19,14 @@ class ProviderCapabilitiesTool(BaseTool):
 
     def get_input_schema(self) -> Dict[str, Any]:
         return {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
                 "include_tools": {"type": "boolean", "default": True},
                 "show_advanced": {"type": "boolean", "default": False},
                 "invalidate_cache": {"type": "boolean", "default": False},
             },
+            "additionalProperties": False,
         }
 
     def get_system_prompt(self) -> str:

@@ -101,8 +101,10 @@ class ChatTool(SimpleTool):
     def get_input_schema(self) -> dict[str, Any]:
         """
         Generate input schema matching the original Chat tool exactly, with Phase 5 flags.
+        Enforces draft-07 compliance and additionalProperties:false.
         """
         schema = {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
                 "prompt": {"type": "string", "description": CHAT_FIELD_DESCRIPTIONS["prompt"]},
@@ -115,6 +117,7 @@ class ChatTool(SimpleTool):
                 "stream": {"type": "boolean", "description": "Request streaming when supported; env-gated per provider", "default": False},
                 "continuation_id": {"type": "string", "description": "Thread continuation ID for multi-turn conversations."},
             },
+            "additionalProperties": False,
             "required": ["prompt"] + (["model"] if self.is_effective_auto_mode() else []),
         }
         return schema

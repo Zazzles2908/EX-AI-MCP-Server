@@ -196,6 +196,33 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
                 logger.debug(f"[CONVERSATION_DEBUG] Using model from previous turn: {turn.model_name}")
                 break
 
+    # Ensure providers configured for token allocation/capabilities during reconstruction
+    try:
+        from src.providers.registry import ModelProviderRegistry
+        available = ModelProviderRegistry.get_available_models(respect_restrictions=True)
+        if not available:
+            try:
+                from src.server.providers import configure_providers  # type: ignore
+                configure_providers()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # Map 'auto' to a concrete model for context/token calculations during reconstruction
+    try:
+        if str(arguments.get("model") or "").strip().lower() == "auto":
+            from config import DEFAULT_MODEL, IS_AUTO_MODE
+            model_name = DEFAULT_MODEL
+            if IS_AUTO_MODE and str(model_name).lower() == "auto":
+                from src.providers.registry import ModelProviderRegistry
+                model_name = ModelProviderRegistry.get_preferred_fallback_model()
+            arguments["model"] = model_name
+            logger.debug(f"[CONVERSATION_DEBUG] Mapped 'auto' to concrete model for reconstruction: {model_name}")
+    except Exception:
+        # Safe fallback: leave as-is; downstream guards will attempt mapping as well
+        pass
+
     model_context = ModelContext.from_arguments(arguments)
 
     # Build conversation history with model-specific limits

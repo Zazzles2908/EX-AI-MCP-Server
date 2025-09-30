@@ -1,0 +1,3 @@
+Hello from EXAI test files.
+This is a simple text file used to validate file uploads and extractions.
+

@@ -20,146 +20,19 @@ structural relationship analysis, architectural understanding, and code comprehe
 """
 
 import logging
-from typing import TYPE_CHECKING, Any, Literal, Optional
-
-from pydantic import Field, field_validator
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from tools.models import ToolModelCategory
 
 from config import TEMPERATURE_ANALYTICAL
 from systemprompts import TRACER_PROMPT
-from tools.shared.base_models import WorkflowRequest
 
+from .tracer_config import TRACER_WORKFLOW_FIELD_DESCRIPTIONS
+from .tracer_models import TracerRequest
 from ..workflow.base import WorkflowTool
 
 logger = logging.getLogger(__name__)
-
-# Tool-specific field descriptions for tracer workflow
-TRACER_WORKFLOW_FIELD_DESCRIPTIONS = {
-    "step": (
-        "Describe what you're currently investigating for code tracing by thinking deeply about the code structure, "
-        "execution paths, and dependencies. In step 1, if trace_mode is 'ask', MUST prompt user to choose between "
-        "precision or dependencies mode with clear explanations. Otherwise, clearly state your tracing plan and begin "
-        "forming a systematic approach after thinking carefully about what needs to be analyzed. CRITICAL: For precision "
-        "mode, focus on execution flow, call chains, and usage patterns. For dependencies mode, focus on structural "
-        "relationships and bidirectional dependencies. Map out the code structure, understand the business logic, and "
-        "identify areas requiring deeper tracing. In all later steps, continue exploring with precision: trace dependencies, "
-        "verify call paths, and adapt your understanding as you uncover more evidence."
-    ),
-    "step_number": (
-        "The index of the current step in the tracing sequence, beginning at 1. Each step should build upon or "
-        "revise the previous one."
-    ),
-    "total_steps": (
-        "Your current estimate for how many steps will be needed to complete the tracing analysis. "
-        "Adjust as new findings emerge."
-    ),
-    "next_step_required": (
-        "Set to true if you plan to continue the investigation with another step. False means you believe the "
-        "tracing analysis is complete and ready for final output formatting."
-    ),
-    "findings": (
-        "Summarize everything discovered in this step about the code being traced. Include analysis of execution "
-        "paths, dependency relationships, call chains, structural patterns, and any discoveries about how the code "
-        "works. Be specific and avoid vague language—document what you now know about the code and how it affects "
-        "your tracing analysis. IMPORTANT: Document both the direct relationships (immediate calls, dependencies) "
-        "and indirect relationships (transitive dependencies, side effects). In later steps, confirm or update past "
-        "findings with additional evidence."
-    ),
-    "files_checked": (
-        "List all files (as absolute paths, do not clip or shrink file names) examined during the tracing "
-        "investigation so far. Include even files ruled out or found to be unrelated, as this tracks your "
-        "exploration path."
-    ),
-    "relevant_files": (
-        "Subset of files_checked (as full absolute paths) that contain code directly relevant to the tracing analysis. "
-        "Only list those that are directly tied to the target method/function/class/module being traced, its "
-        "dependencies, or its usage patterns. This could include implementation files, related modules, or files "
-        "demonstrating key relationships."
-    ),
-    "relevant_context": (
-        "List methods, functions, classes, or modules that are central to the tracing analysis, in the format "
-        "'ClassName.methodName', 'functionName', or 'module.ClassName'. Prioritize those that are part of the "
-        "execution flow, dependency chain, or represent key relationships in the tracing analysis."
-    ),
-    "confidence": (
-        "Indicate your current confidence in the tracing analysis completeness. Use: 'exploring' (starting analysis), "
-        "'low' (early investigation), 'medium' (some patterns identified), 'high' (comprehensive understanding), "
-        "'very_high' (very comprehensive understanding), 'almost_certain' (nearly complete tracing), "
-        "'certain' (100% confidence - tracing analysis is finished and ready for output with no need for external model validation). "
-        "Do NOT use 'certain' unless the tracing analysis is thoroughly finished and you have a comprehensive understanding "
-        "of the code relationships. Using 'certain' means you have complete confidence locally and prevents external model validation."
-    ),
-    "trace_mode": "Type of tracing: 'ask' (default - prompts user to choose mode), 'precision' (execution flow) or 'dependencies' (structural relationships)",
-    "target_description": (
-        "Detailed description of what to trace and WHY you need this analysis. MUST include context about what "
-        "you're trying to understand, debug, analyze or find."
-    ),
-    "images": (
-        "Optional images of system architecture diagrams, flow charts, or visual references to help "
-        "understand the tracing context"
-    ),
-}
-
-
-class TracerRequest(WorkflowRequest):
-    """Request model for tracer workflow investigation steps"""
-
-    # Required fields for each investigation step
-    step: str = Field(..., description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["step"])
-    step_number: int = Field(..., description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["step_number"])
-    total_steps: int = Field(..., description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["total_steps"])
-    next_step_required: bool = Field(..., description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["next_step_required"])
-
-    # Investigation tracking fields
-    findings: str = Field(..., description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["findings"])
-    files_checked: list[str] = Field(
-        default_factory=list, description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["files_checked"]
-    )
-    relevant_files: list[str] = Field(
-        default_factory=list, description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["relevant_files"]
-    )
-    relevant_context: list[str] = Field(
-        default_factory=list, description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["relevant_context"]
-    )
-    confidence: Optional[str] = Field("exploring", description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["confidence"])
-
-    # Tracer-specific fields (used in step 1 to initialize)
-    trace_mode: Optional[Literal["precision", "dependencies", "ask"]] = Field(
-        "ask", description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["trace_mode"]
-    )
-    target_description: Optional[str] = Field(
-        None, description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["target_description"]
-    )
-    images: Optional[list[str]] = Field(default=None, description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["images"])
-
-    # Exclude fields not relevant to tracing workflow
-    issues_found: list[dict] = Field(default_factory=list, exclude=True, description="Tracing doesn't track issues")
-    hypothesis: Optional[str] = Field(default=None, exclude=True, description="Tracing doesn't use hypothesis")
-    backtrack_from_step: Optional[int] = Field(
-        default=None, exclude=True, description="Tracing doesn't use backtracking"
-    )
-
-    # Exclude other non-tracing fields
-    temperature: Optional[float] = Field(default=None, exclude=True)
-    thinking_mode: Optional[str] = Field(default=None, exclude=True)
-    use_websearch: Optional[bool] = Field(default=None, exclude=True)
-    use_assistant_model: Optional[bool] = Field(default=False, exclude=True, description="Tracing is self-contained")
-
-    @field_validator("step_number")
-    @classmethod
-    def validate_step_number(cls, v):
-        if v < 1:
-            raise ValueError("step_number must be at least 1")
-        return v
-
-    @field_validator("total_steps")
-    @classmethod
-    def validate_total_steps(cls, v):
-        if v < 1:
-            raise ValueError("total_steps must be at least 1")
-        return v
 
 
 class TracerTool(WorkflowTool):

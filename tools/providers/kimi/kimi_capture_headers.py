@@ -22,16 +22,18 @@ class KimiCaptureHeadersTool(BaseTool):
 
     def get_input_schema(self) -> Dict[str, Any]:
         return {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
                 "messages": {"type": "array", "items": {"type": "object"}},
                 "model": {"type": "string", "default": "kimi-k2-0711-preview"},
                 "temperature": {"type": "number", "default": 0.6},
-                "session_id": {"type": "string", "nullable": True},
-                "call_key": {"type": "string", "nullable": True},
+                "session_id": {"type": ["string", "null"]},
+                "call_key": {"type": ["string", "null"]},
                 "tool_name": {"type": "string", "default": "kimi_capture_headers"},
             },
             "required": ["messages"],
+            "additionalProperties": False,
         }
 
     def get_request_model(self):

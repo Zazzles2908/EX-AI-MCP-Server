@@ -1,0 +1,27 @@
+{
+  "tool": "glm_web_search",
+  "status": "COMPLETE",
+  "duration": "~3.3s",
+  "model": "glm-4.5-flash",
+  "tokens": "~484",
+  "result": {
+    "created": 1759126061,
+    "id": "2025092914073948d875c5d01c40c8",
+    "request_id": "2025092914073948d875c5d01c40c8",
+    "search_intent": [
+      {
+        "intent": "SEARCH_ALWAYS",
+        "keywords": "Zhipu GLM web_search API streaming example",
+        "query": "Zhipu GLM web_search API streaming example"
+      }
+    ],
+    "search_result": [
+      {"title":"GLM-4","link":"https://open.bigmodel.cn/dev/api"},
+      {"title":"Web Search API","link":"https://open.bigmodel.cn/dev/api/search-tool/web-search"},
+      {"title":"Running inference with Zhipu AI's GLM-4.5 using W&B ...","link":"https://wandb.ai/wandb_fc/genai-research/reports/Tutorial-Running-inference-with-Zhipu-AI-s-GLM-4-5-using-W-B-Inference--VmlldzoxNDMxMzg5Ng"},
+      {"title":"\u63a2\u7d22ZHIPU AI API\u5728LangChain\u4e2d\u7684\u5e94\u7528\uff1a\u5b9e\u73b0\u591a\u8bed\u8a00\u5bf9\u8bdd\u548c ...","link":"https://juejin.cn/post/7442555430884556836"},
+      {"title":"ZHIPU AI | LangChain\u4e2d\u6587\u7f51","link":"https://www.langchain.com.cn/docs/integrations/chat/zhipuai/"}
+    ]
+  }
+}
+
