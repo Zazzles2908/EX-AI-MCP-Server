@@ -36,7 +36,7 @@ CONFIGURATION PARAMETERS (check values each step):
 
 DOCUMENTATION STANDARDS
 Modern style by language:
-• Python: Triple quotes (""")
+• Python: Triple quotes (docstrings)
 • Objective-C/Swift: /// ONLY (NEVER /** */)
 • Java/JavaScript: /** */ JSDoc
 • C++/C#: /// XML comments
