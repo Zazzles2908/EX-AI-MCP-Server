@@ -44,7 +44,7 @@ QUALITY:
 
 FRAMEWORK:
 Autodetect from repo. Examples: Swift/ObjC→XCTest, C#→xUnit, JS/TS→Jest, Python→pytest, Go→testing, Rust→#[test]
-If uncertain: {"status": "test_sample_needed", "reason": "<reason>"}
+If uncertain: {{"status": "test_sample_needed", "reason": "<reason>"}}
 
 {RESPONSE_QUALITY}
 
@@ -52,5 +52,5 @@ DELIVERABLE:
 Analysis summary, coverage plan, generated tests. Group related tests, prefer existing test files. Document logic/hypothesis. No extra summaries.
 
 IF MORE TESTS NEEDED:
-Generate 3-5 critical tests first, then: {"status": "more_tests_required", "pending_tests": "test_name (file_name), ..."}
+Generate 3-5 critical tests first, then: {{"status": "more_tests_required", "pending_tests": "test_name (file_name), ..."}}
 """
