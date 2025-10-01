@@ -150,23 +150,33 @@ class OrchestrationMixin:
             backtrack_step = self.get_backtrack_step(request)
             if backtrack_step:
                 self._handle_backtracking(backtrack_step)
-            
+
             # Process work step - allow tools to customize field mapping
             step_data = self.prepare_step_data(request)
             try:
                 send_progress(f"{self.get_name()}: Processed step data. Updating findings...")
             except Exception:
                 pass
-            
+
             # Store in history
             self.work_history.append(step_data)  # type: ignore
-            
+
             # Update consolidated findings
             self._update_consolidated_findings(step_data)
-            
+
             # Handle file context appropriately based on workflow phase
             self._handle_workflow_file_context(request, arguments)
-            
+
+            # AGENTIC ENHANCEMENT: Check for early termination
+            # Allow tools to complete early if goal achieved with high confidence
+            if request.next_step_required:
+                should_terminate, termination_reason = self.should_terminate_early(request)
+                if should_terminate:
+                    logger.info(f"{self.get_name()}: Early termination triggered - {termination_reason}")
+                    request.next_step_required = False
+                    # Add termination info to response
+                    self.early_termination_reason = termination_reason  # type: ignore
+
             # Build response with tool-specific customization
             response_data = self.build_base_response(request, continuation_id)
             
@@ -334,6 +344,11 @@ class OrchestrationMixin:
 
         if continuation_id:
             response_data["continuation_id"] = continuation_id
+
+        # AGENTIC ENHANCEMENT: Add early termination reason if applicable
+        if hasattr(self, 'early_termination_reason') and self.early_termination_reason:
+            response_data["early_termination"] = True
+            response_data["early_termination_reason"] = self.early_termination_reason
 
         # Add file context information based on workflow phase
         embedded_content = self.get_embedded_file_content()
