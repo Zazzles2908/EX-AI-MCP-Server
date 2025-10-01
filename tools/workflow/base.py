@@ -77,6 +77,139 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
         BaseTool.__init__(self)
         BaseWorkflowMixin.__init__(self)
 
+    # ================================================================================
+    # Agentic Enhancement Methods
+    # ================================================================================
+
+    def get_minimum_steps_for_tool(self) -> int:
+        """
+        Get minimum number of steps required before early termination is allowed.
+
+        Override in subclasses to set tool-specific minimums.
+        Default: 2 steps (prevents premature termination)
+        """
+        return 2
+
+    def assess_information_sufficiency(self, request) -> dict:
+        """
+        Assess whether sufficient information has been gathered to achieve the goal.
+
+        This is a key agentic capability - tools can self-assess their progress.
+
+        Args:
+            request: Current workflow request
+
+        Returns:
+            {
+                "sufficient": bool,  # Has enough information been gathered?
+                "confidence": str,  # Current confidence level
+                "missing_information": list[str],  # What's still needed (if insufficient)
+                "rationale": str  # Explanation of assessment
+            }
+        """
+        # Get current state
+        confidence = self.get_request_confidence(request)
+        findings = getattr(request, 'findings', '')
+        files_checked = len(getattr(request, 'files_checked', []))
+        relevant_files = len(getattr(request, 'relevant_files', []))
+
+        # Default sufficiency logic (tools can override)
+        sufficient = (
+            confidence in ["certain", "very_high", "almost_certain"] and
+            len(findings) > 100 and  # Substantial findings documented
+            relevant_files > 0  # At least some relevant files identified
+        )
+
+        missing = []
+        if not sufficient:
+            if len(findings) < 100:
+                missing.append("More detailed findings needed")
+            if relevant_files == 0:
+                missing.append("No relevant files identified yet")
+            if confidence in ["exploring", "low"]:
+                missing.append("Confidence too low - more investigation needed")
+
+        return {
+            "sufficient": sufficient,
+            "confidence": confidence,
+            "missing_information": missing,
+            "rationale": f"Confidence: {confidence}, Files checked: {files_checked}, Relevant: {relevant_files}, Findings length: {len(findings)}"
+        }
+
+    def should_terminate_early(self, request) -> tuple[bool, str]:
+        """
+        Determine if workflow can terminate early based on goal achievement.
+
+        This enables agentic early termination when goals are achieved with high confidence.
+
+        Args:
+            request: Current workflow request
+
+        Returns:
+            (should_terminate, rationale)
+        """
+        # Check minimum steps requirement
+        min_steps = self.get_minimum_steps_for_tool()
+        if request.step_number < min_steps:
+            return False, f"Minimum {min_steps} steps required for {self.get_name()}"
+
+        # Get information sufficiency assessment
+        assessment = self.assess_information_sufficiency(request)
+        confidence = assessment["confidence"]
+        sufficient = assessment["sufficient"]
+
+        # Early termination criteria
+        if confidence == "certain" and sufficient:
+            return True, f"Goal achieved with certainty at step {request.step_number}/{request.total_steps}"
+
+        # Allow termination at final step with very_high confidence
+        if confidence == "very_high" and sufficient and request.step_number >= (request.total_steps - 1):
+            return True, f"Very high confidence and sufficient information at step {request.step_number}/{request.total_steps}"
+
+        return False, "Continue investigation"
+
+    def request_additional_steps(self, request, reason: str, additional_steps: int = 1) -> int:
+        """
+        Request additional investigation steps mid-workflow.
+
+        This enables agentic step adjustment when unexpected complexity is discovered.
+
+        Args:
+            request: Current workflow request
+            reason: Clear explanation for why more steps are needed
+            additional_steps: How many additional steps to add (default: 1)
+
+        Returns:
+            New total_steps count
+        """
+        old_total = request.total_steps
+        new_total = old_total + additional_steps
+
+        logger.info(
+            f"{self.get_name()}: Requesting {additional_steps} additional steps "
+            f"({old_total} → {new_total}). Reason: {reason}"
+        )
+
+        # Update request
+        request.total_steps = new_total
+
+        # Store rationale for transparency (if tracking exists)
+        if not hasattr(self, 'step_adjustment_history'):
+            self.step_adjustment_history = []
+
+        self.step_adjustment_history.append({
+            "step_number": request.step_number,
+            "old_total": old_total,
+            "new_total": new_total,
+            "reason": reason
+        })
+
+        return new_total
+
+    # ================================================================================
+    # Tool Configuration Methods
+    # ================================================================================
+
     def get_tool_fields(self) -> dict[str, dict[str, Any]]:
         """
         Return tool-specific field definitions beyond the standard workflow fields.
