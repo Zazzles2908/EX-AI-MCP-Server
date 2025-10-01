@@ -30,19 +30,19 @@ ANALYSIS STRUCTURE:
 JSON OUTPUT (ONLY - no text before/after)
 
 IF MORE INFO NEEDED:
-{"status": "files_required_to_continue", "mandatory_instructions": "<instructions>", "files_needed": ["<files>"]}
+{{"status": "files_required_to_continue", "mandatory_instructions": "<instructions>", "files_needed": ["<files>"]}}
 
 FOR TRACING:
-{
+{{
   "status": "tracing_in_progress",
   "step_number": <num>,
   "next_step_required": <true/false>,
   "step_content": "<detailed tracing investigation>",
-  "metadata": {"trace_mode": "<precision|dependencies>", "target_description": "<what/why>"},
+  "metadata": {{"trace_mode": "<precision|dependencies>", "target_description": "<what/why>"}},
   "tracing_complete": <true/false>,
   "trace_summary": "<complete summary when done>",
   "next_steps": "<guidance for agent>"
-}
+}}
 
 PRESENTATION (when tracing_complete=true):
 • PRECISION: Vertical call flow with file:line, branching tables, side effects, entry points

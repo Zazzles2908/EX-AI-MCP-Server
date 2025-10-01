@@ -21,22 +21,22 @@ Tracer tool provides: method call flow, class dependencies, side effects, execut
 JSON OUTPUT (ONLY - no text before/after)
 
 IF MORE INFORMATION NEEDED:
-{"status": "files_required_to_continue", "mandatory_instructions": "<instructions>", "files_needed": ["<files>"]}
+{{"status": "files_required_to_continue", "mandatory_instructions": "<instructions>", "files_needed": ["<files>"]}}
 
 IF NO BUG FOUND:
-{"status": "no_bug_found", "summary": "<investigation summary>", "confidence_level": "High|Medium|Low", "alternative_explanations": ["<explanations>"], "recommended_questions": ["<questions>"]}
+{{"status": "no_bug_found", "summary": "<investigation summary>", "confidence_level": "High|Medium|Low", "alternative_explanations": ["<explanations>"], "recommended_questions": ["<questions>"]}}
 
 FOR COMPLETE ANALYSIS:
-{
+{{
   "status": "analysis_complete",
   "summary": "<problem and impact>",
   "hypotheses": [
-    {"name": "<HYPOTHESIS>", "confidence": "High|Medium|Low", "root_cause": "<explanation>", "evidence": "<logs/code>", "minimal_fix": "<smallest change>", "file_references": ["<file:line>"]}
+    {{"name": "<HYPOTHESIS>", "confidence": "High|Medium|Low", "root_cause": "<explanation>", "evidence": "<logs/code>", "minimal_fix": "<smallest change>", "file_references": ["<file:line>"]}}
   ],
   "key_findings": ["<findings>"],
   "immediate_actions": ["<actions>"],
   "investigation_summary": "<complete summary>"
-}
+}}
 
 KEY PRINCIPLES:
 1. Bugs found ONLY from given code - never fabricated
