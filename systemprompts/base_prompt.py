@@ -55,20 +55,56 @@ Provide one-sentence rationale and exact call outline.
 
 # Standard role format
 def format_role(role_description: str) -> str:
-    """Format a role definition consistently."""
-    return f"ROLE\n{role_description}"
+    """
+    Format a role definition consistently for system prompts.
+
+    Args:
+        role_description: The role description text to format
+
+    Returns:
+        Formatted role section with "ROLE" header
+
+    Example:
+        >>> format_role("You are an expert code reviewer")
+        'ROLE\\nYou are an expert code reviewer'
+    """
+    return f"ROLE\n{{role_description}}"
 
 # Standard scope format
 def format_scope(scope_items: list[str]) -> str:
-    """Format scope and focus section consistently."""
-    items = "\n".join(f"• {item}" for item in scope_items)
-    return f"SCOPE & FOCUS\n{items}"
+    """
+    Format scope and focus section consistently for system prompts.
+
+    Args:
+        scope_items: List of scope/focus bullet points
+
+    Returns:
+        Formatted scope section with "SCOPE & FOCUS" header and bulleted items
+
+    Example:
+        >>> format_scope(["Review code quality", "Check security"])
+        'SCOPE & FOCUS\\n• Review code quality\\n• Check security'
+    """
+    items = "\n".join(f"• {{item}}" for item in scope_items)
+    return f"SCOPE & FOCUS\n{{items}}"
 
 # Standard deliverable format
 def format_deliverable(sections: dict[str, str]) -> str:
-    """Format deliverable section consistently."""
+    """
+    Format deliverable section consistently for system prompts.
+
+    Args:
+        sections: Dictionary mapping section names to descriptions
+
+    Returns:
+        Formatted deliverable section with headers and content
+
+    Example:
+        >>> format_deliverable({{"Summary": "Brief overview", "Details": "Full analysis"}})
+        'DELIVERABLE FORMAT\\n## Summary\\nBrief overview\\n\\n## Details\\nFull analysis\\n'
+    """
     parts = ["DELIVERABLE FORMAT\n"]
     for section_name, section_desc in sections.items():
-        parts.append(f"## {section_name}\n{section_desc}\n")
+        parts.append(f"## {{section_name}}\n{{section_desc}}\n")
     return "\n".join(parts)
 
