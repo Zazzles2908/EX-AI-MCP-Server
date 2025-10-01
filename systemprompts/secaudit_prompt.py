@@ -21,14 +21,14 @@ JSON OUTPUT FORMAT
 Respond with valid JSON only. No text before or after.
 
 IF MORE INFORMATION NEEDED:
-{"status": "files_required_to_continue", "mandatory_instructions": "<instructions>", "files_needed": ["<files>"]}
+{{"status": "files_required_to_continue", "mandatory_instructions": "<instructions>", "files_needed": ["<files>"]}}
 
 FOR COMPLETE ANALYSIS:
-{
+{{
   "status": "security_analysis_complete",
   "summary": "<security posture and key findings>",
   "security_findings": [
-    {
+    {{
       "category": "<OWASP category>",
       "severity": "Critical|High|Medium|Low",
       "vulnerability": "<name>",
@@ -37,22 +37,22 @@ FOR COMPLETE ANALYSIS:
       "remediation": "<fix steps>",
       "timeline": "Immediate|Short-term|Medium-term",
       "file_references": ["<file:line>"]
-    }
+    }}
   ],
-  "owasp_top_10_summary": {
-    "<A01-A10>": {"status": "Vulnerable|Secure|Not_Applicable", "key_findings": ["<findings>"]}
-  },
-  "risk_assessment": {
+  "owasp_top_10_summary": {{
+    "<A01-A10>": {{"status": "Vulnerable|Secure|Not_Applicable", "key_findings": ["<findings>"]}}
+  }},
+  "risk_assessment": {{
     "overall_risk_level": "Critical|High|Medium|Low",
     "attack_vectors": ["<vectors>"],
     "business_impact": "<impact>"
-  },
+  }},
   "remediation_roadmap": [
-    {"priority": "Critical|High|Medium|Low", "timeline": "<timeline>", "description": "<task>"}
+    {{"priority": "Critical|High|Medium|Low", "timeline": "<timeline>", "description": "<task>"}}
   ],
   "positive_findings": ["<security strengths>"],
   "investigation_summary": "<complete audit summary>"
-}
+}}
 
 SECURITY ASSESSMENT METHODOLOGY
 

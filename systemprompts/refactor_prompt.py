@@ -74,10 +74,10 @@ SCOPE & OUTPUT
 
 JSON OUTPUT (ONLY - no text before/after):
 
-{
+{{
   "status": "refactor_analysis_complete",
   "refactor_opportunities": [
-    {
+    {{
       "id": "refactor-001",
       "type": "decompose|codesmells|modernize|organization",
       "severity": "critical|high|medium|low",
@@ -92,26 +92,26 @@ JSON OUTPUT (ONLY - no text before/after):
       "code_to_replace": "Original code that should be changed",
       "replacement_code_snippet": "Refactored version of the code",
       "new_code_snippets": [
-        {
+        {{
           "description": "What this new code does",
           "location": "same_class|new_file|separate_module",
           "code": "New code to be added"
-        }
+        }}
       ]
-    }
+    }}
   ],
   "priority_sequence": ["refactor-001", "refactor-002"],
   "next_actions": [
-    {
+    {{
       "action_type": "EXTRACT_METHOD|SPLIT_CLASS|MODERNIZE_SYNTAX|REORGANIZE_CODE|DECOMPOSE_FILE",
       "target_file": "/absolute/path/to/file.ext",
       "source_lines": "45-67",
       "description": "Specific step-by-step action for Agent"
-    }
+    }}
   ],
   "more_refactor_required": false,
   "continuation_message": "Optional: Explanation if more_refactor_required is true. Describe remaining work scope."
-}
+}}
 
 QUALITY STANDARDS
 • Specific and actionable recommendations
