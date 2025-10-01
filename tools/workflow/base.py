@@ -72,10 +72,20 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
                 return len(consolidated_findings.relevant_files) > 0
     """
 
+    # ================================================================================
+    # Agentic Enhancement Configuration
+    # ================================================================================
+
+    # Configurable sufficiency thresholds (can be overridden per tool)
+    MINIMUM_FINDINGS_LENGTH = 100  # Minimum characters in findings for sufficiency
+    MINIMUM_RELEVANT_FILES = 0  # Minimum relevant files for sufficiency
+
     def __init__(self):
         """Initialize WorkflowTool with proper multiple inheritance."""
         BaseTool.__init__(self)
         BaseWorkflowMixin.__init__(self)
+        # Initialize step adjustment history for transparency
+        self.step_adjustment_history = []
 
     # ================================================================================
     # Agentic Enhancement Methods
@@ -116,15 +126,15 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
         # Default sufficiency logic (tools can override)
         sufficient = (
             confidence in ["certain", "very_high", "almost_certain"] and
-            len(findings) > 100 and  # Substantial findings documented
-            relevant_files > 0  # At least some relevant files identified
+            len(findings) > self.MINIMUM_FINDINGS_LENGTH and  # Substantial findings documented
+            relevant_files > self.MINIMUM_RELEVANT_FILES  # At least some relevant files identified
         )
 
         missing = []
         if not sufficient:
-            if len(findings) < 100:
-                missing.append("More detailed findings needed")
-            if relevant_files == 0:
+            if len(findings) < self.MINIMUM_FINDINGS_LENGTH:
+                missing.append(f"More detailed findings needed (minimum {self.MINIMUM_FINDINGS_LENGTH} characters)")
+            if relevant_files <= self.MINIMUM_RELEVANT_FILES:
                 missing.append("No relevant files identified yet")
             if confidence in ["exploring", "low"]:
                 missing.append("Confidence too low - more investigation needed")
@@ -181,7 +191,17 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
 
         Returns:
             New total_steps count
+
+        Raises:
+            ValueError: If additional_steps is not positive
         """
+        # Validate input
+        if additional_steps <= 0:
+            raise ValueError(
+                f"additional_steps must be positive, got {additional_steps}. "
+                f"Use a positive integer to add steps to the workflow."
+            )
+
         old_total = request.total_steps
         new_total = old_total + additional_steps
 
@@ -193,10 +213,7 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
         # Update request
         request.total_steps = new_total
 
-        # Store rationale for transparency (if tracking exists)
-        if not hasattr(self, 'step_adjustment_history'):
-            self.step_adjustment_history = []
-
+        # Store rationale for transparency
         self.step_adjustment_history.append({
             "step_number": request.step_number,
             "old_total": old_total,
