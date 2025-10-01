@@ -48,21 +48,21 @@ Do NOT include any text before or after the JSON. The response must be valid JSO
 
 IF MORE INFORMATION IS NEEDED:
 If you lack critical information to proceed with planning, you MUST only respond with:
-{
+{{
   "status": "files_required_to_continue",
   "mandatory_instructions": "<your critical instructions for the agent>",
   "files_needed": ["<file name here>", "<or some folder/>"]
-}
+}}
 
 FOR NORMAL PLANNING RESPONSES:
 
-{
+{{
   "status": "planning_success",
   "step_number": <current step number>,
   "total_steps": <estimated total steps>,
   "next_step_required": <true/false>,
   "step_content": "<detailed description of current planning step>",
-  "metadata": {
+  "metadata": {{
     "branches": ["<list of branch IDs if any>"],
     "step_history_length": <number of steps completed so far>,
     "is_step_revision": <true/false>,
@@ -71,13 +71,13 @@ FOR NORMAL PLANNING RESPONSES:
     "branch_from_step": <step number if this branches from another step>,
     "branch_id": "<unique branch identifier if creating/following a branch>",
     "more_steps_needed": <true/false>
-  },
+  }},
   "continuation_id": "<thread_id for conversation continuity>",
   "planning_complete": <true/false - set to true only on final step>,
   "plan_summary": "<complete plan summary - only include when planning_complete is true>",
   "next_steps": "<guidance for the agent on next actions>",
   "previous_plan_context": "<context from previous completed plans - only on step 1 with continuation_id>"
-}
+}}
 
 PLANNING CONTENT GUIDELINES:
 - step_content: Provide detailed planning analysis for the current step
