@@ -519,3 +519,14 @@
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 2669, "output_tokens": 669, "t": 1759266301.22562}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 2792, "output_tokens": 863, "t": 1759266382.2339096}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 2913, "output_tokens": 1024, "t": 1759268281.0982423}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1943, "output_tokens": 68, "t": 1759354583.4816291}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 2142, "output_tokens": 1024, "t": 1759354710.6995091}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 1820, "output_tokens": 1024, "t": 1759355005.1882794}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 6613, "output_tokens": 1024, "t": 1759355066.0550444}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 2359, "output_tokens": 601, "t": 1759355188.9745293}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1636, "output_tokens": 1024, "t": 1759355500.9688277}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 2017, "output_tokens": 1024, "t": 1759355784.7844195}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1710, "output_tokens": 39, "t": 1759355802.0205343}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1714, "output_tokens": 66, "t": 1759356497.3322167}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1708, "output_tokens": 56, "t": 1759356508.5919225}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 2082, "output_tokens": 69, "t": 1759400810.349005}
