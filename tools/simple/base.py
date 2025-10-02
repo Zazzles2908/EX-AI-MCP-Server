@@ -811,7 +811,7 @@ class SimpleTool(BaseTool):
                     return {
                         "continuation_id": continuation_id,
                         "remaining_turns": remaining_turns,
-                        "note": f"Claude can continue this conversation for {remaining_turns} more exchanges.",
+                        "note": f"You can continue this conversation for {remaining_turns} more exchanges.",
                     }
             else:
                 # New conversation - create thread and offer continuation
@@ -846,7 +846,7 @@ class SimpleTool(BaseTool):
                     new_thread_id, "user", user_prompt, files=user_files, images=user_images, tool_name=self.get_name()
                 )
 
-                note_client = friendly or "Claude"
+                note_client = friendly or "You"
                 return {
                     "continuation_id": new_thread_id,
                     "remaining_turns": MAX_CONVERSATION_TURNS - 1,

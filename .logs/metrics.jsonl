@@ -530,3 +530,13 @@
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1714, "output_tokens": 66, "t": 1759356497.3322167}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1708, "output_tokens": 56, "t": 1759356508.5919225}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 2082, "output_tokens": 69, "t": 1759400810.349005}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 2005, "output_tokens": 567, "t": 1759434519.4645908}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1714, "output_tokens": 63, "t": 1759434662.094296}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1701, "output_tokens": 52, "t": 1759434703.2787852}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 2059, "output_tokens": 689, "t": 1759437810.8767357}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 47296, "output_tokens": 1024, "t": 1759438055.1062868}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 72472, "output_tokens": 1024, "t": 1759438117.2686267}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 97652, "output_tokens": 1024, "t": 1759438185.253873}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 122910, "output_tokens": 1024, "t": 1759438262.2763648}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 123355, "output_tokens": 1024, "t": 1759438333.1742043}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 123227, "output_tokens": 802, "t": 1759438397.1934538}

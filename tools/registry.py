@@ -64,6 +64,8 @@ TOOL_MAP: Dict[str, tuple[str, str]] = {
 
 }
 # Visibility map for tools: 'core' | 'advanced' | 'hidden'
+# NOTE: During development, all tools are set to 'core' or 'advanced' for full accessibility.
+# In production, consider setting diagnostic tools to 'hidden' to reduce MCP client clutter.
 TOOL_VISIBILITY = {
     # Core verbs
     "status": "core",
@@ -76,23 +78,23 @@ TOOL_VISIBILITY = {
     "testgen": "core",
     "debug": "core",
     # Auxiliary (advanced)
-    "provider_capabilities": "hidden",  # AI-manager-only diagnostics
-    "listmodels": "hidden",              # AI-manager-only diagnostics
+    "provider_capabilities": "advanced",  # Diagnostics - useful during development
+    "listmodels": "advanced",              # Diagnostics - useful during development
     "activity": "advanced",
-    "version": "hidden",                 # AI-manager-only diagnostics
-    "kimi_upload_and_extract": "hidden", # backend pathway only
+    "version": "advanced",                 # Diagnostics - useful during development
+    "kimi_upload_and_extract": "advanced", # Backend pathway - useful during development
     "kimi_chat_with_tools": "advanced",
-    "kimi_capture_headers": "hidden",    # diagnostics-only
-    "glm_upload_file": "hidden",         # backend pathway only
-    "glm_payload_preview": "hidden",     # diagnostics-only
+    "kimi_capture_headers": "advanced",    # Diagnostics - useful during development
+    "glm_upload_file": "advanced",         # Backend pathway - useful during development
+    "glm_payload_preview": "advanced",     # Diagnostics - useful during development
     "consensus": "advanced",
     "docgen": "advanced",
     "secaudit": "advanced",
     "tracer": "advanced",
     "precommit": "advanced",
-    # Hidden/internal
-    "toolcall_log_tail": "hidden",
-    "health": "hidden",
+    # Internal utilities
+    "toolcall_log_tail": "advanced",       # Diagnostics - useful during development
+    "health": "advanced",                  # Diagnostics - useful during development
 }
 
 
