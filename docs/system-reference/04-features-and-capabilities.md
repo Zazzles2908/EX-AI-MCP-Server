@@ -10,6 +10,11 @@
 
 The EX-AI-MCP-Server provides comprehensive AI capabilities through the ZhipuAI (Z.ai) and Moonshot (Kimi) platforms. This document details all available features, their configurations, and usage patterns.
 
+**Upgrade Status:** Wave 2 (Synthesis & UX Improvements) - IN PROGRESS
+**Target SDK:** zai-sdk v0.0.4
+**Breaking Changes:** **NONE** - 100% backward compatible upgrade
+**Reference:** See `wave2-research-synthesis.md` for complete upgrade analysis
+
 ---
 
 ## Core Features
