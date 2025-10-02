@@ -25,17 +25,21 @@ EX-AI-MCP-Server is a **Model Context Protocol (MCP) WebSocket daemon** that pro
 ### 1. Provider System
 
 **GLM Provider (ZhipuAI/Z.ai)**
-- **SDK:** zai-sdk v0.0.4 (international version)
-- **Flagship Model:** GLM-4.6 with 200K context window
+- **SDK:** zai-sdk v0.0.4 (international version) - **NO BREAKING CHANGES**
+- **Flagship Model:** GLM-4.6 with 200K context window (355B/32B MoE architecture)
 - **Endpoint:** https://api.z.ai/api/paas/v4/
 - **Features:** Web search, tool calling, streaming, multimodal support
 - **Pricing:** $0.60 input / $2.20 output per million tokens
+- **New Features:** CogVideoX-2 (video generation), Assistant API, CharGLM-3 (character RP)
 
 **Kimi Provider (Moonshot)**
 - **API:** Moonshot API (Tier 2 access)
-- **Models:** kimi-k2-0905-preview (256K context), moonshot-v1-128k, kimi-k2-0711-preview
+- **Recommended Model:** kimi-k2-0905-preview (256K context, 1T/32B MoE)
+- **Alternative Models:** kimi-k2-0711-preview (256K), moonshot-v1-128k (128K)
+- **Pricing:** $0.60 input / $2.50 output per million tokens
 - **Features:** Agentic intelligence, tool use, coding, long context support (256K)
 - **Use Case:** Tool integration, code generation, agentic workflows, complex reasoning
+- **Performance:** SOTA on SWE Bench Verified, Tau2, AceBench (among open models)
 
 ### 2. Agentic Routing System
 
