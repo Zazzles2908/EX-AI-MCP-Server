@@ -237,9 +237,14 @@ class ChatTool(SimpleTool):
         """
         Format the chat response and persist assistant turn when continuation_id is provided.
         Also captures provider cache tokens from model_info for context reuse.
+
+        Wave 2 Fix (Epic 2.2): Only append "AGENT'S TURN" message for multi-turn conversations
+        with continuation_id. For standalone calls (especially with web search), return clean response.
         """
+        has_continuation = False
         try:
             if getattr(request, "continuation_id", None):
+                has_continuation = True
                 # Persist assistant turn
                 from src.conversation.history_store import get_history_store
                 get_history_store().record_turn(request.continuation_id, "assistant", str(response))
@@ -268,10 +273,16 @@ class ChatTool(SimpleTool):
                         _os.environ["GLM_STREAM_ENABLED"] = str(prev)
             except Exception:
                 pass
-        return (
-            f"{response}\n\n---\n\nAGENT'S TURN: Evaluate this perspective alongside your analysis to "
-            "form a comprehensive solution and continue with the user's request and task at hand."
-        )
+
+        # Only append "AGENT'S TURN" message for multi-turn conversations
+        # For standalone calls (especially with web search), return clean response
+        if has_continuation:
+            return (
+                f"{response}\n\n---\n\nAGENT'S TURN: Evaluate this perspective alongside your analysis to "
+                "form a comprehensive solution and continue with the user's request and task at hand."
+            )
+        else:
+            return response
 
     def get_websearch_guidance(self) -> str:
         """

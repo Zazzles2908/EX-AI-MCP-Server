@@ -1,5 +1,5 @@
 """
-Core Tool Infrastructure for Zen MCP Tools
+Core Tool Infrastructure for EXAI MCP Tools
 
 This module provides the fundamental base class for all tools by composing
 specialized mixins that handle different aspects of tool functionality.
