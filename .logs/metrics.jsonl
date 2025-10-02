@@ -540,3 +540,15 @@
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 122910, "output_tokens": 1024, "t": 1759438262.2763648}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 123355, "output_tokens": 1024, "t": 1759438333.1742043}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 123227, "output_tokens": 802, "t": 1759438397.1934538}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "924f603b8789b115f537c0169384ec531445518bd9830ee5439f380e8ccdd69d", "t": 1759439361.4321861}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759439362.4933803}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "b4405881b277d702d7babf37543df67b61cef54d176236d77a95ae9da2ac4e1f", "t": 1759439362.8489726}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759439363.5503178}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "7ab9173dcc0a77a0cb13c529ff7013c3fc8578df8343aed31e09aa3c7b7bd523", "t": 1759439363.7450905}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759439364.7303045}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "3e76ea3a2f49f151e6dba227258aedc6cd19e548d01ad47fe389190176ceb8dd", "t": 1759439364.9386332}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759439365.2393548}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "924f603b8789b115f537c0169384ec531445518bd9830ee5439f380e8ccdd69d", "t": 1759439365.4471288}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "b4405881b277d702d7babf37543df67b61cef54d176236d77a95ae9da2ac4e1f", "t": 1759439366.421198}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "7ab9173dcc0a77a0cb13c529ff7013c3fc8578df8343aed31e09aa3c7b7bd523", "t": 1759439366.631993}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3e76ea3a2f49f151e6dba227258aedc6cd19e548d01ad47fe389190176ceb8dd", "t": 1759439366.8356385}

@@ -158,9 +158,18 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
         Returns:
             (should_terminate, rationale)
         """
+        import os
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # Check if agentic logging is enabled
+        agentic_logging = os.getenv("AGENTIC_ENABLE_LOGGING", "false").lower() == "true"
+
         # Check minimum steps requirement
         min_steps = self.get_minimum_steps_for_tool()
         if request.step_number < min_steps:
+            if agentic_logging:
+                logger.info(f"[AGENTIC] {self.get_name()}: Cannot terminate early - step {request.step_number} < minimum {min_steps}")
             return False, f"Minimum {min_steps} steps required for {self.get_name()}"
 
         # Get information sufficiency assessment
@@ -168,14 +177,21 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
         confidence = assessment["confidence"]
         sufficient = assessment["sufficient"]
 
+        if agentic_logging:
+            logger.info(f"[AGENTIC] {self.get_name()}: Early termination check - confidence={confidence}, sufficient={sufficient}, step={request.step_number}/{request.total_steps}")
+
         # Early termination criteria
         if confidence == "certain" and sufficient:
+            logger.info(f"[AGENTIC] ✅ {self.get_name()}: EARLY TERMINATION TRIGGERED - Goal achieved with certainty at step {request.step_number}/{request.total_steps}")
             return True, f"Goal achieved with certainty at step {request.step_number}/{request.total_steps}"
 
         # Allow termination at final step with very_high confidence
         if confidence == "very_high" and sufficient and request.step_number >= (request.total_steps - 1):
+            logger.info(f"[AGENTIC] ✅ {self.get_name()}: EARLY TERMINATION TRIGGERED - Very high confidence at step {request.step_number}/{request.total_steps}")
             return True, f"Very high confidence and sufficient information at step {request.step_number}/{request.total_steps}"
 
+        if agentic_logging:
+            logger.info(f"[AGENTIC] {self.get_name()}: Continue investigation - confidence not high enough or information insufficient")
         return False, "Continue investigation"
 
     def request_additional_steps(self, request, reason: str, additional_steps: int = 1) -> int:
