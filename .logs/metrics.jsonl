@@ -552,3 +552,66 @@
 {"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "b4405881b277d702d7babf37543df67b61cef54d176236d77a95ae9da2ac4e1f", "t": 1759439366.421198}
 {"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "7ab9173dcc0a77a0cb13c529ff7013c3fc8578df8343aed31e09aa3c7b7bd523", "t": 1759439366.631993}
 {"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3e76ea3a2f49f151e6dba227258aedc6cd19e548d01ad47fe389190176ceb8dd", "t": 1759439366.8356385}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1450, "output_tokens": 409, "t": 1759440458.1311119}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "4a0bc3a33e42ba7d7576a100b0ff4a147db105df5d85214e399134155a942bd8", "t": 1759440687.1109915}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440688.376458}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "3cc68f3aac436a39319bb39ae19e4ae88492cdc652657fc1318a41921e8e2441", "t": 1759440688.721249}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440689.8032174}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1f861faa67a4d471974e6326a0772c8b0058d08ae078e479818f8afe3b1555e9", "t": 1759440690.1530058}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440690.967945}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "e418824c684377a2a291182d1a7fab15f28fa3eb5c40b21934f749868dba270b", "t": 1759440691.1669433}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440692.3667002}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "b3bdebe4a6ffdc74f703040b5a2602c64069fdc562046f1012459b36fc8674ea", "t": 1759440692.5824716}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440693.8412237}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "885a3dd16be9ecea2b17197e2272acf9d3aff0c806c26820ead49c1df1668502", "t": 1759440694.0473588}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440695.0571744}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1d45ffa1fda53f1e8b771b02f9f557eab54c235104e5c3a9e1c2495d7b77c5e3", "t": 1759440695.2620318}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440696.0473065}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "952915c49617a4ea312af608b7d954ec05ba93843182d4dca706f41ab2fdc9c7", "t": 1759440696.2427795}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440696.9012718}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "28bf054048d23894f3e20b59d0181ff229987779d51cc342a47d61b4c59166b3", "t": 1759440697.1032073}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440697.9167037}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "01df03052f360e687cc74bf90221245db4722f0eaea2d0629d0a6cc87a4f5326", "t": 1759440698.1161134}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440698.9599285}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c8bc5dd45ce90fb1dd8bd7926a9376a31a92c8223e382d8f9238dedc22da3ed6", "t": 1759440699.1625214}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440699.8436682}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d5f6d65b48238401c27708c61e9d549bce1dd46b777d2af35bbaeebbab9ef687", "t": 1759440700.0428782}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440700.824068}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "0c9bd8f1ddfc8e53a396ace187d985f3faf9a6286050634260d5f13f478675f9", "t": 1759440701.0218036}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440701.870596}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "fa21207a59c7ddf61ee4aa7cb6f8d7f1fb37d5e094918af94bd26f1129683f7b", "t": 1759440702.0694168}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440703.1115532}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "93465c545a9cc32d975a4d56fac22597d7f1716b1bcb676664e4708236d79a0a", "t": 1759440703.5074143}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440704.2689779}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "6f4450f56aa3856f8e14a86e7c67ca0d80189b6f36dada4ff1e202d6e531e63c", "t": 1759440756.1125739}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440757.4725997}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "126215a626f8d038177b8ffffb6b41664a166b87bb2ea47bdecbd17b38e1ffd7", "t": 1759440757.684925}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440758.7899034}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c035a2aae5ff4d97346a1dc7a17a65d296893a79b07c01c82e602789defc65e1", "t": 1759440758.9880073}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440759.7624965}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "8158d80c30c35a6e1fd10da468bfa98fc83cf4f0a9f623b19fff3bb0d6f6a282", "t": 1759440759.961684}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440760.9622707}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "68ad49af13ff6f70a99b5124530a6ff69e5f38ee322f51c87e79f009874f69a7", "t": 1759440761.1611571}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440762.3158684}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "a081b130d62a778aa4de7787e64e0e0593f1c27fb9284e445c14137e97d950a9", "t": 1759440762.508454}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440763.1599061}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1c4d175cc7ff63283b6c34c64f62d71f9da811e183a2c75b781116d0241c10bb", "t": 1759440763.351513}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440764.3203535}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "29aa47ee044c698ae9f76dd83ace80fb652408f87f59c9aec09d294b81ca377c", "t": 1759440764.5184312}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440765.462202}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "4a59a7f59fcb08e6f9e821a4fd7ddf36dc20dbd4ffae3812c628749fb88389af", "t": 1759440765.6541185}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440766.3432643}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "4d56deee7fca2ab9d095cf67bd59443c5a2edc3c024d3012d6f589b941d4d949", "t": 1759440766.5407658}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440767.5243104}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "bfe3534d6578cfa76c5df31c8afc166d6c4a4ae11470e8ec1fb9d8a856628d1d", "t": 1759440767.7246501}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440768.9308167}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "b33ffa10bc8ddc09f2f9b1f1da1265bd0bff069c42f595fb541f557eabd1f693", "t": 1759440769.1222188}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440770.201465}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "bca5228566c148239ee8ec25efc4aeb51cb693b764878da5bdc377df9153dc91", "t": 1759440770.398135}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440771.1823223}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "6829395257cff88f8532055a7cb9d76205d22b6631e96dbae49addbede3d265f", "t": 1759440771.3751183}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440772.3641667}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "cbcc08447ba6eb5b63d7b0713b40d88256f565f6bff08c054ab39f292b5ce275", "t": 1759440772.5719063}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440773.512775}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d4d7fa7c6c98704cc172d74ec81b5c77e3578ed445bdf1ea3c9d47f93448b1c3", "t": 1759440815.664829}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440817.1438382}
