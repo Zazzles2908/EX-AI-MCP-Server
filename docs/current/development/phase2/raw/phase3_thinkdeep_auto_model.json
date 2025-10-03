@@ -1,9 +1,0 @@
-{
-  "continuation_id": "8f76a52d-f9cb-4b81-9f83-01a613848a5a",
-  "status": "files_required_to_continue",
-  "notes": "ThinkDeep requested concrete files; used here to log MCP tool outcome for audit.",
-  "summary": "ThinkDeep session created for auto-mode continuation fix analysis. Awaiting specific files; we proceeded with targeted code edits in tools/simple/base.py and tools/chat.py.",
-  "model": "glm-4.5-flash",
-  "provider": "glm"
-}
-

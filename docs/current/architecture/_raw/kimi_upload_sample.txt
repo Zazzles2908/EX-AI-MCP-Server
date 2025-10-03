@@ -1,9 +1,0 @@
-Kimi live upload/extract smoke test sample.
-
-This file is used to validate EXAI-WS MCP Kimi Files API.
-It contains multiple lines, punctuation, and unicode: café, naïve, résumé.
-It also has a small JSON embedded:
-{"note":"hello","value":42}
-
-End of sample.
-

@@ -60,16 +60,51 @@ class KimiDocsConsolidator:
     def analyze_batch_with_kimi(self, batch: List[Path], batch_num: int) -> Dict:
         """
         Analyze a batch of files using Kimi multi-file chat.
-        
+
         Uses best practices:
         - Role setting: "You are a documentation architect"
         - Context setting: Project type, design intent
         - Structured output: JSON with consolidation actions
         """
         from tools.providers.kimi.kimi_upload import KimiMultiFileChatTool
-        
+
         logger.info(f"Analyzing batch {batch_num} ({len(batch)} files)...")
-        
+
+        # Filter out empty files and validate content
+        valid_files = []
+        skipped_files = []
+        for f in batch:
+            try:
+                # Check file size
+                if f.stat().st_size == 0:
+                    logger.warning(f"Skipping empty file: {f}")
+                    skipped_files.append(str(f))
+                    continue
+
+                # Try to read and validate content
+                with open(f, 'r', encoding='utf-8') as file:
+                    content = file.read()
+                    if not content.strip():
+                        logger.warning(f"Skipping file with no content: {f}")
+                        skipped_files.append(str(f))
+                        continue
+
+                valid_files.append(f)
+            except Exception as e:
+                logger.warning(f"Skipping problematic file {f}: {e}")
+                skipped_files.append(str(f))
+
+        if not valid_files:
+            logger.warning(f"Batch {batch_num} has no valid files, skipping")
+            return {
+                "batch_number": batch_num,
+                "files_analyzed": 0,
+                "error": "No valid files in batch",
+                "skipped_files": skipped_files
+            }
+
+        logger.info(f"Valid files: {len(valid_files)}, Skipped: {len(skipped_files)}")
+
         # Prepare structured prompt
         prompt = f"""You are a documentation architect analyzing EX-AI-MCP-Server documentation.
 
@@ -170,32 +205,63 @@ Analyze the files and provide your JSON response."""
         
         return results
     
-    def phase2_architecture_cleanup(self):
-        """Phase 2: Architecture Cleanup - Merge docs/architecture/ and docs/current/architecture/"""
+    def phase2_comprehensive_cleanup(self):
+        """Phase 2: Comprehensive Cleanup - Analyze ALL active docs (exclude archive)"""
         logger.info("=" * 80)
-        logger.info("PHASE 2: ARCHITECTURE CLEANUP")
+        logger.info("PHASE 2: COMPREHENSIVE CLEANUP - ALL ACTIVE DOCS")
         logger.info("=" * 80)
-        
-        # Scan both directories
-        arch_files = self.scan_docs("architecture")
-        current_arch_files = self.scan_docs("current/architecture")
-        
-        all_files = arch_files + current_arch_files
+
+        # Check for existing partial results
+        output_file = self.docs_root / "COMPREHENSIVE_CONSOLIDATION_ANALYSIS.json"
+        existing_results = []
+        start_batch = 1
+
+        if output_file.exists():
+            logger.info(f"Found existing results file: {output_file}")
+            try:
+                with open(output_file, 'r') as f:
+                    existing_results = json.load(f)
+                start_batch = len(existing_results) + 1
+                logger.info(f"Resuming from batch {start_batch} (found {len(existing_results)} existing batches)")
+            except Exception as e:
+                logger.warning(f"Could not load existing results: {e}")
+
+        # Scan all active directories (exclude archive)
+        all_files = []
+
+        # Target folders
+        target_folders = [
+            "architecture",
+            "current",
+            "guides",
+            "ux",
+            "system-reference",
+            "upgrades"
+        ]
+
+        for folder in target_folders:
+            files = self.scan_docs(folder)
+            all_files.extend(files)
+            logger.info(f"  - {folder}: {len(files)} files")
+
+        logger.info(f"\nTotal active files to analyze: {len(all_files)}")
+
         batches = self.batch_files(all_files)
-        
-        results = []
-        for i, batch in enumerate(batches, 1):
-            result = self.analyze_batch_with_kimi(batch, i)
+
+        results = existing_results.copy()
+        for i in range(start_batch - 1, len(batches)):
+            batch_num = i + 1
+            result = self.analyze_batch_with_kimi(batches[i], batch_num)
             results.append(result)
-        
-        # Save results
-        output_file = self.docs_root / "ARCHITECTURE_CONSOLIDATION_ANALYSIS.json"
-        with open(output_file, 'w') as f:
-            json.dump(results, f, indent=2)
-        
+
+            # Save after each batch to prevent data loss
+            with open(output_file, 'w') as f:
+                json.dump(results, f, indent=2)
+            logger.info(f"Saved progress: {batch_num}/{len(batches)} batches complete")
+
         logger.info(f"\n✅ Phase 2 complete! Results saved to: {output_file}")
         logger.info(f"   Analyzed {len(all_files)} files in {len(batches)} batches")
-        
+
         return results
     
     def phase3_archive_cleanup(self):
@@ -226,7 +292,7 @@ Analyze the files and provide your JSON response."""
 def main():
     parser = argparse.ArgumentParser(description="Consolidate documentation using Kimi API")
     parser.add_argument("--phase", type=int, choices=[1, 2, 3], required=True,
-                        help="Phase to run: 1=Quick Win, 2=Architecture, 3=Archive")
+                        help="Phase to run: 1=Quick Win (international-users), 2=Comprehensive (all active docs), 3=Archive")
     args = parser.parse_args()
     
     docs_root = PROJECT_ROOT / "docs"
@@ -235,7 +301,7 @@ def main():
     if args.phase == 1:
         consolidator.phase1_quick_win()
     elif args.phase == 2:
-        consolidator.phase2_architecture_cleanup()
+        consolidator.phase2_comprehensive_cleanup()
     elif args.phase == 3:
         consolidator.phase3_archive_cleanup()
 

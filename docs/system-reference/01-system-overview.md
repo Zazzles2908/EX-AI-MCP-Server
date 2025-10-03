@@ -51,29 +51,20 @@ EX-AI-MCP-Server is a **Model Context Protocol (MCP) WebSocket daemon** that pro
 
 ### 3. Tool Ecosystem
 
-**Simple Tools (Request/Response):**
-- `chat` - General conversation with web search support
-- `thinkdeep` - Multi-stage investigation and reasoning
-- `planner` - Sequential step-by-step planning
-- `consensus` - Multi-model consensus workflow
-- `challenge` - Critical analysis and truth-seeking
+The EX-AI-MCP-Server provides a comprehensive tool ecosystem with 16+ tools organized into three categories:
 
-**Workflow Tools (Multi-Step with Pause Enforcement):**
-- `analyze` - Comprehensive code analysis
-- `debug` - Root cause analysis and debugging
-- `codereview` - Systematic code review
-- `precommit` - Pre-commit validation
-- `refactor` - Refactoring analysis and recommendations
-- `testgen` - Test generation with edge case coverage
-- `tracer` - Code tracing and dependency mapping
-- `secaudit` - Security audit and vulnerability assessment
-- `docgen` - Documentation generation
+**Tool Categories:**
+- **Simple Tools** (7 tools): Request/response for conversations, planning, and analysis
+- **Workflow Tools** (9 tools): Multi-step investigation with pause enforcement
+- **Utility Tools** (2 tools): System information and diagnostics
 
-**Agentic Enhancements (Phase 1 Implementation):**
+**Key Capabilities:**
 - Self-assessment of information sufficiency
 - Early termination when goals achieved
 - Dynamic step adjustment mid-workflow
 - Configurable sufficiency thresholds
+
+**📖 For complete tool documentation, see:** [03-tool-ecosystem-overview.md](03-tool-ecosystem-overview.md)
 
 ### 4. Technology Stack
 
