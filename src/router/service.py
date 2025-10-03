@@ -206,7 +206,8 @@ class RouterService:
                 budget_val = None
                 try:
                     budget_val = float(hint.get("budget")) if hint and isinstance(hint.get("budget"), (int, float)) else None
-                except Exception:
+                except (TypeError, ValueError, AttributeError) as e:
+                    logger.debug(f"Failed to parse budget from hint: {e}")
                     budget_val = None
                 meta = {"hint": bool(hint_candidates)}
                 if budget_val is not None:
@@ -221,8 +222,10 @@ class RouterService:
                         if syn:
                             dec.meta = dec.meta or {}
                             dec.meta["synthesis"] = syn
-                    except Exception:
-                        pass
+                    except ImportError as e:
+                        logger.debug(f"Synthesis module not available: {e}")
+                    except Exception as e:
+                        logger.warning(f"Synthesis hop failed: {e}")
                     from utils.observability import append_routeplan_jsonl, append_synthesis_hop_jsonl, emit_telemetry_jsonl
                     append_routeplan_jsonl({
                         "requested": dec.requested,
@@ -240,8 +243,10 @@ class RouterService:
                             "budget": budget_val,
                             "synthesis": bool(dec.meta and dec.meta.get("synthesis")),
                         })
-                    except Exception:
-                        pass
+                    except (OSError, IOError, PermissionError) as e:
+                        logger.debug(f"Failed to emit telemetry: {e}")
+                    except Exception as e:
+                        logger.warning(f"Unexpected error emitting telemetry: {e}")
                     # If synthesis metadata present, also log an explicit synthesis hop record
                     try:
                         if dec.meta and dec.meta.get("synthesis"):
@@ -250,10 +255,14 @@ class RouterService:
                                 "primary": dec.chosen,
                                 "reason": dec.meta["synthesis"].get("reason"),
                             })
-                    except Exception:
-                        pass
-                except Exception:
-                    pass
+                    except (OSError, IOError, PermissionError) as e:
+                        logger.debug(f"Failed to append synthesis hop: {e}")
+                    except Exception as e:
+                        logger.warning(f"Unexpected error appending synthesis hop: {e}")
+                except (ImportError, AttributeError) as e:
+                    logger.debug(f"Observability module not fully available: {e}")
+                except Exception as e:
+                    logger.warning(f"Unexpected error in observability logging: {e}")
                 return dec
 
         # Fallback to generic behavior
@@ -275,7 +284,14 @@ class RouterService:
                     "est_tokens": res.est_tokens,
                 },
             }
-        except Exception:
+        except ImportError as e:
+            logger.debug(f"Classifier module not available: {e}")
+            return {}
+        except (AttributeError, TypeError) as e:
+            logger.debug(f"Failed to build hint from classifier: {e}")
+            return {}
+        except Exception as e:
+            logger.warning(f"Unexpected error building hint: {e}")
             return {}
 
 
@@ -297,8 +313,12 @@ class RouterService:
                         "provider": dec.provider,
                         "meta": dec.meta or {},
                     })
-                except Exception:
-                    pass
+                except (ImportError, AttributeError) as e:
+                    logger.debug(f"Observability module not available: {e}")
+                except (OSError, IOError, PermissionError) as e:
+                    logger.debug(f"Failed to append routeplan: {e}")
+                except Exception as e:
+                    logger.warning(f"Unexpected error appending routeplan: {e}")
                 return dec
             # Fallback if explicit is unknown
             logger.info(json.dumps({"event": "route_explicit_unavailable", "requested": req}))
@@ -317,8 +337,12 @@ class RouterService:
                         "provider": dec.provider,
                         "meta": dec.meta or {},
                     })
-                except Exception:
-                    pass
+                except (ImportError, AttributeError) as e:
+                    logger.debug(f"Observability module not available: {e}")
+                except (OSError, IOError, PermissionError) as e:
+                    logger.debug(f"Failed to append routeplan: {e}")
+                except Exception as e:
+                    logger.warning(f"Unexpected error appending routeplan: {e}")
                 return dec
         # Last resort: pick first available model
         try:
@@ -329,8 +353,10 @@ class RouterService:
                 dec = RouteDecision(requested=req, chosen=first, reason="auto_first_available", provider=(prov.get_provider_type().name if prov else None))
                 logger.info(dec.to_json())
                 return dec
-        except Exception:
-            pass
+        except (AttributeError, KeyError, TypeError) as e:
+            logger.debug(f"Failed to get first available model: {e}")
+        except Exception as e:
+            logger.warning(f"Unexpected error getting available models: {e}")
         # No models available
         dec = RouteDecision(requested=req, chosen=req, reason="no_models_available", provider=None)
         logger.warning(dec.to_json())
@@ -343,7 +369,11 @@ class RouterService:
                 "provider": dec.provider,
                 "meta": dec.meta or {},
             })
-        except Exception:
-            pass
+        except (ImportError, AttributeError) as e:
+            logger.debug(f"Observability module not available: {e}")
+        except (OSError, IOError, PermissionError) as e:
+            logger.debug(f"Failed to append routeplan: {e}")
+        except Exception as e:
+            logger.warning(f"Unexpected error appending routeplan: {e}")
         return dec
 

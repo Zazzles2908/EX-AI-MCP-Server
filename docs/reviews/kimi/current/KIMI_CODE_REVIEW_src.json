@@ -1,0 +1,198 @@
+[
+  {
+    "batch_number": 1,
+    "files_reviewed": 5,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 0,
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "overall_quality": "unknown"
+    }
+  },
+  {
+    "batch_number": 2,
+    "files_reviewed": 5,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 7,
+      "critical": 1,
+      "high": 2,
+      "medium": 2,
+      "low": 2,
+      "overall_quality": "good"
+    }
+  },
+  {
+    "batch_number": 3,
+    "files_reviewed": 5,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 0,
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "overall_quality": "unknown"
+    }
+  },
+  {
+    "batch_number": 4,
+    "files_reviewed": 5,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 7,
+      "critical": 1,
+      "high": 2,
+      "medium": 2,
+      "low": 2,
+      "overall_quality": "good"
+    }
+  },
+  {
+    "batch_number": 5,
+    "files_reviewed": 5,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 0,
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "overall_quality": "unknown"
+    }
+  },
+  {
+    "batch_number": 6,
+    "files_reviewed": 5,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 8,
+      "critical": 1,
+      "high": 2,
+      "medium": 4,
+      "low": 2,
+      "overall_quality": "fair"
+    }
+  },
+  {
+    "batch_number": 7,
+    "files_reviewed": 5,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 9,
+      "critical": 1,
+      "high": 2,
+      "medium": 4,
+      "low": 2,
+      "overall_quality": "good"
+    }
+  },
+  {
+    "batch_number": 8,
+    "files_reviewed": 5,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 7,
+      "critical": 1,
+      "high": 2,
+      "medium": 2,
+      "low": 2,
+      "overall_quality": "good"
+    }
+  },
+  {
+    "batch_number": 9,
+    "files_reviewed": 5,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 10,
+      "critical": 2,
+      "high": 2,
+      "medium": 4,
+      "low": 2,
+      "overall_quality": "good"
+    }
+  },
+  {
+    "batch_number": 10,
+    "files_reviewed": 5,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 7,
+      "critical": 1,
+      "high": 2,
+      "medium": 2,
+      "low": 2,
+      "overall_quality": "good"
+    }
+  },
+  {
+    "batch_number": 11,
+    "files_reviewed": 5,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 7,
+      "critical": 0,
+      "high": 2,
+      "medium": 3,
+      "low": 2,
+      "overall_quality": "good"
+    }
+  },
+  {
+    "batch_number": 12,
+    "files_reviewed": 5,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 8,
+      "critical": 1,
+      "high": 2,
+      "medium": 2,
+      "low": 3,
+      "overall_quality": "fair"
+    }
+  },
+  {
+    "batch_number": 13,
+    "files_reviewed": 5,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 9,
+      "critical": 1,
+      "high": 2,
+      "medium": 4,
+      "low": 2,
+      "overall_quality": "good"
+    }
+  },
+  {
+    "batch_number": 14,
+    "files_reviewed": 2,
+    "findings": [],
+    "good_patterns": [],
+    "summary": {
+      "total_issues": 0,
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "overall_quality": "unknown"
+    }
+  }
+]

@@ -36,52 +36,48 @@ class ResponseFormattingMixin:
     def get_websearch_instruction(self, use_websearch: bool, tool_specific: Optional[str] = None) -> str:
         """
         Generate standardized web search instruction based on the use_websearch parameter.
-        
+
         Args:
             use_websearch: Whether web search is enabled
             tool_specific: Optional tool-specific search guidance
-        
+
         Returns:
             str: Web search instruction to append to prompt, or empty string
         """
         if not use_websearch:
             return ""
-        
+
         base_instruction = """
 
-WEB SEARCH CAPABILITY: You can request Claude to perform web searches to enhance your analysis with current information!
+WEB SEARCH CAPABILITY: You have access to native web search tools that you can use autonomously to enhance your analysis with current information!
 
-IMPORTANT: When you identify areas where web searches would significantly improve your response (such as checking current documentation, finding recent solutions, verifying best practices, or gathering community insights), you MUST explicitly instruct Claude to perform specific web searches and then respond back using the continuation_id from this response to continue the analysis.
+IMPORTANT: When you identify areas where web searches would significantly improve your response (such as checking current documentation, finding recent solutions, verifying best practices, or gathering community insights), you should AUTONOMOUSLY use your web search tool to gather this information and incorporate it directly into your response.
 
-Use clear, direct language based on the value of the search:
+How to use web search:
+1. Identify what information would improve your analysis
+2. Use your web search tool with specific, targeted queries
+3. Incorporate the search results directly into your comprehensive response
+4. Cite sources when referencing search results
 
-For valuable supplementary information: "Please perform a web search on '[specific topic/query]' and then continue this analysis using the continuation_id from this response if you find relevant information."
+When web search is valuable:
+- Checking current documentation and API references
+- Finding recent best practices and patterns
+- Verifying known issues and community solutions
+- Checking framework updates and compatibility
+- Looking up security advisories and patches
+- Finding performance benchmarks and optimizations
 
-For important missing information: "Please search for '[specific topic/query]' and respond back with the findings using the continuation_id from this response - this information is needed to provide a complete analysis."
+You should use web search proactively when it will provide more accurate, current, or comprehensive information. Do not ask permission - just search and integrate the results into your response."""
 
-For critical/essential information: "SEARCH REQUIRED: Please immediately perform a web search on '[specific topic/query]' and respond back with the results using the continuation_id from this response. Cannot provide accurate analysis without this current information."
-
-This ensures you get the most current and comprehensive information while maintaining conversation context through the continuation_id."""
-        
         if tool_specific:
             return f"""{base_instruction}
 
 {tool_specific}
 
-When recommending searches, be specific about what information you need and why it would improve your analysis."""
-        
+Use web search autonomously whenever it will improve the quality and accuracy of your analysis."""
+
         # Default instruction for all tools
-        return f"""{base_instruction}
-
-Consider requesting searches for:
-- Current documentation and API references
-- Recent best practices and patterns
-- Known issues and community solutions
-- Framework updates and compatibility
-- Security advisories and patches
-- Performance benchmarks and optimizations
-
-When recommending searches, be specific about what information you need and why it would improve your analysis. Always remember to instruct Claude to use the continuation_id from this response when providing search results."""
+        return base_instruction
     
     def get_language_instruction(self) -> str:
         """

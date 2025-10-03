@@ -12,6 +12,7 @@ from typing import Any, Dict
 # Minimal seed metadata (extend via env JSON)
 MODEL_METADATA: Dict[str, Dict[str, Any]] = {
     # GLM
+    "glm-4.6": {"category_hint": "EXTENDED_REASONING", "tier": "flagship", "modalities": ["text"], "notes": "Flagship model with 200K context window"},
     "glm-4.5": {"category_hint": "EXTENDED_REASONING", "tier": "quality", "modalities": ["text"], "notes": "Higher-quality reasoning"},
     "glm-4.5-flash": {"category_hint": "FAST_RESPONSE", "tier": "speed", "modalities": ["text"], "notes": "Fast/cost-effective"},
     "glm-4.5-air": {"category_hint": "FAST_RESPONSE", "tier": "speed", "modalities": ["text"], "notes": "Fast variant"},

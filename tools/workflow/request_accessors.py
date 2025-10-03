@@ -380,7 +380,7 @@ class RequestAccessorMixin:
                 response_data["file_context"] = {
                     "type": "reference_only",
                     "note": reference_note,
-                    "context_optimization": "Files referenced but not embedded to preserve Claude's context window",
+                    "context_optimization": "Files referenced but not embedded to preserve the AI assistant's context window",
                 }
 
         return response_data

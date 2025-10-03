@@ -22,6 +22,8 @@ from tools.shared.schema_builders import SchemaBuilder
 from mcp.types import TextContent
 
 from utils.client_info import get_current_session_fingerprint, get_cached_client_info, format_client_info
+from utils.progress import send_progress
+from utils.progress_messages import ProgressMessages
 
 
 class SimpleTool(BaseTool):
@@ -449,7 +451,24 @@ class SimpleTool(BaseTool):
             # Get system prompt for this tool
             base_system_prompt = self.get_system_prompt()
             language_instruction = self.get_language_instruction()
-            system_prompt = language_instruction + base_system_prompt
+
+            # Add strong web search instruction if enabled
+            use_websearch = self.get_request_use_websearch(request)
+            web_search_instruction = ""
+            if use_websearch:
+                web_search_instruction = (
+                    "\n\n=== CRITICAL WEB SEARCH INSTRUCTIONS ===\n"
+                    "When web search results are provided in tool responses:\n"
+                    "1. You MUST use ONLY the information from the search results\n"
+                    "2. Do NOT use your training data for factual claims, pricing, specifications, or current information\n"
+                    "3. If search results conflict with your training data, TRUST THE SEARCH RESULTS\n"
+                    "4. Cite sources from search results when available\n"
+                    "5. If search results are insufficient, explicitly state what's missing\n"
+                    "6. For pricing queries: Report EXACT numbers from search results, do not round or estimate\n"
+                    "=== END CRITICAL INSTRUCTIONS ===\n\n"
+                )
+
+            system_prompt = language_instruction + web_search_instruction + base_system_prompt
 
             # Estimate tokens for logging
             from utils.token_utils import estimate_tokens
@@ -622,16 +641,165 @@ class SimpleTool(BaseTool):
                 self._model_context.model_name = selected_model
 
             logger.info(f"Received response from {provider.get_provider_type().value} API for {self.get_name()}")
+            send_progress(ProgressMessages.processing_response())
 
             # Defensive: handle missing provider response (None)
             if model_response is None:
                 logger.error(f"Model call returned None in {self.get_name()} - treating as error")
+                send_progress(ProgressMessages.error("Model returned no response"))
                 tool_output = ToolOutput(
                     status="error",
                     content="Model returned no response (None). Please retry or switch model; check provider logs for details.",
                     content_type="text",
                 )
                 return [TextContent(type="text", text=tool_output.model_dump_json())]
+
+            # Check if model requested tool calls (web_search, etc.)
+            # Tool_calls are stored in the raw response within metadata
+            tool_calls_list = None
+            try:
+                from src.providers.tool_executor import extract_tool_calls, execute_tool_call
+
+                # Get metadata from model response
+                metadata = getattr(model_response, "metadata", {})
+                if isinstance(metadata, dict):
+                    # Try to extract tool_calls from raw response
+                    raw_dict = metadata.get("raw", {})
+                    if isinstance(raw_dict, dict):
+                        tool_calls_list = extract_tool_calls(raw_dict)
+
+                        if tool_calls_list:
+                            logger.info(f"Detected {len(tool_calls_list)} tool call(s) from model response")
+                            send_progress(ProgressMessages.tool_call_detected("tool", len(tool_calls_list)))
+            except Exception as e:
+                logger.debug(f"Failed to check for tool_calls: {e}")
+                tool_calls_list = None
+
+            if tool_calls_list:
+                # Model wants to use tools - execute them and continue conversation
+                # Loop until finish_reason != "tool_calls" (Kimi pattern)
+                try:
+                    max_iterations = 5  # Prevent infinite loops
+                    iteration = 0
+
+                    # Build messages list for multi-turn conversation
+                    conv_messages = []
+                    if system_prompt:
+                        conv_messages.append({"role": "system", "content": system_prompt})
+                    conv_messages.append({"role": "user", "content": prompt})
+
+                    # Tool call loop - continue until model is satisfied
+                    while tool_calls_list and iteration < max_iterations:
+                        iteration += 1
+                        logger.info(f"Tool call iteration {iteration}: {len(tool_calls_list)} tool(s) requested")
+
+                        # Add assistant message with tool_calls
+                        conv_messages.append({
+                            "role": "assistant",
+                            "content": getattr(model_response, "content", "") or "",
+                            "tool_calls": tool_calls_list
+                        })
+
+                        # Execute each tool call and add results
+                        for tc in tool_calls_list:
+                            # Check if this is a builtin_function (server-side execution)
+                            if tc.get("type") == "builtin_function":
+                                # Server-side tool (e.g., Kimi $web_search)
+                                # According to Kimi documentation:
+                                # - The search was ALREADY executed by Kimi's API server
+                                # - Search results are embedded in the assistant message content
+                                # - We just need to acknowledge with empty content
+                                # - The model will use the search results from its own response
+                                func_name = tc.get("function", {}).get("name", "unknown")
+                                send_progress(ProgressMessages.tool_complete(func_name))
+
+                                logger.info(f"Acknowledging server-side tool: {func_name}")
+
+                                # Acknowledge with empty content as per Kimi docs
+                                # The search results are already in the assistant message content
+                                tool_msg = {
+                                    "role": "tool",
+                                    "tool_call_id": str(tc.get("id", "tc-0")),
+                                    "name": func_name,
+                                    "content": ""  # Empty as per Kimi documentation
+                                }
+                            else:
+                                # Client-side tool execution
+                                func_name = tc.get("function", {}).get("name", "unknown")
+                                send_progress(ProgressMessages.executing_tool(func_name))
+                                tool_msg = execute_tool_call(tc)
+                                send_progress(ProgressMessages.tool_complete(func_name))
+
+                            conv_messages.append(tool_msg)
+
+                        # Continue conversation with tool results
+                        logger.info(f"Sending tool results back to model (iteration {iteration})...")
+
+                        # Don't send tools parameter in follow-up call
+                        follow_up_kwargs = {k: v for k, v in provider_kwargs.items() if k not in ("tools", "tool_choice")}
+
+                        if hasattr(provider, "chat_completions_create"):
+                            result_dict = provider.chat_completions_create(
+                                model=self._current_model_name,
+                                messages=conv_messages,
+                                temperature=temperature,
+                                **follow_up_kwargs
+                            )
+
+                            # Convert dict response to ModelResponse
+                            from src.providers.base import ModelResponse, ProviderType
+                            model_response = ModelResponse(
+                                content=result_dict.get("content", ""),
+                                usage=result_dict.get("usage", {}),
+                                model_name=result_dict.get("model", self._current_model_name),
+                                friendly_name=result_dict.get("provider", ""),
+                                provider=getattr(provider, "get_provider_type", lambda: ProviderType.KIMI)(),
+                                metadata=result_dict.get("metadata", {})
+                            )
+
+                            # Check finish_reason to see if we should continue
+                            finish_reason = result_dict.get("choices", [{}])[0].get("finish_reason")
+                            logger.info(f"Iteration {iteration} finish_reason: {finish_reason}")
+
+                            # Extract new tool_calls if any
+                            from src.providers.tool_executor import extract_tool_calls
+                            tool_calls_list = extract_tool_calls(result_dict)
+
+                            if finish_reason != "tool_calls" or not tool_calls_list:
+                                # Model is satisfied, exit loop
+                                logger.info(f"Tool call loop complete after {iteration} iteration(s)")
+                                break
+                        else:
+                            # Fallback: provider doesn't support chat_completions_create
+                            logger.warning("Provider doesn't support chat_completions_create, tool execution may fail")
+                            tool_output = ToolOutput(
+                                status="error",
+                                content="Provider doesn't support multi-turn tool execution",
+                                content_type="text",
+                            )
+                            return [TextContent(type="text", text=tool_output.model_dump_json())]
+
+                    if iteration >= max_iterations:
+                        logger.warning(f"Tool call loop reached max iterations ({max_iterations})")
+
+                    if not model_response or not model_response.content:
+                        tool_output = ToolOutput(
+                            status="error",
+                            content="Model returned no response after tool execution",
+                            content_type="text",
+                        )
+                        return [TextContent(type="text", text=tool_output.model_dump_json())]
+
+                except Exception as e:
+                    logger.error(f"Tool execution failed: {e}")
+                    import traceback
+                    logger.error(traceback.format_exc())
+                    tool_output = ToolOutput(
+                        status="error",
+                        content=f"Tool execution error: {str(e)}",
+                        content_type="text",
+                    )
+                    return [TextContent(type="text", text=tool_output.model_dump_json())]
 
             # Process the model's response
             if getattr(model_response, "content", None):

@@ -17,10 +17,10 @@ from .provider_diagnostics import log_provider_summary, write_provider_snapshot,
 from .provider_restrictions import validate_model_restrictions, validate_auto_mode
 
 
-def configure_providers():
+def configure_providers() -> None:
     """
     Configure and validate AI providers based on available API keys.
-    
+
     Thin orchestrator that delegates to helper modules:
     1. Detect available providers
     2. Validate at least one provider exists
@@ -28,7 +28,7 @@ def configure_providers():
     4. Log diagnostics and write snapshot
     5. Validate model restrictions
     6. Register cleanup function
-    
+
     Raises:
         ValueError: If no valid API keys are found or conflicting configurations detected
     """

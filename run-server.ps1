@@ -1437,15 +1437,15 @@ function Test-ClaudeCliIntegration {
     
     try {
         $claudeConfig = claude config list 2>$null
-        if ($claudeConfig -match "zen") {
-            Write-Success "Claude CLI already configured for zen server"
+        if ($claudeConfig -match "exai") {
+            Write-Success "Claude CLI already configured for exai server"
         } else {
-            Write-Info "To add zen server to Claude CLI, run:"
-            Write-Host "  claude config add-server zen $PythonPath $ServerPath" -ForegroundColor Cyan
+            Write-Info "To add exai server to Claude CLI, run:"
+            Write-Host "  claude config add-server exai $PythonPath $ServerPath" -ForegroundColor Cyan
         }
     } catch {
         Write-Info "To configure Claude CLI manually, run:"
-        Write-Host "  claude config add-server zen $PythonPath $ServerPath" -ForegroundColor Cyan
+        Write-Host "  claude config add-server exai $PythonPath $ServerPath" -ForegroundColor Cyan
     }
 }
 

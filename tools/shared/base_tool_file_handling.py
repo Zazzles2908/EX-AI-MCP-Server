@@ -92,7 +92,8 @@ class FileHandlingMixin:
             "relevant_files",
         ]
         
-        allow_relative = os.getenv("EX_ALLOW_RELATIVE_PATHS", "false").strip().lower() == "true"
+        # Default to true for better UX - relative paths are auto-resolved with security checks
+        allow_relative = os.getenv("EX_ALLOW_RELATIVE_PATHS", "true").strip().lower() == "true"
         project_root = os.path.abspath(os.getcwd())
         
         for field_name in file_fields:

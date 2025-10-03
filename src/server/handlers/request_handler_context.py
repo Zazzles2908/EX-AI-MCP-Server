@@ -13,7 +13,7 @@ import os
 from typing import Dict, Any
 from mcp.types import TextContent
 
-from src.server.context import reconstruct_thread_context
+from ..context import reconstruct_thread_context
 
 logger = logging.getLogger(__name__)
 
