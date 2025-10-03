@@ -41,40 +41,22 @@ class KimiCodeReviewer:
     
     def upload_design_context(self) -> str:
         """
-        Create a consolidated design context document from system-reference/.
-        Returns path to consolidated file.
+        Upload consolidated design context file to Kimi and return file path.
+        The file will be uploaded fresh each time (cache disabled for design context).
         """
-        logger.info("📚 Creating consolidated design context from system-reference/...")
+        logger.info("📚 Uploading consolidated design context to Kimi...")
 
-        # Get all markdown files from system-reference
-        system_ref_path = self.project_root / "docs" / "system-reference"
-        md_files = sorted(system_ref_path.rglob("*.md"))
-
-        logger.info(f"Found {len(md_files)} design reference files")
-
-        # Create consolidated context file
+        # Use existing consolidated file
         context_file = self.project_root / "docs" / "KIMI_DESIGN_CONTEXT.md"
 
-        with open(context_file, 'w', encoding='utf-8') as out:
-            out.write("# EX-AI-MCP-Server Design Context\n\n")
-            out.write("**Generated:** 2025-10-03\n")
-            out.write("**Purpose:** Complete design intent for code review\n\n")
-            out.write("---\n\n")
+        if not context_file.exists():
+            logger.error(f"Design context file not found: {context_file}")
+            raise FileNotFoundError(f"Design context file not found: {context_file}")
 
-            for md_file in md_files:
-                rel_path = md_file.relative_to(system_ref_path)
-                out.write(f"\n\n## {rel_path}\n\n")
-                out.write(f"**Source:** `docs/system-reference/{rel_path}`\n\n")
-                out.write("---\n\n")
+        logger.info(f"✅ Design context file ready: {context_file}")
+        logger.info(f"   File size: {context_file.stat().st_size / 1024:.2f} KB")
+        logger.info(f"   Contains: All 36 system-reference/ markdown files")
 
-                try:
-                    content = md_file.read_text(encoding='utf-8')
-                    out.write(content)
-                    out.write("\n\n")
-                except Exception as e:
-                    logger.warning(f"Could not read {md_file}: {e}")
-
-        logger.info(f"✅ Design context consolidated: {context_file}")
         return str(context_file)
     
     def scan_python_files(self, target_dir: str) -> List[Path]:
@@ -98,6 +80,86 @@ class KimiCodeReviewer:
             batches.append(files[i:i + self.batch_size])
         logger.info(f"Created {len(batches)} batches of up to {self.batch_size} files each")
         return batches
+
+    def _parse_markdown_review(self, content: str, batch_num: int, files_count: int) -> Dict:
+        """Parse markdown review response into structured JSON."""
+        import re
+
+        result = {
+            "batch_number": batch_num,
+            "files_reviewed": files_count,
+            "findings": [],
+            "good_patterns": [],
+            "summary": {
+                "total_issues": 0,
+                "critical": 0,
+                "high": 0,
+                "medium": 0,
+                "low": 0,
+                "overall_quality": "unknown"
+            }
+        }
+
+        # Extract findings
+        findings_section = re.search(r'## Findings\s+(.*?)(?=## |$)', content, re.DOTALL)
+        if findings_section:
+            findings_text = findings_section.group(1)
+            # Match each finding (### SEVERITY: Title)
+            for finding_match in re.finditer(r'### (\w+):\s*(.+?)\n\*\*File:\*\*\s*(.+?)\n\*\*Lines:\*\*\s*(.+?)\n\*\*Category:\*\*\s*(\w+)\s*\n\*\*Issue:\*\*\s*(.+?)\n\*\*Recommendation:\*\*\s*(.+?)(?=\n###|\n##|$)', findings_text, re.DOTALL):
+                severity = finding_match.group(1).lower()
+                file = finding_match.group(3).strip()
+                lines_str = finding_match.group(4).strip()
+                category = finding_match.group(5).strip()
+                issue = finding_match.group(6).strip()
+                recommendation = finding_match.group(7).strip()
+
+                # Parse line numbers
+                line_numbers = [int(x.strip()) for x in lines_str.split(',') if x.strip().isdigit()]
+
+                result["findings"].append({
+                    "file": file,
+                    "severity": severity,
+                    "category": category,
+                    "issue": issue,
+                    "recommendation": recommendation,
+                    "line_numbers": line_numbers
+                })
+
+                # Update summary counts
+                result["summary"]["total_issues"] += 1
+                if severity in result["summary"]:
+                    result["summary"][severity] += 1
+
+        # Extract good patterns
+        patterns_section = re.search(r'## Good Patterns\s+(.*?)(?=## |$)', content, re.DOTALL)
+        if patterns_section:
+            patterns_text = patterns_section.group(1)
+            for pattern_match in re.finditer(r'### (.+?)\n\*\*File:\*\*\s*(.+?)\n\*\*Reason:\*\*\s*(.+?)(?=\n###|\n##|$)', patterns_text, re.DOTALL):
+                result["good_patterns"].append({
+                    "pattern": pattern_match.group(1).strip(),
+                    "file": pattern_match.group(2).strip(),
+                    "reason": pattern_match.group(3).strip()
+                })
+
+        # Extract summary
+        summary_section = re.search(r'## Summary\s+(.*?)$', content, re.DOTALL)
+        if summary_section:
+            summary_text = summary_section.group(1)
+            # Parse summary lines
+            total_match = re.search(r'Total issues:\s*(\d+)', summary_text, re.IGNORECASE)
+            if total_match:
+                result["summary"]["total_issues"] = int(total_match.group(1))
+
+            for severity in ["critical", "high", "medium", "low"]:
+                severity_match = re.search(rf'{severity}:\s*(\d+)', summary_text, re.IGNORECASE)
+                if severity_match:
+                    result["summary"][severity] = int(severity_match.group(1))
+
+            quality_match = re.search(r'Overall quality:\s*(\w+)', summary_text, re.IGNORECASE)
+            if quality_match:
+                result["summary"]["overall_quality"] = quality_match.group(1).lower()
+
+        return result
     
     def review_batch_with_kimi(self, batch: List[Path], batch_num: int) -> Dict:
         """
@@ -145,37 +207,47 @@ Review these {len(batch)} Python files for:
 6. **Dead Code** - Unused imports, functions, or legacy code?
 7. **Consistency** - Consistent with other files in the project?
 
-**OUTPUT FORMAT (JSON):**
-```json
-{{
-  "batch_number": {batch_num},
-  "files_reviewed": {len(batch)},
-  "findings": [
-    {{
-      "file": "path/to/file.py",
-      "severity": "critical|high|medium|low",
-      "category": "architecture|quality|security|performance|dead_code|consistency",
-      "issue": "Description of the issue",
-      "recommendation": "How to fix it",
-      "line_numbers": [10, 20, 30]
-    }}
-  ],
-  "good_patterns": [
-    {{
-      "file": "path/to/file.py",
-      "pattern": "Description of good pattern to replicate",
-      "reason": "Why this is good"
-    }}
-  ],
-  "summary": {{
-    "total_issues": 0,
-    "critical": 0,
-    "high": 0,
-    "medium": 0,
-    "low": 0,
-    "overall_quality": "excellent|good|fair|needs_improvement"
-  }}
-}}
+**OUTPUT FORMAT (MARKDOWN):**
+
+Use this exact markdown structure:
+
+```markdown
+# Batch {batch_num} Code Review
+
+## Files Reviewed
+- file1.py
+- file2.py
+- file3.py
+
+## Findings
+
+### CRITICAL: Issue title
+**File:** path/to/file.py
+**Lines:** 10, 20, 30
+**Category:** security
+**Issue:** Detailed description of the issue
+**Recommendation:** How to fix it
+
+### HIGH: Another issue
+**File:** path/to/file.py
+**Lines:** 45
+**Category:** architecture
+**Issue:** Description
+**Recommendation:** Fix recommendation
+
+## Good Patterns
+
+### Pattern name
+**File:** path/to/file.py
+**Reason:** Why this is good and worth replicating
+
+## Summary
+- Total issues: 7
+- Critical: 0
+- High: 2
+- Medium: 3
+- Low: 2
+- Overall quality: good
 ```
 
 **GUIDELINES:**
@@ -184,48 +256,30 @@ Review these {len(batch)} Python files for:
 - Prioritize critical/high severity issues
 - Identify good patterns worth replicating
 - Consider maintainability and future scalability
+- Use markdown code blocks for code examples (they won't break the format)
 
-Review the files and provide your JSON response."""
+Review the files and provide your markdown response."""
 
-        # Call Kimi with code files only (no design context to avoid file caching issues)
+        # Call Kimi with design context file + code files
         kimi_tool = KimiMultiFileChatTool()
-        code_files = [str(f) for f in valid_files]
+        all_files = [self.design_context_file] + [str(f) for f in valid_files]
 
-        logger.info(f"Uploading {len(code_files)} code files")
-
-        # Include design context in the prompt instead of as uploaded files
-        enhanced_prompt = f"""**DESIGN CONTEXT:**
-You have access to the complete EX-AI-MCP-Server design documentation in docs/system-reference/:
-- System architecture (GLM + Kimi providers, manager-first routing)
-- Provider implementation patterns (dual SDK/HTTP fallback)
-- Tool ecosystem (16 EXAI tools: simple-tools + workflow-tools)
-- Features (streaming, web search, multimodal, caching, tool calling)
-- API endpoints and best practices
-
-{prompt}"""
+        logger.info(f"Uploading {len(all_files)} files (1 design context + {len(valid_files)} code files)")
 
         result = kimi_tool.run(
-            files=code_files,
-            prompt=enhanced_prompt,
+            files=all_files,
+            prompt=prompt,
             model="kimi-k2-0905-preview",
             temperature=0.3
         )
         
-        # Parse JSON response
+        # Parse markdown response
         try:
             content = result.get("content", "")
 
-            # Extract JSON from markdown code blocks if present
-            if "```json" in content:
-                json_start = content.find("```json") + 7
-                json_end = content.find("```", json_start)
-                if json_end == -1:
-                    # No closing ```, try to find the end of content
-                    json_end = len(content)
-                content = content[json_start:json_end].strip()
+            # Parse markdown to extract structured data
+            analysis = self._parse_markdown_review(content, batch_num, len(valid_files))
 
-            # Try to parse JSON
-            analysis = json.loads(content)
             logger.info(f"✅ Batch {batch_num} reviewed successfully")
 
             # Log summary
@@ -238,14 +292,13 @@ You have access to the complete EX-AI-MCP-Server design documentation in docs/sy
                        f"Low: {summary.get('low', 0)})")
 
             return analysis
-        except json.JSONDecodeError as e:
-            logger.error(f"❌ Failed to parse JSON from Kimi response: {e}")
-            logger.error(f"Raw content length: {len(content)} chars")
+        except Exception as e:
+            logger.error(f"❌ Failed to parse markdown from Kimi response: {e}")
 
             # Save raw response to file for manual review
             error_file = self.project_root / "docs" / f"KIMI_ERROR_BATCH_{batch_num}.txt"
             with open(error_file, 'w', encoding='utf-8') as f:
-                f.write(f"Batch {batch_num} - JSON Parse Error\n")
+                f.write(f"Batch {batch_num} - Markdown Parse Error\n")
                 f.write(f"Error: {e}\n")
                 f.write(f"=" * 80 + "\n\n")
                 f.write(content)
@@ -256,7 +309,7 @@ You have access to the complete EX-AI-MCP-Server design documentation in docs/sy
             return {
                 "batch_number": batch_num,
                 "files_reviewed": len(valid_files),
-                "error": f"JSON parse error: {str(e)}",
+                "error": f"Markdown parse error: {str(e)}",
                 "error_file": str(error_file),
                 "raw_response_preview": content[:500] + "..." if len(content) > 500 else content
             }
