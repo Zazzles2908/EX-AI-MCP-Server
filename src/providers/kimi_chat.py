@@ -40,10 +40,12 @@ def chat_completions_create(
     tools: Optional[list[Any]] = None,
     tool_choice: Optional[Any] = None,
     temperature: float = 0.6,
+    cache_id: Optional[str] = None,
+    reset_cache_ttl: bool = False,
     **kwargs
 ) -> dict:
     """Wrapper that injects idempotency and Kimi context-cache headers, captures cache token, and returns normalized dict.
-    
+
     Args:
         client: OpenAI-compatible client instance
         model: Model name
@@ -51,8 +53,10 @@ def chat_completions_create(
         tools: Optional list of tools
         tool_choice: Optional tool choice
         temperature: Temperature value
+        cache_id: Optional cache identifier for Moonshot context caching
+        reset_cache_ttl: Whether to reset cache TTL (keeps cache alive)
         **kwargs: Additional parameters (session_id, call_key, tool_name, etc.)
-        
+
     Returns:
         Dictionary with provider, model, content, tool_calls, usage, raw, and metadata
     """
@@ -67,7 +71,7 @@ def chat_completions_create(
         max_hdr_len = int(os.getenv("KIMI_MAX_HEADER_LEN", "4096"))
     except Exception:
         max_hdr_len = 4096
-    
+
     def _safe_set(hname: str, hval: str):
         try:
             if not hval:
@@ -79,11 +83,18 @@ def chat_completions_create(
             extra_headers[hname] = hval
         except Exception:
             pass
-    
+
     if call_key:
         _safe_set("Idempotency-Key", str(call_key))
-    
-    # Attach cached context token if available
+
+    # Add Moonshot context caching headers if cache_id provided
+    if cache_id:
+        _safe_set("X-Msh-Context-Cache", cache_id)
+        if reset_cache_ttl:
+            _safe_set("X-Msh-Context-Cache-Reset-TTL", "3600")
+        logger.info(f"🔑 Kimi context cache: {cache_id} (reset_ttl={reset_cache_ttl})")
+
+    # Attach cached context token if available (legacy cache system)
     cache_token = None
     cache_attached = False
     if session_id and msg_prefix_hash:
