@@ -214,15 +214,20 @@ You have access to the complete EX-AI-MCP-Server design documentation in docs/sy
         # Parse JSON response
         try:
             content = result.get("content", "")
+
             # Extract JSON from markdown code blocks if present
             if "```json" in content:
                 json_start = content.find("```json") + 7
                 json_end = content.find("```", json_start)
+                if json_end == -1:
+                    # No closing ```, try to find the end of content
+                    json_end = len(content)
                 content = content[json_start:json_end].strip()
-            
+
+            # Try to parse JSON
             analysis = json.loads(content)
             logger.info(f"✅ Batch {batch_num} reviewed successfully")
-            
+
             # Log summary
             summary = analysis.get("summary", {})
             logger.info(f"   Quality: {summary.get('overall_quality', 'N/A')}")
@@ -231,15 +236,29 @@ You have access to the complete EX-AI-MCP-Server design documentation in docs/sy
                        f"High: {summary.get('high', 0)}, "
                        f"Medium: {summary.get('medium', 0)}, "
                        f"Low: {summary.get('low', 0)})")
-            
+
             return analysis
         except json.JSONDecodeError as e:
             logger.error(f"❌ Failed to parse JSON from Kimi response: {e}")
-            logger.error(f"Raw content: {content[:500]}...")
+            logger.error(f"Raw content length: {len(content)} chars")
+
+            # Save raw response to file for manual review
+            error_file = self.project_root / "docs" / f"KIMI_ERROR_BATCH_{batch_num}.txt"
+            with open(error_file, 'w', encoding='utf-8') as f:
+                f.write(f"Batch {batch_num} - JSON Parse Error\n")
+                f.write(f"Error: {e}\n")
+                f.write(f"=" * 80 + "\n\n")
+                f.write(content)
+
+            logger.warning(f"⚠️  Raw response saved to: {error_file}")
+            logger.warning(f"⚠️  Batch {batch_num} will be marked as error, continuing with next batch...")
+
             return {
                 "batch_number": batch_num,
-                "error": str(e),
-                "raw_response": content
+                "files_reviewed": len(valid_files),
+                "error": f"JSON parse error: {str(e)}",
+                "error_file": str(error_file),
+                "raw_response_preview": content[:500] + "..." if len(content) > 500 else content
             }
     
     def review_target(self, target: str):
