@@ -39,11 +39,84 @@ class KimiCodeReviewer:
         self.results = []
         self.design_context_file = None
         self.cache_id = None  # Track cache across batches for 84-96% cost savings
-    
+
+    def cleanup_kimi_files(self) -> None:
+        """
+        Delete all previously uploaded files from Kimi platform.
+
+        This ensures fresh file content is reviewed instead of cached versions.
+        Kimi platform caches uploaded files by file_id, so we must delete old
+        files before uploading new ones to ensure the latest code is reviewed.
+
+        Reference: https://platform.moonshot.ai/docs/guide/use-kimi-api-for-file-based-qa#best-practices-for-file-management
+        """
+        logger.info("🧹 Cleaning up old files from Kimi platform...")
+
+        try:
+            from src.providers.kimi import KimiModelProvider
+            from src.providers.registry import ModelProviderRegistry
+
+            # Get Kimi provider
+            provider = ModelProviderRegistry.get_provider("KIMI")
+            if not provider:
+                logger.warning("⚠️  Kimi provider not available, skipping cleanup")
+                return
+
+            # Get the SDK client
+            client = provider._get_client()
+
+            # List all files
+            try:
+                response = client.files.list()
+                files = response.data if hasattr(response, 'data') else []
+            except AttributeError:
+                # Handle different SDK versions
+                files = response if isinstance(response, list) else []
+
+            if not files:
+                logger.info("✅ No files to clean up")
+                return
+
+            logger.info(f"📋 Found {len(files)} file(s) to delete")
+
+            # Delete each file
+            deleted_count = 0
+            failed_count = 0
+
+            for file in files:
+                try:
+                    file_id = file.id if hasattr(file, 'id') else file.get('id')
+                    file_name = file.filename if hasattr(file, 'filename') else file.get('filename', 'unknown')
+
+                    if file_id:
+                        client.files.delete(file_id)
+                        deleted_count += 1
+                        logger.info(f"  ✓ Deleted: {file_name} ({file_id[:12]}...)")
+                    else:
+                        logger.warning(f"  ⚠️  Skipping file with no ID: {file_name}")
+                        failed_count += 1
+
+                except Exception as e:
+                    failed_count += 1
+                    logger.warning(f"  ✗ Failed to delete file: {e}")
+
+            logger.info(f"✅ Cleanup complete: {deleted_count} deleted, {failed_count} failed")
+
+        except ImportError as e:
+            logger.warning(f"⚠️  Could not import Kimi provider: {e}")
+        except Exception as e:
+            logger.error(f"❌ Cleanup failed: {e}")
+            logger.warning("⚠️  Continuing with review despite cleanup failure...")
+
     def upload_design_context(self) -> str:
         """
         Upload consolidated design context file to Kimi and return file path.
-        Initializes cache_id for Moonshot context caching (84-96% cost savings).
+        Initializes cache_id for Moonshot context caching (75% cost savings on cached input).
+
+        Cost Optimization:
+        - Cache Miss: $0.60/M tokens
+        - Cache Hit: $0.15/M tokens (75% savings)
+        - With 35k design context: ~$0.021 first batch, ~$0.005 subsequent batches
         """
         logger.info("📚 Uploading consolidated design context to Kimi...")
 
@@ -61,7 +134,7 @@ class KimiCodeReviewer:
         logger.info(f"✅ Design context file ready: {context_file}")
         logger.info(f"   File size: {context_file.stat().st_size / 1024:.2f} KB")
         logger.info(f"   Contains: All 36 system-reference/ markdown files")
-        logger.info(f"🔑 Cache ID: {self.cache_id} (enables 84-96% cost savings)")
+        logger.info(f"🔑 Cache ID: {self.cache_id} (enables 75% cost savings on cached input)")
 
         return str(context_file)
     
@@ -194,6 +267,8 @@ class KimiCodeReviewer:
         # Prepare structured prompt
         prompt = f"""You are a senior Python code reviewer analyzing the EX-AI-MCP-Server codebase.
 
+**IMPORTANT:** Please respond ONLY in English. All findings, recommendations, and explanations must be in English.
+
 **DESIGN CONTEXT:**
 You have access to the complete system-reference/ documentation which describes:
 - System architecture (GLM + Kimi providers, manager-first routing)
@@ -270,14 +345,22 @@ Review the files and provide your markdown response."""
         kimi_tool = KimiMultiFileChatTool()
         all_files = [self.design_context_file] + [str(f) for f in valid_files]
 
+        # Model selection: kimi-k2-0905-preview is optimal for code review
+        # - 256K context window (largest available)
+        # - $0.60/M input (cache miss), $0.15/M input (cache hit), $2.50/M output
+        # - Enhanced agentic coding capabilities
+        # - 75% cost savings on cached input vs cache miss
+        review_model = os.getenv("KIMI_REVIEW_MODEL", "kimi-k2-0905-preview")
+
         logger.info(f"Uploading {len(all_files)} files (1 design context + {len(valid_files)} code files)")
+        logger.info(f"🤖 Using model: {review_model} (256K context, $0.15/M cached input)")
 
         result = kimi_tool.run(
             files=all_files,
             prompt=prompt,
-            model="kimi-k2-0905-preview",
+            model=review_model,
             temperature=0.3,
-            cache_id=self.cache_id,  # Reuse cache across batches (84-96% cost savings)
+            cache_id=self.cache_id,  # Reuse cache across batches (75% cost savings)
             reset_cache_ttl=True,    # Keep cache alive for subsequent batches
         )
         
@@ -333,6 +416,10 @@ Review the files and provide your markdown response."""
         logger.info("=" * 80)
         logger.info(f"KIMI CODE REVIEW: {target.upper()}")
         logger.info("=" * 80)
+
+        # Clean up old files from Kimi platform FIRST
+        # This ensures fresh file content is reviewed instead of cached versions
+        self.cleanup_kimi_files()
 
         # Create consolidated design context first
         self.design_context_file = self.upload_design_context()

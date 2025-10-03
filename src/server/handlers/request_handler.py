@@ -88,7 +88,9 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
     
     # Step 5: Auto-select consensus models if needed
     if name == "consensus":
-        arguments = auto_select_consensus_models(arguments)
+        arguments, error_response = auto_select_consensus_models(name, arguments)
+        if error_response:
+            return error_response
     
     # Step 6: Execute tool (with or without model context)
     model_name = "glm-4.5-flash"  # Default fallback
@@ -100,8 +102,21 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
             req_id
         )
     else:
-        # Resolve model
-        model_name = resolve_auto_model_legacy(arguments, tool)
+        # Resolve model using centralized auto routing
+        from .request_handler_model_resolution import _route_auto_model
+        requested_model = arguments.get("model") or os.getenv("DEFAULT_MODEL", "glm-4.5-flash")
+        routed_model = _route_auto_model(name, requested_model, arguments)
+        model_name = routed_model or requested_model
+
+        # Propagate routed model to arguments so downstream logic treats it as explicit
+        try:
+            arguments["model"] = model_name
+        except Exception:
+            pass
+
+        # Fallback to legacy resolution if needed
+        if not model_name or str(model_name).strip().lower() == "auto":
+            model_name = resolve_auto_model_legacy(arguments, tool)
 
         # Validate model and apply fallback
         model_name, error_message = validate_and_fallback_model(model_name, name, tool, req_id, configure_providers)

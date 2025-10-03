@@ -8,6 +8,7 @@ This module handles tool name resolution and filtering including:
 - Unknown tool suggestions using difflib
 """
 
+import difflib
 import logging
 from typing import Dict, Any, Optional
 from mcp.types import TextContent
@@ -91,13 +92,12 @@ def suggest_tool_name(name: str, tool_map: Dict[str, Any], env_true_func) -> Opt
     """
     try:
         if env_true_func("SUGGEST_TOOL_ALIASES", "true"):
-            from difflib import get_close_matches
             try:
                 from src.server.registry_bridge import get_registry as _get_reg  # type: ignore
                 _reg = _get_reg()
                 _reg.build()
                 _names = list(_reg.list_tools().keys())
-                cand = get_close_matches(name, _names, n=1, cutoff=0.6)
+                cand = difflib.get_close_matches(name, _names, n=1, cutoff=0.6)
                 if cand:
                     suggestion = cand[0]
                     tool_obj = _reg.list_tools().get(suggestion)

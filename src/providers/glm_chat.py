@@ -174,7 +174,53 @@ def generate_content(
                 # Non-streaming via SDK
                 raw = getattr(resp, "model_dump", lambda: resp)()
                 choice0 = (raw.get("choices") or [{}])[0]
-                text = ((choice0.get("message") or {}).get("content")) or ""
+                message = choice0.get("message") or {}
+                text = message.get("content") or ""
+
+                # CRITICAL FIX: Check for tool_calls (web_search results)
+                # When GLM executes web_search, results are in message.tool_calls
+                tool_calls = message.get("tool_calls")
+
+                # Import text format handler
+                from src.providers.text_format_handler import (
+                    has_text_format_tool_call,
+                    parse_and_execute_web_search
+                )
+
+                # DEBUG: Log response format to diagnose inconsistent behavior
+                has_tool_calls_array = bool(tool_calls and isinstance(tool_calls, list))
+                has_tool_call_text = has_text_format_tool_call(text)
+                logger.debug(f"GLM response format: tool_calls_array={has_tool_calls_array}, tool_call_text={has_tool_call_text}, model={model_name}")
+
+                if tool_calls and isinstance(tool_calls, list):
+                    # Web search was executed - extract results from tool calls
+                    for tc in tool_calls:
+                        if isinstance(tc, dict):
+                            func = tc.get("function", {})
+                            if func.get("name") == "web_search":
+                                # Web search results are in function.arguments
+                                try:
+                                    import json as _json
+                                    args = func.get("arguments", "{}")
+                                    if isinstance(args, str):
+                                        search_data = _json.loads(args)
+                                    else:
+                                        search_data = args
+                                    # Append search results to content
+                                    if search_data:
+                                        text = text + "\n\n[Web Search Results]\n" + _json.dumps(search_data, indent=2, ensure_ascii=False)
+                                        logger.info(f"GLM web_search executed successfully via tool_calls array")
+                                except Exception as e:
+                                    logger.debug(f"Failed to parse web_search tool call: {e}")
+                elif has_tool_call_text:
+                    # GLM returned tool call as TEXT - parse and execute it
+                    logger.warning(f"GLM returned tool call as TEXT: {text[:200]}")
+                    text, success = parse_and_execute_web_search(text)
+                    if success:
+                        logger.info(f"GLM web_search executed successfully via text format handler")
+                    else:
+                        logger.warning(f"Failed to execute web_search from text format")
+
                 usage = raw.get("usage", {})
         else:
             # HTTP fallback
@@ -238,7 +284,47 @@ def generate_content(
                 )
             else:
                 raw = http_client.post_json("/chat/completions", payload)
-                text = raw.get("choices", [{}])[0].get("message", {}).get("content", "")
+                choice0 = (raw.get("choices") or [{}])[0]
+                message = choice0.get("message") or {}
+                text = message.get("content") or ""
+
+                # CRITICAL FIX: Check for tool_calls (web_search results) in HTTP path
+                tool_calls = message.get("tool_calls")
+
+                # Import text format handler (same as SDK path)
+                from src.providers.text_format_handler import (
+                    has_text_format_tool_call,
+                    parse_and_execute_web_search
+                )
+
+                has_tool_call_text = has_text_format_tool_call(text)
+
+                if tool_calls and isinstance(tool_calls, list):
+                    for tc in tool_calls:
+                        if isinstance(tc, dict):
+                            func = tc.get("function", {})
+                            if func.get("name") == "web_search":
+                                try:
+                                    import json as _json
+                                    args = func.get("arguments", "{}")
+                                    if isinstance(args, str):
+                                        search_data = _json.loads(args)
+                                    else:
+                                        search_data = args
+                                    if search_data:
+                                        text = text + "\n\n[Web Search Results]\n" + _json.dumps(search_data, indent=2, ensure_ascii=False)
+                                        logger.info(f"GLM web_search executed successfully via tool_calls array (HTTP path)")
+                                except Exception as e:
+                                    logger.debug(f"Failed to parse web_search tool call: {e}")
+                elif has_tool_call_text:
+                    # GLM returned tool call as TEXT - parse and execute it (HTTP path)
+                    logger.warning(f"GLM returned tool call as TEXT (HTTP path): {text[:200]}")
+                    text, success = parse_and_execute_web_search(text)
+                    if success:
+                        logger.info(f"GLM web_search executed successfully via text format handler (HTTP path)")
+                    else:
+                        logger.warning(f"Failed to execute web_search from text format (HTTP path)")
+
                 usage = raw.get("usage", {})
         
         return ModelResponse(

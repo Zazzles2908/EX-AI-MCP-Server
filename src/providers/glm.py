@@ -32,7 +32,8 @@ class GLMModelProvider(ModelProvider):
         try:
             from zhipuai import ZhipuAI  # type: ignore
             self._use_sdk = True
-            self._sdk_client = ZhipuAI(api_key=self.api_key)
+            # CRITICAL FIX: Pass base_url to SDK to use z.ai proxy instead of bigmodel.cn
+            self._sdk_client = ZhipuAI(api_key=self.api_key, base_url=self.base_url)
         except Exception as e:
             logger.warning("zhipuai SDK unavailable or failed to init; falling back to HTTP client: %s", e)
             self._use_sdk = False

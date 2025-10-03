@@ -159,6 +159,19 @@ class KimiUploadAndExtractTool(BaseTool):
                             file_id = _future.result(timeout=upload_timeout)
                     except _fut.TimeoutError:
                         raise TimeoutError(f"Kimi files.upload() timed out after {int(upload_timeout)}s for path={pth}")
+                    except Exception as upload_err:
+                        # Handle upload failures gracefully (e.g., Moonshot "text extract error")
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.warning(f"⚠️ File upload failed for {pth.name}: {upload_err}")
+                        logger.warning(f"   Skipping file and continuing with batch...")
+                        skipped.append(str(pth))
+                        evt.end(ok=False, error=f"upload failed: {upload_err}")
+                        try:
+                            sink.record(evt)
+                        except Exception:
+                            pass
+                        continue
 
                     # on new upload, cache it
                     try:

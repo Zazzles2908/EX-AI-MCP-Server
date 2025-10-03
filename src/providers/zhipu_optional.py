@@ -1,8 +1,8 @@
-"""Optional Zhipu (GLM) helpers without importing legacy providers.*
+"""Optional Zhipu (GLM) helpers for SDK integration.
 
-This module intentionally avoids importing from top-level providers.* to prevent
-mixed-tree dependencies. It exposes safe, optional helpers that return None when
-Zhipu SDK is unavailable.
+This module provides safe, optional helpers that return None when the Zhipu SDK
+is unavailable, allowing graceful degradation to HTTP fallback. It avoids circular
+dependencies by not importing other provider modules.
 """
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import os
 logger = logging.getLogger(__name__)
 
 
-def get_client_or_none(api_key: Optional[str] = None):
+def get_client_or_none(api_key: Optional[str] = None) -> Optional[Any]:
     """Return a ZhipuAI SDK client if SDK is installed, else None.
 
     Args:

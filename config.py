@@ -99,11 +99,8 @@ CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))
 VALIDATE_API_KEYS = os.getenv("VALIDATE_API_KEYS", "true").strip().lower() == "true"
 
 # Consensus Tool Defaults
-# Agentic engine feature flags (default OFF for safe rollout)
-AGENTIC_ENGINE_ENABLED = os.getenv("AGENTIC_ENGINE_ENABLED", "false").strip().lower() == "true"
-ROUTER_ENABLED = os.getenv("ROUTER_ENABLED", "false").strip().lower() == "true"
-CONTEXT_MANAGER_ENABLED = os.getenv("CONTEXT_MANAGER_ENABLED", "false").strip().lower() == "true"
-RESILIENT_ERRORS_ENABLED = os.getenv("RESILIENT_ERRORS_ENABLED", "false").strip().lower() == "true"
+# Agentic engine removed - was experimental, disabled by default, and added unnecessary complexity
+# SECURE_INPUTS_ENFORCED kept for potential future use
 SECURE_INPUTS_ENFORCED = os.getenv("SECURE_INPUTS_ENFORCED", "false").strip().lower() == "true"
 
 # Activity tool feature flags (default OFF)

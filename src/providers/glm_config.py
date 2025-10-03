@@ -10,6 +10,19 @@ logger = logging.getLogger(__name__)
 
 # GLM Model Configurations
 SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
+    "glm-4.6": ModelCapabilities(
+        provider=ProviderType.GLM,
+        model_name="glm-4.6",
+        friendly_name="GLM-4.6",
+        context_window=200000,  # 200K context window
+        max_output_tokens=8192,
+        supports_images=True,
+        supports_function_calling=True,
+        supports_streaming=True,
+        supports_system_prompts=True,
+        supports_extended_thinking=False,
+        description="GLM 4.6 flagship model with 200K context window",
+    ),
     "glm-4.5-flash": ModelCapabilities(
         provider=ProviderType.GLM,
         model_name="glm-4.5-flash",

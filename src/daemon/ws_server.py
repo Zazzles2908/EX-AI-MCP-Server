@@ -8,7 +8,7 @@ import uuid
 from pathlib import Path
 import socket
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import websockets
 from websockets.server import WebSocketServerProtocol
@@ -55,8 +55,43 @@ _setup_logging()
 
 EXAI_WS_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
 EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8765"))
-AUTH_TOKEN = os.getenv("EXAI_WS_TOKEN", "")
 MAX_MSG_BYTES = int(os.getenv("EXAI_WS_MAX_BYTES", str(32 * 1024 * 1024)))
+
+
+# Thread-safe token manager for secure token rotation with audit logging
+class _TokenManager:
+    """Thread-safe authentication token manager with audit logging."""
+
+    def __init__(self, initial_token: str = ""):
+        self._lock = asyncio.Lock()
+        self._token = initial_token
+
+    async def get(self) -> str:
+        """Get current authentication token."""
+        async with self._lock:
+            return self._token
+
+    async def rotate(self, old_token: str, new_token: str) -> bool:
+        """
+        Rotate authentication token with validation and audit logging.
+
+        Args:
+            old_token: Current token for validation
+            new_token: New token to set
+
+        Returns:
+            True if rotation successful, False if old_token doesn't match
+        """
+        async with self._lock:
+            if self._token and old_token != self._token:
+                logger.warning(f"[SECURITY] Token rotation failed: invalid old token")
+                return False
+            self._token = new_token
+            logger.info(f"[SECURITY] Authentication token rotated successfully")
+            return True
+
+
+_auth_token_manager = _TokenManager(os.getenv("EXAI_WS_TOKEN", ""))
 PING_INTERVAL = int(os.getenv("EXAI_WS_PING_INTERVAL", "45"))  # wider interval to reduce false timeouts
 PING_TIMEOUT = int(os.getenv("EXAI_WS_PING_TIMEOUT", "30"))    # allow slower systems to respond to pings
 # WS-level hard ceiling for a single tool invocation; keep small to avoid client-perceived hangs
@@ -138,6 +173,8 @@ _provider_sems: dict[str, asyncio.BoundedSemaphore] = {
 _inflight_by_key: dict[str, asyncio.Event] = {}
 # Track inflight request metadata for fast-fail duplicate responses and TTL cleanup
 _inflight_meta_by_key: dict[str, dict] = {}
+# Lock to protect concurrent access to _inflight_by_key and _inflight_meta_by_key
+_inflight_lock = asyncio.Lock()
 
 _shutdown = asyncio.Event()
 RESULT_TTL_SECS = int(os.getenv("EXAI_WS_RESULT_TTL", "600"))
@@ -206,27 +243,20 @@ def _get_cached_by_key(call_key: str) -> list[dict] | None:
 
 # Tool name normalization to tolerate IDE-side aliasing (e.g., chat_EXAI-WS -> chat)
 def _normalize_tool_name(name: str) -> str:
+    """
+    Normalize tool names by stripping common suffixes.
+
+    This handles MCP client-side aliasing where tools may be suffixed with
+    _EXAI-WS, -EXAI-WS, _EXAI_WS, or -EXAI_WS.
+
+    Examples:
+        chat_EXAI-WS -> chat
+        analyze_EXAI-WS -> analyze
+        kimi_chat_with_tools_EXAI-WS -> kimi_chat_with_tools
+    """
     try:
-        aliases = {
-            "chat_EXAI-WS": "chat",
-            "analyze_EXAI-WS": "analyze",
-            "thinkdeep_EXAI-WS": "thinkdeep",
-            "planner_EXAI-WS": "planner",
-            "codereview_EXAI-WS": "codereview",
-            "debug_EXAI-WS": "debug",
-            "refactor_EXAI-WS": "refactor",
-            "precommit_EXAI-WS": "precommit",
-            "secaudit_EXAI-WS": "secaudit",
-            "testgen_EXAI-WS": "testgen",
-            "tracer_EXAI-WS": "tracer",
-            "consensus_EXAI-WS": "consensus",
-            "docgen_EXAI-WS": "docgen",
-            # Provider demos
-            "kimi_chat_with_tools_EXAI-WS": "kimi_chat_with_tools",
-        }
-        if name in aliases:
-            return aliases[name]
-        # Generic suffix-stripping for common variants
+        # Generic suffix-stripping for all EXAI-WS variants
+        # This automatically handles all tools without hardcoded aliases
         for suf in ("_EXAI-WS", "-EXAI-WS", "_EXAI_WS", "-EXAI_WS"):
             if name.endswith(suf):
                 return name[: -len(suf)]
@@ -282,6 +312,54 @@ async def _safe_send(ws: WebSocketServerProtocol, payload: dict) -> bool:
     except Exception as e:
         logger.debug("_safe_send: unexpected send error: %s", e)
         return False
+
+
+def _validate_message(msg: Dict[str, Any]) -> tuple[bool, Optional[str]]:
+    """
+    Validate WebSocket message structure and required fields.
+
+    Provides defense-in-depth validation to complement protocol-level size limits.
+    Checks message structure, operation validity, and field types.
+
+    Args:
+        msg: Parsed JSON message from client
+
+    Returns:
+        (is_valid, error_message) - error_message is None if valid
+    """
+    if not isinstance(msg, dict):
+        return (False, "message must be a JSON object")
+
+    op = msg.get("op")
+    if not isinstance(op, str):
+        return (False, "missing or invalid 'op' field (must be string)")
+
+    # Validate operation-specific required fields
+    if op == "call_tool":
+        name = msg.get("name")
+        if not isinstance(name, str) or not name:
+            return (False, "call_tool requires 'name' (non-empty string)")
+
+        req_id = msg.get("request_id")
+        if req_id is not None and not isinstance(req_id, str):
+            return (False, "request_id must be a string")
+
+        arguments = msg.get("arguments")
+        if arguments is not None and not isinstance(arguments, dict):
+            return (False, "arguments must be a JSON object")
+
+    elif op == "rotate_token":
+        old = msg.get("old")
+        new = msg.get("new")
+        if not isinstance(old, str) or not isinstance(new, str):
+            return (False, "rotate_token requires 'old' and 'new' (strings)")
+
+    elif op not in ("list_tools", "health", "hello"):
+        # Unknown operation - allow it to be handled by existing code path
+        # which will send {"op": "error", "message": f"Unknown op: {op}"}
+        pass
+
+    return (True, None)
 
 
 async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dict[str, Any]) -> None:
@@ -383,25 +461,26 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
         # Coalesce duplicate semantic calls across reconnects: if another call with the same call_key is in-flight,
         # fast-fail duplicates immediately with a 409-style response including the original request_id.
         now_ts = time.time()
-        try:
-            meta = _inflight_meta_by_key.get(call_key)
-            # TTL cleanup: drop stale inflight entries
-            if meta and float(meta.get("expires_at", 0)) <= now_ts:
-                _inflight_meta_by_key.pop(call_key, None)
-                _inflight_by_key.pop(call_key, None)
+        async with _inflight_lock:
+            try:
+                meta = _inflight_meta_by_key.get(call_key)
+                # TTL cleanup: drop stale inflight entries
+                if meta and float(meta.get("expires_at", 0)) <= now_ts:
+                    _inflight_meta_by_key.pop(call_key, None)
+                    _inflight_by_key.pop(call_key, None)
+                    meta = None
+            except Exception:
                 meta = None
-        except Exception:
-            meta = None
-        if call_key in _inflight_by_key and meta:
-            await _safe_send(ws, {
-                "op": "call_tool_res",
-                "request_id": req_id,
-                "error": {"code": "DUPLICATE", "message": "duplicate call in flight", "original_request_id": meta.get("req_id")}
-            })
-            return
-        else:
-            _inflight_by_key[call_key] = asyncio.Event()
-            _inflight_meta_by_key[call_key] = {"req_id": req_id, "expires_at": now_ts + float(INFLIGHT_TTL_SECS)}
+            if call_key in _inflight_by_key and meta:
+                await _safe_send(ws, {
+                    "op": "call_tool_res",
+                    "request_id": req_id,
+                    "error": {"code": "DUPLICATE", "message": "duplicate call in flight", "original_request_id": meta.get("req_id")}
+                })
+                return
+            else:
+                _inflight_by_key[call_key] = asyncio.Event()
+                _inflight_meta_by_key[call_key] = {"req_id": req_id, "expires_at": now_ts + float(INFLIGHT_TTL_SECS)}
 
 
         try:
@@ -498,17 +577,10 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                 deadline = start + float(tool_timeout)
 
 
-                # Continuation-safe model guard at WS boundary: never forward literal 'auto'
-                try:
-                    if isinstance(arguments, dict):
-                        _cid = arguments.get("continuation_id")
-                        _mdl = str(arguments.get("model") or "").strip().lower()
-                        if _cid and _mdl == "auto":
-                            fallback = os.getenv("DEFAULT_MODEL", "glm-4.5-flash")
-                            arguments["model"] = fallback
-                            logger.info(f"[WS_BOUNDARY] Auto model mapped to '{fallback}' for continuation { _cid } (tool={name})")
-                except Exception:
-                    pass
+                # REMOVED: Auto model override that broke agentic routing for continuations
+                # The model resolution logic in request_handler_model_resolution.py
+                # already handles "auto" correctly for all cases including continuations
+                # No need to override here at WS boundary
 
                 tool_task = asyncio.create_task(SERVER_HANDLE_CALL_TOOL(name, arguments))
                 while True:
@@ -535,10 +607,11 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                                 "error": {"code": "TIMEOUT", "message": f"call_tool exceeded {tool_timeout}s"}
                             })
                             try:
-                                if call_key in _inflight_by_key:
-                                    _inflight_by_key[call_key].set()
-                                    _inflight_by_key.pop(call_key, None)
-                                _inflight_meta_by_key.pop(call_key, None)
+                                async with _inflight_lock:
+                                    if call_key in _inflight_by_key:
+                                        _inflight_by_key[call_key].set()
+                                        _inflight_by_key.pop(call_key, None)
+                                    _inflight_meta_by_key.pop(call_key, None)
                             except Exception:
                                 pass
                             return
@@ -612,10 +685,11 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                 try:
                     _store_result_by_key(call_key, outputs_norm)
                     # Signal any duplicate waiters on this call_key
-                    if call_key in _inflight_by_key:
-                        _inflight_by_key[call_key].set()
-                        _inflight_by_key.pop(call_key, None)
-                    _inflight_meta_by_key.pop(call_key, None)
+                    async with _inflight_lock:
+                        if call_key in _inflight_by_key:
+                            _inflight_by_key[call_key].set()
+                            _inflight_by_key.pop(call_key, None)
+                        _inflight_meta_by_key.pop(call_key, None)
                 except Exception:
                     pass
             except asyncio.TimeoutError:
@@ -625,10 +699,11 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                     "error": {"code": "TIMEOUT", "message": f"call_tool exceeded {CALL_TIMEOUT}s"}
                 })
                 try:
-                    if call_key in _inflight_by_key:
-                        _inflight_by_key[call_key].set()
-                        _inflight_by_key.pop(call_key, None)
-                    _inflight_meta_by_key.pop(call_key, None)
+                    async with _inflight_lock:
+                        if call_key in _inflight_by_key:
+                            _inflight_by_key[call_key].set()
+                            _inflight_by_key.pop(call_key, None)
+                        _inflight_meta_by_key.pop(call_key, None)
                 except Exception:
                     pass
             except Exception as e:
@@ -638,10 +713,11 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                     "error": {"code": "EXEC_ERROR", "message": str(e)}
                 })
                 try:
-                    if call_key in _inflight_by_key:
-                        _inflight_by_key[call_key].set()
-                        _inflight_by_key.pop(call_key, None)
-                    _inflight_meta_by_key.pop(call_key, None)
+                    async with _inflight_lock:
+                        if call_key in _inflight_by_key:
+                            _inflight_by_key[call_key].set()
+                            _inflight_by_key.pop(call_key, None)
+                        _inflight_meta_by_key.pop(call_key, None)
                 except Exception:
                     pass
         finally:
@@ -667,11 +743,11 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
         if not old or not new:
             await _safe_send(ws, {"op": "rotate_token_res", "ok": False, "error": "missing_params"})
             return
-        if AUTH_TOKEN and old != AUTH_TOKEN:
+        # Use thread-safe token manager with audit logging
+        success = await _auth_token_manager.rotate(old, new)
+        if not success:
             await _safe_send(ws, {"op": "rotate_token_res", "ok": False, "error": "unauthorized"})
             return
-        # Update in-memory token
-        globals()["AUTH_TOKEN"] = new
         await _safe_send(ws, {"op": "rotate_token_res", "ok": True})
         return
 
@@ -733,7 +809,8 @@ async def _serve_connection(ws: WebSocketServerProtocol) -> None:
         return
 
     token = hello.get("token", "")
-    if AUTH_TOKEN and token != AUTH_TOKEN:
+    current_auth_token = await _auth_token_manager.get()
+    if current_auth_token and token != current_auth_token:
         try:
             await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "unauthorized"})
             try:
@@ -766,6 +843,16 @@ async def _serve_connection(ws: WebSocketServerProtocol) -> None:
                 except Exception:
                     pass
                 continue
+
+            # Validate message structure before processing
+            is_valid, error_msg = _validate_message(msg)
+            if not is_valid:
+                try:
+                    await _safe_send(ws, {"op": "error", "message": f"invalid_message: {error_msg}"})
+                except Exception:
+                    pass
+                continue
+
             try:
                 await _handle_message(ws, sess.session_id, msg)
             except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError):

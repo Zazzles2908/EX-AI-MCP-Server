@@ -228,29 +228,10 @@ class AnalyzeTool(WorkflowTool):
 
     def prepare_expert_analysis_context(self, consolidated_findings) -> str:
         """Prepare context for external model call for final analysis validation."""
-        # Optional: apply context optimization under agentic flags
-        try:
-            from config import AGENTIC_ENGINE_ENABLED, CONTEXT_MANAGER_ENABLED
-            if AGENTIC_ENGINE_ENABLED and CONTEXT_MANAGER_ENABLED:
-                from src.core.agentic.engine import AutonomousWorkflowEngine
-                eng = AutonomousWorkflowEngine()
-                messages = [
-                    {"role": "system", "content": self.get_system_prompt()},
-                    {"role": "user", "content": self.initial_request or 'Code analysis workflow initiated'},
-                ]
-                decision = eng.decide({"messages": messages})
-                # Compose a short optimized preamble (observability; prompt remains textual)
-                preamble = (
-                    f"[agentic platform={decision.platform} est_tokens={decision.estimated_tokens} "
-                    f"images={decision.images_present} task={decision.task_type}]\n"
-                )
-            else:
-                preamble = ""
-        except Exception:
-            preamble = ""
+        # Agentic engine removed - was disabled by default and added unnecessary complexity
 
         context_parts = [
-            preamble + f"=== ANALYSIS REQUEST ===\\n{self.initial_request or 'Code analysis workflow initiated'}\\n=== END REQUEST ==="
+            f"=== ANALYSIS REQUEST ===\\n{self.initial_request or 'Code analysis workflow initiated'}\\n=== END REQUEST ==="
         ]
 
         # Add investigation summary
@@ -416,22 +397,7 @@ class AnalyzeTool(WorkflowTool):
             "hypothesis": request.findings,  # Map findings to hypothesis for compatibility
             "images": request.images or [],
         }
-        # Optional: attach agentic hints for this step when enabled (observability only)
-        try:
-            from config import AGENTIC_ENGINE_ENABLED
-            if AGENTIC_ENGINE_ENABLED:
-                from src.core.agentic.engine import AutonomousWorkflowEngine
-                engine = AutonomousWorkflowEngine()
-                messages = [{"role": "user", "content": request.findings or request.step or ""}]
-                decision = engine.decide({"messages": messages})
-                step_data["agentic_hints"] = {
-                    "platform": decision.platform,
-                    "estimated_tokens": decision.estimated_tokens,
-                    "images_present": decision.images_present,
-                    "task_type": decision.task_type,
-                }
-        except Exception:
-            pass
+        # Agentic hints removed - was disabled by default and added unnecessary complexity
         return step_data
 
     def should_skip_expert_analysis(self, request, consolidated_findings) -> bool:

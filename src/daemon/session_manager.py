@@ -16,7 +16,7 @@ class Session:
     inflight: int = 0
     closed: bool = False
     max_inflight: int = DEFAULT_MAX_INFLIGHT
-    sem: asyncio.BoundedSemaphore = field(default_factory=lambda: asyncio.BoundedSemaphore(DEFAULT_MAX_INFLIGHT))
+    sem: Optional[asyncio.BoundedSemaphore] = None
 
 
 class SessionManager:
@@ -32,7 +32,9 @@ class SessionManager:
         async with self._lock:
             sess = self._sessions.get(session_id)
             if not sess:
-                sess = Session(session_id=session_id)
+                sess = Session(session_id=session_id, max_inflight=DEFAULT_MAX_INFLIGHT)
+                # Initialize semaphore after acquiring lock for thread safety
+                sess.sem = asyncio.BoundedSemaphore(sess.max_inflight)
                 self._sessions[session_id] = sess
             return sess
 

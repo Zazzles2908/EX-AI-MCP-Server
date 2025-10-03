@@ -689,6 +689,16 @@ class OpenAICompatibleProvider(ModelProvider):
 
                 usage = self._extract_usage(response)
 
+                # Convert response to dict for metadata storage
+                raw_dict = None
+                try:
+                    if hasattr(response, "model_dump"):
+                        raw_dict = response.model_dump()
+                    elif isinstance(response, dict):
+                        raw_dict = response
+                except Exception:
+                    raw_dict = None
+
                 return ModelResponse(
                     content=(content or ""),
                     usage=(usage or {}),
@@ -702,6 +712,7 @@ class OpenAICompatibleProvider(ModelProvider):
                         "model": getattr(response, "model", None) or model_name,
                         "id": getattr(response, "id", None),
                         "created": getattr(response, "created", None),
+                        "raw": raw_dict,  # Store raw response for tool_calls extraction
                     },
                 )
             except Exception as e:

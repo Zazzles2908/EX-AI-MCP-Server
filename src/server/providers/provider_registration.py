@@ -85,8 +85,10 @@ def register_providers(provider_config: dict) -> list[str]:
             ModelProviderRegistry.register_provider(ProviderType.OPENROUTER, OpenRouterProvider)
             registered.append("OpenRouter")
             logger.debug("Registered OpenRouter provider")
-        except Exception as e:
+        except ImportError as e:
             logger.warning(f"OpenRouter provider import failed: {e}")
+        except (AttributeError, TypeError) as e:
+            logger.warning(f"OpenRouter provider registration failed: {e}")
     
     return registered
 

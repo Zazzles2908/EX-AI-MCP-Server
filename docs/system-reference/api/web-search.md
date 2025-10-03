@@ -8,9 +8,11 @@
 
 ## Overview
 
-Native web search integration for GLM provider. Web search is automatically triggered by query content without manual intervention.
+Native web search integration for both GLM and Kimi providers. Web search is automatically triggered by query content without manual intervention.
 
-**Note:** Web search is only available for GLM provider, not Kimi.
+**Provider Support:**
+- **GLM:** Native `web_search` tool with configurable search engines
+- **Kimi:** Function-based web search using `web_search` function tool
 
 ---
 
@@ -28,7 +30,12 @@ Native web search integration for GLM provider. Web search is automatically trig
 ### Environment Variables
 
 ```env
+# GLM Web Search
 GLM_ENABLE_WEB_BROWSING=true
+
+# Kimi Web Search
+KIMI_ENABLE_INTERNET_SEARCH=true
+KIMI_WEBSEARCH_SCHEMA=function
 ```
 
 ---
@@ -149,10 +156,10 @@ print(response.choices[0].message.content)
 
 ## Provider Support
 
-| Provider | Web Search Support |
-|----------|-------------------|
-| GLM | ✅ Native integration |
-| Kimi | ❌ Not available |
+| Provider | Web Search Support | Implementation |
+|----------|-------------------|----------------|
+| GLM | ✅ Native integration | `web_search` tool with configurable engines |
+| Kimi | ✅ Function-based | `web_search` function tool calling |
 
 ---
 
