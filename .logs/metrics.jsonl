@@ -615,3 +615,655 @@
 {"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440773.512775}
 {"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d4d7fa7c6c98704cc172d74ec81b5c77e3578ed445bdf1ea3c9d47f93448b1c3", "t": 1759440815.664829}
 {"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759440817.1438382}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "40394e19bf98bcad3ff728290dbbfdf28582eb443017ffc261e12a7d4b23cc33", "t": 1759441213.2380054}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441214.816565}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "9357f356110388becf9dae260acf0ab13ec64148f350cafc9e9af2529ecb74dd", "t": 1759441215.1747773}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441215.7659526}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "acfc83f127976aa3d3fdfe9cab20e0cfb074c42a44751db3ff3a855877a8a7fe", "t": 1759441215.9703066}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441216.8056228}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "4dc3b3ae9014c39c83d86516b61e4410e2f742c2aca3e7b710eecf1b4f48761d", "t": 1759441217.0146563}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441217.5329292}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "ff28666019f37016c72c04b4068deaebd6067a7e1d9c96d6d5085225fce8dbc0", "t": 1759441217.739119}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441218.3772564}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1896c173482db75762d481ccb61e1629de1889bb6b216ba26ce664863be9e5b7", "t": 1759441218.5786116}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441219.7654994}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "61b4dc267dab688d758b1ad3ede71a0b7cf47d6a023e6c436d69d8d43bec194c", "t": 1759441219.983997}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441220.8747027}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "3cf5aad95c78dbf9d431abb76eed4e888f3e11fe9ce3b63403f4eb6af3f0292c", "t": 1759441221.0835006}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441221.5783994}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "0ff9fc56d38e52d1966817fc62a161ebb5930f09fb6a6b7630b78017bbab62b0", "t": 1759441221.7927506}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441222.7520897}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c0f8eb12962908f5af6ea69740694dbab0af397125f63d1e5da400041ec171d9", "t": 1759441222.9574625}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441223.9227464}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "ab1ad433fa4d16a937bb5fe362114e4e1228786e3037c2bf6e770d4473d6153d", "t": 1759441224.1339364}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441224.6916916}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "fc1a9dbe52ef3972cc4ee4bb50fa10ec29709d03019eaea6414216d6021bcf6a", "t": 1759441225.102182}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441225.8630383}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f5e8929ff5656c0548bc3da56dc5671320a7ea23a552aa04857f61b4da20ae2c", "t": 1759441226.0726213}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441227.0416567}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "a55d33f4e69698991f1ebbe367ae06be96887495049512e77717106c535175c6", "t": 1759441227.257131}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441228.352733}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "112bd21afca908c089f64bf056bc29acf110a8ffd295cf059db0eba1365d493a", "t": 1759441228.5608819}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441229.368882}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "249846c3065bac10621e0497d51ba6562f1ff66c6559fb4c67efdd5ff9557623", "t": 1759441260.1828105}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441261.6825485}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "13f26a11fb142c444220e07861263067c6254d9a9ef07752638274769907bc19", "t": 1759441261.8939414}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441262.6909769}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "b8648ad3a1a2d4cc0cd8d378da5e055a690aa9db27d577f2ac40441c649bc2f5", "t": 1759441262.9099543}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441263.53628}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "3b97b283d96e5d91d8c61d4a33ada35fe4ad64398735c8fffbb1644db7caf3f9", "t": 1759441263.735116}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441264.7360888}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "7206c94105f85fe70d6509cd2a0f8f79cb4999bf3e3a4167daeb43dd8f63951f", "t": 1759441264.947891}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441265.8301892}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d7600c7c306baa7af0a6dd277064889fec6182be127b247e57241fcacef2ef61", "t": 1759441266.0361316}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441266.87753}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "ff645832bbe3ef1c158a825210f9bb66e86dd9df34d504b4c042ecbe6e99f1c0", "t": 1759441267.091938}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441267.441784}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "dd9a0635305c4bab84a2f04f8dc562fbb27ecf710a9a40d06852ec89a9ca2ea5", "t": 1759441267.6457233}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441268.464105}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "3a6d7e6addf47fa9a750aff9f146357403973ef2ff30c1e9d1a82cbf6a23266b", "t": 1759441268.6759825}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441269.7238014}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "650085770bc1bcebd0f441674f26a61460676e7602b835198cc0b15e77ffebc0", "t": 1759441269.9347932}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441270.8335564}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f5f62af450e4cf8cd87890b360b2198996c223acf7e610615252b93cd017cd76", "t": 1759441271.0469365}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441271.761694}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c66785aef867533e6295593c12a011acdc5576eef11ff72f6f9744d7a340e3c3", "t": 1759441271.9702377}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441272.7439876}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "2e3518dcab6a5e267807c07e9fbe040eef332cc35e3874c9ab2e92ae49b4ef84", "t": 1759441272.9604983}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441273.877265}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "4b57d69359fae6914f54d1d9c42611eb391f5bb6c05b6604ec32221563fc13cf", "t": 1759441274.107459}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441275.261711}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "68b59e677adfd6752858f4272aad2e164108a70a75752d003b2d98033593de28", "t": 1759441275.4804182}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441276.1378505}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "59c083ec4b04446845b459439e2353014e1b511c3e04485e20683a39975f3611", "t": 1759441317.1214118}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441318.1519268}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1cae00fcc95620e0f96ab40246a27d919d1609fdc73e9775c19f36d0926aa1d4", "t": 1759441318.3580089}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441320.4529843}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "835cb3b141879643a89055c4251567991aaa5ca208b0ae18b7d30d5cc7447334", "t": 1759441320.7732325}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441321.7742028}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "e59bec9f6c2f95009e6e1b3a767fa0d0131a61de24cc5d496810da52925c6730", "t": 1759441321.9815786}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441322.494283}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "42beaa9da3a1c4b3b8a5666bed12e0ec3081a76fd8c3f99fb94e0948d47044ae", "t": 1759441322.7087677}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441323.346208}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "3469adb54ef9269a09a9ee32ad720f7a8aefcba2209fff0a01ea4effdacafccd", "t": 1759441323.5703213}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441324.7515776}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "6332b89787b8aa60c0f6cc6250b082acf3cf5b8763e59c0705ee602bbd2470dc", "t": 1759441324.9599135}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441325.7720046}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "553392240fe52afb4f3ba0c9805a7c95a90d300dd2290d6c47d308ce6bba527b", "t": 1759441325.9868538}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441327.0851085}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "94272b01d7127ffe056f8256b078be814554a899861f3900ce301b5a354597ff", "t": 1759441327.293646}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441328.275204}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "b9d07cadba520bd6fe8e8d13e1eea2bf7488dab601c3d3523519512f46c055f4", "t": 1759441328.4814885}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441329.3731806}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "64b7abc097e967c64796d8f39594dffd1b6fc67c5c467f743634c247d0adcdc6", "t": 1759441329.588526}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441330.3943596}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c4843f77b7b22b0c47a59010db17592eb4099699300f08404f008e32a1379703", "t": 1759441330.6145449}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441331.1132953}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "6cb5380b9ecaef0267daa1e6e36b90361799bcac5c64f223acecfdb2042f21f1", "t": 1759441331.5635276}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441332.1309965}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "8bdb4b59c53d69eed1aaa737fac239372a419b75db09ab14cc7e73eb363430cb", "t": 1759441332.3448658}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441333.481554}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "076d155ea2fde97b5fd97d600eb9929930b5b9767c958afa9083e61aad2764cc", "t": 1759441333.691542}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441334.6697283}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "3541ec43936ac7aa2f58071420a40ea9ec5f6c14ba9a8459993521f047d47f65", "t": 1759441349.8939228}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441350.4846117}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f5619ccfecc6dc699af04c142f768be9e44ba7c15ca63fc9dcb25b4f136c0b8b", "t": 1759441350.7870111}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441351.3902159}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "fb0de20c7ac42993ca3d0152f3981e21fb562f052595fc4152a9da0049b22052", "t": 1759441351.605799}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441352.8105125}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "381d1678f4a433f3381579a0c499a01aff5183697c779f722c1185f23a9af790", "t": 1759441353.019972}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441354.0261889}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "5c36052cf09e35bffa602ea6c3c7f31930154fa455fca64ec840d54b8d036d14", "t": 1759441354.223538}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441354.600586}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "89a9e2fb4b11a1b65fbb16453d2d3e26536e6f095e6b69a04e54d70ef93eb905", "t": 1759441354.8084302}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441355.5305955}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1f055e83dce2ef6847d494d14a1b5978361b3f3cb2dc766a3793d4ecab766269", "t": 1759441355.7376444}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441356.68975}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f234a4841c9847740e09aa1077d25e06dfe56e2f32f5958fa0ad75d1fbde6019", "t": 1759441356.8930032}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441358.2945385}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "4f1a8ff5241525df2687acbdba833ff35f1992a32fcef039f0bba222007d25f2", "t": 1759441358.5092413}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441359.5627172}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "ad2edbd360699bc8a106672a63cd001774b56918e88b209ef5b4f6630ad059a0", "t": 1759441359.78088}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441360.9244363}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "6bc324aa135d47bcb9ef6ef4c2beac5d4d5219beb9ea11ecfa832dac594a201f", "t": 1759441361.1311357}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441362.0846472}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "8416d0844a9bb4ab5a0c38c18c17feef876932216fe110699e8e24a640b3eecf", "t": 1759441362.283776}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441362.9926553}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "dd5c32e029f8c9af7922f8b76004c55102c9f6455acdeb3fb7e4dfb90a492ad5", "t": 1759441363.2070966}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441364.1915634}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "ca975afad85dce90fa9a7e354e7fa46c64e441dff935c18ea6aa440cd1e7cb7e", "t": 1759441364.406486}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441365.5762863}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "eae3c1a03bb0c4e040b49c86042a308269f28e0abbc8e642bbd5ef2b2288e1f7", "t": 1759441365.7822309}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441366.4347112}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "6d630348bdc2ebf510eb314491dfa1aa612d8cb8dedc7d569f2816982d148328", "t": 1759441401.401039}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441402.0092845}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "4db54a1ac411b9512d1beaaf45f2b72e9b30b92c386aca3e071809f6c0747e5c", "t": 1759441402.2282884}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441402.8786967}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "791e41b0fbc2ecc2e0c2ac73cf500e1debf66d09fd57c59896f4a4ae0a9e66bf", "t": 1759441403.1042414}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441404.0163624}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "24572270f014fae2e50b7e657890b41045b8c2231e17244b4be98849f7f75312", "t": 1759441404.226409}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441404.7447772}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "e0d0734f7bc0335bcfbbff82297211ecff9ed3abe0bbd271ee670a6b7605e8ca", "t": 1759441404.9608076}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441405.5732229}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "310dc071fd4037298a42a20e92cf3913e2978a27ae1c531ef02eb4c871fc8718", "t": 1759441405.7726495}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441406.850691}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "2bbf8f5a13e1632476cabb4bdb915dd8f3336a4dff70a161ce116aed31ae8494", "t": 1759441407.0626647}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441407.9759157}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "4fbf6f5eb0eba1a1c4de6c32bf62df062fe264e4dbc326fc58ee1dbebd877b51", "t": 1759441408.18094}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441408.8365304}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f4f8242a7c90c51901b9eb5de4bd229114fbb1d0c0ea4a04ccb190196c3d00c6", "t": 1759441409.0474758}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441409.6219099}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "bc454ca18271e41b5e729e210a24a0bcb3bd906cc5c979291cfd4fa86bdcf552", "t": 1759441409.824901}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441410.4608026}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "0df14934e603b36c52422f205530a06938bdf2db92176e142dbb3c9db8f76eae", "t": 1759441410.6632643}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441411.5809805}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "a0b60dc68c15fba50d95d9ee30db8e8fb3ad5a5b600a3a921a643f98b207a792", "t": 1759441411.7942402}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441412.6167226}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "a0810d81657f3ca009e15bb0aa874b18e52177c4ed2e47739ef7b54148e154a6", "t": 1759441412.865122}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441414.0622916}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "8bbe209b85e0eea295bf1c3e142b2d40d0f3fb6f68f7976a37c50108f0f37545", "t": 1759441414.2734096}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441414.7794006}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "a4f2e9f07729018fdedfa1e51e035e29286bb9e2c5b486faed9fcaab1a03e416", "t": 1759441414.9732745}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441416.224336}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "e864b40c6352df0a701ad1df8c1b643ccc41ed0ccabf225388f7c7fedc90c0d3", "t": 1759441448.8231206}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441449.3879676}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "249eedd77672be4b4f02a2e0139eeabc1e2cf515d46b3e95eb46e7f72294c2c3", "t": 1759441449.605477}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441450.7345042}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "fae560dc0085d15409dabf093c742e671f21ac6e4e99bf87e7f1444923f75cda", "t": 1759441450.9465199}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441452.1914544}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "dbf6786d0b7fe7e115eb66fe133b770440b42f4eadad068228ab02d9e55ea692", "t": 1759441452.965644}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441453.4418857}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "37a89b8c70dc376dfb06372ec76570fef740fad6e7632c1b3984157bbcc77256", "t": 1759441453.6390078}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441454.4474275}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "4be8c05363c0c82d8ecf20c8a6a6def29d702d53fa80c70da48cd877ef178dba", "t": 1759441454.6535378}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441455.5249398}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "14c89a1e0bd222a36cd6322d80fef4494112d9670ae1c362d654c05e71cda2e1", "t": 1759441455.8558464}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441456.4808528}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1f0636e3037c5146a5d3dadea1d49fc50bd83ce73b0fab2ad1deb18c496e6789", "t": 1759441456.6904156}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441457.2459662}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c9a80a871d984f8642f5a3d10554c9290ff699b777f1030a3084427ed50e0206", "t": 1759441457.450667}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441458.2436943}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d0f1936aa6e3b30fc3f79d1647dc167444cc554a90d6913797958189a93cd659", "t": 1759441458.4583411}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441459.0698133}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "4393d52d29d2456753ef4abe57b0ad847d01ec872d628030ac2ef4ad0a48962c", "t": 1759441459.2745364}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441459.8164196}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "8fd2cf0c4097fffc07c3fc847601c349ca05a1f76d30311581e39902b2144f05", "t": 1759441460.0468569}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441461.2856157}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "3e550ff3e7af499c09fc4cc4ae3214f2d153c3b8a8038ad88bf0c637dae0be82", "t": 1759441461.4915528}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441462.2113576}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c79ab65911d98f4c015e0f18a4ab84cde75a4d3e196ff71cff902de23ef1c3ed", "t": 1759441462.426645}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441463.3578215}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "8e35d6265e0e1e39dd403d1f042b3c87c78f8ad8c61b7dea3707cc7c5f168051", "t": 1759441463.562303}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441464.6328337}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "76fcc02a50f2db7effe741043a34b9e725eda2f0db0c5fd308b5a629af68099f", "t": 1759441498.7092252}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441500.0801344}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "7f2a5d0a19566c72f47eaedc3fd77b7413a5df55aab93288d21259ecbcd05cdf", "t": 1759441500.2930734}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441501.552868}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c16ee5c5cf51d0801f5dd90e87b2e1fc7bc7c45de0ad54d2017e4eed65488a9d", "t": 1759441501.759413}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441502.6825988}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "b0a0a33ccd09592e6e63ffa58417daf1c208e6087e9217b682d4de96195dd3b9", "t": 1759441503.085687}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441503.6782835}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "ad7b12e55f1078b85d961249b6432625926db8fb675a84f0c74ed793d1e94851", "t": 1759441503.89445}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441504.4766302}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "95834ddb939cb0010bc6715b7419aa194277e0bdb9d00d960f3f690ad4a1349f", "t": 1759441504.6829357}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441505.1907508}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "2ff7e522fed3966f9c5082089460be12fe44a4b30e0758235a2a1744755292da", "t": 1759441505.404955}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441506.4821918}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "22c401db0064473ce2e540db2affe4022153851d47b19a7599d664f14aee870d", "t": 1759441506.6907797}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441507.3632693}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "7793e24a4f695b63b932a7bd18ca033b5c5b25e2a1bcc2c62c050011b0e41672", "t": 1759441507.5781674}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441507.9872475}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "ffd74b4c550f3d23b33566078a8a1109d8600ea5bdb4a4f83cf8ac3b623726c4", "t": 1759441508.1967847}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441508.844782}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d470fbd1807d1f42793dc7147a54114a8b7e6364e27a96ae220846efcf142464", "t": 1759441509.0550523}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759441509.4789126}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "437933e37685fb296fd03eb8b519955ed912500570d4b809013fe321ae38704e", "t": 1759441509.6804285}
+{"event": "provider_error", "provider": "kimi", "model": "OpenAI Compatible", "error_type": "upload_error", "message": "Error code: 400 - {'error': {'message': 'text extract error: 没有解析出内容', 'type': 'invalid_request_error'}}", "t": 1759441513.5493374}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "40394e19bf98bcad3ff728290dbbfdf28582eb443017ffc261e12a7d4b23cc33", "t": 1759442411.8536787}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "9357f356110388becf9dae260acf0ab13ec64148f350cafc9e9af2529ecb74dd", "t": 1759442412.6466973}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "acfc83f127976aa3d3fdfe9cab20e0cfb074c42a44751db3ff3a855877a8a7fe", "t": 1759442412.8449152}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "4dc3b3ae9014c39c83d86516b61e4410e2f742c2aca3e7b710eecf1b4f48761d", "t": 1759442413.1981323}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "ff28666019f37016c72c04b4068deaebd6067a7e1d9c96d6d5085225fce8dbc0", "t": 1759442413.985984}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1896c173482db75762d481ccb61e1629de1889bb6b216ba26ce664863be9e5b7", "t": 1759442414.189168}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "61b4dc267dab688d758b1ad3ede71a0b7cf47d6a023e6c436d69d8d43bec194c", "t": 1759442414.5491574}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3cf5aad95c78dbf9d431abb76eed4e888f3e11fe9ce3b63403f4eb6af3f0292c", "t": 1759442414.7877426}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "0ff9fc56d38e52d1966817fc62a161ebb5930f09fb6a6b7630b78017bbab62b0", "t": 1759442414.9923508}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "40394e19bf98bcad3ff728290dbbfdf28582eb443017ffc261e12a7d4b23cc33", "t": 1759442680.5741575}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "9357f356110388becf9dae260acf0ab13ec64148f350cafc9e9af2529ecb74dd", "t": 1759442681.3787286}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "acfc83f127976aa3d3fdfe9cab20e0cfb074c42a44751db3ff3a855877a8a7fe", "t": 1759442681.7152076}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "4dc3b3ae9014c39c83d86516b61e4410e2f742c2aca3e7b710eecf1b4f48761d", "t": 1759442681.9094331}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "ff28666019f37016c72c04b4068deaebd6067a7e1d9c96d6d5085225fce8dbc0", "t": 1759442682.2501657}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1896c173482db75762d481ccb61e1629de1889bb6b216ba26ce664863be9e5b7", "t": 1759442682.4432523}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "61b4dc267dab688d758b1ad3ede71a0b7cf47d6a023e6c436d69d8d43bec194c", "t": 1759442682.63282}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3cf5aad95c78dbf9d431abb76eed4e888f3e11fe9ce3b63403f4eb6af3f0292c", "t": 1759442683.3934412}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "0ff9fc56d38e52d1966817fc62a161ebb5930f09fb6a6b7630b78017bbab62b0", "t": 1759442683.590608}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "c0f8eb12962908f5af6ea69740694dbab0af397125f63d1e5da400041ec171d9", "t": 1759442683.787846}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "ab1ad433fa4d16a937bb5fe362114e4e1228786e3037c2bf6e770d4473d6153d", "t": 1759442683.9936008}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "fc1a9dbe52ef3972cc4ee4bb50fa10ec29709d03019eaea6414216d6021bcf6a", "t": 1759442684.1880884}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "f5e8929ff5656c0548bc3da56dc5671320a7ea23a552aa04857f61b4da20ae2c", "t": 1759442684.3822644}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "a55d33f4e69698991f1ebbe367ae06be96887495049512e77717106c535175c6", "t": 1759442684.5820754}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "112bd21afca908c089f64bf056bc29acf110a8ffd295cf059db0eba1365d493a", "t": 1759442684.7783768}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "249846c3065bac10621e0497d51ba6562f1ff66c6559fb4c67efdd5ff9557623", "t": 1759442716.5919626}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "13f26a11fb142c444220e07861263067c6254d9a9ef07752638274769907bc19", "t": 1759442717.026038}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "b8648ad3a1a2d4cc0cd8d378da5e055a690aa9db27d577f2ac40441c649bc2f5", "t": 1759442717.3671925}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3b97b283d96e5d91d8c61d4a33ada35fe4ad64398735c8fffbb1644db7caf3f9", "t": 1759442717.565912}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "7206c94105f85fe70d6509cd2a0f8f79cb4999bf3e3a4167daeb43dd8f63951f", "t": 1759442717.757386}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "d7600c7c306baa7af0a6dd277064889fec6182be127b247e57241fcacef2ef61", "t": 1759442718.089394}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "ff645832bbe3ef1c158a825210f9bb66e86dd9df34d504b4c042ecbe6e99f1c0", "t": 1759442718.281418}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "dd9a0635305c4bab84a2f04f8dc562fbb27ecf710a9a40d06852ec89a9ca2ea5", "t": 1759442718.4890847}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3a6d7e6addf47fa9a750aff9f146357403973ef2ff30c1e9d1a82cbf6a23266b", "t": 1759442718.8117313}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "650085770bc1bcebd0f441674f26a61460676e7602b835198cc0b15e77ffebc0", "t": 1759442719.0014281}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "f5f62af450e4cf8cd87890b360b2198996c223acf7e610615252b93cd017cd76", "t": 1759442719.2410762}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "c66785aef867533e6295593c12a011acdc5576eef11ff72f6f9744d7a340e3c3", "t": 1759442719.431823}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "4b57d69359fae6914f54d1d9c42611eb391f5bb6c05b6604ec32221563fc13cf", "t": 1759442719.6338735}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "68b59e677adfd6752858f4272aad2e164108a70a75752d003b2d98033593de28", "t": 1759442719.8263793}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "59c083ec4b04446845b459439e2353014e1b511c3e04485e20683a39975f3611", "t": 1759442720.0251372}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "835cb3b141879643a89055c4251567991aaa5ca208b0ae18b7d30d5cc7447334", "t": 1759442748.7760303}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "e59bec9f6c2f95009e6e1b3a767fa0d0131a61de24cc5d496810da52925c6730", "t": 1759442749.1539803}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "42beaa9da3a1c4b3b8a5666bed12e0ec3081a76fd8c3f99fb94e0948d47044ae", "t": 1759442749.3525603}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3469adb54ef9269a09a9ee32ad720f7a8aefcba2209fff0a01ea4effdacafccd", "t": 1759442749.5494046}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "6332b89787b8aa60c0f6cc6250b082acf3cf5b8763e59c0705ee602bbd2470dc", "t": 1759442749.749687}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "553392240fe52afb4f3ba0c9805a7c95a90d300dd2290d6c47d308ce6bba527b", "t": 1759442749.9509645}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "94272b01d7127ffe056f8256b078be814554a899861f3900ce301b5a354597ff", "t": 1759442750.1374364}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "b9d07cadba520bd6fe8e8d13e1eea2bf7488dab601c3d3523519512f46c055f4", "t": 1759442750.3351712}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "64b7abc097e967c64796d8f39594dffd1b6fc67c5c467f743634c247d0adcdc6", "t": 1759442750.529357}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "c4843f77b7b22b0c47a59010db17592eb4099699300f08404f008e32a1379703", "t": 1759442751.304898}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "6cb5380b9ecaef0267daa1e6e36b90361799bcac5c64f223acecfdb2042f21f1", "t": 1759442751.4953942}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "8bdb4b59c53d69eed1aaa737fac239372a419b75db09ab14cc7e73eb363430cb", "t": 1759442751.6789203}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "076d155ea2fde97b5fd97d600eb9929930b5b9767c958afa9083e61aad2764cc", "t": 1759442751.9997165}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3541ec43936ac7aa2f58071420a40ea9ec5f6c14ba9a8459993521f047d47f65", "t": 1759442752.1971369}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "f5619ccfecc6dc699af04c142f768be9e44ba7c15ca63fc9dcb25b4f136c0b8b", "t": 1759442752.3853304}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "7727e24f626f88d90903ce85aef3d6e88715246aa1d80859b5686636b8bb53e9", "t": 1759442757.1979373}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442758.367727}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "0824a8769df359e79fcd019c3d1082e95ca836db58f1fa06c3f20f4fa8465b39", "t": 1759442758.5639467}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442759.1348228}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "8ab11ce35851af950d5b1e2eb8fbdbb32a6d1880750aea7574541a7e97dc0236", "t": 1759442759.3293939}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442760.5023518}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "91d458e9474a20024a111cccac54ae4402683abbaf79450fb81715fab4fab335", "t": 1759442760.7065678}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442761.4845874}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1c0e7d000e3079e8ccfad59a7f801671d7fc11488aedb63cd6c66b45badcd69c", "t": 1759442761.6856878}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442762.8053598}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "17013a5dcc4d78920cc4f0a62dd52323153cc46e168308de12aa7d611dfc0142", "t": 1759442763.0022564}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442763.7712717}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d2581cee1cd05a1efd8698f5dd86c9f885f65c82c7a597be3722e607c59567bd", "t": 1759442763.9668612}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442764.494235}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "5ddf1089c6e5707a60d31bb2e1f720bbc7e54e60db355da8e30a0cd74040958f", "t": 1759442764.6933181}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442765.200767}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "cf4115f4ca50d864a46aa97141eacdcd2b113fcaa41862c31f35f25c1a69cec1", "t": 1759442765.3936932}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442766.5929728}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "93334e2bf714b6165199a2b946688023e46fe0e993158d4af366137c92652801", "t": 1759442766.8018734}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442767.4415383}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1b0f04c3b6bb9b312030350cd654355c3a63a28d505f58621fe63df71166f6d3", "t": 1759442767.6404836}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442768.7491932}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "0a7257bbf965b71869bf839eb70ad03cafbbfb4eca9230fd89cad51e294ad49b", "t": 1759442768.95396}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442769.8195086}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "a800be34b03ccba488b9e035b7e377051f0245d850877d9517e0daf5d50b0e4b", "t": 1759442770.0245047}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442770.4187849}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "0e272b1518b8043b1a6e739a422009f37c99fc8df8c594ed6f6d53136440b29c", "t": 1759442770.6227272}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442771.8761332}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "65880318147b9de5836fbeb3350efdf6d9f552ca6e2b24332b57af13c05ccad8", "t": 1759442772.1410525}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442772.9587402}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "ffc5962c506f9b3cbdb719a024fd559e876868181d50f399f160e1a221a428a6", "t": 1759442808.8666904}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442809.504023}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1cd69d6d3671d1d86624849e62dc74b0b53e3c50e3871797c758570d4f658ec0", "t": 1759442809.7047842}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442810.111892}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "fd85f6ec8796f9d345ff5b5854a268eab9c55bd3bf8226add3f43853f31a4b35", "t": 1759442810.3111389}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442811.2079945}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "4bac8256a3f6c5992dedd46438287c3b1879301437a93ab2c0aea7b7f2387f05", "t": 1759442811.418138}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442812.270155}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "3f70b7e5791feb7fc8bc091dc61aa151be9e107d49cb5c5627a3d89d4f75b8c3", "t": 1759442812.4759052}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442813.482627}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "17ef781dbdb67bdea1cae59d35a70883d252e696f660390f8b9081e1d5efee18", "t": 1759442813.6898959}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442814.3577554}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "6758d99d618e131c7cc9a6f87411f6f46fbcc11122a68eda29d92cfd2ba0c0ec", "t": 1759442814.557957}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442814.9732125}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "707e0c2b3371e3a3bad06a5862d1e75382410c2cde5826ca6980deea86bd216b", "t": 1759442815.1789005}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442815.9771042}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "3982021cb9b1e215166e83bcab9785c0477c4b86fa736913102b7fcda7b50b9e", "t": 1759442816.1933382}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442816.590968}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "b670445ff50d5ce94c8b180b99b272bb9f2024e1e741691138a9e2afd2eb45ed", "t": 1759442816.7943652}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442817.9761927}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "17ff4f7f0af8941987ef7a7fe8885ab3a01536291b8086f41c90b29bd871dbd8", "t": 1759442818.1761022}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442819.281225}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d678bc1ca70efe651aa23fb8ce2c728b66cddbc0d523c45f521b8ecbcf348557", "t": 1759442819.4809957}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442820.324778}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "cfea70471105ac35bbc95aafc50a610ef024adcd7e9a5a1907c35443f49c2b0e", "t": 1759442820.54637}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442821.4625912}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d3e85c31c3b4280ef9c5a10ca9402339b9f045625a4bba8ad5053eaa37d674a1", "t": 1759442821.6699703}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442822.1670716}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "36092e03f5d8416dd643166ddbde638fc3dba26323b4a41bbdc2ccf819c71a1f", "t": 1759442822.4348629}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442823.0078382}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "5f6191352fbb8065ff0b8d382be84938c166cb76fa6ff7a5c09d968414a3ff11", "t": 1759442846.0960987}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442847.3802738}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "34a1281077fd9b4fe27c79a4d56bf951535b83562bdaaefef49de14b31c17b2b", "t": 1759442847.5766048}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442848.2640104}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "400388c52e5ab5b2253712738c140c196a7ba9989bd4344734ec64bbb994a324", "t": 1759442848.4711187}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442849.622084}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "613c2d2a114b3b837045f0305f46e60858c6e4250e0b4473d250c5968d0c7c2c", "t": 1759442849.8210907}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442850.5767365}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "23717a59ef22010d25a3459c0fe327ba0563efd791f0ff981e58f4ba805bb1fd", "t": 1759442850.780378}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442852.0141404}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "56d384dcb9aa5825c359d40c886a819be2ebcade53d184b941a369f4c64fa78d", "t": 1759442852.2083294}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442852.9927657}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "642d8c780fdfe8f8f3a5c9018d9f12737f6698cd1cff300c4d443c8bb8688d94", "t": 1759442853.1884034}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442854.5153372}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "7bcd481084d66b3b7c72b40b7327b14e45aa71e1117b3aa94a4725bc5518bc8d", "t": 1759442854.718961}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442855.1156096}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "4f01944e2730d4482d3d91262a98cb65ec4b4d0a8195ba1edf11ef5557de214d", "t": 1759442855.3238287}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442855.9949462}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "8a1d39b436a9dd658c7f8aa98220aa85d8b6350f19dc6ea52f6fd971761abeee", "t": 1759442856.2029843}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442856.9685724}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "3b8ea859af8bfcafdc52b205ba2e4eb9c2c26114b37121c1c7c4544ae81427e6", "t": 1759442857.1719127}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442858.0914316}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "3b11afad445f42709e4cc71345e4a732e4e5d0c6a8dcfd1e3e25ea7341608440", "t": 1759442858.29528}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442858.9994285}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1a1f3f628dbdcb32ef673ada7f2cf69b31547291a9eb1d3a0d216055d67eef10", "t": 1759442859.1969638}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442859.7786293}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1a9923be05cdbdf838f7cf8db091126cefb750beab352efcf75143ae8e2cbbfa", "t": 1759442859.9771407}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442860.424522}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "0844a0b278f48cc9f469138052fe0133129ebe347991535f90f8ff2a8f87084d", "t": 1759442860.621188}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442861.7080286}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "a30a50a56b24dfa3b4560ad0c7b61b54559eb5695f8d1e815a05810f86c4fbc9", "t": 1759442881.041179}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442882.57841}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c0ad2eb329a35ac1b406f094fb2ec9e21ae74a06fc5d15ab8258b9fdaf9fc560", "t": 1759442882.7754664}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442883.079534}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c36821d45104a18d088fca46cf6fbfd87335705f264a02fad3a001e0d19da600", "t": 1759442883.3960671}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442884.3158112}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f4511f3fb0891730347f8c2708f13e8b9e82baafa73eede3c94e70967329bc51", "t": 1759442884.6129963}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442885.5691032}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "8dad37f6e6fc69d69e17b63c52ea648ce9a10af4ba2fcdb11ada98202c29bc4a", "t": 1759442885.7676194}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442886.6807265}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "789ca5d288afe5d83dc0e2af519d4a6118fb6288899236f9add3c9604e63e2c0", "t": 1759442886.8821669}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442888.1097682}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1a384a18ad0cfaf7c58d70a122fe32ce48a7601cff0dfe91ba3418e161bbe097", "t": 1759442888.3162832}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442889.1788795}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c1f3a87ab4ec2bc72ac9556c0f7ec85b448dcc041e8962554db746906da33fa4", "t": 1759442889.370014}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442890.4776447}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "22b3898bb92b308e8fd31b44f55ff82bc3081cb1ab6a57b7400c29e4894979e5", "t": 1759442890.678821}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442891.691347}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "8df1c65b3ce9decaca5d5d4cd1421d3e89093290bd30e247c4ef4230b18fe1be", "t": 1759442891.89607}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442892.4205122}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "7af38a1bc65d8335d2b095fc5947b3a6e69a572defd9c99c28a9d6630d255ca5", "t": 1759442892.6242034}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442893.876428}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "fd558791e1653a08e237a54cac06b2fba0913ff6b71fa4c17f171f46605f61da", "t": 1759442894.0832207}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442895.2084792}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "11a6d2cbc88aa23bd4b1a934db0e5b6c6c8ba95f06866c49806cb4af5ceddd21", "t": 1759442895.4090307}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442895.931134}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "236e93bacb57af08e3b303992b9d29cd606f09bc571779ae86600ad49269117f", "t": 1759442896.1312454}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442896.9797573}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "09cdaa9665c32313fde28e4342c7bce3bd3f19341ef8934ee10adddcbbf48d36", "t": 1759442897.187848}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442898.1630392}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "bf2fcbdc7db34991742eaccf81184176f071c3da6f65c96a89adc56e4bf15e9f", "t": 1759442935.50145}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442937.5148158}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "3e10f037f3d3361c3b8724d56e4aa5e3b32ee70791960b3cdc059db26703b57c", "t": 1759442937.7236342}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442938.4706743}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "86114b7fb72e4d306f8e8390334707ac781dfe89e9257a219e263832a793703a", "t": 1759442938.6777182}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442939.0976672}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "4a0bc3a33e42ba7d7576a100b0ff4a147db105df5d85214e399134155a942bd8", "t": 1759442939.8877897}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3cc68f3aac436a39319bb39ae19e4ae88492cdc652657fc1318a41921e8e2441", "t": 1759442940.1408973}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1f861faa67a4d471974e6326a0772c8b0058d08ae078e479818f8afe3b1555e9", "t": 1759442940.3420115}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "e418824c684377a2a291182d1a7fab15f28fa3eb5c40b21934f749868dba270b", "t": 1759442940.542816}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "b3bdebe4a6ffdc74f703040b5a2602c64069fdc562046f1012459b36fc8674ea", "t": 1759442940.7365062}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "885a3dd16be9ecea2b17197e2272acf9d3aff0c806c26820ead49c1df1668502", "t": 1759442940.9277396}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1d45ffa1fda53f1e8b771b02f9f557eab54c235104e5c3a9e1c2495d7b77c5e3", "t": 1759442941.127567}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "952915c49617a4ea312af608b7d954ec05ba93843182d4dca706f41ab2fdc9c7", "t": 1759442941.3353014}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "28bf054048d23894f3e20b59d0181ff229987779d51cc342a47d61b4c59166b3", "t": 1759442941.5351152}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "01df03052f360e687cc74bf90221245db4722f0eaea2d0629d0a6cc87a4f5326", "t": 1759442941.7279058}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1cba4840f5cef37b30104ab4c689c62e98d83910d0615f5710e5dfe974547dcd", "t": 1759442941.9323926}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759442942.7191513}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "c8bc5dd45ce90fb1dd8bd7926a9376a31a92c8223e382d8f9238dedc22da3ed6", "t": 1759442942.9279335}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "d5f6d65b48238401c27708c61e9d549bce1dd46b777d2af35bbaeebbab9ef687", "t": 1759442983.4802737}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "0c9bd8f1ddfc8e53a396ace187d985f3faf9a6286050634260d5f13f478675f9", "t": 1759442983.8980565}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "fa21207a59c7ddf61ee4aa7cb6f8d7f1fb37d5e094918af94bd26f1129683f7b", "t": 1759442984.101654}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "93465c545a9cc32d975a4d56fac22597d7f1716b1bcb676664e4708236d79a0a", "t": 1759442984.4281118}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "6f4450f56aa3856f8e14a86e7c67ca0d80189b6f36dada4ff1e202d6e531e63c", "t": 1759442984.6237504}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "126215a626f8d038177b8ffffb6b41664a166b87bb2ea47bdecbd17b38e1ffd7", "t": 1759442984.8236902}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "c035a2aae5ff4d97346a1dc7a17a65d296893a79b07c01c82e602789defc65e1", "t": 1759442985.0116618}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "8158d80c30c35a6e1fd10da468bfa98fc83cf4f0a9f623b19fff3bb0d6f6a282", "t": 1759442985.2107387}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "68ad49af13ff6f70a99b5124530a6ff69e5f38ee322f51c87e79f009874f69a7", "t": 1759442985.5457246}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "a081b130d62a778aa4de7787e64e0e0593f1c27fb9284e445c14137e97d950a9", "t": 1759442985.7374935}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1c4d175cc7ff63283b6c34c64f62d71f9da811e183a2c75b781116d0241c10bb", "t": 1759442985.9233332}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "29aa47ee044c698ae9f76dd83ace80fb652408f87f59c9aec09d294b81ca377c", "t": 1759442986.1229498}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "4a59a7f59fcb08e6f9e821a4fd7ddf36dc20dbd4ffae3812c628749fb88389af", "t": 1759442986.4548566}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "4d56deee7fca2ab9d095cf67bd59443c5a2edc3c024d3012d6f589b941d4d949", "t": 1759442986.650104}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "bfe3534d6578cfa76c5df31c8afc166d6c4a4ae11470e8ec1fb9d8a856628d1d", "t": 1759442986.8433554}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "b33ffa10bc8ddc09f2f9b1f1da1265bd0bff069c42f595fb541f557eabd1f693", "t": 1759443027.5150974}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "bca5228566c148239ee8ec25efc4aeb51cb693b764878da5bdc377df9153dc91", "t": 1759443027.9041524}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "6829395257cff88f8532055a7cb9d76205d22b6631e96dbae49addbede3d265f", "t": 1759443028.1097755}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "cbcc08447ba6eb5b63d7b0713b40d88256f565f6bff08c054ab39f292b5ce275", "t": 1759443028.3102221}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "d4d7fa7c6c98704cc172d74ec81b5c77e3578ed445bdf1ea3c9d47f93448b1c3", "t": 1759443028.5025833}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f6dd51be4dcd4a7adc2024d8443255f8c7aa0bac4dace68a4a4318f7100bf04f", "t": 1759445298.973904}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445300.646955}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "ce674a51ffa399cf22da1297031cdc48030a72a54fd3f78a18f89cf4797270e5", "t": 1759445300.8521512}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445303.0200193}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f04fb2b61125698fdaa039403a125b34e878949263d3f32c84852f6e4d410760", "t": 1759445303.3725157}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445304.6451695}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "0200daa6f551b46c163ab8e10e56f13fc2cf70543e9d78e3cc8ed05ac2f081fb", "t": 1759445304.8519027}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445305.331688}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "aa76ae7b7befcf26ed32a516eea860b303e9fce9e7ad0e9b01d56a3fe3c2e472", "t": 1759445305.552135}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445306.077117}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c310dab945b1aadc59332f3a997f460580622874424cbf7d260fb1da7cb74b78", "t": 1759445306.2790983}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445307.5767424}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "e9d1314042d49a9dc1754412f655fadc8d1c3bdc94cf88ab985953abcb89bc18", "t": 1759445307.7803433}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445308.744858}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "6e76e1680e42939845d512d79bea279c8e2510d80bc8708e8a0b80e913149043", "t": 1759445308.9465804}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445309.653006}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1c7eea125c6c57d69f16ebf011d0f69dfed28142a8f19eb51524e95ff48295d7", "t": 1759445309.8597424}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445310.7585986}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "da019b3139a05c125e2c187ebe9344468de1a1f5d261302737f8019bc07b66e4", "t": 1759445310.980743}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445312.147928}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "260ed8fca50c0c9e6a3488008ab9d01cd85e0daaaf471628d597322947ae2eb0", "t": 1759445312.3508587}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445313.36868}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "eebfb5c1ca51abd7f9bca4135f17bd8f2e0387b4068ce18445e94b044934da42", "t": 1759445313.566795}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445314.4325335}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "ad970ce36fa26f2933fe2b369648cc7a847f7f29c56a6345268ac1fc5631ad81", "t": 1759445314.6333356}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445315.0221102}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "bb3175e57c4bec513c19e17490daf418e1a2daf5b5921302b48be85e3e4a8d11", "t": 1759445315.2429752}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445315.7717445}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "98c0fa23719b232f79dc964922af3b00dceb828d0eda8def90a9cbc16e6d8571", "t": 1759445315.9689777}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445317.1585708}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "f6dd51be4dcd4a7adc2024d8443255f8c7aa0bac4dace68a4a4318f7100bf04f", "t": 1759445463.840633}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "ce674a51ffa399cf22da1297031cdc48030a72a54fd3f78a18f89cf4797270e5", "t": 1759445464.6867776}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "f04fb2b61125698fdaa039403a125b34e878949263d3f32c84852f6e4d410760", "t": 1759445465.0405343}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "0200daa6f551b46c163ab8e10e56f13fc2cf70543e9d78e3cc8ed05ac2f081fb", "t": 1759445465.4040146}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "aa76ae7b7befcf26ed32a516eea860b303e9fce9e7ad0e9b01d56a3fe3c2e472", "t": 1759445465.6099887}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "c310dab945b1aadc59332f3a997f460580622874424cbf7d260fb1da7cb74b78", "t": 1759445465.824011}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "e9d1314042d49a9dc1754412f655fadc8d1c3bdc94cf88ab985953abcb89bc18", "t": 1759445466.0356932}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "6e76e1680e42939845d512d79bea279c8e2510d80bc8708e8a0b80e913149043", "t": 1759445466.2365577}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1c7eea125c6c57d69f16ebf011d0f69dfed28142a8f19eb51524e95ff48295d7", "t": 1759445466.435955}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "da019b3139a05c125e2c187ebe9344468de1a1f5d261302737f8019bc07b66e4", "t": 1759445466.6422837}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "260ed8fca50c0c9e6a3488008ab9d01cd85e0daaaf471628d597322947ae2eb0", "t": 1759445466.8445194}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "eebfb5c1ca51abd7f9bca4135f17bd8f2e0387b4068ce18445e94b044934da42", "t": 1759445467.0459516}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "ad970ce36fa26f2933fe2b369648cc7a847f7f29c56a6345268ac1fc5631ad81", "t": 1759445467.2389064}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "bb3175e57c4bec513c19e17490daf418e1a2daf5b5921302b48be85e3e4a8d11", "t": 1759445467.439796}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "98c0fa23719b232f79dc964922af3b00dceb828d0eda8def90a9cbc16e6d8571", "t": 1759445467.631742}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1d1eb1803f5fb8d9e97870e257f1b01701b86043affe1087a0fc57c8a26c8060", "t": 1759445509.597274}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445510.3843653}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "bdcb681328219d52d2ecb4f3b8f6b07366cf010b8302b3e3d6d1edde13ecc56c", "t": 1759445510.5789409}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445511.8416827}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "a60cc3958e40b784fdca01e2136bbb8c4cdd9ee8591369f0d3a31660417c8fd0", "t": 1759445512.0532277}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445513.057405}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "e0b9f24e93be14c31929d74a62b7801e3bfb133632fb1680acc391d683edb771", "t": 1759445513.2700038}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445515.0456965}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "18c612397e51c77d808352fda6f033617c313e042597dd192c769259da5ade4b", "t": 1759445515.2488685}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445515.6180904}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d4c782650bdb3450f99fd75373f74e9e400c4c57d0ddac41ffc08c881ad031a2", "t": 1759445515.8265889}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445516.290983}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d4ff29c2556e0ec6efa2b328e856ad51273323b491e1700df5dfc70deadc19d4", "t": 1759445516.497131}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445517.5259652}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "0462ec34e63528cfeaa5337b43b3ba5c64d6f9bc87d9f357083d58ad35ad6157", "t": 1759445517.864814}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445519.1858323}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "68cc2040aa5fbda791d1e895c9c6d2cdd4fa48feddceb903f1dc6d358b874950", "t": 1759445519.389133}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445520.4752936}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "18eb868967cf392cc2fa0867178d7edd8b956f403c3d23759d098383295cb209", "t": 1759445520.6816835}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445521.5335374}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "29533cb579288aa17ea59bb261e3926df227a5019d618e3469bec220427c367c", "t": 1759445521.8636944}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445522.747088}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d2cb410e4012980d23fab53fa735cc3ffd59e2da825143d333f50f9588d5bd76", "t": 1759445522.951327}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445523.3481507}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1057163358bf63a635af01eb75b5e24803186950214ef4eba62f052e4f9c41d7", "t": 1759445523.5682936}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445524.4358776}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "a2c38ba782874c44d07fa79aa89801d6f3a9ffba502181ce607b9e19608ab9f5", "t": 1759445524.6611435}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445525.0451007}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1f951d2b003f7c39c8cc97317afe7674d42d34d2ba2bb362780bbecf05f53161", "t": 1759445525.3740041}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445526.4837072}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "26031dd850a5c23e351f08e1fade82bbb0ca4d151462e2d7e1ecba75c9b21b02", "t": 1759445567.8332381}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445569.0382295}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f5e29d46c93f97ee96848e99624939d6af48fa1bf04afeaeeeaae88fbfa8c38c", "t": 1759445569.367192}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445570.1890433}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "ed9c2557d5a0ae8b6148ffbae5815ecf27bc394a1fa01962e23f10ba209ed219", "t": 1759445570.3920562}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445571.668441}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "6e15b9668cfd4b6ad023594c26759fd90f357892664f5d60ca00a8d2dc2936d9", "t": 1759445571.8749208}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445572.3454816}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "faeb4c413852ed2370a53103f624f113db4db77f8e94e33337f594dcf1d94ba6", "t": 1759445572.550054}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445573.7272215}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "46718affb19c396241479109f8d378531c079d315048b60f06760b3260662b21", "t": 1759445573.9362438}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445574.7088356}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "08356c530ed7aa7fb6b5b275b4c103dc543ba1a7565e65ed7e9d80ff0616968d", "t": 1759445574.9179535}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445575.2461164}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f51e40d12dd808e36605b42ad44e213a9fff73c0d9df904cdf6eaa6c474c5d9f", "t": 1759445575.459255}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445575.864735}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "62f7baa5ca2521d59ace9252d12218e0e2c065742d2464d90e9eb5a70787a898", "t": 1759445576.0645406}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445576.4255188}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "adbcffa2597fb1b1e243c15af95329369df6d52fbc7dbab84b0bb9fcde8365ac", "t": 1759445576.636396}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445576.9938948}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "20f2140d62bbfec5e11edd790c45e3d3e9144ced3d51235943ccbaa8c5211848", "t": 1759445577.203634}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445577.981198}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3e76ea3a2f49f151e6dba227258aedc6cd19e548d01ad47fe389190176ceb8dd", "t": 1759445578.193631}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d0895322a5ea6e30b9f6c62cd2dc6dc55776156d50feabc52fb1646c5dc10188", "t": 1759445578.3951726}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445579.6502135}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "fdff495f69e1cfabfb97508eb7e6d0319fee404b48b39d60d8d706c6bc2ba2d6", "t": 1759445579.8500512}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445581.019525}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "e45ca00b8112eaf525e44464dae6b76c03529b1c7cc7d627cacf98fb2817a454", "t": 1759445581.217875}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445582.239569}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "86530e4f470d075bfc19b01d0092181b889335a6c0917a173054b7ec933dd969", "t": 1759445622.5645103}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445623.145799}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "514976b4189940545e707570e116cb36e8676112b6d27fa42085cfb3aad8ff03", "t": 1759445623.3560727}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445623.6307635}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c094bb25b7fdad453fb86aede705fbc3f4eb6e07fbeeae6e902e23510c3e3f69", "t": 1759445623.8394406}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445624.0806732}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "7b65f474d3307f95a1246181de5bac1984cbd660767b00944d5e6c76a6b6a186", "t": 1759445624.2775424}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445624.7406542}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "8220dfac5448667a8e9985d26ece72d044e7f582bf7507fc651ebd92b327e076", "t": 1759445624.9342666}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445625.6475291}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "5def59ecb2d4283d1b917f28c34b7d73d7774f96b39b8e32318833f0a2a50837", "t": 1759445625.8539186}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445626.8876643}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c7a78920603e260c9365ce41c0bde2a9fc3a35d4dbbee3ff8d011a10c8ff2bef", "t": 1759445627.1068435}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445628.0387125}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "e892f945a9784d5456cf119eb34801e0a98751e28ec00e590465abf637753b97", "t": 1759445628.2400954}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445629.5066397}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "2d7a6cff2de37a7d8146dfcd90f6bb056844d2ad1cf62a4c4249016f44b4602b", "t": 1759445629.836885}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445630.1097927}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "155a282371b181f29f5939fa7f09c5898eb90bc5e5be0968e54fb8f83d93bf74", "t": 1759445630.3143172}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445631.0435638}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "d4336de083536b7e168875fb91b3e137334da1d0c68b080ac3dea2749630a375", "t": 1759445631.253694}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445631.9747052}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "5a06a6f0e7a814d0d4b80a72727cba7691b6a0245d094ab35d309c2c8bff38c4", "t": 1759445632.1796079}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445632.7771776}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "1a68b643e6b3d22867d3f5a05302675b59efff8db21cb85d0a3543a6fe4a5506", "t": 1759445632.9706385}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445633.5596902}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "5c9d6f1eb346e7899c14f2154d420b452af883834f24b374f810696b8512c422", "t": 1759445633.7631857}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445634.7379794}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c08c36c3c31241d72a8c31ad2af95e661a597d0aa0d95930bb9407ffed8404e1", "t": 1759445634.9360483}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445635.4466245}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "4499fa3758ccc1d816df9a06d33e4533b46993b6f111487f693370a1a78fe304", "t": 1759445675.914082}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445676.584091}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "53a31b2f308e4ac7c01b2c701faf787b7c1efa4ce2cf95dbd738cc2362435ea9", "t": 1759445676.8021293}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445677.7573748}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f65e23d658de6df4ed9ba89dd25d18022acd67b281669f7f3608756b3a142011", "t": 1759445677.9594796}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445678.5746143}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "97ab7d0f937f3811850c3b3f3998218f8848468bb505d9d4c7326fd572d5b320", "t": 1759445678.7799432}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445679.376021}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "856ec1ad36676f244fb5bde74339583f4b7f66d1d59bb8ce98bbd216f3e82142", "t": 1759445679.5891614}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445680.6310742}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "51e7b39404375affe053d45004040f68c83bf9ac059a6d24f007de560b506177", "t": 1759445680.8310175}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445681.7193913}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "ef8a514e9a5f5b6c10e98a2f31234a8d41614a66441ea72808941b4d777fc5b7", "t": 1759445681.935101}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445682.5743568}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "461aa332d3c5ae0aa84707dba526098a6d4b70cdd5b8f23dd2c9fb1e5744cc0b", "t": 1759445682.7845857}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445683.3562815}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "816c33f62f419f054b79dbf3416434067508a7bad591fe629398ab08b83d5d47", "t": 1759445683.5645506}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445684.3384461}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f48ca19e541767332d9ec21dae748684287bbb5ba365b3bf8fa94ffbaba13df7", "t": 1759445684.5496743}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445685.759341}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "22216fd31e2fa0f0de4b4c0b69f30fe849eafb6a0839a7a9eb7a8f2bb57fc469", "t": 1759445685.9521801}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445686.7555394}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "736339255860c6db1b1322fe2243196dce6170a5c3d03f1f5893bf4cfec74035", "t": 1759445686.9667864}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445687.8451848}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "58b9ad55a1d40f0a5609156e4bba0be245f8c2b393087d9876470fcf59ae9d2d", "t": 1759445688.0432754}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445688.483354}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "0670aa621608e357c6ee1f47d3fe3ad421c739404d7bf1b2693b0ca059323044", "t": 1759445688.6886413}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445689.792324}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "29acd78a39be2b503cc3b225fd2dcfb3925c9c2cd5b65894e21f1d83464c3248", "t": 1759445689.9986043}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759445690.6465042}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3a6d7e6addf47fa9a750aff9f146357403973ef2ff30c1e9d1a82cbf6a23266b", "t": 1759445729.7205157}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "650085770bc1bcebd0f441674f26a61460676e7602b835198cc0b15e77ffebc0", "t": 1759445730.1157725}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "f5f62af450e4cf8cd87890b360b2198996c223acf7e610615252b93cd017cd76", "t": 1759445730.3310783}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "c66785aef867533e6295593c12a011acdc5576eef11ff72f6f9744d7a340e3c3", "t": 1759445730.535935}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "7727e24f626f88d90903ce85aef3d6e88715246aa1d80859b5686636b8bb53e9", "t": 1759445730.7514791}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "0824a8769df359e79fcd019c3d1082e95ca836db58f1fa06c3f20f4fa8465b39", "t": 1759445730.946746}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "8ab11ce35851af950d5b1e2eb8fbdbb32a6d1880750aea7574541a7e97dc0236", "t": 1759445731.1423855}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "91d458e9474a20024a111cccac54ae4402683abbaf79450fb81715fab4fab335", "t": 1759445731.3420398}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1c0e7d000e3079e8ccfad59a7f801671d7fc11488aedb63cd6c66b45badcd69c", "t": 1759445731.5558546}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "17013a5dcc4d78920cc4f0a62dd52323153cc46e168308de12aa7d611dfc0142", "t": 1759445731.7558463}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "d2581cee1cd05a1efd8698f5dd86c9f885f65c82c7a597be3722e607c59567bd", "t": 1759445732.1547413}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "5ddf1089c6e5707a60d31bb2e1f720bbc7e54e60db355da8e30a0cd74040958f", "t": 1759445732.3570304}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "cf4115f4ca50d864a46aa97141eacdcd2b113fcaa41862c31f35f25c1a69cec1", "t": 1759445732.561691}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "93334e2bf714b6165199a2b946688023e46fe0e993158d4af366137c92652801", "t": 1759445732.775302}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1b0f04c3b6bb9b312030350cd654355c3a63a28d505f58621fe63df71166f6d3", "t": 1759445732.9707036}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "0a7257bbf965b71869bf839eb70ad03cafbbfb4eca9230fd89cad51e294ad49b", "t": 1759445772.8921003}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "a800be34b03ccba488b9e035b7e377051f0245d850877d9517e0daf5d50b0e4b", "t": 1759445773.2922404}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "0e272b1518b8043b1a6e739a422009f37c99fc8df8c594ed6f6d53136440b29c", "t": 1759445773.4968088}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "65880318147b9de5836fbeb3350efdf6d9f552ca6e2b24332b57af13c05ccad8", "t": 1759445773.6902592}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "ffc5962c506f9b3cbdb719a024fd559e876868181d50f399f160e1a221a428a6", "t": 1759445773.8939567}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1cd69d6d3671d1d86624849e62dc74b0b53e3c50e3871797c758570d4f658ec0", "t": 1759445774.1033518}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "fd85f6ec8796f9d345ff5b5854a268eab9c55bd3bf8226add3f43853f31a4b35", "t": 1759445774.3075798}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "4bac8256a3f6c5992dedd46438287c3b1879301437a93ab2c0aea7b7f2387f05", "t": 1759445774.5129552}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3f70b7e5791feb7fc8bc091dc61aa151be9e107d49cb5c5627a3d89d4f75b8c3", "t": 1759445774.7192838}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "17ef781dbdb67bdea1cae59d35a70883d252e696f660390f8b9081e1d5efee18", "t": 1759445774.9449072}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "6758d99d618e131c7cc9a6f87411f6f46fbcc11122a68eda29d92cfd2ba0c0ec", "t": 1759445775.1468322}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "707e0c2b3371e3a3bad06a5862d1e75382410c2cde5826ca6980deea86bd216b", "t": 1759445775.3567035}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3982021cb9b1e215166e83bcab9785c0477c4b86fa736913102b7fcda7b50b9e", "t": 1759445775.5614102}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "b670445ff50d5ce94c8b180b99b272bb9f2024e1e741691138a9e2afd2eb45ed", "t": 1759445775.7599244}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "17ff4f7f0af8941987ef7a7fe8885ab3a01536291b8086f41c90b29bd871dbd8", "t": 1759445775.9636018}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "d678bc1ca70efe651aa23fb8ce2c728b66cddbc0d523c45f521b8ecbcf348557", "t": 1759445818.1417508}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "cfea70471105ac35bbc95aafc50a610ef024adcd7e9a5a1907c35443f49c2b0e", "t": 1759445818.5316489}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "d3e85c31c3b4280ef9c5a10ca9402339b9f045625a4bba8ad5053eaa37d674a1", "t": 1759445818.741894}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "36092e03f5d8416dd643166ddbde638fc3dba26323b4a41bbdc2ccf819c71a1f", "t": 1759445818.9463713}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "5f6191352fbb8065ff0b8d382be84938c166cb76fa6ff7a5c09d968414a3ff11", "t": 1759445819.14761}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "34a1281077fd9b4fe27c79a4d56bf951535b83562bdaaefef49de14b31c17b2b", "t": 1759445819.3612688}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "400388c52e5ab5b2253712738c140c196a7ba9989bd4344734ec64bbb994a324", "t": 1759445819.564902}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "613c2d2a114b3b837045f0305f46e60858c6e4250e0b4473d250c5968d0c7c2c", "t": 1759445819.7699635}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "23717a59ef22010d25a3459c0fe327ba0563efd791f0ff981e58f4ba805bb1fd", "t": 1759445819.9630625}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "56d384dcb9aa5825c359d40c886a819be2ebcade53d184b941a369f4c64fa78d", "t": 1759445820.1720626}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "642d8c780fdfe8f8f3a5c9018d9f12737f6698cd1cff300c4d443c8bb8688d94", "t": 1759445820.3748348}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "7bcd481084d66b3b7c72b40b7327b14e45aa71e1117b3aa94a4725bc5518bc8d", "t": 1759445820.5879312}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "4f01944e2730d4482d3d91262a98cb65ec4b4d0a8195ba1edf11ef5557de214d", "t": 1759445820.7941418}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "8a1d39b436a9dd658c7f8aa98220aa85d8b6350f19dc6ea52f6fd971761abeee", "t": 1759445821.0156538}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3b8ea859af8bfcafdc52b205ba2e4eb9c2c26114b37121c1c7c4544ae81427e6", "t": 1759445821.2318988}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3b11afad445f42709e4cc71345e4a732e4e5d0c6a8dcfd1e3e25ea7341608440", "t": 1759445863.49676}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1a1f3f628dbdcb32ef673ada7f2cf69b31547291a9eb1d3a0d216055d67eef10", "t": 1759445863.8828638}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1a9923be05cdbdf838f7cf8db091126cefb750beab352efcf75143ae8e2cbbfa", "t": 1759445864.08793}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "0844a0b278f48cc9f469138052fe0133129ebe347991535f90f8ff2a8f87084d", "t": 1759445864.286585}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "a30a50a56b24dfa3b4560ad0c7b61b54559eb5695f8d1e815a05810f86c4fbc9", "t": 1759445864.4911478}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "c0ad2eb329a35ac1b406f094fb2ec9e21ae74a06fc5d15ab8258b9fdaf9fc560", "t": 1759445864.6984427}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "835cb3b141879643a89055c4251567991aaa5ca208b0ae18b7d30d5cc7447334", "t": 1759445864.8986886}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "e59bec9f6c2f95009e6e1b3a767fa0d0131a61de24cc5d496810da52925c6730", "t": 1759445865.1099951}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "42beaa9da3a1c4b3b8a5666bed12e0ec3081a76fd8c3f99fb94e0948d47044ae", "t": 1759445865.310518}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3469adb54ef9269a09a9ee32ad720f7a8aefcba2209fff0a01ea4effdacafccd", "t": 1759445866.0994105}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "6332b89787b8aa60c0f6cc6250b082acf3cf5b8763e59c0705ee602bbd2470dc", "t": 1759445866.3180592}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "553392240fe52afb4f3ba0c9805a7c95a90d300dd2290d6c47d308ce6bba527b", "t": 1759445866.522678}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "94272b01d7127ffe056f8256b078be814554a899861f3900ce301b5a354597ff", "t": 1759445866.7311177}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "b9d07cadba520bd6fe8e8d13e1eea2bf7488dab601c3d3523519512f46c055f4", "t": 1759445866.9357336}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "64b7abc097e967c64796d8f39594dffd1b6fc67c5c467f743634c247d0adcdc6", "t": 1759445867.1524138}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "c4843f77b7b22b0c47a59010db17592eb4099699300f08404f008e32a1379703", "t": 1759445874.9770179}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "6cb5380b9ecaef0267daa1e6e36b90361799bcac5c64f223acecfdb2042f21f1", "t": 1759445875.5926428}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "8bdb4b59c53d69eed1aaa737fac239372a419b75db09ab14cc7e73eb363430cb", "t": 1759445875.7890444}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "076d155ea2fde97b5fd97d600eb9929930b5b9767c958afa9083e61aad2764cc", "t": 1759445875.9896643}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "3541ec43936ac7aa2f58071420a40ea9ec5f6c14ba9a8459993521f047d47f65", "t": 1759445876.1905277}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "f5619ccfecc6dc699af04c142f768be9e44ba7c15ca63fc9dcb25b4f136c0b8b", "t": 1759445876.4145715}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "c36821d45104a18d088fca46cf6fbfd87335705f264a02fad3a001e0d19da600", "t": 1759445876.6192415}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "f4511f3fb0891730347f8c2708f13e8b9e82baafa73eede3c94e70967329bc51", "t": 1759445876.823477}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "8dad37f6e6fc69d69e17b63c52ea648ce9a10af4ba2fcdb11ada98202c29bc4a", "t": 1759445877.0302756}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "789ca5d288afe5d83dc0e2af519d4a6118fb6288899236f9add3c9604e63e2c0", "t": 1759445877.2295294}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1a384a18ad0cfaf7c58d70a122fe32ce48a7601cff0dfe91ba3418e161bbe097", "t": 1759445877.4409041}

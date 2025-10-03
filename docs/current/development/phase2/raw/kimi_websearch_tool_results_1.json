@@ -1,1 +1,0 @@
-[{"role": "tool", "tool_call_id": "web_search:2", "content": "{\"engine\": \"duckduckgo\", \"query\": \"Moonshot AI API documentation tools function calling\", \"results\": []}"}]

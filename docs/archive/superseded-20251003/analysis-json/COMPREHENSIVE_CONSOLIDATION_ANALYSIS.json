@@ -1,0 +1,644 @@
+[
+  {
+    "batch_number": 1,
+    "files_analyzed": 15,
+    "superseded": [
+      {
+        "file": "docs/architecture/system-prompt-audit.md",
+        "reason": "Superseded by system-prompt-simplification.md - audit was Phase 0, simplification is Phase 1 completion",
+        "action": "delete"
+      },
+      {
+        "file": "docs/architecture/task-0.4-completion-summary.md",
+        "reason": "Superseded by phase-1-part1-implementation-summary.md - early summary replaced by final implementation",
+        "action": "delete"
+      },
+      {
+        "file": "docs/architecture/phase-0-hotfix-summary.md",
+        "reason": "Historical incident report - no longer relevant to current state",
+        "action": "delete"
+      },
+      {
+        "file": "docs/architecture/phase-0-meta-validation-report.md",
+        "reason": "Phase 0 validation - superseded by Phase 1 meta-validation",
+        "action": "delete"
+      }
+    ],
+    "duplicates": [
+      {
+        "files": [
+          "docs/architecture/phase-1-implementation-summary.md",
+          "docs/architecture/phase-1-part1-implementation-summary.md"
+        ],
+        "reason": "Both document Phase 1 implementation - main summary should subsume part 1",
+        "action": "merge into phase-1-implementation-summary.md"
+      },
+      {
+        "files": [
+          "docs/architecture/ai-manager-dynamic-step-design.md",
+          "docs/architecture/agentic-enhancement-system-design.md"
+        ],
+        "reason": "Both design dynamic step management - should be consolidated into single design doc",
+        "action": "merge into single dynamic-step-design.md"
+      }
+    ],
+    "consolidation": [
+      {
+        "files": [
+          "docs/architecture/phase-1-follow-up-part1-summary.md",
+          "docs/architecture/phase-1-follow-up-part2-summary.md",
+          "docs/architecture/planner-tool-comparative-analysis.md"
+        ],
+        "target": "docs/architecture/phase-1-follow-up-complete.md",
+        "reason": "All three documents cover Phase 1 follow-up - should be consolidated into single completion report"
+      },
+      {
+        "files": [
+          "docs/architecture/step-management-current-architecture.md",
+          "docs/architecture/ai-manager-dynamic-step-design.md",
+          "docs/architecture/agentic-enhancement-system-design.md"
+        ],
+        "target": "docs/architecture/dynamic-step-management.md",
+        "reason": "Complete step management documentation from current state through design to implementation"
+      }
+    ],
+    "alignment_issues": [
+      {
+        "file": "docs/architecture/configuration-management.md",
+        "issue": "References old .env.production format - should align with new .env.minimal/.env.advanced two-tier approach",
+        "action": "update"
+      },
+      {
+        "file": "docs/architecture/security-hardening-checklist.md",
+        "issue": "References old provider names (ZHIPUAI_API_KEY) - should use current GLM_API_KEY naming",
+        "action": "update"
+      },
+      {
+        "file": "docs/ux/improvement-strategy.md",
+        "issue": "May reference pre-simplification UX issues - needs validation against current state",
+        "action": "review and update"
+      }
+    ],
+    "keep_as_is": [
+      "docs/architecture/design-philosophy.md",
+      "docs/architecture/system-overview.md",
+      "docs/architecture/system-prompt-simplification.md",
+      "docs/architecture/phase-0-summary.md",
+      "docs/architecture/phase-1-meta-validation-report.md"
+    ],
+    "confidence": "high"
+  },
+  {
+    "batch_number": 2,
+    "files_analyzed": 15,
+    "superseded": [
+      {
+        "file": "docs/current/development/phase1/P1.3_request_handler_separation_plan.md",
+        "reason": "Implementation complete, replaced by completion reports",
+        "action": "archive"
+      },
+      {
+        "file": "docs/current/development/phase1/P1.3_COMPLETION_REPORT.md",
+        "reason": "Historical completion report, superseded by handoff document",
+        "action": "archive"
+      },
+      {
+        "file": "docs/current/development/PHASE1.3_HANDOFF_COMPLETE.md",
+        "reason": "Historical handoff, implementation long complete",
+        "action": "archive"
+      },
+      {
+        "file": "docs/current/development/SESSION_SUMMARY_2025-09-30_PHASE_COMPLETE.md",
+        "reason": "Historical session summary, superseded by current status",
+        "action": "archive"
+      }
+    ],
+    "duplicates": [
+      {
+        "files": [
+          "docs/current/AI_MANAGER_SYSTEM_PROMPT_REDESIGN.md",
+          "docs/current/architecture/AI_MANAGER_SYSTEM_PROMPT_REDESIGN.md"
+        ],
+        "reason": "Same document in two locations",
+        "action": "keep architecture version, delete root version"
+      },
+      {
+        "files": [
+          "docs/current/system-overview.md",
+          "docs/current/architecture/index.md"
+        ],
+        "reason": "Both provide system architecture overview",
+        "action": "merge system-overview.md into architecture/index.md"
+      }
+    ],
+    "consolidation": [
+      {
+        "files": [
+          "docs/current/development/phase2/PHASE2_100_PERCENT_COMPLETE.md",
+          "docs/current/development/phase2/PHASE2_FOLLOWUP_TASKS_COMPLETE.md",
+          "docs/current/development/phase2/PHASE1_COMPLETE.md"
+        ],
+        "target": "docs/current/development/phase2/completion_summary.md",
+        "reason": "Multiple completion reports for same phase"
+      },
+      {
+        "files": [
+          "docs/current/development/phase2/phase2_completion_reports/*.md"
+        ],
+        "target": "docs/current/development/phase2/tool_completion_summary.md",
+        "reason": "Individual tool reports should be consolidated"
+      }
+    ],
+    "alignment_issues": [
+      {
+        "file": "docs/current/IMPLEMENTATION_ROADMAP.md",
+        "issue": "References old 8-phase structure, needs update for current 3-phase approach",
+        "action": "update to reflect current architecture"
+      },
+      {
+        "file": "docs/current/task-manager-implementation-checklist.md",
+        "issue": "Checklist items reference completed phases, needs pruning",
+        "action": "remove completed items, focus on remaining work"
+      },
+      {
+        "file": "docs/current/DOCUMENTATION_REORGANIZATION_PLAN.md",
+        "issue": "Proposed structure differs from current implementation",
+        "action": "update to match actual docs structure or implement proposed structure"
+      }
+    ],
+    "keep_as_is": [
+      "docs/current/README.md",
+      "docs/current/AUGMENT_CODE_GUIDELINES.md",
+      "docs/current/AI_MANAGER_TRANSFORMATION_SUMMARY.md",
+      "docs/current/AGENTIC_ARCHITECTURE_CONSOLIDATION_PLAN.md",
+      "docs/current/system-prompt-simplification.md",
+      "docs/current/system-prompt-audit.md"
+    ],
+    "confidence": "high"
+  },
+  {
+    "batch_number": 3,
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "raw_response": "I'll analyze the 15 documentation files to identify superseded content, duplicates, consolidation opportunities, and alignment issues. Let me start by examining each file systematically."
+  },
+  {
+    "batch_number": 4,
+    "files_analyzed": 15,
+    "superseded": [
+      {
+        "file": "glm-tool-registry-integration.md",
+        "reason": "Covered by tool_function_registry_and_workflows.md and script-inventory-and-phase-mapping.md",
+        "action": "delete"
+      },
+      {
+        "file": "kimi-tool-registry-integration.md",
+        "reason": "Covered by tool_function_registry_and_workflows.md and script-inventory-and-phase-mapping.md",
+        "action": "delete"
+      },
+      {
+        "file": "glm-observability.md",
+        "reason": "Redundant with observability_logging_metrics_monitoring.md",
+        "action": "delete"
+      },
+      {
+        "file": "kimi-observability.md",
+        "reason": "Redundant with observability_logging_metrics_monitoring.md",
+        "action": "delete"
+      },
+      {
+        "file": "glm-routing-flows.md",
+        "reason": "Subsumed by decision_tree_request_routing_flows.md",
+        "action": "delete"
+      },
+      {
+        "file": "kimi-routing-flows.md",
+        "reason": "Subsumed by decision_tree_request_routing_flows.md",
+        "action": "delete"
+      },
+      {
+        "file": "glm-intent-analysis.md",
+        "reason": "Subsumed by classification_intent_and_capability.md",
+        "action": "delete"
+      },
+      {
+        "file": "kimi-intent-analysis.md",
+        "reason": "Subsumed by classification_intent_and_capability.md",
+        "action": "delete"
+      }
+    ],
+    "duplicates": [
+      {
+        "files": [
+          "classification_intent_and_capability.md",
+          "decision_tree_request_routing_flows.md"
+        ],
+        "reason": "Both describe classification \u2192 routing flow; second file repeats first and adds execution",
+        "action": "merge into decision_tree_request_routing_flows.md and shorten classification_intent_and_capability.md to pure classifier spec"
+      },
+      {
+        "files": [
+          "tool_function_registry_and_workflows.md",
+          "script-inventory-and-phase-mapping.md"
+        ],
+        "reason": "Overlap on tool registry details; second file already maps all tools to phases",
+        "action": "merge tool-specific paragraphs into script-inventory-and-phase-mapping.md and keep tool_function_registry_and_workflows.md as high-level overview"
+      }
+    ],
+    "consolidation": [
+      {
+        "files": [
+          "observability_logging_metrics_monitoring.md",
+          "glm-observability.md",
+          "kimi-observability.md"
+        ],
+        "target": "observability_logging_metrics_monitoring.md",
+        "reason": "Single observability surface; provider-specific notes can be sub-sections"
+      },
+      {
+        "files": [
+          "classification_intent_and_capability.md",
+          "glm-intent-analysis.md",
+          "kimi-intent-analysis.md"
+        ],
+        "target": "classification_intent_and_capability.md",
+        "reason": "One classifier module; add GLM/Kimi hint columns in capability matrix"
+      },
+      {
+        "files": [
+          "decision_tree_request_routing_flows.md",
+          "glm-routing-flows.md",
+          "kimi-routing-flows.md"
+        ],
+        "target": "decision_tree_request_routing_flows.md",
+        "reason": "Single end-to-end flow; provider branches are sub-sections"
+      }
+    ],
+    "alignment_issues": [
+      {
+        "file": "chat_completions.md",
+        "issue": "Filename lacks provider prefix; content is Kimi-specific but title generic",
+        "action": "rename to kimi_chat_completions.md or broaden to include GLM"
+      },
+      {
+        "file": "classification_intent_and_capability.md",
+        "issue": "Still references non-existent complexity scorer module",
+        "action": "update to reflect current utils/token_utils.py usage"
+      },
+      {
+        "file": "decision_tree_request_routing_flows.md",
+        "issue": "Mentions optional GLM synthesis hop not yet implemented",
+        "action": "add implementation note or remove until feature exists"
+      }
+    ],
+    "keep_as_is": [
+      "index.md",
+      "script-inventory-and-phase-mapping.md",
+      "observability_logging_metrics_monitoring.md",
+      "tool_function_registry_and_workflows.md"
+    ],
+    "confidence": "high"
+  },
+  {
+    "batch_number": 5,
+    "files_analyzed": 15,
+    "superseded": [
+      {
+        "file": "context_caching_fixed.md",
+        "reason": "Superseded by phase2-cache-metadata.md which contains the current implementation details",
+        "action": "delete"
+      },
+      {
+        "file": "streaming_fixed.md",
+        "reason": "Streaming is not yet implemented per the file content, making this speculative",
+        "action": "delete"
+      }
+    ],
+    "duplicates": [
+      {
+        "files": [
+          "files.md",
+          "file-management.md",
+          "file-content-retrieval.md"
+        ],
+        "reason": "All cover Kimi file API operations with overlapping content",
+        "action": "merge into files.md"
+      },
+      {
+        "files": [
+          "chat-completions.md",
+          "models-list.md"
+        ],
+        "reason": "Both are basic Kimi API reference docs that could be combined",
+        "action": "merge into kimi-api-reference.md"
+      }
+    ],
+    "consolidation": [
+      {
+        "files": [
+          "file_processing.md",
+          "provider_overview.md"
+        ],
+        "target": "kimi-provider-overview.md",
+        "reason": "Provider overview should include file processing as a core capability"
+      },
+      {
+        "files": [
+          "clean-structure.md",
+          "dependency-mapping-and-cleanup.md",
+          "entrypoints-and-rationale.md"
+        ],
+        "target": "architecture-cleanup-plan.md",
+        "reason": "All three documents address architectural cleanup and rationalization"
+      }
+    ],
+    "alignment_issues": [
+      {
+        "file": "chat_completions.md",
+        "issue": "References GLM provider structure that may be outdated per cleanup documents",
+        "action": "update to match current GLM implementation"
+      },
+      {
+        "file": "web-search-injection.md",
+        "issue": "Phase 2 document that may need verification against current implementation",
+        "action": "verify current status or archive"
+      }
+    ],
+    "keep_as_is": [
+      "phase2-cache-metadata.md",
+      "context_caching_fixed.md",
+      "file_processing.md",
+      "provider_overview.md",
+      "streaming_fixed.md",
+      "chat-completions.md",
+      "file-content-retrieval.md",
+      "file-management.md",
+      "files.md",
+      "models-list.md",
+      "chat_completions.md",
+      "web-search-injection.md",
+      "clean-structure.md",
+      "dependency-mapping-and-cleanup.md",
+      "entrypoints-and-rationale.md"
+    ],
+    "confidence": "medium"
+  },
+  {
+    "batch_number": 6,
+    "files_analyzed": 15,
+    "superseded": [
+      {
+        "file": "execution-flow-and-dependencies-v1.md",
+        "reason": "Superseded by execution-flows.md (v2) which contains current GLM flows and Mermaid diagrams",
+        "action": "delete"
+      }
+    ],
+    "duplicates": [
+      {
+        "files": [
+          "file-storage-and-retention.md",
+          "file-visibility-howto.md"
+        ],
+        "reason": "Both cover GLM file management; visibility-howto duplicates storage content with practical steps",
+        "action": "merge into file-storage-and-retention.md"
+      },
+      {
+        "files": [
+          "agent-results.md",
+          "chat-completions.md",
+          "conversation-history.md",
+          "files.md",
+          "web-search-tool.md"
+        ],
+        "reason": "All are API reference snippets for Z.ai endpoints; better consolidated into single API reference",
+        "action": "merge into single api-reference.md"
+      }
+    ],
+    "consolidation": [
+      {
+        "files": [
+          "file_operations.md",
+          "streaming.md",
+          "web_search.md",
+          "chat_completions.md"
+        ],
+        "target": "provider_overview.md",
+        "reason": "All describe GLM provider capabilities; should be sections in the overview rather than separate files"
+      },
+      {
+        "files": [
+          "execution-flows.md",
+          "tools-functionality-overview.md",
+          "scripts-inventory.md"
+        ],
+        "target": "glm-architecture-overview.md",
+        "reason": "These describe the same GLM system from different angles (flows, tools, scripts); single overview is clearer"
+      }
+    ],
+    "alignment_issues": [
+      {
+        "file": "provider_overview.md",
+        "issue": "Just lists other files instead of summarizing GLM provider architecture",
+        "action": "rewrite as proper overview"
+      },
+      {
+        "file": "tools-functionality-overview.md",
+        "issue": "Lists tools without showing how they integrate with manager-first routing",
+        "action": "update to show routing integration"
+      }
+    ],
+    "keep_as_is": [
+      "execution-flows.md",
+      "file-storage-and-retention.md",
+      "scripts-inventory.md"
+    ],
+    "confidence": "high"
+  },
+  {
+    "batch_number": 7,
+    "files_analyzed": 15,
+    "superseded": [
+      {
+        "file": "glm-routing-logic.md",
+        "reason": "Superseded by comprehensive provider architecture in 02-provider-architecture.md",
+        "action": "delete"
+      },
+      {
+        "file": "kimi-routing-logic.md",
+        "reason": "Superseded by comprehensive provider architecture in 02-provider-architecture.md",
+        "action": "delete"
+      }
+    ],
+    "duplicates": [
+      {
+        "files": [
+          "tool-selection-guide.md",
+          "03-tool-ecosystem.md"
+        ],
+        "reason": "Both provide tool selection guidance with overlapping content",
+        "action": "merge tool-selection-guide.md into 03-tool-ecosystem.md as a section"
+      },
+      {
+        "files": [
+          "parameter-reference.md",
+          "EXAI Tool Parameter Reference"
+        ],
+        "reason": "Same comprehensive parameter documentation",
+        "action": "keep parameter-reference.md, delete duplicate"
+      },
+      {
+        "files": [
+          "query-examples.md",
+          "EXAI Query Examples Collection"
+        ],
+        "reason": "Both contain extensive query examples",
+        "action": "merge into single examples file"
+      },
+      {
+        "files": [
+          "web-search-guide.md",
+          "Web Search Usage Guide"
+        ],
+        "reason": "Duplicate web search documentation",
+        "action": "keep web-search-guide.md, delete duplicate"
+      },
+      {
+        "files": [
+          "troubleshooting.md",
+          "EXAI Troubleshooting Guide"
+        ],
+        "reason": "Same troubleshooting content",
+        "action": "keep troubleshooting.md, delete duplicate"
+      }
+    ],
+    "consolidation": [
+      {
+        "files": [
+          "01-system-overview.md",
+          "02-provider-architecture.md",
+          "03-tool-ecosystem.md",
+          "04-features-and-capabilities.md",
+          "05-api-endpoints-reference.md",
+          "06-deployment-guide.md",
+          "07-upgrade-roadmap.md"
+        ],
+        "target": "system-reference/README.md",
+        "reason": "All part of system reference documentation series - consolidate into organized sections"
+      },
+      {
+        "files": [
+          "improvement-strategy.md",
+          "UX Improvement Strategy"
+        ],
+        "reason": "Same UX improvement strategy document",
+        "action": "keep improvement-strategy.md, delete duplicate"
+      }
+    ],
+    "alignment_issues": [
+      {
+        "file": "glm-routing-logic.md",
+        "issue": "References old manager-first routing without current GLM-4.6/Kimi integration",
+        "action": "delete - superseded"
+      },
+      {
+        "file": "kimi-routing-logic.md",
+        "issue": "References old routing logic without current architecture",
+        "action": "delete - superseded"
+      },
+      {
+        "file": "improvement-strategy.md",
+        "issue": "Task references (0.5, 0.6, 0.7) don't align with current wave-based approach",
+        "action": "update task numbering to match wave structure"
+      },
+      {
+        "file": "07-upgrade-roadmap.md",
+        "issue": "References old task numbering (2.1, 2.2, etc.) instead of wave-based structure",
+        "action": "update to wave-based task structure"
+      }
+    ],
+    "keep_as_is": [
+      "parameter-reference.md",
+      "web-search-guide.md",
+      "troubleshooting.md",
+      "tool-selection-guide.md",
+      "query-examples.md",
+      "01-system-overview.md",
+      "02-provider-architecture.md",
+      "03-tool-ecosystem.md",
+      "04-features-and-capabilities.md",
+      "05-api-endpoints-reference.md",
+      "06-deployment-guide.md"
+    ],
+    "confidence": "high"
+  },
+  {
+    "batch_number": 8,
+    "error": "Unterminated string starting at: line 88 column 5 (char 4126)",
+    "raw_response": "{\n  \"batch_number\": 8,\n  \"files_analyzed\": 15,\n  \"superseded\": [\n    {\n      \"file\": \"docs/upgrades/international-users/02-glm-4.6-and-zai-sdk-research-NEEDS-UPDATE.md\",\n      \"reason\": \"Contains inaccuracies about GLM-4.6 (128K vs 200K context, July vs Sept release) - superseded by glm-4.6-migration-guide.md\",\n      \"action\": \"delete\"\n    },\n    {\n      \"file\": \"docs/upgrades/international-users/03-implementation-plan-NEEDS-UPDATE.md\",\n      \"reason\": \"Based on incorrect research from document 02 - superseded by dependency-matrix.md\",\n      \"action\": \"delete\"\n    },\n    {\n      \"file\": \"docs/upgrades/international-users/wave1-handover.md\",\n      \"reason\": \"Wave 1 is complete - superseded by newer documentation\",\n      \"action\": \"delete\"\n    },\n    {\n      \"file\": \"docs/upgrades/international-users/wave1-model-selection-corrections.md\",\n      \"reason\": \"Corrections have been incorporated into other docs - no longer needed\",\n      \"action\": \"delete\"\n    }\n  ],\n  \"duplicates\": [\n    {\n      \"files\": [\"docs/system-reference/01-system-overview.md\", \"docs/architecture/system-overview.md\"],\n      \"reason\": \"Both provide system overview - system-reference version is more comprehensive\",\n      \"action\": \"merge into docs/system-reference/01-system-overview.md\"\n    },\n    {\n      \"files\": [\"docs/upgrades/international-users/exai-tool-ux-issues.md\", \"docs/guides/troubleshooting.md\"],\n      \"reason\": \"Both document UX issues - different audiences (developers vs users)\",\n      \"action\": \"keep both (different audiences)\"\n    }\n  ],\n  \"consolidation\": [\n    {\n      \"files\": [\"docs/upgrades/international-users/dual-sdk-http-pattern-architecture.md\", \"docs/upgrades/international-users/glm-4.6-migration-guide.md\", \"docs/upgrades/international-users/kimi-model-selection-guide.md\"],\n      \"target\": \"docs/architecture/provider-integration-guide.md\",\n      \"reason\": \"All three documents cover provider-specific architecture and migration\"\n    },\n    {\n      \"files\": [\"docs/upgrades/international-users/wave1-research-summary.md\", \"docs/upgrades/international-users/wave1-handover.md\"],\n      \"target\": \"docs/current/development/wave1-complete-summary.md\",\n      \"reason\": \"Both summarize Wave 1 findings and handover information\"\n    },\n    {\n      \"files\": [\"docs/upgrades/international-users/agentic-architecture-discovery-2025-10-02.md\", \"docs/upgrades/international-users/phase1-agentic-ux-improvements.md\", \"docs/upgrades/international-users/PHASE1_AGENTIC_VERIFICATION_RESULTS.md\"],\n      \"target\": \"docs/architecture/agentic-enhancement-implementation.md\",\n      \"reason\": \"All three documents cover the agentic transformation discovery and implementation\"\n    }\n  ],\n  \"alignment_issues\": [\n    {\n      \"file\": \"docs/guides/parameter-reference.md\",\n      \"issue\": \"Uses 'kimi-latest' in examples instead of 'kimi-k2-0905-preview'\",\n      \"action\": \"update to use version-pinned model\"\n    },\n    {\n      \"file\": \"docs/guides/tool-selection-guide.md\",\n      \"issue\": \"Uses 'kimi-latest' in examples instead of 'kimi-k2-0905-preview'\",\n      \"action\": \"update to use version-pinned model\"\n    },\n    {\n      \"file\": \"docs/upgrades/international-users/agentic-architecture-discovery-2025-10-02.md\",\n      \"issue\": \"Discovery document is now historical - needs implementation guide\",\n      \"action\": \"archive and create new implementation guide\"\n    },\n    {\n      \"file\": \"docs/upgrades/international-users/STREAMLINED_PROCESS_SUMMARY.md\",\n      \"issue\": \"Process summary references old wave-based approach\",\n      \"action\": \"update to reflect new streamlined process\"\n    }\n  ],\n  \"keep_as_is\": [\n    \"docs/system-reference/README.md\",\n    \"docs/system-reference/02-provider-architecture.md\",\n    \"docs/system-reference/03-tool-ecosystem.md\",\n    \"docs/system-reference/04-features-and-capabilities.md\",\n    \"docs/system-reference/05-api-endpoints-reference.md\",\n    \"docs/system-reference/06-deployment-guide.md\",\n    \"docs/system-reference/07-upgrade-roadmap.md\",\n    \"docs/guides/web-search-guide.md\",\n    \"docs/guides/query-examples.md\",\n    \"docs/upgrades/international-users/dependency-matrix.md\",\n    \"docs/upgrades/international-users/WAVE1-"
+  },
+  {
+    "batch_number": 9,
+    "error": "Expecting ',' delimiter: line 28 column 154 (char 3735)",
+    "raw_response": "{\n  \"batch_number\": 9,\n  \"files_analyzed\": 15,\n  \"superseded\": [\n    {\"file\": \"docs/upgrades/international-users/00-EXECUTIVE-SUMMARY.md\", \"reason\": \"Superseded by wave1-research-summary.md and wave1-handover.md\", \"action\": \"delete\"},\n    {\"file\": \"docs/upgrades/international-users/01-scope-gaps-identified.md\", \"reason\": \"Superseded by Wave 1 comprehensive analysis\", \"action\": \"delete\"},\n    {\"file\": \"docs/upgrades/international-users/02-glm-4.6-and-zai-sdk-research-NEEDS-UPDATE.md\", \"reason\": \"Will be rewritten in Wave 2 Epic 2.6\", \"action\": \"delete\"},\n    {\"file\": \"docs/upgrades/international-users/03-implementation-plan-NEEDS-UPDATE.md\", \"reason\": \"Superseded by wave2-implementation-plan.md\", \"action\": \"delete\"},\n    {\"file\": \"docs/upgrades/international-users/04-critical-corrections.md\", \"reason\": \"Superseded by WAVE1-COMPLETE-AUDIT-SUMMARY.md\", \"action\": \"delete\"},\n    {\"file\": \"docs/upgrades/international-users/05-summary-corrections.md\", \"reason\": \"Historical artifact, superseded by comprehensive audit\", \"action\": \"delete\"},\n    {\"file\": \"docs/upgrades/international-users/06-error-analysis-and-root-causes.md\", \"reason\": \"Historical artifact, issues resolved in Wave 1\", \"action\": \"delete\"},\n    {\"file\": \"docs/upgrades/international-users/07-web-search-investigation-findings.md\", \"reason\": \"Superseded by exai-tool-ux-issues.md\", \"action\": \"delete\"},\n    {\"file\": \"docs/upgrades/international-users/08-FINAL-SUMMARY-AND-NEXT-STEPS.md\", \"reason\": \"Historical artifact, superseded by wave1-handover.md\", \"action\": \"delete\"},\n    {\"file\": \"docs/upgrades/international-users/09-TASK-LIST-AND-IMPLEMENTATION-READY.md\", \"reason\": \"Superseded by current task breakdown\", \"action\": \"delete\"},\n    {\"file\": \"docs/upgrades/international-users/10-MISSING-ITEMS-AFTER-FULL-EXAI-ANALYSIS.md\", \"reason\": \"Historical artifact, all items addressed in Wave 1\", \"action\": \"delete\"},\n    {\"file\": \"docs/upgrades/international-users/11-MODEL-COMPARISON-AND-WEB-SEARCH-BEHAVIOR.md\", \"reason\": \"Superseded by kimi-model-selection-guide.md\", \"action\": \"delete\"},\n    {\"file\": \"docs/upgrades/international-users/12-FINAL-COMPREHENSIVE-SUMMARY.md\", \"reason\": \"Historical artifact, superseded by wave1-completion-summary.md\", \"action\": \"delete\"}\n  ],\n  \"duplicates\": [\n    {\"files\": [\"docs/upgrades/international-users/wave1-research-summary.md\", \"docs/upgrades/international-users/wave1-handover.md\"], \"reason\": \"Both document Wave 1 findings - research summary vs comprehensive handover serve different purposes\", \"action\": \"keep both (different audiences)\"},\n    {\"files\": [\"docs/upgrades/international-users/WAVE1-COMPLETION-SUMMARY.md\", \"docs/upgrades/international-users/wave1-completion-summary.md\"], \"reason\": \"Exact duplicate files (case difference only)\", \"action\": \"delete WAVE1-COMPLETION-SUMMARY.md (uppercase version)\"}\n  ],\n  \"consolidation\": [\n    {\"files\": [\"docs/upgrades/international-users/wave2-agentic-architecture-analysis.md\", \"docs/upgrades/international-users/wave2-architecture-cleanup-summary.md\", \"docs/upgrades/international-users/wave2-legacy-cleanup-summary.md\"], \"target\": \"docs/upgrades/international-users/wave2-architecture-analysis.md\", \"reason\": \"All analyze architecture issues and cleanup - related content\"},\n    {\"files\": [\"docs/upgrades/international-users/wave2-epic2.2-progress.md\", \"docs/upgrades/international-users/wave2-epic2.2-system-prompt-audit-summary.md\"], \"target\": \"docs/upgrades/international-users/wave2-epic2.2-web-search-fix.md\", \"reason\": \"Both document Epic 2.2 progress - related content\"}\n  ],\n  \"alignment_issues\": [\n    {\"file\": \"docs/upgrades/international-users/STREAMLINED_PROCESS_SUMMARY.md\", \"issue\": \"References agentic features that may not be fully implemented\""
+  },
+  {
+    "batch_number": 10,
+    "files_analyzed": 5,
+    "superseded": [
+      {
+        "file": "docs/upgrades/international-users/wave2-system-prompt-audit.md",
+        "reason": "Audit findings already merged into wave2-epic2.2-system-prompt-audit-summary.md and code fixes applied",
+        "action": "delete"
+      },
+      {
+        "file": "docs/upgrades/international-users/wave2-epic2.2-progress.md",
+        "reason": "Epic 2.2 investigation tasks completed and findings documented elsewhere",
+        "action": "delete"
+      }
+    ],
+    "duplicates": [
+      {
+        "files": [
+          "docs/upgrades/international-users/wave2-research-synthesis.md",
+          "docs/upgrades/international-users/wave2-wave3-preparation-complete.md"
+        ],
+        "reason": "Both contain extensive Wave 1 research synthesis with overlapping content about GLM-4.6, Kimi K2, and NO BREAKING CHANGES findings",
+        "action": "merge key findings into wave2-research-synthesis.md and delete wave2-wave3-preparation-complete.md"
+      },
+      {
+        "files": [
+          "docs/upgrades/international-users/wave2-epic2.2-system-prompt-audit-summary.md",
+          "docs/upgrades/international-users/wave2-system-prompt-audit.md"
+        ],
+        "reason": "Summary document contains all essential findings from the full audit",
+        "action": "keep summary, delete full audit"
+      }
+    ],
+    "consolidation": [
+      {
+        "files": [
+          "docs/upgrades/international-users/wave3-readiness-package.md",
+          "docs/upgrades/international-users/wave2-wave3-preparation-complete.md"
+        ],
+        "target": "wave3-execution-guide.md",
+        "reason": "Both contain Wave 3 preparation materials that should be consolidated into a single execution guide"
+      }
+    ],
+    "alignment_issues": [
+      {
+        "file": "docs/upgrades/international-users/wave2-research-synthesis.md",
+        "issue": "References 'Claude' in examples and documentation sections that may need updating to be provider-agnostic",
+        "action": "review and update Claude references to be MCP-client agnostic"
+      },
+      {
+        "file": "docs/upgrades/international-users/wave3-readiness-package.md",
+        "issue": "Contains extensive Wave 2 status updates that will become outdated as project progresses",
+        "action": "remove Wave 2 status content and focus on Wave 3 execution guidance"
+      }
+    ],
+    "keep_as_is": [
+      "docs/upgrades/international-users/wave2-epic2.2-system-prompt-audit-summary.md",
+      "docs/upgrades/international-users/wave2-progress-summary.md"
+    ],
+    "confidence": "high"
+  }
+]
