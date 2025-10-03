@@ -1298,3 +1298,23 @@
 {"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452824.3363972}
 {"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1057163358bf63a635af01eb75b5e24803186950214ef4eba62f052e4f9c41d7", "t": 1759452824.543324}
 {"event": "provider_error", "provider": "kimi", "model": "OpenAI Compatible", "error_type": "upload_error", "message": "Error code: 404 - {'error': {'message': 'The requested resource was not found', 'type': 'resource_not_found_error'}}", "t": 1759452827.9038665}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1908, "output_tokens": 765, "t": 1759452925.8853493}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "cf6768fbd31b74bf669b3e329095583d5abe0b961b24f612984c3166240a6bcf", "t": 1759452956.9759655}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "72fad94fabed7cdcce8d5a0dd4dfeca6b9adb8e4fb7b8c2482462ef27c9cde3a", "t": 1759452957.7497935}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "0d8ccbd7e819656695d177a1f37b03c796a80535959d0f1a0d390e8d2e68b4b8", "t": 1759452958.0900316}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "08de8bd19b81953df9299eb64f45f40156e91776ec630874a757db16f726ddd7", "t": 1759452958.633642}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "c3d2f57d8893a78cfad46ce2fcd888f2ea0e219358156deef232fe145f88c4f6", "t": 1759452958.827025}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "392b3ebf2502f073d1cc13c816ee56c9e565901f38e53a6286dfcd1957d14b76", "t": 1759452994.476963}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "42d110ce250ae39b201fce990f1868e9f7c75fa82de32ac7280b57fcb327ad75", "t": 1759452994.8943074}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1057163358bf63a635af01eb75b5e24803186950214ef4eba62f052e4f9c41d7", "t": 1759452995.0887182}
+{"event": "provider_error", "provider": "kimi", "model": "OpenAI Compatible", "error_type": "upload_error", "message": "Error code: 404 - {'error': {'message': 'The requested resource was not found', 'type': 'resource_not_found_error'}}", "t": 1759452999.0241063}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759453036.4695618}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759453037.319613}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759453038.4224074}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759453039.0839376}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759453040.4658818}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759453081.9410527}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759453082.5394332}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759453083.785156}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759453084.6636717}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759453085.418588}

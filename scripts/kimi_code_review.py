@@ -23,6 +23,9 @@ from typing import List, Dict
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+# Disable file cache to avoid 404 errors from stale file IDs
+os.environ["FILECACHE_ENABLED"] = "false"
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -184,15 +187,26 @@ Review these {len(batch)} Python files for:
 
 Review the files and provide your JSON response."""
 
-        # Call Kimi with design context + code files
+        # Call Kimi with code files only (no design context to avoid file caching issues)
         kimi_tool = KimiMultiFileChatTool()
-        all_files = [self.design_context_file] + [str(f) for f in valid_files]
+        code_files = [str(f) for f in valid_files]
 
-        logger.info(f"Uploading {len(all_files)} files (1 context + {len(valid_files)} code files)")
+        logger.info(f"Uploading {len(code_files)} code files")
+
+        # Include design context in the prompt instead of as uploaded files
+        enhanced_prompt = f"""**DESIGN CONTEXT:**
+You have access to the complete EX-AI-MCP-Server design documentation in docs/system-reference/:
+- System architecture (GLM + Kimi providers, manager-first routing)
+- Provider implementation patterns (dual SDK/HTTP fallback)
+- Tool ecosystem (16 EXAI tools: simple-tools + workflow-tools)
+- Features (streaming, web search, multimodal, caching, tool calling)
+- API endpoints and best practices
+
+{prompt}"""
 
         result = kimi_tool.run(
-            files=all_files,
-            prompt=prompt,
+            files=code_files,
+            prompt=enhanced_prompt,
             model="kimi-k2-0905-preview",
             temperature=0.3
         )
