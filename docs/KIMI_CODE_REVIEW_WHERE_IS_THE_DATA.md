@@ -39,7 +39,7 @@ The JSON file (`docs/KIMI_CODE_REVIEW_src.json`) contains:
 
 The detailed findings ARE visible in the Kimi web interface:
 
-1. **Go to:** https://kimi.moonshot.cn/
+1. **Go to:** https://platform.moonshot.ai/ (Platform Console, NOT kimi.moonshot.cn chat)
 2. **Look for:** Recent conversations with file uploads
 3. **You should see:** 14 conversations (one per batch)
 4. **Each conversation contains:**
@@ -101,7 +101,7 @@ The markdown parser uses regex to extract findings:
 
 **Check the Kimi platform for detailed findings:**
 
-1. Go to https://kimi.moonshot.cn/
+1. Go to https://platform.moonshot.ai/ (Platform Console)
 2. Look for recent conversations (should be 14 of them from today)
 3. Each conversation has the full detailed review
 4. You can:
@@ -187,7 +187,7 @@ Even without detailed findings, the summary tells us:
 ## 📝 **FILES TO CHECK**
 
 - **JSON (has summary):** `docs/KIMI_CODE_REVIEW_src.json`
-- **Kimi Platform:** https://kimi.moonshot.cn/ (has detailed findings)
+- **Moonshot Platform:** https://platform.moonshot.ai/ (has detailed findings)
 - **Raw markdown (next run):** `docs/KIMI_RAW_BATCH_*.md`
 - **This guide:** `docs/KIMI_CODE_REVIEW_WHERE_IS_THE_DATA.md`
 

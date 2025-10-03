@@ -303,6 +303,8 @@ class KimiMultiFileChatTool(BaseTool):
         prompt = kwargs.get("prompt") or ""
         model = kwargs.get("model") or os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0711-preview")
         temperature = float(kwargs.get("temperature") or 0.3)
+        cache_id = kwargs.get("cache_id")
+        reset_cache_ttl = kwargs.get("reset_cache_ttl", False)
 
         if not files or not prompt:
             raise ValueError("files and prompt are required")
@@ -325,7 +327,13 @@ class KimiMultiFileChatTool(BaseTool):
         import concurrent.futures as _fut
         def _call():
             # Use Kimi provider wrapper to inject idempotency + context-cache headers
-            return prov.chat_completions_create(model=model, messages=messages, temperature=temperature)
+            return prov.chat_completions_create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                cache_id=cache_id,
+                reset_cache_ttl=reset_cache_ttl
+            )
         timeout_s = float(os.getenv("KIMI_MF_CHAT_TIMEOUT_SECS", "180"))
         try:
             with _fut.ThreadPoolExecutor(max_workers=1) as _pool:
