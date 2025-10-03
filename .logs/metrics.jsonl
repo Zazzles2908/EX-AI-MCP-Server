@@ -1267,3 +1267,34 @@
 {"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "8dad37f6e6fc69d69e17b63c52ea648ce9a10af4ba2fcdb11ada98202c29bc4a", "t": 1759445877.0302756}
 {"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "789ca5d288afe5d83dc0e2af519d4a6118fb6288899236f9add3c9604e63e2c0", "t": 1759445877.2295294}
 {"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1a384a18ad0cfaf7c58d70a122fe32ce48a7601cff0dfe91ba3418e161bbe097", "t": 1759445877.4409041}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "276b47a4bd0ffe9044ce746c4b2607857146eace699705c5425f1d504d4744cb", "t": 1759452360.6369505}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452362.4808233}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "64ddde3b48718096226cb2c539401728338f33aa320aa4548e3b39290e0b0eeb", "t": 1759452362.8780942}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452363.4824257}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "14d4cc8b076b456380da506d029598837a6b52ba8587b2f3c3d1747dd0aebb50", "t": 1759452363.7013905}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452364.7402472}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "7d1ac46591b5967d96de673c52edf1a29c68f652cc0451f00fb0b1a41f6850cb", "t": 1759452364.9604728}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452366.1518335}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f0473c6e53cb535516694d42d904474f893617ab3ce2f4d0e5386f4053a64931", "t": 1759452366.3638897}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452367.185453}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "236e93bacb57af08e3b303992b9d29cd606f09bc571779ae86600ad49269117f", "t": 1759452367.389127}
+{"event": "provider_error", "provider": "kimi", "model": "OpenAI Compatible", "error_type": "upload_error", "message": "Error code: 404 - {'error': {'message': 'The requested resource was not found', 'type': 'resource_not_found_error'}}", "t": 1759452370.7426505}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "f421bd1b073da476deb556100fce924480156fafe4e236334bba14e672aca7a4", "t": 1759452772.6560001}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452775.1892123}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "cf6768fbd31b74bf669b3e329095583d5abe0b961b24f612984c3166240a6bcf", "t": 1759452775.6868384}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452776.7710798}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "72fad94fabed7cdcce8d5a0dd4dfeca6b9adb8e4fb7b8c2482462ef27c9cde3a", "t": 1759452776.964722}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452777.4231448}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "0d8ccbd7e819656695d177a1f37b03c796a80535959d0f1a0d390e8d2e68b4b8", "t": 1759452777.618261}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452778.735975}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "08de8bd19b81953df9299eb64f45f40156e91776ec630874a757db16f726ddd7", "t": 1759452778.9421148}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452779.5584013}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "c3d2f57d8893a78cfad46ce2fcd888f2ea0e219358156deef232fe145f88c4f6", "t": 1759452779.7559347}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452780.290921}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "f421bd1b073da476deb556100fce924480156fafe4e236334bba14e672aca7a4", "t": 1759452821.7108881}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "392b3ebf2502f073d1cc13c816ee56c9e565901f38e53a6286dfcd1957d14b76", "t": 1759452822.259619}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452823.139137}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "42d110ce250ae39b201fce990f1868e9f7c75fa82de32ac7280b57fcb327ad75", "t": 1759452823.343834}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1759452824.3363972}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "1057163358bf63a635af01eb75b5e24803186950214ef4eba62f052e4f9c41d7", "t": 1759452824.543324}
+{"event": "provider_error", "provider": "kimi", "model": "OpenAI Compatible", "error_type": "upload_error", "message": "Error code: 404 - {'error': {'message': 'The requested resource was not found', 'type': 'resource_not_found_error'}}", "t": 1759452827.9038665}
