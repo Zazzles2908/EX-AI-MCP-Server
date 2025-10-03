@@ -277,6 +277,11 @@ Review the files and provide your markdown response."""
         try:
             content = result.get("content", "")
 
+            # Save raw response for debugging (ALWAYS save to see what Kimi returns)
+            debug_file = self.project_root / "docs" / f"KIMI_RAW_BATCH_{batch_num}.md"
+            debug_file.write_text(content, encoding='utf-8')
+            logger.info(f"📝 Raw response saved to: {debug_file}")
+
             # Parse markdown to extract structured data
             analysis = self._parse_markdown_review(content, batch_num, len(valid_files))
 
@@ -290,6 +295,7 @@ Review the files and provide your markdown response."""
                        f"High: {summary.get('high', 0)}, "
                        f"Medium: {summary.get('medium', 0)}, "
                        f"Low: {summary.get('low', 0)})")
+            logger.info(f"   Findings extracted: {len(analysis.get('findings', []))}")
 
             return analysis
         except Exception as e:
