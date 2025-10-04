@@ -98,14 +98,8 @@ TOOL_VISIBILITY = {
 }
 
 
-DEFAULT_LEAN_TOOLS = {
-    "chat",
-    "analyze",
-    "planner",
-    "thinkdeep",
-    "version",
-    "listmodels",
-}
+# Derive DEFAULT_LEAN_TOOLS dynamically from TOOL_VISIBILITY (all 'core' tools)
+DEFAULT_LEAN_TOOLS = {name for name, vis in TOOL_VISIBILITY.items() if vis == "core"}
 
 
 class ToolRegistry:

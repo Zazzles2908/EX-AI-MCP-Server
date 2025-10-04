@@ -15,11 +15,22 @@ from src.providers.base import ProviderType
 
 
 # Core tool set that cannot be disabled via DISABLED_TOOLS (safety)
-ESSENTIAL_TOOLS: set[str] = {
-    "chat","thinkdeep","planner","consensus","codereview","precommit",
-    "debug","secaudit","docgen","analyze","refactor","tracer",
-    "testgen","challenge","listmodels","version","selfcheck"
-}
+# Derived dynamically from TOOL_MAP (all non-provider, non-diagnostic tools)
+def _get_essential_tools() -> set[str]:
+    """Get essential tools from registry (excludes provider-specific and diagnostic tools)."""
+    from tools.registry import TOOL_MAP
+    essential = set()
+    for name in TOOL_MAP.keys():
+        # Exclude provider-specific tools (kimi_*, glm_*)
+        if name.startswith(("kimi_", "glm_")):
+            continue
+        # Exclude diagnostic/internal tools
+        if name in ("self-check", "provider_capabilities", "toolcall_log_tail", "health", "status", "activity"):
+            continue
+        essential.add(name)
+    return essential
+
+ESSENTIAL_TOOLS: set[str] = _get_essential_tools()
 
 
 def parse_disabled_tools_env() -> set[str]:

@@ -18,6 +18,12 @@ from typing import Optional, Tuple
 logger = logging.getLogger(__name__)
 
 # Compile regex patterns once for performance
+# Format A: <tool_call>web_search\nquery: value\nnum_results: 10\n (NEW - actual GLM format)
+PATTERN_FORMAT_A = re.compile(
+    r'<tool_call>\s*web_search\s*\n\s*query:\s*([^\n]+)',
+    re.DOTALL | re.IGNORECASE
+)
+
 # Format B: <tool_call>web_search...<arg_value>query</tool_call>
 PATTERN_FORMAT_B = re.compile(
     r'<tool_call>\s*web_search\s*.*?<arg_value>\s*(.*?)\s*</tool_call>',
@@ -40,29 +46,36 @@ PATTERN_FORMAT_C_JSON = re.compile(
 def extract_query_from_text(text: str) -> Optional[str]:
     """
     Extract web search query from text format tool call.
-    
+
     Args:
         text: Response text that may contain tool call in text format
-        
+
     Returns:
         Extracted query string, or None if no query found
     """
     query = None
-    
+
+    # Try Format A: <tool_call>web_search\nquery: value (NEW - actual GLM format)
+    match_a = PATTERN_FORMAT_A.search(text)
+    if match_a:
+        query = match_a.group(1).strip()
+        logger.debug(f"Parsed Format A (key:value): query='{query}'")
+        return query
+
     # Try Format B: <tool_call>web_search...<arg_value>query</tool_call>
     match_b = PATTERN_FORMAT_B.search(text)
     if match_b:
         query = match_b.group(1).strip()
         logger.debug(f"Parsed Format B: query='{query}'")
         return query
-    
+
     # Try Format C: Direct query extraction
     match_c = PATTERN_FORMAT_C.search(text)
     if match_c:
         query = match_c.group(1).strip()
         logger.debug(f"Parsed Format C: query='{query}'")
         return query
-    
+
     # Try Format C: JSON object extraction
     match_c_json = PATTERN_FORMAT_C_JSON.search(text)
     if match_c_json:
@@ -76,36 +89,36 @@ def extract_query_from_text(text: str) -> Optional[str]:
                     return query
         except json.JSONDecodeError as e:
             logger.debug(f"Failed to parse Format C JSON: {e}")
-    
+
     return None
 
 
 def execute_web_search_fallback(query: str, max_results: int = 5) -> Optional[dict]:
     """
     Execute web search using DuckDuckGo fallback.
-    
+
     Args:
         query: Search query string
         max_results: Maximum number of results to return
-        
+
     Returns:
         Search results dict, or None if search fails
     """
     try:
-        from src.utils.web_search_fallback import execute_duckduckgo_search
-        
+        from src.providers.tool_executor import run_web_search_backend
+
         logger.info(f"Executing web_search via text format handler: query='{query}'")
-        search_results = execute_duckduckgo_search(query, max_results=max_results)
-        
-        if search_results:
+        search_results = run_web_search_backend(query)
+
+        if search_results and search_results.get("results"):
             logger.info(f"GLM web_search executed successfully via text format handler")
             return search_results
         else:
             logger.warning(f"Web search returned no results for query: {query}")
             return None
-            
+
     except ImportError:
-        logger.error("Web search fallback function not found (execute_duckduckgo_search)")
+        logger.error("Web search backend function not found (run_web_search_backend)")
         return None
     except Exception as e:
         logger.error(f"Error executing web search fallback: {e}", exc_info=True)

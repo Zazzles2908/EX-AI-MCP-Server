@@ -18,6 +18,7 @@ from typing import Any, Optional
 from tools.shared.base_models import ToolRequest
 from tools.shared.base_tool import BaseTool
 from tools.shared.schema_builders import SchemaBuilder
+from tools.simple.mixins import WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixin
 
 from mcp.types import TextContent
 
@@ -26,7 +27,7 @@ from utils.progress import send_progress
 from utils.progress_messages import ProgressMessages
 
 
-class SimpleTool(BaseTool):
+class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixin, BaseTool):
     """
     Base class for simple (non-workflow) tools.
 
@@ -958,113 +959,6 @@ class SimpleTool(BaseTool):
                 metadata=metadata if metadata else None,
             )
 
-    def _create_continuation_offer(self, request, model_info: Optional[dict] = None):
-        """Create continuation offer following old base.py pattern"""
-        continuation_id = self.get_request_continuation_id(request)
-
-        try:
-            from utils.conversation_memory import create_thread, get_thread
-
-            if continuation_id:
-                # Existing conversation
-                thread_context = get_thread(continuation_id)
-                if thread_context and thread_context.turns:
-                    turn_count = len(thread_context.turns)
-                    from utils.conversation_memory import MAX_CONVERSATION_TURNS
-
-                    if turn_count >= MAX_CONVERSATION_TURNS - 1:
-                        return None  # No more turns allowed
-
-                    remaining_turns = MAX_CONVERSATION_TURNS - turn_count - 1
-                    return {
-                        "continuation_id": continuation_id,
-                        "remaining_turns": remaining_turns,
-                        "note": f"You can continue this conversation for {remaining_turns} more exchanges.",
-                    }
-            else:
-                # New conversation - create thread and offer continuation
-                # Convert request to dict for initial_context
-                initial_request_dict = self.get_request_as_dict(request)
-
-                # Compute session fingerprint and friendly client name (for scoping and UX)
-                try:
-                    current_args = getattr(self, "_current_arguments", {})
-                    sess_fp = get_current_session_fingerprint(current_args)
-                    ci = get_cached_client_info()
-                    friendly = format_client_info(ci) if ci else None
-                except Exception:
-                    sess_fp, friendly = None, None
-
-                new_thread_id = create_thread(
-                    tool_name=self.get_name(),
-                    initial_request=initial_request_dict,
-                    session_fingerprint=sess_fp,
-                    client_friendly_name=friendly,
-                )
-
-                # Add the initial user turn to the new thread
-                from utils.conversation_memory import MAX_CONVERSATION_TURNS, add_turn
-
-                user_prompt = self.get_request_prompt(request)
-                user_files = self.get_request_files(request)
-                user_images = self.get_request_images(request)
-
-                # Add user's initial turn
-                add_turn(
-                    new_thread_id, "user", user_prompt, files=user_files, images=user_images, tool_name=self.get_name()
-                )
-
-                note_client = friendly or "You"
-                return {
-                    "continuation_id": new_thread_id,
-                    "remaining_turns": MAX_CONVERSATION_TURNS - 1,
-                    "note": f"{note_client} can continue this conversation for {MAX_CONVERSATION_TURNS - 1} more exchanges.",
-                }
-        except Exception:
-            return None
-
-    def _create_continuation_offer_response(
-        self, content: str, continuation_data: dict, request, model_info: Optional[dict] = None
-    ):
-        """Create response with continuation offer following old base.py pattern"""
-        from tools.models import ContinuationOffer, ToolOutput
-
-        try:
-            continuation_offer = ContinuationOffer(
-                continuation_id=continuation_data["continuation_id"],
-                note=continuation_data["note"],
-                remaining_turns=continuation_data["remaining_turns"],
-            )
-
-            # Build metadata with model and provider info
-            metadata = {"tool_name": self.get_name(), "conversation_ready": True}
-            if model_info:
-                model_name = model_info.get("model_name")
-                if model_name:
-                    metadata["model_used"] = model_name
-                provider = model_info.get("provider")
-                if provider:
-                    # Handle both provider objects and string values
-                    if isinstance(provider, str):
-                        metadata["provider_used"] = provider
-                    else:
-                        try:
-                            metadata["provider_used"] = provider.get_provider_type().value
-                        except AttributeError:
-                            # Fallback if provider doesn't have get_provider_type method
-                            metadata["provider_used"] = str(provider)
-
-            return ToolOutput(
-                status="continuation_available",
-                content=content,
-                content_type="text",
-                continuation_offer=continuation_offer,
-                metadata=metadata,
-            )
-        except Exception:
-            # Fallback to simple success if continuation offer fails
-            return ToolOutput(status="success", content=content, content_type="text")
-
     # Convenience methods for common tool patterns
 
     def build_standard_prompt(
@@ -1147,18 +1041,6 @@ Please provide a thoughtful, comprehensive response:"""
         # Fallback to default behavior (validate full user content)
         return user_content
 
-    def get_websearch_guidance(self) -> Optional[str]:
-        """
-        Return tool-specific web search guidance.
-
-        Override this to provide tool-specific guidance for when web searches
-        would be helpful. Return None to use the default guidance.
-
-        Returns:
-            Tool-specific web search guidance or None for default
-        """
-        return None
-
     def handle_prompt_file_with_fallback(self, request) -> str:
         """
         Handle prompt.txt files with fallback to request field.
@@ -1199,22 +1081,6 @@ Please provide a thoughtful, comprehensive response:"""
             raise ValueError(f"MCP_SIZE_CHECK:{ToolOutput(**size_check).model_dump_json()}")
 
         return user_content
-
-    def get_chat_style_websearch_guidance(self) -> str:
-        """
-        Get Chat tool-style web search guidance.
-
-        Returns web search guidance that matches the original Chat tool pattern.
-        This is useful for tools that want to maintain the same search behavior.
-
-        Returns:
-            Web search guidance text
-        """
-        return """When discussing topics, consider if searches for these would help:
-- Documentation for any technologies or concepts mentioned
-- Current best practices and patterns
-- Recent developments or updates
-- Community discussions and solutions"""
 
     def supports_custom_request_model(self) -> bool:
         """

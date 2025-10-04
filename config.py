@@ -9,28 +9,44 @@ Configuration values can be overridden by environment variables where appropriat
 """
 
 import os
+from typing import Optional
+
+
+def _parse_bool_env(key: str, default: str = "true") -> bool:
+    """
+    Parse boolean environment variable.
+
+    Args:
+        key: Environment variable name
+        default: Default value if environment variable is not set
+
+    Returns:
+        Boolean value parsed from environment variable
+    """
+    return os.getenv(key, default).strip().lower() == "true"
+
 
 # Version and metadata
 # These values are used in server responses and for tracking releases
 # IMPORTANT: This is the single source of truth for version and author info
 # Semantic versioning: MAJOR.MINOR.PATCH
-__version__ = "2.0.0"
+__version__: str = "2.0.0"
 # Last update date in ISO format
-__updated__ = "2025-09-26"
+__updated__: str = "2025-09-26"
 # Primary maintainer
-__author__ = "Zazzles"
+__author__: str = "Zazzles"
 # Production-ready release with intelligent routing
-__release_name__ = "Production-Ready v2.0 - Intelligent Routing"
+__release_name__: str = "Production-Ready v2.0 - Intelligent Routing"
 
 # Model configuration
 # DEFAULT_MODEL: The default model used for all AI operations
 # This should be a stable, high-performance model suitable for code analysis
 # Can be overridden by setting DEFAULT_MODEL environment variable
 # Special value "auto" means the server will select an appropriate model for each task (client-agnostic)
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "glm-4.5-flash")
+DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "glm-4.5-flash")
 
 # Auto mode detection - when DEFAULT_MODEL is "auto", the server selects the model (client-agnostic)
-IS_AUTO_MODE = DEFAULT_MODEL.lower() == "auto"
+IS_AUTO_MODE: bool = DEFAULT_MODEL.lower() == "auto"
 
 # Each provider (gemini.py, openai_provider.py, xai.py) defines its own SUPPORTED_MODELS
 # with detailed descriptions. Tools use ModelProviderRegistry.get_available_model_names()
@@ -50,66 +66,73 @@ IS_AUTO_MODE = DEFAULT_MODEL.lower() == "auto"
 
 # TEMPERATURE_ANALYTICAL: Used for tasks requiring precision and consistency
 # Ideal for code review, debugging, and error analysis where accuracy is critical
-TEMPERATURE_ANALYTICAL = 0.2  # For code review, debugging
+TEMPERATURE_ANALYTICAL: float = 0.2  # For code review, debugging
 
 # TEMPERATURE_BALANCED: Middle ground for general conversations
 # Provides a good balance between consistency and helpful variety
-TEMPERATURE_BALANCED = 0.5  # For general chat
+TEMPERATURE_BALANCED: float = 0.5  # For general chat
 
 # TEMPERATURE_CREATIVE: Higher temperature for exploratory tasks
 # Used when brainstorming, exploring alternatives, or architectural discussions
-TEMPERATURE_CREATIVE = 0.7  # For architecture, deep thinking
+TEMPERATURE_CREATIVE: float = 0.7  # For architecture, deep thinking
 
 # Thinking Mode Defaults
 # DEFAULT_THINKING_MODE_THINKDEEP: Default thinking depth for extended reasoning tool
 # Higher modes use more computational budget but provide deeper analysis
-DEFAULT_THINKING_MODE_THINKDEEP = os.getenv("DEFAULT_THINKING_MODE_THINKDEEP", "high")
+DEFAULT_THINKING_MODE_THINKDEEP: str = os.getenv("DEFAULT_THINKING_MODE_THINKDEEP", "high")
 
 # Feature flags
 # THINK_ROUTING_ENABLED: enable aliasing/rerouting and deterministic model selection for thinking tools
 # Default: true
-THINK_ROUTING_ENABLED = os.getenv("THINK_ROUTING_ENABLED", "true").strip().lower() == "true"
+THINK_ROUTING_ENABLED: bool = _parse_bool_env("THINK_ROUTING_ENABLED", "true")
 
 # Production-Ready v2.0 Configuration
 # Intelligent Routing System
-INTELLIGENT_ROUTING_ENABLED = os.getenv("INTELLIGENT_ROUTING_ENABLED", "true").strip().lower() == "true"
-AI_MANAGER_MODEL = os.getenv("AI_MANAGER_MODEL", "glm-4.5-flash")
-WEB_SEARCH_PROVIDER = os.getenv("WEB_SEARCH_PROVIDER", "glm")
-FILE_PROCESSING_PROVIDER = os.getenv("FILE_PROCESSING_PROVIDER", "kimi")
-COST_AWARE_ROUTING = os.getenv("COST_AWARE_ROUTING", "true").strip().lower() == "true"
+INTELLIGENT_ROUTING_ENABLED: bool = _parse_bool_env("INTELLIGENT_ROUTING_ENABLED", "true")
+AI_MANAGER_MODEL: str = os.getenv("AI_MANAGER_MODEL", "glm-4.5-flash")
+WEB_SEARCH_PROVIDER: str = os.getenv("WEB_SEARCH_PROVIDER", "glm")
+FILE_PROCESSING_PROVIDER: str = os.getenv("FILE_PROCESSING_PROVIDER", "kimi")
+COST_AWARE_ROUTING: bool = _parse_bool_env("COST_AWARE_ROUTING", "true")
+
+# Expert Analysis Configuration
+# DEFAULT_USE_ASSISTANT_MODEL: Controls whether workflow tools use expert analysis by default
+# When true, tools like thinkdeep, debug, analyze will call expert models for validation
+# When false, tools rely only on their own analysis (faster but less comprehensive)
+# Can be overridden per-tool with TOOLNAME_USE_ASSISTANT_MODEL_DEFAULT env vars
+DEFAULT_USE_ASSISTANT_MODEL: bool = _parse_bool_env("DEFAULT_USE_ASSISTANT_MODEL", "true")
 
 # Production Settings
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-MAX_RETRIES = int(os.getenv("MAX_RETRIES", "3"))
-REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "30"))
-ENABLE_FALLBACK = os.getenv("ENABLE_FALLBACK", "true").strip().lower() == "true"
+LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+MAX_RETRIES: int = int(os.getenv("MAX_RETRIES", "3"))
+REQUEST_TIMEOUT: int = int(os.getenv("REQUEST_TIMEOUT", "30"))
+ENABLE_FALLBACK: bool = _parse_bool_env("ENABLE_FALLBACK", "true")
 
 # MCP WebSocket Configuration
-MCP_WEBSOCKET_ENABLED = os.getenv("MCP_WEBSOCKET_ENABLED", "true").strip().lower() == "true"
-MCP_WEBSOCKET_PORT = int(os.getenv("MCP_WEBSOCKET_PORT", "8080"))
-MCP_WEBSOCKET_HOST = os.getenv("MCP_WEBSOCKET_HOST", "0.0.0.0")
+MCP_WEBSOCKET_ENABLED: bool = _parse_bool_env("MCP_WEBSOCKET_ENABLED", "true")
+MCP_WEBSOCKET_PORT: int = int(os.getenv("MCP_WEBSOCKET_PORT", "8080"))
+MCP_WEBSOCKET_HOST: str = os.getenv("MCP_WEBSOCKET_HOST", "0.0.0.0")
 
 # Performance Settings
-MAX_CONCURRENT_REQUESTS = int(os.getenv("MAX_CONCURRENT_REQUESTS", "10"))
-RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "100"))
-CACHE_ENABLED = os.getenv("CACHE_ENABLED", "true").strip().lower() == "true"
-CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))
+MAX_CONCURRENT_REQUESTS: int = int(os.getenv("MAX_CONCURRENT_REQUESTS", "10"))
+RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "100"))
+CACHE_ENABLED: bool = _parse_bool_env("CACHE_ENABLED", "true")
+CACHE_TTL: int = int(os.getenv("CACHE_TTL", "300"))
 
 # Security Settings
-VALIDATE_API_KEYS = os.getenv("VALIDATE_API_KEYS", "true").strip().lower() == "true"
+VALIDATE_API_KEYS: bool = _parse_bool_env("VALIDATE_API_KEYS", "true")
 
 # Consensus Tool Defaults
 # Agentic engine removed - was experimental, disabled by default, and added unnecessary complexity
 # SECURE_INPUTS_ENFORCED kept for potential future use
-SECURE_INPUTS_ENFORCED = os.getenv("SECURE_INPUTS_ENFORCED", "false").strip().lower() == "true"
+SECURE_INPUTS_ENFORCED: bool = _parse_bool_env("SECURE_INPUTS_ENFORCED", "false")
 
 # Activity tool feature flags (default OFF)
-ACTIVITY_SINCE_UNTIL_ENABLED = os.getenv("ACTIVITY_SINCE_UNTIL_ENABLED", "false").strip().lower() == "true"
-ACTIVITY_STRUCTURED_OUTPUT_ENABLED = os.getenv("ACTIVITY_STRUCTURED_OUTPUT_ENABLED", "false").strip().lower() == "true"
+ACTIVITY_SINCE_UNTIL_ENABLED: bool = _parse_bool_env("ACTIVITY_SINCE_UNTIL_ENABLED", "false")
+ACTIVITY_STRUCTURED_OUTPUT_ENABLED: bool = _parse_bool_env("ACTIVITY_STRUCTURED_OUTPUT_ENABLED", "false")
 
 # Consensus timeout and rate limiting settings
-DEFAULT_CONSENSUS_TIMEOUT = 120.0  # 2 minutes per model
-DEFAULT_CONSENSUS_MAX_INSTANCES_PER_COMBINATION = 2
+DEFAULT_CONSENSUS_TIMEOUT: float = 120.0  # 2 minutes per model
+DEFAULT_CONSENSUS_MAX_INSTANCES_PER_COMBINATION: int = 2
 
 # NOTE: Consensus tool now uses sequential processing for MCP compatibility
 # Concurrent processing was removed to avoid async pattern violations
@@ -177,7 +200,7 @@ def _calculate_mcp_prompt_limit() -> int:
     return 60_000
 
 
-MCP_PROMPT_SIZE_LIMIT = _calculate_mcp_prompt_limit()
+MCP_PROMPT_SIZE_LIMIT: int = _calculate_mcp_prompt_limit()
 
 # Language/Locale Configuration
 # LOCALE: Language/locale specification for AI responses
@@ -186,23 +209,13 @@ MCP_PROMPT_SIZE_LIMIT = _calculate_mcp_prompt_limit()
 # Examples: "fr-FR", "en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR", "es-ES",
 # "de-DE", "it-IT", "pt-PT"
 # Leave empty for default language (English)
-LOCALE = os.getenv("LOCALE", "")
+LOCALE: str = os.getenv("LOCALE", "")
 
 # Threading configuration
 # Simple in-memory conversation threading for stateless MCP environment
 # Conversations persist only during the connected client session
 
-
 # Auggie config discovery (optional helper)
-from pathlib import Path
-
-def get_auggie_config_path() -> str | None:
-    """Return the discovered auggie-config.json path or None if not found.
-
-    Priority: env AUGGIE_CONFIG, else auggie-config.json next to this module.
-    """
-    env_path = os.getenv("AUGGIE_CONFIG")
-    if env_path and os.path.exists(env_path):
-        return env_path
-    default_path = Path(__file__).parent / "auggie-config.json"
-    return str(default_path) if default_path.exists() else None
+# Moved to utils/config_helpers.py for better separation of concerns
+# Import here for backward compatibility
+from utils.config_helpers import get_auggie_config_path

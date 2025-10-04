@@ -147,7 +147,11 @@ class ExpertAnalysisMixin:
     
     def get_expert_heartbeat_interval_secs(self, request=None) -> float:
         """Interval in seconds for emitting progress while waiting on expert analysis.
-        Priority: EXAI_WS_EXPERT_KEEPALIVE_MS (ms) > EXPERT_HEARTBEAT_INTERVAL_SECS (s) > 10s default.
+
+        CRITICAL FIX: Reduced default from 10s to 2s for better UX.
+        This provides more frequent progress updates for ADHD-C users who need continuous feedback.
+
+        Priority: EXAI_WS_EXPERT_KEEPALIVE_MS (ms) > EXPERT_HEARTBEAT_INTERVAL_SECS (s) > 2s default.
         """
         import os
         try:
@@ -159,9 +163,9 @@ class ExpertAnalysisMixin:
         except Exception:
             pass
         try:
-            return float(os.getenv("EXPERT_HEARTBEAT_INTERVAL_SECS", "10"))
+            return float(os.getenv("EXPERT_HEARTBEAT_INTERVAL_SECS", "2"))  # Reduced from 10s to 2s
         except Exception:
-            return 10.0
+            return 2.0  # Reduced from 10.0 to 2.0
     
     # ================================================================================
     # Expert Analysis Execution
@@ -169,12 +173,17 @@ class ExpertAnalysisMixin:
     
     async def _call_expert_analysis(self, arguments: dict, request) -> dict:
         """Call external model for expert analysis with watchdog and graceful degradation.
-        
+
         We see occasional UI disconnects exactly after '[WORKFLOW_FILES] ... Prepared X unique relevant files' and
         before '[PROGRESS] ... Step N/M complete'. That window corresponds to this method executing the slow
         provider call. If the UI disconnects (websocket drop) or the provider stalls, we still want to finish
         and persist a best-effort result instead of leaving the tool 'stuck'.
         """
+        print(f"[PRINT_DEBUG] _call_expert_analysis() ENTERED for tool: {self.get_name()}")
+        logger.info(f"[EXPERT_ANALYSIS_DEBUG] _call_expert_analysis() called for tool: {self.get_name()}")
+
+        # CRITICAL FIX: Wrap entire method in try/except to ensure we ALWAYS return a dict
+        result = None
         try:
             # Model context should be resolved from early validation, but handle fallback for tests
             if not self._model_context:  # type: ignore
@@ -194,9 +203,11 @@ class ExpertAnalysisMixin:
                 model_name = self._current_model_name  # type: ignore
             
             provider = self._model_context.provider  # type: ignore
-            
+            logger.info(f"[EXPERT_ANALYSIS_DEBUG] Provider resolved: {provider.get_provider_type().value if provider else 'None'}")
+
             # Prepare expert analysis context
             expert_context = self.prepare_expert_analysis_context(self.consolidated_findings)  # type: ignore
+            logger.info(f"[EXPERT_ANALYSIS_DEBUG] Expert context prepared, about to call provider.generate_content()")
             
             # Check if tool wants to include files in prompt
             if self.should_include_files_in_expert_prompt():
@@ -243,10 +254,13 @@ class ExpertAnalysisMixin:
             except Exception:
                 _soft_dl = 0.0
             deadline = start + self.get_expert_timeout_secs(request)
+            timeout_secs = self.get_expert_timeout_secs(request)
 
             # Run provider call in a thread to allow cancellation/timeouts even if provider blocks
+            print(f"[PRINT_DEBUG] About to call provider.generate_content() for {self.get_name()}")
             loop = asyncio.get_running_loop()
             def _invoke_provider():
+                print(f"[PRINT_DEBUG] Inside _invoke_provider, calling provider.generate_content()")
                 return provider.generate_content(
                     prompt=prompt,
                     model_name=model_name,
@@ -259,7 +273,8 @@ class ExpertAnalysisMixin:
             task = loop.run_in_executor(None, _invoke_provider)
 
             # Poll until done or deadline; emit progress breadcrumbs so UI stays alive
-            hb = max(5.0, self.get_expert_heartbeat_interval_secs(request))
+            # CRITICAL FIX: Removed max(5.0, ...) to allow 2s heartbeat for better UX
+            hb = self.get_expert_heartbeat_interval_secs(request)
             while True:
                 # Check completion first
                 if task.done():
@@ -318,8 +333,15 @@ class ExpertAnalysisMixin:
                                             pass
                                         logger.error("Expert analysis fallback timed out; returning partial context-only result")
                                         return {"status":"analysis_timeout","error":"Expert analysis exceeded timeout","raw_analysis":""}
+                                    # CRITICAL FIX: Enhanced progress message with elapsed time and ETA
+                                    elapsed_fb = now_fb - start
+                                    remaining_fb = max(0, deadline - now_fb)
+                                    progress_pct_fb = min(100, int((elapsed_fb / timeout_secs) * 100))
                                     try:
-                                        send_progress(f"{self.get_name()}: Waiting on expert analysis (provider=kimi)...")
+                                        send_progress(
+                                            f"{self.get_name()}: Waiting on expert analysis (provider=kimi, fallback) | "
+                                            f"Progress: {progress_pct_fb}% | Elapsed: {elapsed_fb:.1f}s | ETA: {remaining_fb:.1f}s"
+                                        )
                                     except Exception:
                                         pass
                                     # Sleep only up to remaining time
@@ -349,29 +371,64 @@ class ExpertAnalysisMixin:
                         "error": "Expert analysis exceeded timeout",
                         "raw_analysis": "",
                     }
-                # Emit heartbeat at configured cadence
+                # CRITICAL FIX: Enhanced progress message with elapsed time, ETA, and progress percentage
+                elapsed = now - start
+                remaining = max(0, deadline - now)
+                progress_pct = min(100, int((elapsed / timeout_secs) * 100))
                 try:
-                    send_progress(f"{self.get_name()}: Waiting on expert analysis (provider={provider.get_provider_type().value})...")
+                    send_progress(
+                        f"{self.get_name()}: Waiting on expert analysis (provider={provider.get_provider_type().value}) | "
+                        f"Progress: {progress_pct}% | Elapsed: {elapsed:.1f}s | ETA: {remaining:.1f}s"
+                    )
                 except Exception:
                     pass
                 # Sleep only up to remaining time to avoid overshooting deadline
                 await asyncio.sleep(min(hb, max(0.1, deadline - time.time())))
 
 
+            print(f"[PRINT_DEBUG] Provider call completed, processing response")
+            logger.info(f"[EXPERT_ANALYSIS_DEBUG] Provider call completed, processing response")
             if model_response.content:
                 try:
+                    # Log the raw response for debugging
+                    response_preview = model_response.content[:500] if len(model_response.content) > 500 else model_response.content
+                    logger.debug(f"[EXPERT_ANALYSIS_DEBUG] Raw response preview (first 500 chars): {response_preview}")
+
                     analysis_result = json.loads(model_response.content.strip())
+                    print(f"[PRINT_DEBUG] Successfully parsed JSON, returning analysis_result")
+                    logger.info(f"[EXPERT_ANALYSIS_DEBUG] Successfully parsed JSON response, returning analysis_result")
                     return analysis_result
-                except json.JSONDecodeError:
+                except json.JSONDecodeError as json_err:
+                    # Enhanced logging for JSON parse errors
+                    logger.error(
+                        f"[EXPERT_ANALYSIS_DEBUG] JSON parse error: {json_err}\n"
+                        f"Response length: {len(model_response.content)} chars\n"
+                        f"Response preview (first 1000 chars): {model_response.content[:1000]}\n"
+                        f"Response preview (last 500 chars): {model_response.content[-500:]}"
+                    )
                     return {
                         "status": "analysis_complete",
                         "raw_analysis": model_response.content,
-                        "parse_error": "Response was not valid JSON",
+                        "parse_error": f"Response was not valid JSON: {str(json_err)}",
                     }
             else:
+                logger.warning(f"[EXPERT_ANALYSIS_DEBUG] Empty response from model")
                 return {"error": "No response from model", "status": "empty_response"}
 
         except Exception as e:
-            logger.error(f"Error calling expert analysis: {e}", exc_info=True)
-            return {"error": str(e), "status": "analysis_error"}
+            print(f"[PRINT_DEBUG] Exception in _call_expert_analysis: {e}")
+            logger.error(f"[EXPERT_ANALYSIS_DEBUG] Exception in _call_expert_analysis: {e}", exc_info=True)
+            result = {"error": str(e), "status": "analysis_error"}
+
+        # CRITICAL FIX: Ensure we ALWAYS return a dict, never None
+        if result is None:
+            print(f"[PRINT_DEBUG] CRITICAL: result is None at end of method! This should be impossible!")
+            result = {
+                "error": "Expert analysis method completed but result is None - this indicates a serious bug in the code flow",
+                "status": "analysis_error",
+                "tool_name": self.get_name()
+            }
+
+        print(f"[PRINT_DEBUG] _call_expert_analysis() RETURNING: {type(result)}, is_dict: {isinstance(result, dict)}")
+        return result
 

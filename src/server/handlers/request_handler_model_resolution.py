@@ -106,7 +106,9 @@ def _route_auto_model(tool_name: str, requested: str | None, args: Dict[str, Any
         # Default: prefer GLM flash (AI Manager)
         return os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
     except Exception:
-        return requested
+        # BUG FIX: Never return 'auto' - always return a concrete model
+        # If there's an exception, fall back to the default speed model
+        return os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
 
 
 def resolve_auto_model_legacy(args: Dict[str, Any], tool_obj, os_module=os) -> str:

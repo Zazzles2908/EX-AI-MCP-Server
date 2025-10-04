@@ -13,45 +13,21 @@ from typing import Any, Dict, List, Optional
 import websockets
 from websockets.server import WebSocketServerProtocol
 
-
 from .session_manager import SessionManager
 
-LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
+# Bootstrap logging setup
+import sys
+_bootstrap_path = Path(__file__).resolve().parents[2]
+if str(_bootstrap_path) not in sys.path:
+    sys.path.insert(0, str(_bootstrap_path))
+
+from src.bootstrap import setup_logging, get_repo_root
+
+LOG_DIR = get_repo_root() / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
-logger = logging.getLogger("ws_daemon")
 
-# Robust logging setup for Windows consoles (cp1252) and UTF-8 payloads
-# Ensures emoji/box-drawing characters don't crash logging; replaces unencodable chars
-def _setup_logging() -> None:
-    try:
-        import sys, io
-        level = os.getenv("LOG_LEVEL", "INFO").upper()
-        root = logging.getLogger()
-        # Avoid duplicate handlers on restart
-        if not getattr(root, "_ex_ws_logging_configured", False):
-            # Wrap stdout with UTF-8 and replacement for un-encodable glyphs
-            stream = sys.stdout
-            try:
-                if hasattr(stream, "buffer"):
-                    stream = io.TextIOWrapper(stream.buffer, encoding="utf-8", errors="replace", line_buffering=True)
-            except Exception:
-                pass
-            sh = logging.StreamHandler(stream)
-            fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-            sh.setFormatter(fmt)
-            root.handlers.clear()
-            root.addHandler(sh)
-            root.setLevel(level)
-            # Mark configured
-            root._ex_ws_logging_configured = True  # type: ignore[attr-defined]
-    except Exception:
-        # Fallback to basicConfig if anything above fails
-        try:
-            logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
-        except Exception:
-            pass
-
-_setup_logging()
+# Setup logging with UTF-8 support for Windows consoles
+logger = setup_logging("ws_daemon", log_file=str(LOG_DIR / "ws_daemon.log"))
 
 EXAI_WS_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
 EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8765"))
@@ -390,6 +366,19 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
         name = _normalize_tool_name(orig_name)
         arguments = msg.get("arguments") or {}
         req_id = msg.get("request_id")
+
+        # CRITICAL FIX: Add comprehensive logging for tool calls
+        logger.info(f"=== TOOL CALL RECEIVED ===")
+        logger.info(f"Session: {session_id}")
+        logger.info(f"Tool: {name} (original: {orig_name})")
+        logger.info(f"Request ID: {req_id}")
+        try:
+            args_preview = json.dumps(arguments, indent=2)[:500]
+            logger.info(f"Arguments (first 500 chars): {args_preview}")
+        except Exception:
+            logger.info(f"Arguments: <unable to serialize>")
+        logger.info(f"=== PROCESSING ===")
+
         try:
             _ensure_providers_configured()
             # Ensure provider-specific tools are registered prior to lookup
@@ -616,6 +605,17 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                                 pass
                             return
                 latency = time.time() - start
+
+                # CRITICAL FIX: Log successful tool completion
+                logger.info(f"=== TOOL CALL COMPLETE ===")
+                logger.info(f"Tool: {name}")
+                logger.info(f"Duration: {latency:.2f}s")
+                logger.info(f"Provider: {prov_key or 'unknown'}")
+                logger.info(f"Session: {session_id}")
+                logger.info(f"Request ID: {req_id}")
+                logger.info(f"Success: True")
+                logger.info(f"=== END ===")
+
                 try:
                     with _metrics_path.open("a", encoding="utf-8") as f:
                         f.write(json.dumps({
@@ -693,6 +693,31 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                 except Exception:
                     pass
             except asyncio.TimeoutError:
+                # CRITICAL FIX: Log timeout errors
+                latency_timeout = time.time() - start
+                logger.error(f"=== TOOL CALL TIMEOUT ===")
+                logger.error(f"Tool: {name}")
+                logger.error(f"Duration: {latency_timeout:.2f}s")
+                logger.error(f"Timeout Limit: {CALL_TIMEOUT}s")
+                logger.error(f"Session: {session_id}")
+                logger.error(f"Request ID: {req_id}")
+                logger.error(f"=== END ===")
+
+                # Log to failures file
+                try:
+                    failures_path = _metrics_path.parent / "tool_failures.jsonl"
+                    with failures_path.open("a", encoding="utf-8") as f:
+                        f.write(json.dumps({
+                            "t": time.time(),
+                            "tool": name,
+                            "error": f"TIMEOUT after {CALL_TIMEOUT}s",
+                            "duration": latency_timeout,
+                            "session": session_id,
+                            "request_id": req_id
+                        }) + "\n")
+                except Exception:
+                    pass
+
                 await _safe_send(ws, {
                     "op": "call_tool_res",
                     "request_id": req_id,
@@ -707,6 +732,32 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                 except Exception:
                     pass
             except Exception as e:
+                # CRITICAL FIX: Log tool execution errors
+                latency_error = time.time() - start
+                logger.error(f"=== TOOL CALL FAILED ===")
+                logger.error(f"Tool: {name}")
+                logger.error(f"Duration: {latency_error:.2f}s")
+                logger.error(f"Session: {session_id}")
+                logger.error(f"Request ID: {req_id}")
+                logger.error(f"Error: {str(e)}")
+                logger.exception(f"Full traceback:")
+                logger.error(f"=== END ===")
+
+                # Log to failures file
+                try:
+                    failures_path = _metrics_path.parent / "tool_failures.jsonl"
+                    with failures_path.open("a", encoding="utf-8") as f:
+                        f.write(json.dumps({
+                            "t": time.time(),
+                            "tool": name,
+                            "error": str(e),
+                            "duration": latency_error,
+                            "session": session_id,
+                            "request_id": req_id
+                        }) + "\n")
+                except Exception:
+                    pass
+
                 await _safe_send(ws, {
                     "op": "call_tool_res",
                     "request_id": req_id,
