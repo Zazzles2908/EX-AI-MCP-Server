@@ -49,36 +49,20 @@ def _write_wrapper_error(text: str) -> None:
 if _env_true("EX_MCP_BOOTSTRAP_DEBUG"):
     print("[ex-mcp] bootstrap starting (pid=%s, py=%s)" % (os.getpid(), sys.executable), file=sys.stderr)
 
+# Use bootstrap module for environment loading
+from src.bootstrap import load_env, get_repo_root
+
 # Load environment variables
-try:
-    from dotenv import load_dotenv
-
-    env_path = Path(__file__).parent / ".env"
-    if env_path.exists():
-        load_dotenv(env_path)
-        if _env_true("EX_MCP_BOOTSTRAP_DEBUG"):
-            print(f"[ex-mcp] loaded .env from {env_path}", file=sys.stderr)
+env_loaded = load_env()
+if _env_true("EX_MCP_BOOTSTRAP_DEBUG"):
+    if env_loaded:
+        print(f"[ex-mcp] loaded .env from {get_repo_root() / '.env'}", file=sys.stderr)
     else:
-        if _env_true("EX_MCP_BOOTSTRAP_DEBUG"):
-            print(f"[ex-mcp] no .env file found at {env_path}", file=sys.stderr)
-
-except ImportError:
-    if _env_true("EX_MCP_BOOTSTRAP_DEBUG"):
-        print("[ex-mcp] python-dotenv not available, skipping .env load", file=sys.stderr)
-except Exception as dotenv_err:
-    msg = f"[ex-mcp] dotenv load failed: {dotenv_err}"
-    _write_wrapper_error(msg)
+        print(f"[ex-mcp] no .env file found at {get_repo_root() / '.env'}", file=sys.stderr)
 
 def _hot_reload_env() -> None:
     """Hot reload environment variables from .env file."""
-    try:
-        from dotenv import load_dotenv as _ld
-        env_path = Path(__file__).parent / ".env"
-        if env_path.exists():
-            _ld(env_path, override=True)
-    except Exception:
-        # Never let hot-reload break a tool call
-        pass
+    load_env(override=True)
 
 # Import MCP components
 try:
@@ -110,25 +94,8 @@ from config import __version__
 # Re-export follow-up helper for tools that import from server
 from src.server.utils import get_follow_up_instructions  # type: ignore
 
-from tools import (
-    AnalyzeTool,
-    ChallengeTool,
-    ChatTool,
-    CodeReviewTool,
-    ConsensusTool,
-    DebugIssueTool,
-    DocgenTool,
-    ListModelsTool,
-    PlannerTool,
-    PrecommitTool,
-    RefactorTool,
-    SecauditTool,
-    SelfCheckTool,
-    TestGenTool,
-    ThinkDeepTool,
-    TracerTool,
-    VersionTool,
-)
+# Only import tools needed for Auggie wrappers (all other tools loaded via ToolRegistry)
+from tools import ChatTool, ConsensusTool, ThinkDeepTool
 
 # Import modular server components
 from src.server.providers import configure_providers
@@ -191,27 +158,16 @@ class JsonLineFormatter(logging.Formatter):
         return json.dumps(log_entry)
 
 # Configure logging
-def setup_logging():
-    """Set up logging configuration."""
+def setup_server_logging():
+    """Set up logging configuration with specialized loggers."""
+    from src.bootstrap import setup_logging as bootstrap_setup_logging
+
+    # Setup basic logging using bootstrap
+    bootstrap_setup_logging("server", log_file=str(get_repo_root() / "logs" / "server.log"))
+
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-
-    # Create logs directory
-    logs_dir = Path(".logs")
+    logs_dir = get_repo_root() / "logs"
     logs_dir.mkdir(exist_ok=True)
-
-    # Configure root logger
-    logging.basicConfig(
-        level=getattr(logging, log_level, logging.INFO),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.StreamHandler(sys.stderr),
-            RotatingFileHandler(
-                logs_dir / "server.log",
-                maxBytes=10*1024*1024,  # 10MB
-                backupCount=5
-            )
-        ]
-    )
 
     # Set up structured logging for metrics
     metrics_logger = logging.getLogger("metrics")
@@ -261,32 +217,17 @@ def setup_logging():
     router_logger.propagate = False
 
 # Initialize logging
-setup_logging()
+setup_server_logging()
 logger = logging.getLogger(__name__)
 
 # Initialize MCP server
 server = Server("EX MCP Server")
 
-# Tool registry
-TOOLS = {
-    "chat": ChatTool(),
-    "thinkdeep": ThinkDeepTool(),
-    "planner": PlannerTool(),
-    "consensus": ConsensusTool(),
-    "codereview": CodeReviewTool(),
-    "precommit": PrecommitTool(),
-    "debug": DebugIssueTool(),
-    "secaudit": SecauditTool(),
-    "docgen": DocgenTool(),
-    "analyze": AnalyzeTool(),
-    "refactor": RefactorTool(),
-    "tracer": TracerTool(),
-    "testgen": TestGenTool(),
-    "challenge": ChallengeTool(),
-    "listmodels": ListModelsTool(),
-    "version": VersionTool(),
-    "selfcheck": SelfCheckTool(),
-}
+# Tool registry - consolidated to use ToolRegistry as single source of truth
+from tools.registry import ToolRegistry
+_registry = ToolRegistry()
+_registry.build_tools()
+TOOLS = _registry.list_tools()
 
 def register_provider_specific_tools() -> None:
     """Idempotently register provider-specific tools after providers are configured.
@@ -297,11 +238,13 @@ def register_provider_specific_tools() -> None:
         import importlib
         prov_tools: dict[str, Any] = {}
         # Kimi extras (lenient registration: import if available)
+        # NOTE: kimi_upload_and_extract and kimi_chat_with_tools are INTERNAL ONLY
+        # They are used by the provider layer and should not be exposed to end users
         for name, modcls in [
-            ("kimi_upload_and_extract", ("tools.providers.kimi.kimi_upload", "KimiUploadAndExtractTool")),
+            # ("kimi_upload_and_extract", ("tools.providers.kimi.kimi_upload", "KimiUploadAndExtractTool")),  # HIDDEN: Internal function only
             ("kimi_multi_file_chat", ("tools.providers.kimi.kimi_upload", "KimiMultiFileChatTool")),
             ("kimi_intent_analysis", ("tools.providers.kimi.kimi_intent", "KimiIntentAnalysisTool")),
-            ("kimi_chat_with_tools", ("tools.providers.kimi.kimi_tools_chat", "KimiChatWithToolsTool")),
+            # ("kimi_chat_with_tools", ("tools.providers.kimi.kimi_tools_chat", "KimiChatWithToolsTool")),  # HIDDEN: Internal function only
         ]:
             try:
                 mod = importlib.import_module(modcls[0])
@@ -314,9 +257,11 @@ def register_provider_specific_tools() -> None:
                 except Exception:
                     pass
         # GLM extras (lenient registration)
+        # NOTE: glm_web_search is INTERNAL ONLY - web search is auto-injected via
+        # build_websearch_provider_kwargs() when use_websearch=true in tools like chat_exai
         for name, modcls in [
             ("glm_upload_file", ("tools.providers.glm.glm_files", "GLMUploadFileTool")),
-            ("glm_web_search", ("tools.providers.glm.glm_web_search", "GLMWebSearchTool")),
+            # ("glm_web_search", ("tools.providers.glm.glm_web_search", "GLMWebSearchTool")),  # HIDDEN: Internal function only
             # Removed: glm_multi_file_chat (de-scoped until stabilized)
             # Removed: glm_agent_* (agents de-scoped)
         ]:

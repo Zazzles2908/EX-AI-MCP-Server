@@ -322,8 +322,9 @@ but also acknowledge strong insights and valid conclusions.
 
         Priority order:
         1) Respect explicit request.use_assistant_model when provided
-        2) Env override THINKDEEP_USE_ASSISTANT_MODEL_DEFAULT=true/false
-        3) Heuristic auto-mode:
+        2) Tool-specific env override THINKDEEP_USE_ASSISTANT_MODEL_DEFAULT=true/false
+        3) Global default from config.DEFAULT_USE_ASSISTANT_MODEL (defaults to true)
+        4) Heuristic auto-mode as fallback:
            - If next_step_required is False AND any of these are true, return True:
              • confidence in {"high","very_high","almost_certain"}
              • >= 2 findings or any relevant_files present
@@ -338,13 +339,20 @@ but also acknowledge strong insights and valid conclusions.
         if val is not None:
             return bool(val)
 
-        # 2) Env override
+        # 2) Tool-specific env override
         import os
         env_default = os.getenv("THINKDEEP_USE_ASSISTANT_MODEL_DEFAULT")
         if env_default is not None:
             return env_default.strip().lower() == "true"
 
-        # 3) Heuristic auto-mode
+        # 3) Global default from config
+        try:
+            from config import DEFAULT_USE_ASSISTANT_MODEL
+            return DEFAULT_USE_ASSISTANT_MODEL
+        except Exception:
+            pass
+
+        # 4) Heuristic auto-mode as fallback
         try:
             final_step = bool(not request.next_step_required)
         except Exception:

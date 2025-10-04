@@ -93,7 +93,7 @@ class StatusTool(BaseTool):
                 try:
                     from tools.chat import ChatTool
                     ct = ChatTool()
-                    c_out = await ct.execute({"messages": ["ping"], "model": os.getenv("DEFAULT_MODEL", "glm-4.5-flash")})
+                    c_out = await ct.execute({"prompt": "ping", "model": os.getenv("DEFAULT_MODEL", "glm-4.5-flash")})
                     doctor["probes"]["chat"] = True if c_out and c_out[0].text else False
                 except Exception as e:
                     doctor["probes"]["chat"] = False

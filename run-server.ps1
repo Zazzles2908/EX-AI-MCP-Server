@@ -1149,9 +1149,9 @@ function Get-ExistingMcpConfigType {
         } elseif ($zenConfig.command -and $zenConfig.command.EndsWith("python.exe")) {
             $pythonType = "Python"
             $details = "Python virtual environment"
-            
+
             if ($zenConfig.command.Contains(".venv")) {
-                $details = "Python (zen virtual environment)"
+                $details = "Python (exai virtual environment)"
             } elseif ($zenConfig.command.Contains("venv")) {
                 $details = "Python (virtual environment)"
             } else {
