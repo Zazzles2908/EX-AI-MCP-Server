@@ -11,7 +11,14 @@ import socket
 from typing import Any, Dict, List, Optional
 
 import websockets
-from websockets.server import WebSocketServerProtocol
+# Note: Using generic type hint instead of deprecated WebSocketServerProtocol
+# The websockets library deprecated WebSocketServerProtocol in favor of the new asyncio API
+# For backward compatibility with the legacy API, we use Any for type hints
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from websockets.legacy.server import WebSocketServerProtocol
+else:
+    WebSocketServerProtocol = Any
 
 from .session_manager import SessionManager
 
@@ -81,7 +88,10 @@ from server import register_provider_specific_tools  # type: ignore
 from src.providers.registry import ModelProviderRegistry  # type: ignore
 from src.providers.base import ProviderType  # type: ignore
 
-CALL_TIMEOUT = int(os.getenv("EXAI_WS_CALL_TIMEOUT", "90"))  # default 90s; can be raised via env if needed
+# Import TimeoutConfig for coordinated timeout hierarchy
+from config import TimeoutConfig
+
+CALL_TIMEOUT = TimeoutConfig.get_daemon_timeout()  # Auto-calculated: 1.5x workflow tool timeout (default: 180s)
 HELLO_TIMEOUT = float(os.getenv("EXAI_WS_HELLO_TIMEOUT", "15"))  # allow slower clients to hello
 # Heartbeat cadence while tools run; keep <10s to satisfy clients with 10s idle cutoff
 PROGRESS_INTERVAL = float(os.getenv("EXAI_WS_PROGRESS_INTERVAL_SECS", "8.0"))

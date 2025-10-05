@@ -27,6 +27,9 @@ from tools.shared.base_tool import BaseTool
 from .schema_builders import WorkflowSchemaBuilder
 from .workflow_mixin import BaseWorkflowMixin
 
+# Import TimeoutConfig for coordinated timeout hierarchy
+from config import TimeoutConfig
+
 logger = logging.getLogger(__name__)
 
 
@@ -86,6 +89,8 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
         BaseWorkflowMixin.__init__(self)
         # Initialize step adjustment history for transparency
         self.step_adjustment_history = []
+        # Set timeout from coordinated hierarchy
+        self.timeout_secs = TimeoutConfig.WORKFLOW_TOOL_TIMEOUT_SECS
 
     # ================================================================================
     # Agentic Enhancement Methods
@@ -654,10 +659,11 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
         """Execute the workflow tool with a safety timeout and error logging.
 
         - Wraps execute_workflow() in asyncio.wait_for to prevent hangs
-        - Timeout is controlled via WORKFLOW_STEP_TIMEOUT_SECS (default 45s)
+        - Timeout is controlled via TimeoutConfig.WORKFLOW_TOOL_TIMEOUT_SECS (default 120s)
         - On timeout, logs to centralized error sink and returns a structured error
         """
-        timeout_default = 45.0
+        # Use coordinated timeout from TimeoutConfig
+        timeout_default = float(TimeoutConfig.WORKFLOW_TOOL_TIMEOUT_SECS)
         try:
             # Adaptive per-step timeout: larger for final steps with expert validation
             req = None
@@ -682,19 +688,17 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
                 use_assistant = _env not in ("false", "0", "no", "off")
 
             if is_final and use_assistant:
-                # For final expert step: cap by expert budget + buffer, under WS ceiling
+                # For final expert step: cap by expert budget + buffer, under daemon ceiling
                 try:
                     expert_budget = float(self.get_expert_timeout_secs(req))
                 except Exception:
-                    expert_budget = 90.0
-                try:
-                    ws_ceiling = float(os.getenv("EXAI_WS_CALL_TIMEOUT", "180"))
-                except Exception:
-                    ws_ceiling = 180.0
-                timeout = max(5.0, min(expert_budget + 30.0, ws_ceiling - 5.0))
+                    expert_budget = float(TimeoutConfig.EXPERT_ANALYSIS_TIMEOUT_SECS)
+                # Use daemon timeout as ceiling (auto-calculated from TimeoutConfig)
+                daemon_ceiling = float(TimeoutConfig.get_daemon_timeout())
+                timeout = max(5.0, min(expert_budget + 30.0, daemon_ceiling - 5.0))
             else:
-                # For intermediate steps: use workflow step timeout
-                timeout = float(os.getenv("WORKFLOW_STEP_TIMEOUT_SECS", str(timeout_default)))
+                # For intermediate steps: use workflow tool timeout from TimeoutConfig
+                timeout = timeout_default
         except Exception:
             timeout = timeout_default
 
