@@ -118,19 +118,54 @@ class ResponseValidator:
     def _check_execution(self, response: Dict[str, Any]) -> Dict[str, Any]:
         """Check if execution was successful."""
         errors = []
-        
-        # Check for error status
-        if response.get("status") == "error":
-            errors.append("Response has error status")
-        
+
+        # Check for error status (including workflow-specific failure statuses)
+        status = response.get("status", "")
+        failure_statuses = [
+            "error",
+            "execution_error",
+            "invalid_request",
+            # Workflow-specific failure statuses
+            "analyze_failed",
+            "challenge_failed",
+            "codereview_failed",
+            "consensus_failed",
+            "debug_failed",
+            "docgen_failed",
+            "planner_failed",
+            "precommit_failed",
+            "refactor_failed",
+            "secaudit_failed",
+            "testgen_failed",
+            "thinkdeep_failed",
+            "tracer_failed",
+            # Timeout statuses
+            "analyze_timeout",
+            "challenge_timeout",
+            "codereview_timeout",
+            "consensus_timeout",
+            "debug_timeout",
+            "docgen_timeout",
+            "planner_timeout",
+            "precommit_timeout",
+            "refactor_timeout",
+            "secaudit_timeout",
+            "testgen_timeout",
+            "thinkdeep_timeout",
+            "tracer_timeout"
+        ]
+
+        if status in failure_statuses:
+            errors.append(f"Response has failure status: {status}")
+
         # Check for error field
         if "error" in response and response["error"]:
             errors.append(f"Response contains error: {response['error']}")
-        
+
         # Check for exception
         if "exception" in response:
             errors.append(f"Response contains exception: {response['exception']}")
-        
+
         return {
             "passed": len(errors) == 0,
             "errors": errors
