@@ -27,6 +27,7 @@ from .performance_monitor import PerformanceMonitor
 from .prompt_counter import PromptCounter
 from .response_validator import ResponseValidator
 from .result_collector import ResultCollector
+from .supabase_client import get_supabase_client
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +44,18 @@ class TestRunner:
     - Generate reports
     """
     
-    def __init__(self):
-        """Initialize the test runner."""
+    def __init__(self, run_id: Optional[int] = None):
+        """
+        Initialize the test runner.
+
+        Args:
+            run_id: Optional Supabase test_run ID for tracking
+        """
         # Configuration
         self.max_retries = int(os.getenv("MAX_RETRIES", "2"))
         self.test_timeout = int(os.getenv("TEST_TIMEOUT_SECS", "300"))
         self.retry_delay = int(os.getenv("RETRY_DELAY_SECS", "5"))
-        
+
         # Initialize components
         self.prompt_counter = PromptCounter()
         self.api_client = APIClient(prompt_counter=self.prompt_counter)
@@ -59,7 +65,11 @@ class TestRunner:
         self.performance_monitor = PerformanceMonitor()
         self.response_validator = ResponseValidator()
         self.result_collector = ResultCollector()
-        
+        self.supabase_client = get_supabase_client()
+
+        # Supabase tracking
+        self.run_id = run_id
+
         logger.info("Test runner initialized")
     
     def run_test(
@@ -109,7 +119,37 @@ class TestRunner:
                 # Stop performance monitoring FIRST to get complete metrics
                 performance_metrics = self.performance_monitor.stop_monitoring(test_id)
 
-                # Get watcher observation (with complete performance metrics)
+                # Insert test result into Supabase (before watcher)
+                test_result_id = None
+                if self.run_id:
+                    try:
+                        # Extract provider and model from kwargs or result
+                        provider = kwargs.get("provider", "unknown")
+                        model = kwargs.get("model", result.get("model", "unknown"))
+                        execution_status = result.get("status", "success")
+
+                        test_result_id = self.supabase_client.insert_test_result(
+                            run_id=self.run_id,
+                            tool_name=tool_name,
+                            variation=variation,
+                            provider=provider,
+                            model=model,
+                            status="PASS" if validation["valid"] else "FAIL",
+                            execution_status=execution_status,
+                            duration_secs=performance_metrics.get("duration_secs"),
+                            memory_mb=performance_metrics.get("memory_mb"),
+                            cpu_percent=performance_metrics.get("cpu_percent"),
+                            tokens_total=performance_metrics.get("tokens"),
+                            cost_usd=performance_metrics.get("cost_usd"),
+                            watcher_quality=None,  # Will be updated after watcher
+                            error_message=None if validation["valid"] else "; ".join(validation.get("errors", [])),
+                            test_input=kwargs.get("test_input", {}),
+                            test_output=result
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to insert test result into Supabase: {e}")
+
+                # Get watcher observation (with complete performance metrics and test_result_id)
                 watcher_observation = None
                 if os.getenv("ENABLE_GLM_WATCHER", "true").lower() == "true":
                     try:
@@ -120,7 +160,8 @@ class TestRunner:
                             expected_behavior=kwargs.get("expected_behavior", ""),
                             actual_output=result,
                             performance_metrics=performance_metrics,
-                            test_status="passed" if validation["valid"] else "failed"
+                            test_status="passed" if validation["valid"] else "failed",
+                            test_result_id=test_result_id
                         )
                     except Exception as e:
                         logger.warning(f"Watcher observation failed: {e}")
