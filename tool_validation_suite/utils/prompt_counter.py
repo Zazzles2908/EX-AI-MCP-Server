@@ -45,7 +45,8 @@ class PromptCounter:
             "prompts_by_provider": {
                 "kimi": 0,
                 "glm": 0,
-                "watcher": 0
+                "watcher": 0,
+                "mcp": 0
             },
             "prompts_by_model": {},
             "prompts_by_tool": {},
@@ -79,7 +80,8 @@ class PromptCounter:
                 "by_provider": {
                     "kimi": {"input": 0, "output": 0, "total": 0},
                     "glm": {"input": 0, "output": 0, "total": 0},
-                    "watcher": {"input": 0, "output": 0, "total": 0}
+                    "watcher": {"input": 0, "output": 0, "total": 0},
+                    "mcp": {"input": 0, "output": 0, "total": 0}
                 }
             },
             "cost_tracking": {
@@ -87,7 +89,8 @@ class PromptCounter:
                 "by_provider": {
                     "kimi": 0.0,
                     "glm": 0.0,
-                    "watcher": 0.0
+                    "watcher": 0.0,
+                    "mcp": 0.0
                 },
                 "by_feature": {
                     "web_search": 0.0,

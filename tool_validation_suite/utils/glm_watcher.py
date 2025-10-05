@@ -92,6 +92,9 @@ class GLMWatcher:
             return None
         
         try:
+            # Load previous observation if it exists
+            previous_observation = self._load_previous_observation(tool_name, variation_name)
+
             # Prepare observation context
             context = self._prepare_context(
                 tool_name,
@@ -100,12 +103,13 @@ class GLMWatcher:
                 expected_behavior,
                 actual_output,
                 performance_metrics,
-                test_status
+                test_status,
+                previous_observation
             )
-            
+
             # Get watcher analysis
-            analysis = self._analyze_with_glm(context)
-            
+            analysis = self._analyze_with_glm(context, previous_observation)
+
             # Create observation
             observation = {
                 "tool": tool_name,
@@ -113,13 +117,16 @@ class GLMWatcher:
                 "timestamp": datetime.utcnow().isoformat() + "Z",
                 "test_status": test_status,
                 "watcher_analysis": analysis,
-                "performance_metrics": performance_metrics
+                "performance_metrics": performance_metrics,
+                "run_number": (previous_observation.get("run_number", 0) + 1) if previous_observation else 1,
+                "previous_run": previous_observation.get("timestamp") if previous_observation else None,
+                "conversation_id": analysis.get("conversation_id") if analysis else None
             }
-            
+
             # Save observation
             if self.save_observations:
                 self._save_observation(tool_name, variation_name, observation)
-            
+
             return observation
         
         except Exception as e:
@@ -134,14 +141,31 @@ class GLMWatcher:
         expected_behavior: str,
         actual_output: Dict[str, Any],
         performance_metrics: Dict[str, Any],
-        test_status: str
+        test_status: str,
+        previous_observation: Optional[Dict[str, Any]] = None
     ) -> str:
         """Prepare context for watcher analysis."""
         
         # Truncate large outputs
         input_str = json.dumps(test_input, indent=2)[:1000]
         output_str = json.dumps(actual_output, indent=2)[:2000]
-        
+
+        # Add previous observation context if available
+        previous_context = ""
+        if previous_observation:
+            prev_analysis = previous_observation.get("watcher_analysis", {})
+            run_num = previous_observation.get("run_number", 0)
+            prev_timestamp = previous_observation.get("timestamp", "unknown")
+            previous_context = f"""
+**Previous Run (Run #{run_num} at {prev_timestamp}):**
+- Previous Quality Score: {prev_analysis.get('quality_score', 'N/A')}/10
+- Previous Correctness: {prev_analysis.get('correctness', 'N/A')}
+- Previous Anomalies: {', '.join(prev_analysis.get('anomalies', [])) if prev_analysis.get('anomalies') else 'None'}
+- Previous Suggestions: {', '.join(prev_analysis.get('suggestions', [])[:2]) if prev_analysis.get('suggestions') else 'None'}
+
+**Your Task:** Compare this run to the previous run. Note any improvements, regressions, or persistent issues.
+"""
+
         if self.detail_level == "high":
             context = f"""
 You are an independent test observer analyzing a tool execution in the EX-AI MCP Server.
@@ -149,7 +173,7 @@ You are an independent test observer analyzing a tool execution in the EX-AI MCP
 **Tool:** {tool_name}
 **Test Variation:** {variation_name}
 **Test Status:** {test_status}
-
+{previous_context}
 **Input:**
 ```json
 {input_str}
@@ -179,6 +203,7 @@ Analyze this test execution objectively and provide:
 4. **Suggestions:** Provide 2-3 specific suggestions for improvement
 5. **Confidence (0.0-1.0):** Your confidence in this assessment
 6. **Observations:** Brief summary of your analysis (2-3 sentences)
+{"7. **Progress:** If this is a re-run, note improvements or regressions from previous run" if previous_observation else ""}
 
 Be objective, critical, and constructive. Your analysis helps validate the testing process.
 
@@ -189,7 +214,8 @@ Respond in JSON format:
   "anomalies": ["anomaly1", "anomaly2", ...],
   "suggestions": ["suggestion1", "suggestion2", "suggestion3"],
   "confidence": <0.0-1.0>,
-  "observations": "<your observations>"
+  "observations": "<your observations>"{"," if previous_observation else ""}
+  {"\"progress\": \"<improvements or regressions from previous run>\"" if previous_observation else ""}
 }}
 """
         elif self.detail_level == "medium":
@@ -216,30 +242,46 @@ JSON format: quality_score, correctness, suggestions, confidence, observations.
         
         return context
     
-    def _analyze_with_glm(self, context: str) -> Dict[str, Any]:
-        """Call GLM-4-Flash to analyze the test execution."""
-        
+    def _analyze_with_glm(self, context: str, previous_observation: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Call GLM-4-Flash to analyze the test execution with conversation continuity."""
+
         url = f"{self.base_url}/chat/completions"
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"
         }
-        
+
+        # Build messages with conversation history if available
+        messages = [
+            {
+                "role": "system",
+                "content": "You are an objective test observer. Analyze test executions and provide constructive feedback in JSON format. IMPORTANT: Return ONLY valid JSON, no markdown code blocks."
+            }
+        ]
+
+        # Add previous conversation if available
+        if previous_observation and previous_observation.get("conversation_id"):
+            prev_analysis = previous_observation.get("watcher_analysis", {})
+            messages.append({
+                "role": "assistant",
+                "content": json.dumps(prev_analysis, indent=2)
+            })
+
+        messages.append({
+            "role": "user",
+            "content": context
+        })
+
         payload = {
             "model": self.model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are an objective test observer. Analyze test executions and provide constructive feedback in JSON format."
-                },
-                {
-                    "role": "user",
-                    "content": context
-                }
-            ],
+            "messages": messages,
             "temperature": 0.3,  # Low temperature for consistent analysis
-            "max_tokens": 500
+            "max_tokens": 2000  # Increased from 500 to prevent truncation
         }
+
+        # Add conversation_id if we have one from previous observation
+        if previous_observation and previous_observation.get("conversation_id"):
+            payload["conversation_id"] = previous_observation["conversation_id"]
         
         try:
             response = requests.post(
@@ -252,7 +294,10 @@ JSON format: quality_score, correctness, suggestions, confidence, observations.
             
             result = response.json()
             content = result["choices"][0]["message"]["content"]
-            
+
+            # Extract conversation_id if present (for GLM API)
+            conversation_id = result.get("id") or result.get("conversation_id")
+
             # Try to parse JSON response
             try:
                 # Extract JSON from markdown code blocks if present
@@ -260,20 +305,48 @@ JSON format: quality_score, correctness, suggestions, confidence, observations.
                     content = content.split("```json")[1].split("```")[0].strip()
                 elif "```" in content:
                     content = content.split("```")[1].split("```")[0].strip()
-                
+
+                # Try to find JSON object in the content
+                content = content.strip()
+
+                # If content doesn't start with {, try to find the first {
+                if not content.startswith("{"):
+                    start_idx = content.find("{")
+                    if start_idx != -1:
+                        content = content[start_idx:]
+
+                # If content doesn't end with }, try to find the last }
+                if not content.endswith("}"):
+                    end_idx = content.rfind("}")
+                    if end_idx != -1:
+                        content = content[:end_idx + 1]
+
                 analysis = json.loads(content)
+
+                # Validate required fields
+                required_fields = ["quality_score", "correctness", "suggestions", "confidence", "observations"]
+                for field in required_fields:
+                    if field not in analysis:
+                        logger.warning(f"Watcher response missing field: {field}")
+                        analysis[field] = None if field != "suggestions" else []
+
+                # Add conversation_id to analysis for continuity
+                if conversation_id:
+                    analysis["conversation_id"] = conversation_id
+
                 return analysis
-            
-            except json.JSONDecodeError:
+
+            except json.JSONDecodeError as e:
                 # Fallback if JSON parsing fails
-                logger.warning("Watcher response not valid JSON, using fallback")
+                logger.warning(f"Watcher response not valid JSON: {e}")
+                logger.debug(f"Content was: {content[:500]}")
                 return {
                     "quality_score": 5,
                     "correctness": "UNKNOWN",
                     "anomalies": [],
                     "suggestions": ["Unable to parse watcher response"],
                     "confidence": 0.5,
-                    "observations": content[:200]
+                    "observations": content[:500]  # Increased from 200 to 500
                 }
         
         except Exception as e:
@@ -287,18 +360,38 @@ JSON format: quality_score, correctness, suggestions, confidence, observations.
                 "observations": f"Watcher analysis failed: {str(e)}"
             }
     
-    def _save_observation(self, tool_name: str, variation_name: str, observation: Dict[str, Any]):
-        """Save observation to file."""
-        
+    def _load_previous_observation(self, tool_name: str, variation_name: str) -> Optional[Dict[str, Any]]:
+        """Load previous observation from file if it exists."""
+
         filename = f"{tool_name}_{variation_name}.json"
         filepath = self.observation_dir / filename
-        
+
+        try:
+            if filepath.exists():
+                with open(filepath, "r", encoding="utf-8") as f:
+                    observation = json.load(f)
+                logger.debug(f"Loaded previous observation: {filepath}")
+                return observation
+            else:
+                logger.debug(f"No previous observation found: {filepath}")
+                return None
+
+        except Exception as e:
+            logger.warning(f"Failed to load previous observation: {e}")
+            return None
+
+    def _save_observation(self, tool_name: str, variation_name: str, observation: Dict[str, Any]):
+        """Save observation to file."""
+
+        filename = f"{tool_name}_{variation_name}.json"
+        filepath = self.observation_dir / filename
+
         try:
             with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(observation, f, indent=2, ensure_ascii=False)
-            
+
             logger.debug(f"Saved watcher observation: {filepath}")
-        
+
         except Exception as e:
             logger.error(f"Failed to save watcher observation: {e}")
     
