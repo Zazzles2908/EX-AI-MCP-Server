@@ -33,6 +33,14 @@ load_dotenv(".env")
 
 logger = logging.getLogger(__name__)
 
+# Import Supabase client for historical tracking
+try:
+    from .supabase_client import get_supabase_client
+    SUPABASE_AVAILABLE = True
+except ImportError:
+    SUPABASE_AVAILABLE = False
+    logger.warning("Supabase client not available. Historical tracking disabled.")
+
 
 class GLMWatcher:
     """
@@ -55,9 +63,16 @@ class GLMWatcher:
         self.timeout_secs = int(os.getenv("WATCHER_TIMEOUT_SECS", "30"))
         self.save_observations = os.getenv("SAVE_WATCHER_OBSERVATIONS", "true").lower() == "true"
         self.observation_dir = Path(os.getenv("WATCHER_OBSERVATION_DIR", "./tool_validation_suite/results/latest/watcher_observations"))
-        
+
         # Create observation directory
         self.observation_dir.mkdir(parents=True, exist_ok=True)
+
+        # Initialize Supabase client for historical tracking
+        self.supabase_client = get_supabase_client() if SUPABASE_AVAILABLE else None
+        if self.supabase_client and self.supabase_client.enabled:
+            logger.info("Watcher: Supabase historical tracking enabled")
+        else:
+            logger.info("Watcher: Supabase historical tracking disabled")
         
         # Validate configuration
         if self.enabled and not self.api_key:
@@ -74,11 +89,12 @@ class GLMWatcher:
         expected_behavior: str,
         actual_output: Dict[str, Any],
         performance_metrics: Dict[str, Any],
-        test_status: str
+        test_status: str,
+        test_result_id: Optional[int] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Observe a test execution and provide independent analysis.
-        
+
         Args:
             tool_name: Name of the tool being tested
             variation_name: Name of the test variation
@@ -87,7 +103,8 @@ class GLMWatcher:
             actual_output: Actual output from the tool
             performance_metrics: Performance metrics (time, memory, cost, etc.)
             test_status: Test status (PASS, FAIL, ERROR, etc.)
-        
+            test_result_id: Optional Supabase test_result ID for linking observations
+
         Returns:
             Observation dictionary with analysis, or None if watcher disabled
         """
@@ -126,9 +143,9 @@ class GLMWatcher:
                 "conversation_id": analysis.get("conversation_id") if analysis else None
             }
 
-            # Save observation
+            # Save observation (to both file and Supabase)
             if self.save_observations:
-                self._save_observation(tool_name, variation_name, observation)
+                self._save_observation(tool_name, variation_name, observation, test_result_id)
 
             return observation
         
@@ -383,9 +400,22 @@ JSON format: quality_score, correctness, suggestions, confidence, observations.
             logger.warning(f"Failed to load previous observation: {e}")
             return None
 
-    def _save_observation(self, tool_name: str, variation_name: str, observation: Dict[str, Any]):
-        """Save observation to file."""
+    def _save_observation(self, tool_name: str, variation_name: str, observation: Dict[str, Any], test_result_id: Optional[int] = None):
+        """
+        Save observation to file and Supabase.
 
+        Dual Storage Strategy:
+        - JSON file: Immediate debugging, git history, offline access
+        - Supabase: Historical tracking, trend analysis, querying
+
+        Args:
+            tool_name: Name of the tool being tested
+            variation_name: Test variation name
+            observation: Watcher observation data
+            test_result_id: Optional Supabase test_result ID for linking
+        """
+
+        # Save to JSON file (existing behavior)
         filename = f"{tool_name}_{variation_name}.json"
         filepath = self.observation_dir / filename
 
@@ -393,10 +423,41 @@ JSON format: quality_score, correctness, suggestions, confidence, observations.
             with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(observation, f, indent=2, ensure_ascii=False)
 
-            logger.debug(f"Saved watcher observation: {filepath}")
+            logger.debug(f"Saved watcher observation to file: {filepath}")
 
         except Exception as e:
-            logger.error(f"Failed to save watcher observation: {e}")
+            logger.error(f"Failed to save watcher observation to file: {e}")
+
+        # Save to Supabase (new behavior)
+        if self.supabase_client and self.supabase_client.enabled and test_result_id:
+            try:
+                analysis = observation.get("watcher_analysis", {})
+
+                # Extract structured data
+                quality_score = analysis.get("quality_score", 5)
+                strengths = analysis.get("strengths", [])
+                weaknesses = analysis.get("weaknesses", [])
+                anomalies = analysis.get("anomalies", [])
+                recommendations = analysis.get("recommendations", [])
+                confidence_level = analysis.get("confidence_level", "medium")
+
+                # Insert into Supabase
+                insight_id = self.supabase_client.insert_watcher_insight(
+                    test_result_id=test_result_id,
+                    quality_score=quality_score,
+                    strengths=strengths,
+                    weaknesses=weaknesses,
+                    anomalies=anomalies,
+                    recommendations=recommendations,
+                    confidence_level=confidence_level,
+                    raw_observation=observation
+                )
+
+                if insight_id:
+                    logger.debug(f"Saved watcher observation to Supabase: {insight_id}")
+
+            except Exception as e:
+                logger.warning(f"Failed to save watcher observation to Supabase: {e}. Continuing with file-only storage.")
     
     def generate_summary(self, observations: List[Dict[str, Any]]) -> Dict[str, Any]:
         """

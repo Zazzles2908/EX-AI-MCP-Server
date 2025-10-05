@@ -216,34 +216,70 @@ Create `tool_validation_suite/utils/supabase_reporter.py` to:
 
 ## 🚀 Implementation Plan
 
-### Phase 1: Schema Setup (1 hour)
-1. Create tables in Supabase
-2. Set up RLS policies (if needed)
-3. Create indexes for performance
+### Phase 1: Schema Setup (30 minutes) ✅ CURRENT
+1. Create all tables in Supabase
+2. Set up indexes for performance
+3. Test table creation
 
-### Phase 2: Basic Integration (2-3 hours)
-1. Create Supabase client utility
-2. Update test_runner.py to insert test_runs and test_results
-3. Test basic data insertion
+### Phase 2: Supabase Client Utility (30 minutes)
+1. Create `tool_validation_suite/utils/supabase_client.py`
+2. Implement connection management
+3. Add helper methods for CRUD operations
+4. Test connection
 
-### Phase 3: Watcher Integration (1-2 hours)
-1. Parse watcher observations into structured format
-2. Insert watcher_insights records
-3. Link to test_results
+### Phase 3: Watcher Integration (1-2 hours) - PRIORITY
+1. Update `glm_watcher.py` to save observations to Supabase
+2. Parse watcher observations into structured format
+3. Insert into `watcher_insights` table
+4. Maintain backward compatibility (still save JSON files)
+5. **Key Feature:** Watcher can query historical observations for context
 
-### Phase 4: Issue Tracking (2-3 hours)
-1. Create issue_detector.py
+### Phase 4: Test Runner Integration (1-2 hours)
+1. Update `test_runner.py` to create `test_runs` record at start
+2. Insert `test_results` after each test
+3. Link watcher insights to test results
+4. Update `test_runs` with final statistics
+5. Maintain backward compatibility (still save JSON files)
+
+### Phase 5: Issue Tracking (2-3 hours)
+1. Create `issue_detector.py`
 2. Define issue detection patterns
 3. Implement automatic issue creation/updating
 4. Track issue occurrences
+5. Backfill existing issues from ISSUES_CHECKLIST.md
 
-### Phase 5: Reporting (2-3 hours)
-1. Create supabase_reporter.py
+### Phase 6: Reporting (1-2 hours)
+1. Create `supabase_reporter.py`
 2. Implement trend analysis queries
 3. Generate comparison reports
 4. Create export functionality
 
-**Total Estimated Time:** 8-12 hours
+**Total Estimated Time:** 6-10 hours
+
+---
+
+## 🔄 Dual Storage Strategy
+
+**Key Design Decision:** Maintain both JSON files AND Supabase storage
+
+### JSON Files (Existing)
+- **Purpose:** Immediate debugging, git history, offline access
+- **Location:** `tool_validation_suite/results/latest/`
+- **Format:** Individual JSON files per test/observation
+- **Retention:** Latest run + historical archives
+
+### Supabase Database (New)
+- **Purpose:** Historical tracking, trend analysis, querying
+- **Location:** Supabase cloud database
+- **Format:** Structured relational data
+- **Retention:** All runs (with optional cleanup policy)
+
+### Benefits of Dual Storage
+1. **Backward Compatibility:** Existing tools continue to work
+2. **Debugging:** JSON files for immediate inspection
+3. **Analysis:** Supabase for historical trends
+4. **Reliability:** Fallback if Supabase unavailable
+5. **Git History:** JSON files tracked in version control
 
 ---
 
