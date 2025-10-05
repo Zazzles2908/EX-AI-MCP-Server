@@ -9,21 +9,120 @@ import os
 from pathlib import Path
 
 # Tool definitions with their arguments
+# NOTE: Workflow tools require step, step_number, total_steps, next_step_required, and findings
 TOOL_DEFINITIONS = {
-    # Core tools (14)
-    "analyze": {"content": "This is test content for analysis.", "model": "glm-4.5-flash"},
-    "debug": {"code": "def test(): return 42", "model": "glm-4.5-flash"},
-    "codereview": {"code": "def hello(): print('world')", "model": "glm-4.5-flash"},
-    "refactor": {"code": "x=1;y=2;print(x+y)", "model": "glm-4.5-flash"},
-    "secaudit": {"code": "password = 'hardcoded123'", "model": "glm-4.5-flash"},
-    "planner": {"task": "Build a simple web app", "model": "glm-4.5-flash"},
-    "tracer": {"code": "def factorial(n): return 1 if n==0 else n*factorial(n-1)", "model": "glm-4.5-flash"},
-    "testgen": {"code": "def add(a, b): return a + b", "model": "glm-4.5-flash"},
-    "consensus": {"question": "What is 2+2?", "model": "glm-4.5-flash"},
-    "thinkdeep": {"question": "Explain recursion", "model": "glm-4.5-flash"},
-    "docgen": {"code": "def process_data(data): return data.upper()", "model": "glm-4.5-flash"},
-    "precommit": {"files": ["test.py"], "model": "glm-4.5-flash"},
-    "challenge": {"claim": "Python is the best language", "model": "glm-4.5-flash"},
+    # Core tools (14) - Workflow tools with proper schema
+    "analyze": {
+        "step": "Analyze the provided code for potential improvements",
+        "step_number": 1,
+        "total_steps": 1,
+        "next_step_required": False,
+        "findings": "Initial code review requested",
+        "relevant_files": ["test.py"],
+        "model": "glm-4.5-flash"
+    },
+    "debug": {
+        "step": "Debug the provided code to find the issue",
+        "step_number": 1,
+        "total_steps": 1,
+        "next_step_required": False,
+        "findings": "Code appears to have a logic error",
+        "relevant_files": ["test.py"],
+        "model": "glm-4.5-flash"
+    },
+    "codereview": {
+        "step": "Review the code for best practices and potential issues",
+        "step_number": 1,
+        "total_steps": 1,
+        "next_step_required": False,
+        "findings": "Code review requested for quality assurance",
+        "relevant_files": ["test.py"],
+        "model": "glm-4.5-flash"
+    },
+    "refactor": {
+        "step": "Refactor the code to improve readability and maintainability",
+        "step_number": 1,
+        "total_steps": 1,
+        "next_step_required": False,
+        "findings": "Code could benefit from refactoring",
+        "relevant_files": ["test.py"],
+        "model": "glm-4.5-flash"
+    },
+    "secaudit": {
+        "step": "Audit the code for security vulnerabilities",
+        "step_number": 1,
+        "total_steps": 1,
+        "next_step_required": False,
+        "findings": "Security audit requested",
+        "relevant_files": ["test.py"],
+        "model": "glm-4.5-flash"
+    },
+    "planner": {
+        "step": "Create a plan for building a simple web application",
+        "step_number": 1,
+        "total_steps": 1,
+        "next_step_required": False,
+        "findings": "Project planning phase initiated",
+        "model": "glm-4.5-flash"
+    },
+    "tracer": {
+        "step": "Trace the execution flow of the factorial function",
+        "step_number": 1,
+        "total_steps": 1,
+        "next_step_required": False,
+        "findings": "Execution trace requested for recursive function",
+        "relevant_files": ["test.py"],
+        "model": "glm-4.5-flash"
+    },
+    "testgen": {
+        "step": "Generate unit tests for the add function",
+        "step_number": 1,
+        "total_steps": 1,
+        "next_step_required": False,
+        "findings": "Test generation requested",
+        "relevant_files": ["test.py"],
+        "model": "glm-4.5-flash"
+    },
+    "consensus": {
+        "step": "Gather consensus on whether Python or JavaScript is better for web backend development",
+        "step_number": 1,
+        "total_steps": 1,
+        "next_step_required": False,
+        "findings": "Initial analysis: Both languages have strong ecosystems. Need expert consensus.",
+        "models": [
+            {"name": "glm-4.5-flash", "stance": "neutral"},
+            {"name": "kimi-k2-0905-preview", "stance": "neutral"}
+        ],
+        "model": "glm-4.5-flash"
+    },
+    "thinkdeep": {
+        "step": "Deeply analyze the concept of recursion and its applications",
+        "step_number": 1,
+        "total_steps": 1,
+        "next_step_required": False,
+        "findings": "Deep thinking requested on recursion concept",
+        "model": "glm-4.5-flash"
+    },
+    "docgen": {
+        "step": "Generate documentation for the process_data function",
+        "step_number": 1,
+        "total_steps": 1,
+        "next_step_required": False,
+        "findings": "Documentation generation requested",
+        "relevant_files": ["test.py"],
+        "model": "glm-4.5-flash"
+    },
+    "precommit": {
+        "step": "Run pre-commit checks on the specified files",
+        "step_number": 1,
+        "total_steps": 1,
+        "next_step_required": False,
+        "findings": "Pre-commit validation requested",
+        "files_checked": ["test.py"],
+        "model": "glm-4.5-flash"
+    },
+    # Simple tools (non-workflow)
+    "challenge": {"prompt": "Python is the best language for all use cases"},
     
     # Advanced tools (8)
     "listmodels": {},
