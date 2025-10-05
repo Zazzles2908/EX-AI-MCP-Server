@@ -1,17 +1,39 @@
 # 📑 Tool Validation Suite - Documentation Index
 
-**Last Updated:** 2025-10-05  
-**Status:** ✅ Active
+**Last Updated:** 2025-10-05
+**Status:** ⚠️ MAJOR UPDATE - Testing Approach Changed
+**Critical:** Read "WHAT CHANGED" section below first!
 
 ---
 
-## 🚀 QUICK START
+## ⚠️ WHAT CHANGED (2025-10-05)
 
-**New to this project? Start here:**
+**IMPORTANT:** The test suite approach has been completely redesigned!
 
-1. **`TOOL_VALIDATION_SUITE_OVERVIEW.md`** (5 min) - Main overview
-2. **`docs/current/CURRENT_STATUS_SUMMARY.md`** (5 min) - Current status
-3. **`docs/current/IMPLEMENTATION_GUIDE.md`** (10 min) - How to create tests
+### OLD Approach (Documented in existing files)
+❌ Direct API calls to Kimi/GLM providers
+❌ Bypassed the MCP server entirely
+❌ Only tested provider APIs, not the actual tools
+
+### NEW Approach (Current Implementation)
+✅ Calls actual MCP server tools through WebSocket daemon
+✅ Tests the ENTIRE stack (MCP protocol → tools → providers → APIs)
+✅ Validates end-to-end functionality
+
+**What This Means:**
+- All existing documentation describes the OLD approach
+- The actual implementation now uses `mcp_client.py` to call through daemon
+- Test scripts need to be regenerated with the new approach
+
+---
+
+## 🚀 QUICK START (UPDATED)
+
+**New to this project? Read these in order:**
+
+1. **THIS FILE** (5 min) - Understand what changed
+2. **`READY_FOR_TESTING.md`** (10 min) - Current status (⚠️ outdated approach)
+3. **`tests/MCP_TEST_TEMPLATE.py`** (5 min) - NEW working example
 
 ---
 

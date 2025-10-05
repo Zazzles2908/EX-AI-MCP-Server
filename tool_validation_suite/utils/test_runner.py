@@ -232,28 +232,58 @@ class TestRunner:
         """Print results to console."""
         self.result_collector.print_summary()
         self.prompt_counter.print_summary()
-        
+
         perf_summary = self.performance_monitor.get_summary()
-        
+
         print("\n" + "="*60)
         print("  PERFORMANCE SUMMARY")
         print("="*60)
         print(f"\nAverage Duration: {perf_summary['avg_duration_secs']:.2f}s")
         print(f"Max Duration: {perf_summary['max_duration_secs']:.2f}s")
         print(f"Min Duration: {perf_summary['min_duration_secs']:.2f}s")
-        
+
         if perf_summary.get("avg_memory_mb", 0) > 0:
             print(f"\nAverage Memory: {perf_summary['avg_memory_mb']:.1f} MB")
             print(f"Max Memory: {perf_summary['max_memory_mb']:.1f} MB")
-        
+
         if perf_summary.get("avg_cpu_percent", 0) > 0:
             print(f"\nAverage CPU: {perf_summary['avg_cpu_percent']:.1f}%")
             print(f"Max CPU: {perf_summary['max_cpu_percent']:.1f}%")
-        
+
         if perf_summary.get("total_alerts", 0) > 0:
             print(f"\nTotal Alerts: {perf_summary['total_alerts']}")
-        
+
         print("\n" + "="*60 + "\n")
+
+    def get_results_dir(self) -> Path:
+        """Get the results directory path."""
+        results_dir = Path(os.getenv("TEST_RESULTS_DIR", "./tool_validation_suite/results/latest"))
+        results_dir.mkdir(parents=True, exist_ok=True)
+        return results_dir
+
+    def generate_report(self):
+        """Generate and save test report."""
+        from .report_generator import ReportGenerator
+
+        results = self.get_results()
+        results_dir = self.get_results_dir()
+
+        # Save JSON results
+        results_file = results_dir / "test_results.json"
+        with open(results_file, "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=2, ensure_ascii=False)
+
+        logger.info(f"Results saved to: {results_file}")
+
+        # Generate reports using ReportGenerator
+        try:
+            report_gen = ReportGenerator()
+            report_gen.generate_all_reports(results)
+            logger.info("Reports generated successfully")
+        except Exception as e:
+            logger.error(f"Failed to generate reports: {e}")
+
+        return results_file
 
 
 # Example usage
