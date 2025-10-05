@@ -7,13 +7,18 @@ watcher observations, and issue tracking in Supabase.
 Dual Storage Strategy:
 - JSON files: Immediate debugging, git history, offline access
 - Supabase: Historical tracking, trend analysis, querying
+
+IMPORTANT: This client is a STUB that will be disabled by default.
+Supabase operations are performed by Augment Agent through MCP tools,
+not through Python imports. When running tests directly, this client
+will do nothing (graceful degradation).
+
+To enable Supabase tracking, set SUPABASE_TRACKING_ENABLED=true in .env.testing
 """
 
 import os
 import logging
 from typing import Optional, Dict, List, Any
-from datetime import datetime
-from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -27,62 +32,24 @@ logger = logging.getLogger(__name__)
 
 class SupabaseClient:
     """
-    Client for interacting with Supabase test validation database.
+    Stub client for Supabase operations.
     
-    Features:
-    - Automatic connection management
-    - Helper methods for CRUD operations
-    - Error handling and logging
-    - Optional operation (graceful degradation if Supabase unavailable)
+    This client is disabled by default and will gracefully do nothing.
+    Actual Supabase operations are performed by Augment Agent through MCP tools.
     """
     
     def __init__(self):
-        """Initialize Supabase client."""
+        """Initialize Supabase client (disabled by default)."""
         self.project_id = os.getenv("SUPABASE_PROJECT_ID", "mxaazuhlqewmkweewyaz")
-        self.enabled = os.getenv("SUPABASE_TRACKING_ENABLED", "true").lower() == "true"
+        self.enabled = os.getenv("SUPABASE_TRACKING_ENABLED", "false").lower() == "true"
         
-        if not self.enabled:
-            logger.info("Supabase tracking disabled")
-            return
-        
-        try:
-            # Import supabase-mcp-full tools
-            # Note: These are MCP tools, not a Python SDK
-            # We'll use execute_sql for direct database operations
-            logger.info(f"Supabase tracking enabled for project: {self.project_id}")
-        except Exception as e:
-            logger.warning(f"Supabase initialization failed: {e}. Continuing without Supabase tracking.")
-            self.enabled = False
+        if self.enabled:
+            logger.warning("Supabase tracking enabled, but operations will be no-ops in test environment")
+            logger.warning("Supabase operations only work when called by Augment Agent through MCP")
+        else:
+            logger.debug("Supabase tracking disabled (expected when running tests directly)")
     
-    def _execute_sql(self, query: str, params: Optional[Dict] = None) -> Optional[List[Dict]]:
-        """
-        Execute SQL query using Supabase MCP tool.
-        
-        Args:
-            query: SQL query to execute
-            params: Optional parameters for parameterized queries
-            
-        Returns:
-            Query results or None if failed
-        """
-        if not self.enabled:
-            return None
-        
-        try:
-            # For now, we'll use simple string formatting
-            # In production, use proper parameterized queries
-            from supabase_mcp_full import execute_sql_supabase_mcp_full
-            
-            result = execute_sql_supabase_mcp_full(
-                project_id=self.project_id,
-                query=query
-            )
-            return result
-        except Exception as e:
-            logger.error(f"Supabase SQL execution failed: {e}")
-            return None
-    
-    # ========== Test Runs ==========
+    # All methods below are stubs that do nothing
     
     def create_test_run(
         self,
@@ -91,42 +58,10 @@ class SupabaseClient:
         watcher_model: str,
         notes: Optional[str] = None
     ) -> Optional[int]:
-        """
-        Create a new test run record.
-        
-        Args:
-            branch_name: Git branch name
-            commit_hash: Git commit hash
-            watcher_model: Watcher model used (e.g., "glm-4.5-air")
-            notes: Optional notes about this run
-            
-        Returns:
-            Test run ID or None if failed
-        """
-        if not self.enabled:
-            return None
-        
-        try:
-            query = f"""
-            INSERT INTO test_runs (branch_name, commit_hash, watcher_model, notes)
-            VALUES ('{branch_name}', '{commit_hash or ""}', '{watcher_model}', '{notes or ""}')
-            RETURNING id;
-            """
-            
-            from supabase_mcp_full import execute_sql_supabase_mcp_full
-            result = execute_sql_supabase_mcp_full(
-                project_id=self.project_id,
-                query=query
-            )
-            
-            if result and len(result) > 0:
-                run_id = result[0].get('id')
-                logger.info(f"Created test run: {run_id}")
-                return run_id
-            return None
-        except Exception as e:
-            logger.error(f"Failed to create test run: {e}")
-            return None
+        """Create a new test run record (stub - does nothing)."""
+        if self.enabled:
+            logger.debug(f"Supabase: Would create test run for branch={branch_name}")
+        return None
     
     def update_test_run(
         self,
@@ -140,53 +75,10 @@ class SupabaseClient:
         total_duration_secs: Optional[int],
         total_cost_usd: Optional[float]
     ) -> bool:
-        """
-        Update test run with final statistics.
-        
-        Args:
-            run_id: Test run ID
-            total_tests: Total number of tests
-            tests_passed: Number of passed tests
-            tests_failed: Number of failed tests
-            tests_skipped: Number of skipped tests
-            pass_rate: Pass rate percentage
-            avg_watcher_quality: Average watcher quality score
-            total_duration_secs: Total duration in seconds
-            total_cost_usd: Total cost in USD
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        if not self.enabled or not run_id:
-            return False
-        
-        try:
-            query = f"""
-            UPDATE test_runs
-            SET total_tests = {total_tests},
-                tests_passed = {tests_passed},
-                tests_failed = {tests_failed},
-                tests_skipped = {tests_skipped},
-                pass_rate = {pass_rate},
-                avg_watcher_quality = {avg_watcher_quality or 'NULL'},
-                total_duration_secs = {total_duration_secs or 'NULL'},
-                total_cost_usd = {total_cost_usd or 'NULL'}
-            WHERE id = {run_id};
-            """
-            
-            from supabase_mcp_full import execute_sql_supabase_mcp_full
-            execute_sql_supabase_mcp_full(
-                project_id=self.project_id,
-                query=query
-            )
-            
-            logger.info(f"Updated test run: {run_id}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to update test run: {e}")
-            return False
-    
-    # ========== Test Results ==========
+        """Update test run with final statistics (stub - does nothing)."""
+        if self.enabled:
+            logger.debug(f"Supabase: Would update test run {run_id}")
+        return False
     
     def insert_test_result(
         self,
@@ -207,59 +99,10 @@ class SupabaseClient:
         test_input: Optional[Dict],
         test_output: Optional[Dict]
     ) -> Optional[int]:
-        """
-        Insert a test result record.
-        
-        Returns:
-            Test result ID or None if failed
-        """
-        if not self.enabled or not run_id:
-            return None
-        
-        try:
-            import json
-            
-            # Escape single quotes in strings
-            def escape_str(s):
-                if s is None:
-                    return 'NULL'
-                return f"'{str(s).replace(chr(39), chr(39)+chr(39))}'"
-            
-            test_input_json = 'NULL' if not test_input else f"'{json.dumps(test_input)}'::jsonb"
-            test_output_json = 'NULL' if not test_output else f"'{json.dumps(test_output)}'::jsonb"
-            
-            query = f"""
-            INSERT INTO test_results (
-                run_id, tool_name, variation, provider, model, status,
-                execution_status, duration_secs, memory_mb, cpu_percent,
-                tokens_total, cost_usd, watcher_quality, error_message,
-                test_input, test_output
-            )
-            VALUES (
-                {run_id}, '{tool_name}', '{variation}', '{provider}', '{model}', '{status}',
-                {escape_str(execution_status)}, {duration_secs or 'NULL'}, {memory_mb or 'NULL'}, {cpu_percent or 'NULL'},
-                {tokens_total or 'NULL'}, {cost_usd or 'NULL'}, {watcher_quality or 'NULL'}, {escape_str(error_message)},
-                {test_input_json}, {test_output_json}
-            )
-            RETURNING id;
-            """
-            
-            from supabase_mcp_full import execute_sql_supabase_mcp_full
-            result = execute_sql_supabase_mcp_full(
-                project_id=self.project_id,
-                query=query
-            )
-            
-            if result and len(result) > 0:
-                test_result_id = result[0].get('id')
-                logger.debug(f"Inserted test result: {test_result_id}")
-                return test_result_id
-            return None
-        except Exception as e:
-            logger.error(f"Failed to insert test result: {e}")
-            return None
-    
-    # ========== Watcher Insights ==========
+        """Insert a test result record (stub - does nothing)."""
+        if self.enabled:
+            logger.debug(f"Supabase: Would insert test result for {tool_name}/{variation}")
+        return None
     
     def insert_watcher_insight(
         self,
@@ -272,52 +115,10 @@ class SupabaseClient:
         confidence_level: str,
         raw_observation: Dict
     ) -> Optional[int]:
-        """
-        Insert a watcher insight record.
-        
-        Returns:
-            Watcher insight ID or None if failed
-        """
-        if not self.enabled or not test_result_id:
-            return None
-        
-        try:
-            import json
-            
-            # Convert lists to PostgreSQL arrays
-            def to_pg_array(lst):
-                if not lst:
-                    return 'ARRAY[]::text[]'
-                escaped = [s.replace("'", "''") for s in lst]
-                return f"ARRAY[{', '.join([f\"'{s}'\" for s in escaped])}]"
-            
-            query = f"""
-            INSERT INTO watcher_insights (
-                test_result_id, quality_score, strengths, weaknesses,
-                anomalies, recommendations, confidence_level, raw_observation
-            )
-            VALUES (
-                {test_result_id}, {quality_score}, {to_pg_array(strengths)}, {to_pg_array(weaknesses)},
-                {to_pg_array(anomalies)}, {to_pg_array(recommendations)}, '{confidence_level}',
-                '{json.dumps(raw_observation)}'::jsonb
-            )
-            RETURNING id;
-            """
-            
-            from supabase_mcp_full import execute_sql_supabase_mcp_full
-            result = execute_sql_supabase_mcp_full(
-                project_id=self.project_id,
-                query=query
-            )
-            
-            if result and len(result) > 0:
-                insight_id = result[0].get('id')
-                logger.debug(f"Inserted watcher insight: {insight_id}")
-                return insight_id
-            return None
-        except Exception as e:
-            logger.error(f"Failed to insert watcher insight: {e}")
-            return None
+        """Insert a watcher insight record (stub - does nothing)."""
+        if self.enabled:
+            logger.debug(f"Supabase: Would insert watcher insight for test_result {test_result_id}")
+        return None
 
 
 # Singleton instance
