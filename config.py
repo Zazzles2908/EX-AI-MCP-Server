@@ -219,3 +219,162 @@ LOCALE: str = os.getenv("LOCALE", "")
 # Moved to utils/config_helpers.py for better separation of concerns
 # Import here for backward compatibility
 from utils.config_helpers import get_auggie_config_path
+
+
+# =============================================================================
+# TIMEOUT CONFIGURATION - Coordinated Hierarchy
+# =============================================================================
+# This section implements a coordinated timeout hierarchy to ensure proper
+# timeout behavior across all layers of the application.
+#
+# Hierarchy (from inner to outer):
+# 1. Tool Level (primary) - Tools set their own timeout based on complexity
+# 2. Daemon Level (secondary) - Catches tools that don't implement timeout properly
+# 3. Shim Level (tertiary) - Catches daemon failures
+# 4. Client Level (final) - Prevents infinite hangs
+#
+# Rule: Each outer timeout = 1.5x inner timeout (50% buffer)
+# =============================================================================
+
+
+class TimeoutConfig:
+    """Centralized timeout configuration with coordinated hierarchy."""
+
+    # Tool-level timeouts (primary)
+    SIMPLE_TOOL_TIMEOUT_SECS = int(os.getenv("SIMPLE_TOOL_TIMEOUT_SECS", "60"))
+    WORKFLOW_TOOL_TIMEOUT_SECS = int(os.getenv("WORKFLOW_TOOL_TIMEOUT_SECS", "120"))
+    EXPERT_ANALYSIS_TIMEOUT_SECS = int(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", "90"))
+
+    # Provider timeouts
+    GLM_TIMEOUT_SECS = int(os.getenv("GLM_TIMEOUT_SECS", "90"))
+    KIMI_TIMEOUT_SECS = int(os.getenv("KIMI_TIMEOUT_SECS", "120"))
+    KIMI_WEB_SEARCH_TIMEOUT_SECS = int(os.getenv("KIMI_WEB_SEARCH_TIMEOUT_SECS", "150"))
+
+    @classmethod
+    def get_daemon_timeout(cls) -> int:
+        """
+        Get daemon timeout (1.5x max tool timeout).
+
+        Returns:
+            int: Daemon timeout in seconds (default: 180s)
+        """
+        return int(cls.WORKFLOW_TOOL_TIMEOUT_SECS * 1.5)
+
+    @classmethod
+    def get_shim_timeout(cls) -> int:
+        """
+        Get shim timeout (2x max tool timeout).
+
+        Returns:
+            int: Shim timeout in seconds (default: 240s)
+        """
+        return int(cls.WORKFLOW_TOOL_TIMEOUT_SECS * 2.0)
+
+    @classmethod
+    def get_client_timeout(cls) -> int:
+        """
+        Get client timeout (2.5x max tool timeout).
+
+        Returns:
+            int: Client timeout in seconds (default: 300s)
+        """
+        return int(cls.WORKFLOW_TOOL_TIMEOUT_SECS * 2.5)
+
+    @classmethod
+    def validate_hierarchy(cls) -> bool:
+        """
+        Validate that timeout hierarchy is correct.
+
+        The hierarchy must follow: tool < daemon < shim < client
+        Each outer timeout should be at least 1.5x the inner timeout.
+
+        Returns:
+            bool: True if hierarchy is valid
+
+        Raises:
+            ValueError: If timeout hierarchy is invalid
+        """
+        tool = cls.WORKFLOW_TOOL_TIMEOUT_SECS
+        daemon = cls.get_daemon_timeout()
+        shim = cls.get_shim_timeout()
+        client = cls.get_client_timeout()
+
+        # Check hierarchy: tool < daemon < shim < client
+        if not (tool < daemon < shim < client):
+            raise ValueError(
+                f"Invalid timeout hierarchy: "
+                f"tool={tool}s, daemon={daemon}s, shim={shim}s, client={client}s. "
+                f"Expected: tool < daemon < shim < client"
+            )
+
+        # Check buffer ratios
+        daemon_ratio = daemon / tool
+        shim_ratio = shim / tool
+        client_ratio = client / tool
+
+        if daemon_ratio < 1.5:
+            raise ValueError(
+                f"Daemon timeout ratio too low: {daemon_ratio:.2f}x tool timeout. "
+                f"Expected at least 1.5x"
+            )
+
+        if shim_ratio < 2.0:
+            raise ValueError(
+                f"Shim timeout ratio too low: {shim_ratio:.2f}x tool timeout. "
+                f"Expected at least 2.0x"
+            )
+
+        if client_ratio < 2.5:
+            raise ValueError(
+                f"Client timeout ratio too low: {client_ratio:.2f}x tool timeout. "
+                f"Expected at least 2.5x"
+            )
+
+        return True
+
+    @classmethod
+    def get_timeout_summary(cls) -> dict:
+        """
+        Get summary of all timeout values.
+
+        Returns:
+            dict: Dictionary containing all timeout values and ratios
+        """
+        tool = cls.WORKFLOW_TOOL_TIMEOUT_SECS
+        daemon = cls.get_daemon_timeout()
+        shim = cls.get_shim_timeout()
+        client = cls.get_client_timeout()
+
+        return {
+            "tool_timeouts": {
+                "simple": cls.SIMPLE_TOOL_TIMEOUT_SECS,
+                "workflow": cls.WORKFLOW_TOOL_TIMEOUT_SECS,
+                "expert_analysis": cls.EXPERT_ANALYSIS_TIMEOUT_SECS,
+            },
+            "infrastructure_timeouts": {
+                "daemon": daemon,
+                "shim": shim,
+                "client": client,
+            },
+            "provider_timeouts": {
+                "glm": cls.GLM_TIMEOUT_SECS,
+                "kimi": cls.KIMI_TIMEOUT_SECS,
+                "kimi_web_search": cls.KIMI_WEB_SEARCH_TIMEOUT_SECS,
+            },
+            "ratios": {
+                "daemon_to_tool": round(daemon / tool, 2),
+                "shim_to_tool": round(shim / tool, 2),
+                "client_to_tool": round(client / tool, 2),
+            },
+            "hierarchy_valid": cls.validate_hierarchy(),
+        }
+
+
+# Validate timeout hierarchy on module import
+try:
+    TimeoutConfig.validate_hierarchy()
+except ValueError as e:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.warning(f"Timeout hierarchy validation failed: {e}")
+    # Don't raise - allow module to load but log the warning

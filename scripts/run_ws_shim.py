@@ -19,6 +19,9 @@ from src.bootstrap import load_env, get_repo_root, setup_logging
 # Load environment variables
 load_env()
 
+# Import TimeoutConfig for coordinated timeout hierarchy
+from config import TimeoutConfig
+
 import websockets
 from mcp.server import Server
 from mcp.types import Tool, TextContent
@@ -257,7 +260,8 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextCon
             "arguments": arguments or {},
         }))
         # Read until matching request_id with timeout
-        timeout_s = float(os.getenv("EXAI_SHIM_RPC_TIMEOUT", "300"))
+        # Use coordinated timeout hierarchy: shim timeout = 2x workflow tool timeout
+        timeout_s = float(TimeoutConfig.get_shim_timeout())  # Auto-calculated (default: 240s)
         ack_grace = float(os.getenv("EXAI_SHIM_ACK_GRACE_SECS", "30"))
         deadline = asyncio.get_running_loop().time() + timeout_s
         while True:

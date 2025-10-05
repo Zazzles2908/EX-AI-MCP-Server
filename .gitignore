@@ -188,5 +188,18 @@ logs/
 # Ignore JSONL logs
 .logs/*.jsonl
 
-# Ignore JSONL logs
-.logs/*.jsonl
+# Tool Validation Suite - DO NOT COMMIT
+# Active environment with API keys
+tool_validation_suite/.env.testing
+
+# Test results and outputs
+tool_validation_suite/results/
+tool_validation_suite/cache/
+tool_validation_suite/fixtures/
+
+# Test logs
+tool_validation_suite/*.log
+tool_validation_suite/**/*.log
+
+# Test scripts (will be created later)
+tool_validation_suite/tests/

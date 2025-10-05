@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "65015f01d98a47f99398a368fdf40830",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"continuation_available\",\"content\":\"I'll search for today's top AI news and provide you with concise bullet points with sources.\\n\\n{\\\"status\\\": \\\"need_search\\\", \\\"search_query\\\": \\\"AI news today June 17 2025 latest developments artificial intelligence\\\", \\\"reason\\\": \\\"Need to find current AI news to provide requested information\\\"}\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.6\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"a5dfcc74-69be-47f0-b98b-2900e572afe2\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 1.2s | Model: glm-4.6 | Tokens: ~159\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=8ea2939a-5f83-4553-8a74-667470d1b5d8"
+    }
+  ],
+  "text": "{\"status\":\"continuation_available\",\"content\":\"I'll search for today's top AI news and provide you with concise bullet points with sources.\\n\\n{\\\"status\\\": \\\"need_search\\\", \\\"search_query\\\": \\\"AI news today June 17 2025 latest developments artificial intelligence\\\", \\\"reason\\\": \\\"Need to find current AI news to provide requested information\\\"}\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.6\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"a5dfcc74-69be-47f0-b98b-2900e572afe2\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}\n\n\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 1.2s | Model: glm-4.6 | Tokens: ~159\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=8ea2939a-5f83-4553-8a74-667470d1b5d8"
+}
