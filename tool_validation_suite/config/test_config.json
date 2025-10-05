@@ -95,7 +95,7 @@
   
   "watcher": {
     "enabled": true,
-    "model": "glm-4-flash",
+    "model": "glm-4.5-air",
     "detail_level": "high",
     "timeout_secs": 30,
     "save_observations": true
