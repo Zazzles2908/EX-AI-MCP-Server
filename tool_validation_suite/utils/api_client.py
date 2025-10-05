@@ -30,8 +30,10 @@ from dotenv import load_dotenv
 
 from .prompt_counter import PromptCounter
 
-# Load environment variables
+# Load environment variables (try multiple locations)
+load_dotenv("tool_validation_suite/.env.testing")
 load_dotenv(".env.testing")
+load_dotenv(".env")
 
 logger = logging.getLogger(__name__)
 

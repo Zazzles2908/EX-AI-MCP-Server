@@ -15,6 +15,7 @@ Created: 2025-10-05
 """
 
 import argparse
+import importlib.util
 import json
 import logging
 import os
@@ -43,46 +44,117 @@ logger = logging.getLogger(__name__)
 def load_test_config():
     """Load test configuration."""
     config_file = Path("tool_validation_suite/config/test_config.json")
-    
+
     with open(config_file, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
+def load_test_function(tool_name: str, tool_type: str):
+    """
+    Dynamically load test function from test script.
+
+    Args:
+        tool_name: Name of the tool
+        tool_type: Type of tool (core, advanced, provider, integration)
+
+    Returns:
+        Test function or None if not found
+    """
+    # Determine test file path
+    if tool_type == "core":
+        test_dir = "core_tools"
+    elif tool_type == "advanced":
+        test_dir = "advanced_tools"
+    elif tool_type == "provider":
+        test_dir = "provider_tools"
+    elif tool_type == "integration":
+        test_dir = "integration"
+    else:
+        test_dir = "core_tools"  # Default
+
+    test_file = Path(f"tool_validation_suite/tests/{test_dir}/test_{tool_name}.py")
+
+    if not test_file.exists():
+        logger.warning(f"Test file not found: {test_file}")
+        return None
+
+    try:
+        # Load module dynamically
+        spec = importlib.util.spec_from_file_location(f"test_{tool_name}", test_file)
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+
+            # Look for test function (try multiple naming patterns)
+            function_names = [
+                f"test_{tool_name}_basic",
+                f"test_{tool_name}",
+                "test_basic",
+                "run_tests"
+            ]
+
+            for func_name in function_names:
+                if hasattr(module, func_name):
+                    return getattr(module, func_name)
+
+            logger.warning(f"No test function found in {test_file}")
+            return None
+
+    except Exception as e:
+        logger.error(f"Failed to load test function from {test_file}: {e}")
+        return None
+
+
 def build_test_suite(config):
-    """Build complete test suite."""
+    """Build complete test suite with dynamically loaded test functions."""
     test_suite = []
-    
+
     # Core tools
+    logger.info("Loading core tool tests...")
     for tool in config["tools"]["core"]:
-        for variation in config["variations"]:
+        test_func = load_test_function(tool, "core")
+        if test_func:
+            # Only add one test per tool (the test function handles all variations internally)
             test_suite.append({
                 "tool_name": tool,
-                "variation": variation,
-                "test_func": None,  # Will be loaded dynamically
-                "tool_type": "simple"
+                "variation": "all",  # Test script handles all variations
+                "test_func": test_func,
+                "tool_type": "core"
             })
-    
+        else:
+            logger.warning(f"Skipping core tool {tool} - no test function found")
+
     # Advanced tools
+    logger.info("Loading advanced tool tests...")
     for tool in config["tools"]["advanced"]:
-        for variation in config["variations"]:
+        test_func = load_test_function(tool, "advanced")
+        if test_func:
             test_suite.append({
                 "tool_name": tool,
-                "variation": variation,
-                "test_func": None,
-                "tool_type": "simple"
+                "variation": "all",
+                "test_func": test_func,
+                "tool_type": "advanced"
             })
-    
+        else:
+            logger.warning(f"Skipping advanced tool {tool} - no test function found")
+
     # Provider tools
+    logger.info("Loading provider tool tests...")
     for provider, tools in config["tools"]["provider"].items():
         for tool in tools:
-            for variation in config["variations"]:
+            test_func = load_test_function(tool, "provider")
+            if test_func:
                 test_suite.append({
                     "tool_name": tool,
-                    "variation": variation,
-                    "test_func": None,
-                    "tool_type": "provider"
+                    "variation": "all",
+                    "test_func": test_func,
+                    "tool_type": "provider",
+                    "provider": provider
                 })
-    
+            else:
+                logger.warning(f"Skipping provider tool {tool} - no test function found")
+
+    logger.info(f"Loaded {len(test_suite)} test scripts")
     return test_suite
 
 

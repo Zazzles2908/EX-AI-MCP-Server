@@ -26,8 +26,10 @@ from typing import Any, Dict, List, Optional
 import requests
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables (try multiple locations)
+load_dotenv("tool_validation_suite/.env.testing")
 load_dotenv(".env.testing")
+load_dotenv(".env")
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +46,12 @@ class GLMWatcher:
         """Initialize the GLM Watcher."""
         self.api_key = os.getenv("GLM_WATCHER_KEY")
         self.model = os.getenv("GLM_WATCHER_MODEL", "glm-4.5-flash")
-        self.base_url = os.getenv("GLM_BASE_URL", "https://api.z.ai/api/paas/v4")
+        self.base_url = os.getenv("GLM_WATCHER_BASE_URL") or os.getenv("GLM_BASE_URL", "https://open.bigmodel.cn/api/paas/v4/")
         self.enabled = os.getenv("GLM_WATCHER_ENABLED", "true").lower() == "true"
         self.detail_level = os.getenv("WATCHER_DETAIL_LEVEL", "high")
         self.timeout_secs = int(os.getenv("WATCHER_TIMEOUT_SECS", "30"))
         self.save_observations = os.getenv("SAVE_WATCHER_OBSERVATIONS", "true").lower() == "true"
-        self.observation_dir = Path(os.getenv("WATCHER_OBSERVATION_DIR", "./results/latest/watcher_observations"))
+        self.observation_dir = Path(os.getenv("WATCHER_OBSERVATION_DIR", "./tool_validation_suite/results/latest/watcher_observations"))
         
         # Create observation directory
         self.observation_dir.mkdir(parents=True, exist_ok=True)
