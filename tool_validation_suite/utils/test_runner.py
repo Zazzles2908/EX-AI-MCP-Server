@@ -106,7 +106,10 @@ class TestRunner:
                     tool_type=kwargs.get("tool_type", "simple")
                 )
                 
-                # Get watcher observation
+                # Stop performance monitoring FIRST to get complete metrics
+                performance_metrics = self.performance_monitor.stop_monitoring(test_id)
+
+                # Get watcher observation (with complete performance metrics)
                 watcher_observation = None
                 if os.getenv("ENABLE_GLM_WATCHER", "true").lower() == "true":
                     try:
@@ -116,14 +119,11 @@ class TestRunner:
                             test_input=kwargs.get("test_input", {}),
                             expected_behavior=kwargs.get("expected_behavior", ""),
                             actual_output=result,
-                            performance_metrics=self.performance_monitor.get_metrics(test_id),
+                            performance_metrics=performance_metrics,
                             test_status="passed" if validation["valid"] else "failed"
                         )
                     except Exception as e:
                         logger.warning(f"Watcher observation failed: {e}")
-                
-                # Stop performance monitoring
-                performance_metrics = self.performance_monitor.stop_monitoring(test_id)
                 
                 # Determine status
                 status = "passed" if validation["valid"] else "failed"
