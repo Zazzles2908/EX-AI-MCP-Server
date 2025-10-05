@@ -36,17 +36,20 @@ logger = logging.getLogger(__name__)
 
 class GLMWatcher:
     """
-    Independent test observer using GLM-4-Flash.
-    
+    Independent test observer using GLM-4.5-Air.
+
     The watcher uses a separate API key to ensure complete independence
     from the tools being tested.
+
+    Model upgraded from glm-4.5-flash to glm-4.5-air for better JSON understanding
+    and reduced false positives on response truncation detection.
     """
-    
+
     def __init__(self):
         """Initialize the GLM Watcher."""
         self.api_key = os.getenv("GLM_WATCHER_KEY")
-        self.model = os.getenv("GLM_WATCHER_MODEL", "glm-4.5-flash")
-        self.base_url = os.getenv("GLM_WATCHER_BASE_URL") or os.getenv("GLM_BASE_URL", "https://open.bigmodel.cn/api/paas/v4/")
+        self.model = os.getenv("GLM_WATCHER_MODEL", "glm-4.5-air")
+        self.base_url = os.getenv("GLM_WATCHER_BASE_URL") or os.getenv("GLM_BASE_URL", "https://api.z.ai/api/paas/v4")
         self.enabled = os.getenv("GLM_WATCHER_ENABLED", "true").lower() == "true"
         self.detail_level = os.getenv("WATCHER_DETAIL_LEVEL", "high")
         self.timeout_secs = int(os.getenv("WATCHER_TIMEOUT_SECS", "30"))
