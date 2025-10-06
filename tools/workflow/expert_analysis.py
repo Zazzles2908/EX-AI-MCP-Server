@@ -188,8 +188,7 @@ class ExpertAnalysisMixin:
         CRITICAL FIX: Implements duplicate call prevention using global cache and in-progress tracking.
         This prevents the duplicate expert analysis calls that were causing 300+ second timeouts.
         """
-        print(f"[PRINT_DEBUG] _call_expert_analysis() ENTERED for tool: {self.get_name()}")
-        logger.info(f"[EXPERT_ANALYSIS_DEBUG] _call_expert_analysis() called for tool: {self.get_name()}")
+        logger.info(f"Expert analysis called for tool: {self.get_name()}")
 
         # CRITICAL FIX: Duplicate call prevention
         # Create cache key from request_id and consolidated findings content
@@ -204,8 +203,7 @@ class ExpertAnalysisMixin:
 
         # Check cache first (outside lock for performance)
         if cache_key in _expert_validation_cache:
-            logger.info(f"[EXPERT_DEDUP] Using cached expert validation for {cache_key}")
-            print(f"[PRINT_DEBUG] Using cached expert validation result")
+            logger.info(f"Using cached expert validation for {cache_key}")
             return _expert_validation_cache[cache_key]
 
         # Acquire lock to check/set in-progress status
@@ -217,8 +215,7 @@ class ExpertAnalysisMixin:
 
             # Check if already in progress
             if cache_key in _expert_validation_in_progress:
-                logger.warning(f"[EXPERT_DEDUP] Expert validation already in progress for {cache_key}")
-                print(f"[PRINT_DEBUG] Expert validation already in progress, waiting...")
+                logger.warning(f"Expert validation already in progress for {cache_key}, waiting...")
 
         # Wait for in-progress validation to complete (outside lock to allow progress)
         if cache_key in _expert_validation_in_progress:
@@ -321,19 +318,37 @@ class ExpertAnalysisMixin:
             deadline = start + self.get_expert_timeout_secs(request)
             timeout_secs = self.get_expert_timeout_secs(request)
 
+            # CRITICAL FIX: Use websearch adapter to check model support
+            # Workflow tools were bypassing the adapter and passing use_websearch directly,
+            # causing hangs with models that don't support websearch (glm-4.5-flash)
+            provider_kwargs = {}
+            try:
+                from src.providers.orchestration.websearch_adapter import build_websearch_provider_kwargs
+                use_web = self.get_request_use_websearch(request)
+                provider_kwargs, _ = build_websearch_provider_kwargs(
+                    provider_type=provider.get_provider_type(),
+                    use_websearch=use_web,
+                    model_name=model_name,  # CRITICAL: Pass model name for validation
+                    include_event=False,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to build websearch kwargs: {e}")
+                # Fallback: no websearch
+                provider_kwargs = {}
+
             # Run provider call in a thread to allow cancellation/timeouts even if provider blocks
-            print(f"[PRINT_DEBUG] About to call provider.generate_content() for {self.get_name()}")
+            logger.debug(f"Calling provider.generate_content() for {self.get_name()}: prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}")
             loop = asyncio.get_running_loop()
             def _invoke_provider():
-                print(f"[PRINT_DEBUG] Inside _invoke_provider, calling provider.generate_content()")
+                logger.debug(f"Inside _invoke_provider, calling provider.generate_content()")
                 return provider.generate_content(
                     prompt=prompt,
                     model_name=model_name,
                     system_prompt=system_prompt,
                     temperature=validated_temperature,
                     thinking_mode=self.get_request_thinking_mode(request),
-                    use_websearch=self.get_request_use_websearch(request),
                     images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
+                    **provider_kwargs,  # CRITICAL: Use adapter-validated kwargs instead of raw use_websearch
                 )
             task = loop.run_in_executor(None, _invoke_provider)
 
@@ -462,8 +477,7 @@ class ExpertAnalysisMixin:
                 await asyncio.sleep(min(hb, max(0.1, deadline - time.time())))
 
 
-            print(f"[PRINT_DEBUG] Provider call completed, processing response")
-            logger.info(f"[EXPERT_ANALYSIS_DEBUG] Provider call completed, processing response")
+            logger.info(f"Provider call completed, processing response")
             if model_response.content:
                 try:
                     # Log the raw response for debugging
@@ -471,8 +485,7 @@ class ExpertAnalysisMixin:
                     logger.debug(f"[EXPERT_ANALYSIS_DEBUG] Raw response preview (first 500 chars): {response_preview}")
 
                     analysis_result = json.loads(model_response.content.strip())
-                    print(f"[PRINT_DEBUG] Successfully parsed JSON, caching and returning analysis_result")
-                    logger.info(f"[EXPERT_ANALYSIS_DEBUG] Successfully parsed JSON response, caching and returning analysis_result")
+                    logger.info(f"Successfully parsed JSON response, caching and returning analysis_result")
                     result = analysis_result
                 except json.JSONDecodeError as json_err:
                     # Enhanced logging for JSON parse errors
@@ -492,8 +505,7 @@ class ExpertAnalysisMixin:
                 result = {"error": "No response from model", "status": "empty_response"}
 
         except Exception as e:
-            print(f"[PRINT_DEBUG] Exception in _call_expert_analysis: {e}")
-            logger.error(f"[EXPERT_ANALYSIS_DEBUG] Exception in _call_expert_analysis: {e}", exc_info=True)
+            logger.error(f"Exception in _call_expert_analysis: {e}", exc_info=True)
             result = {"error": str(e), "status": "analysis_error"}
 
         finally:
@@ -510,13 +522,13 @@ class ExpertAnalysisMixin:
 
         # CRITICAL FIX: Ensure we ALWAYS return a dict, never None
         if result is None:
-            print(f"[PRINT_DEBUG] CRITICAL: result is None at end of method! This should be impossible!")
+            logger.error(f"CRITICAL: result is None at end of method! This should be impossible!")
             result = {
                 "error": "Expert analysis method completed but result is None - this indicates a serious bug in the code flow",
                 "status": "analysis_error",
                 "tool_name": self.get_name()
             }
 
-        print(f"[PRINT_DEBUG] _call_expert_analysis() RETURNING: {type(result)}, is_dict: {isinstance(result, dict)}")
+        logger.debug(f"_call_expert_analysis() returning: {type(result)}, is_dict: {isinstance(result, dict)}")
         return result
 

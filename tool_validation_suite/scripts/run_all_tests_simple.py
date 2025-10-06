@@ -12,11 +12,17 @@ Created: 2025-10-05
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from utils.supabase_client import get_supabase_client
 
 def find_all_test_scripts():
     """Find all test scripts in the tests directory."""
@@ -36,14 +42,15 @@ def find_all_test_scripts():
     return test_scripts
 
 
-def run_test_script(script_path: Path, dry_run: bool = False):
+def run_test_script(script_path: Path, dry_run: bool = False, test_run_id: str = None):
     """
     Run a single test script.
-    
+
     Args:
         script_path: Path to test script
         dry_run: If True, don't actually run the script
-    
+        test_run_id: Supabase test run ID to pass to test
+
     Returns:
         Result dictionary
     """
@@ -54,16 +61,22 @@ def run_test_script(script_path: Path, dry_run: bool = False):
             "duration": 0,
             "output": "Dry run - not executed"
         }
-    
+
     start_time = time.time()
-    
+
     try:
+        # Prepare environment with test run ID
+        env = os.environ.copy()
+        if test_run_id:
+            env["TEST_RUN_ID"] = str(test_run_id)
+
         result = subprocess.run(
             [sys.executable, str(script_path)],
             capture_output=True,
             text=True,
-            timeout=300,  # 5 minute timeout per script
-            cwd=Path.cwd()
+            timeout=600,  # 10 minute timeout per script (increased for complex analysis tools)
+            cwd=Path.cwd(),
+            env=env  # Pass environment with TEST_RUN_ID
         )
         
         duration = time.time() - start_time
@@ -84,7 +97,7 @@ def run_test_script(script_path: Path, dry_run: bool = False):
             "status": "timeout",
             "duration": duration,
             "output": "",
-            "errors": "Test script timed out after 300 seconds"
+            "errors": "Test script timed out after 600 seconds"
         }
     
     except Exception as e:
@@ -104,9 +117,9 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Dry run without actual execution")
     parser.add_argument("--max-tests", type=int, help="Maximum number of tests to run")
     parser.add_argument("--category", choices=["core_tools", "advanced_tools", "provider_tools", "integration"], help="Run only specific category")
-    
+
     args = parser.parse_args()
-    
+
     # Print header
     print("\n" + "="*60)
     print("  TOOL VALIDATION SUITE - SIMPLE TEST RUNNER")
@@ -114,6 +127,36 @@ def main():
     print(f"Start Time: {datetime.now().isoformat()}")
     print(f"Dry Run: {args.dry_run}")
     print("="*60 + "\n")
+
+    # Create Supabase test run for tracking
+    run_id = None
+    if not args.dry_run:
+        try:
+            supabase_client = get_supabase_client()
+            if supabase_client and supabase_client.enabled:
+                # Get git info if available
+                try:
+                    import subprocess as sp
+                    branch = sp.run(["git", "branch", "--show-current"], capture_output=True, text=True, timeout=5).stdout.strip()
+                    commit = sp.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, timeout=5).stdout.strip()
+                except:
+                    branch = "unknown"
+                    commit = "unknown"
+
+                run_id = supabase_client.create_test_run(
+                    branch_name=branch,
+                    commit_hash=commit,
+                    watcher_model=os.getenv("GLM_WATCHER_MODEL", "glm-4.5-air"),
+                    notes=f"Simple runner - {args.category if args.category else 'all categories'}"
+                )
+                print(f"✅ Created Supabase test run: {run_id}")
+                print(f"   Branch: {branch}, Commit: {commit}\n")
+
+                # Set environment variable for child processes
+                os.environ["TEST_RUN_ID"] = str(run_id)
+        except Exception as e:
+            print(f"⚠️  Warning: Could not create Supabase test run: {e}")
+            print("   Tests will run without Supabase tracking.\n")
     
     # Find all test scripts
     print("Finding test scripts...")
@@ -157,8 +200,8 @@ def main():
         print(f"Progress: {i}/{total_scripts} ({i/total_scripts*100:.1f}%)")
         print(f"Running: {script_info['name']} ({script_info['category']})")
         print(f"{'='*60}")
-        
-        result = run_test_script(script_info["path"], args.dry_run)
+
+        result = run_test_script(script_info["path"], args.dry_run, test_run_id=run_id)
         results.append(result)
         
         # Update counters
@@ -211,7 +254,27 @@ def main():
         }, f, indent=2, ensure_ascii=False)
     
     print(f"\nResults saved to: {results_file}")
-    
+
+    # Update Supabase test run with final results
+    if run_id and not args.dry_run:
+        try:
+            supabase_client = get_supabase_client()
+            if supabase_client and supabase_client.enabled:
+                total_duration = sum(r.get("duration", 0) for r in results)
+                supabase_client.update_test_run(
+                    run_id=run_id,
+                    total_tests=total_scripts,
+                    tests_passed=passed,
+                    tests_failed=failed + errors,
+                    tests_skipped=timeouts,
+                    pass_rate=pass_rate if total_scripts > 0 else 0,
+                    total_duration_secs=int(total_duration),
+                    total_cost_usd=0.0  # Cost tracking not yet implemented
+                )
+                print(f"\n✅ Updated Supabase test run {run_id} with final results")
+        except Exception as e:
+            print(f"\n⚠️  Warning: Could not update Supabase test run: {e}")
+
     # Exit code based on pass rate
     if pass_rate >= 90:
         return 0
