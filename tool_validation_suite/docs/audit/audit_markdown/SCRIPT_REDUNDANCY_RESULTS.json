@@ -1,0 +1,515 @@
+{
+  "total_analyzed": 22,
+  "safe_to_delete_count": 0,
+  "requires_review_count": 22,
+  "already_deleted_count": 0,
+  "safe_to_delete": [],
+  "requires_review": [
+    "scripts/test_glm_websearch.py",
+    "scripts/test_glm_websearch_detailed.py",
+    "scripts/test_glm_all_configs.py",
+    "scripts/debug_glm_websearch_response.py",
+    "scripts/test_web_search_fix.py",
+    "scripts/test_websearch_fix_final.py",
+    "scripts/test_native_websearch.py",
+    "scripts/test_kimi_builtin_flow.py",
+    "scripts/test_websearch_rag_failure.py",
+    "scripts/debug_kimi_tool_calls.py",
+    "scripts/debug_model_response.py",
+    "scripts/tmp_registry_probe.py",
+    "scripts/test_wave3_complete.py",
+    "scripts/test_agentic_transition.py",
+    "scripts/validate_docs.py",
+    "scripts/docs_cleanup/verify_kimi_cleanup.py",
+    "scripts/delete_all_kimi_files.py",
+    "scripts/validate_exai_ws_kimi_tools.py",
+    "scripts/probe_kimi_tooluse.py",
+    "scripts/diagnostics/kimi/capture_headers_run.py",
+    "scripts/diagnostics/kimi/normalize_tester.py",
+    "scripts/check_no_legacy_imports.py"
+  ],
+  "already_deleted": [],
+  "detailed_results": [
+    {
+      "script": "scripts/test_glm_websearch.py",
+      "equivalent": "tool_validation_suite/tests/provider_tools/test_glm_web_search.py",
+      "exists": true,
+      "size_bytes": 3032,
+      "lines": 115,
+      "references": [
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md",
+        "tool_validation_suite/docs/audit/audit_markdown/SELF_AUDIT_CRITICAL_REVIEW.md",
+        "tool_validation_suite/docs/current/CRITICAL_CONFIGURATION_ISSUES.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 3.06,
+        "script_has_tests": false,
+        "equiv_has_tests": true,
+        "unique_functions": 0,
+        "recommendation": "DELETE - Equivalent has better test structure"
+      },
+      "recommendation": "DELETE - Equivalent has better test structure"
+    },
+    {
+      "script": "scripts/test_glm_websearch_detailed.py",
+      "equivalent": "tool_validation_suite/tests/provider_tools/test_glm_web_search.py",
+      "exists": true,
+      "size_bytes": 3898,
+      "lines": 136,
+      "references": [
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 0.96,
+        "script_has_tests": false,
+        "equiv_has_tests": true,
+        "unique_functions": 0,
+        "recommendation": "DELETE - Equivalent has better test structure"
+      },
+      "recommendation": "DELETE - Equivalent has better test structure"
+    },
+    {
+      "script": "scripts/test_glm_all_configs.py",
+      "equivalent": "tool_validation_suite/tests/provider_tools/test_glm_web_search.py",
+      "exists": true,
+      "size_bytes": 3095,
+      "lines": 116,
+      "references": [
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md",
+        "tool_validation_suite/docs/current/CRITICAL_CONFIGURATION_ISSUES.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 2.95,
+        "script_has_tests": false,
+        "equiv_has_tests": true,
+        "unique_functions": 0,
+        "recommendation": "DELETE - Equivalent has better test structure"
+      },
+      "recommendation": "DELETE - Equivalent has better test structure"
+    },
+    {
+      "script": "scripts/debug_glm_websearch_response.py",
+      "equivalent": "tool_validation_suite/tests/provider_tools/test_glm_web_search.py",
+      "exists": true,
+      "size_bytes": 3786,
+      "lines": 116,
+      "references": [
+        "docs/project-status/FIXES_CHECKLIST.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 2.3,
+        "script_has_tests": true,
+        "equiv_has_tests": true,
+        "unique_functions": 1,
+        "recommendation": "REVIEW - Has unique functions"
+      },
+      "recommendation": "REVIEW - Has unique functions"
+    },
+    {
+      "script": "scripts/test_web_search_fix.py",
+      "equivalent": "tool_validation_suite/tests/provider_tools/test_glm_web_search.py",
+      "exists": true,
+      "size_bytes": 5452,
+      "lines": 151,
+      "references": [
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 1.62,
+        "script_has_tests": true,
+        "equiv_has_tests": true,
+        "unique_functions": 0,
+        "recommendation": "DELETE - Functionality covered by equivalent"
+      },
+      "recommendation": "DELETE - Functionality covered by equivalent"
+    },
+    {
+      "script": "scripts/test_websearch_fix_final.py",
+      "equivalent": "tool_validation_suite/tests/provider_tools/test_glm_web_search.py",
+      "exists": true,
+      "size_bytes": 5394,
+      "lines": 148,
+      "references": [
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 2.52,
+        "script_has_tests": true,
+        "equiv_has_tests": true,
+        "unique_functions": 1,
+        "recommendation": "REVIEW - Has unique functions"
+      },
+      "recommendation": "REVIEW - Has unique functions"
+    },
+    {
+      "script": "scripts/test_native_websearch.py",
+      "equivalent": "tool_validation_suite/tests/integration/test_web_search_integration.py",
+      "exists": true,
+      "size_bytes": 7892,
+      "lines": 260,
+      "references": [
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 0.6,
+        "script_has_tests": true,
+        "equiv_has_tests": true,
+        "unique_functions": 3,
+        "recommendation": "REVIEW - Has unique functions"
+      },
+      "recommendation": "REVIEW - Has unique functions"
+    },
+    {
+      "script": "scripts/test_kimi_builtin_flow.py",
+      "equivalent": "tool_validation_suite/tests/provider_tools/test_kimi_upload_and_extract.py",
+      "exists": true,
+      "size_bytes": 3997,
+      "lines": 138,
+      "references": [
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 2.49,
+        "script_has_tests": false,
+        "equiv_has_tests": true,
+        "unique_functions": 0,
+        "recommendation": "DELETE - Equivalent has better test structure"
+      },
+      "recommendation": "DELETE - Equivalent has better test structure"
+    },
+    {
+      "script": "scripts/test_websearch_rag_failure.py",
+      "equivalent": "tool_validation_suite/tests/integration/test_web_search_integration.py",
+      "exists": true,
+      "size_bytes": 4076,
+      "lines": 138,
+      "references": [
+        "docs/archive/project-status-2025-10-04/WEB_SEARCH_RAG_FIX.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 2.95,
+        "script_has_tests": true,
+        "equiv_has_tests": true,
+        "unique_functions": 3,
+        "recommendation": "REVIEW - Has unique functions"
+      },
+      "recommendation": "REVIEW - Has unique functions"
+    },
+    {
+      "script": "scripts/debug_kimi_tool_calls.py",
+      "equivalent": "scripts/diagnostics/ws_probe.py",
+      "exists": true,
+      "size_bytes": 4339,
+      "lines": 130,
+      "references": [
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 1.43,
+        "script_has_tests": true,
+        "equiv_has_tests": false,
+        "unique_functions": 1,
+        "recommendation": "REVIEW - Has unique functions"
+      },
+      "recommendation": "REVIEW - Has unique functions"
+    },
+    {
+      "script": "scripts/debug_model_response.py",
+      "equivalent": "scripts/diagnostics/ws_probe.py",
+      "exists": true,
+      "size_bytes": 4498,
+      "lines": 125,
+      "references": [
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 0.96,
+        "script_has_tests": true,
+        "equiv_has_tests": false,
+        "unique_functions": 1,
+        "recommendation": "REVIEW - Has unique functions"
+      },
+      "recommendation": "REVIEW - Has unique functions"
+    },
+    {
+      "script": "scripts/tmp_registry_probe.py",
+      "equivalent": "scripts/diagnostics/ws_probe.py",
+      "exists": true,
+      "size_bytes": 727,
+      "lines": 20,
+      "references": [
+        "docs/archive/superseded/augment_reports/augment_review/scripts_inventory.md",
+        "docs/archive/superseded/augment_reports/augment_review/scripts_reorg_proposal.md",
+        "docs/archive/superseded/external_review/branch_listings/docs_tool-call-architecture-20250927_files.txt",
+        "docs/archive/superseded/external_review/branch_listings/snapshot_all-local-changes-20250927_files.txt",
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 0.51,
+        "script_has_tests": false,
+        "equiv_has_tests": false,
+        "unique_functions": 0,
+        "recommendation": "DELETE - Functionality covered by equivalent"
+      },
+      "recommendation": "DELETE - Functionality covered by equivalent"
+    },
+    {
+      "script": "scripts/test_wave3_complete.py",
+      "equivalent": "tool_validation_suite/scripts/run_all_tests_simple.py",
+      "exists": true,
+      "size_bytes": 7656,
+      "lines": 243,
+      "references": [
+        "docs/archive/project-status-2025-10-04/WAVE_3_COMPLETE.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 1.75,
+        "script_has_tests": true,
+        "equiv_has_tests": false,
+        "unique_functions": 5,
+        "recommendation": "REVIEW - Has unique functions"
+      },
+      "recommendation": "REVIEW - Has unique functions"
+    },
+    {
+      "script": "scripts/test_agentic_transition.py",
+      "equivalent": "tool_validation_suite/scripts/run_all_tests_simple.py",
+      "exists": true,
+      "size_bytes": 9284,
+      "lines": 244,
+      "references": [
+        "docs/archive/superseded-20251003/upgrades/upgrades/international-users/PHASE1_AGENTIC_VERIFICATION_RESULTS.md",
+        "docs/archive/superseded-20251003/upgrades/upgrades/international-users/PHASE1_COMPLETE_SUMMARY.md",
+        "docs/archive/superseded-20251003/upgrades/upgrades/international-users/STREAMLINED_PROCESS_SUMMARY.md",
+        "docs/archive/superseded-20251003/upgrades/upgrades/international-users/agentic-architecture-discovery-2025-10-02.md",
+        "docs/archive/superseded-20251003/upgrades/upgrades/international-users/phase1-agentic-ux-improvements.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 1.6,
+        "script_has_tests": true,
+        "equiv_has_tests": false,
+        "unique_functions": 1,
+        "recommendation": "REVIEW - Has unique functions"
+      },
+      "recommendation": "REVIEW - Has unique functions"
+    },
+    {
+      "script": "scripts/validate_docs.py",
+      "equivalent": null,
+      "exists": true,
+      "size_bytes": 101,
+      "lines": 6,
+      "references": [
+        "docs/archive/superseded-20251003/current/current/architecture/task-manager-implementation-checklist.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": false,
+        "recommendation": "DELETE - No equivalent needed"
+      },
+      "recommendation": "DELETE - No equivalent needed"
+    },
+    {
+      "script": "scripts/docs_cleanup/verify_kimi_cleanup.py",
+      "equivalent": null,
+      "exists": true,
+      "size_bytes": 3464,
+      "lines": 100,
+      "references": [
+        "docs/archive/superseded-20251003/root-summaries/PHASE3_KIMI_CLEANUP_AND_FINDINGS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": false,
+        "recommendation": "DELETE - No equivalent needed"
+      },
+      "recommendation": "DELETE - No equivalent needed"
+    },
+    {
+      "script": "scripts/delete_all_kimi_files.py",
+      "equivalent": null,
+      "exists": true,
+      "size_bytes": 2015,
+      "lines": 73,
+      "references": [
+        "docs/reviews/kimi/current/KIMI_FRESH_REVIEW_IN_PROGRESS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": false,
+        "recommendation": "DELETE - No equivalent needed"
+      },
+      "recommendation": "DELETE - No equivalent needed"
+    },
+    {
+      "script": "scripts/validate_exai_ws_kimi_tools.py",
+      "equivalent": "tool_validation_suite/scripts/run_all_tests_simple.py",
+      "exists": true,
+      "size_bytes": 12921,
+      "lines": 331,
+      "references": [
+        "docs/archive/superseded-20251003/current/current/architecture/implementation_roadmap/script-inventory-and-phase-mapping.md",
+        "docs/archive/superseded-20251003/upgrades/upgrades/investigation-summary.md",
+        "docs/archive/superseded/augment_reports/augment_review/scripts_inventory.md",
+        "docs/archive/superseded/augment_reports/augment_review/scripts_reorg_proposal.md",
+        "docs/archive/superseded/augment_reports/augment_review_02/validation/validation_report_2025-09-21.md",
+        "docs/archive/superseded/external_review/branch_listings/docs_tool-call-architecture-20250927_files.txt",
+        "docs/archive/superseded/external_review/branch_listings/snapshot_all-local-changes-20250927_files.txt",
+        "docs/branch_changes/EXAI_TOOLS_DIAGNOSTIC_2025-10-04.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 0.99,
+        "script_has_tests": false,
+        "equiv_has_tests": false,
+        "unique_functions": 4,
+        "recommendation": "REVIEW - Has unique functions"
+      },
+      "recommendation": "REVIEW - Has unique functions"
+    },
+    {
+      "script": "scripts/probe_kimi_tooluse.py",
+      "equivalent": "scripts/diagnostics/ws_probe.py",
+      "exists": true,
+      "size_bytes": 6472,
+      "lines": 150,
+      "references": [
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 3.83,
+        "script_has_tests": false,
+        "equiv_has_tests": false,
+        "unique_functions": 1,
+        "recommendation": "REVIEW - Has unique functions"
+      },
+      "recommendation": "REVIEW - Has unique functions"
+    },
+    {
+      "script": "scripts/diagnostics/kimi/capture_headers_run.py",
+      "equivalent": "tool_validation_suite/tests/provider_tools/test_kimi_upload_and_extract.py",
+      "exists": true,
+      "size_bytes": 1195,
+      "lines": 36,
+      "references": [
+        "docs/archive/superseded-20251003/current/current/architecture/API_platforms/Kimi/context_caching/phase2-cache-metadata.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 2.27,
+        "script_has_tests": false,
+        "equiv_has_tests": true,
+        "unique_functions": 0,
+        "recommendation": "DELETE - Equivalent has better test structure"
+      },
+      "recommendation": "DELETE - Equivalent has better test structure"
+    },
+    {
+      "script": "scripts/diagnostics/kimi/normalize_tester.py",
+      "equivalent": "tool_validation_suite/tests/provider_tools/test_kimi_upload_and_extract.py",
+      "exists": true,
+      "size_bytes": 1366,
+      "lines": 43,
+      "references": [
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": true,
+        "similarity": 1.86,
+        "script_has_tests": false,
+        "equiv_has_tests": true,
+        "unique_functions": 0,
+        "recommendation": "DELETE - Equivalent has better test structure"
+      },
+      "recommendation": "DELETE - Equivalent has better test structure"
+    },
+    {
+      "script": "scripts/check_no_legacy_imports.py",
+      "equivalent": null,
+      "exists": true,
+      "size_bytes": 1669,
+      "lines": 68,
+      "references": [
+        ".github/workflows/fast-smoke.yml",
+        ".github/workflows/no-legacy-imports.yml",
+        "docs/archive/superseded/augment_reports/audit/no_legacy_imports_blocker.md",
+        "docs/archive/superseded/augment_reports/augment_review/exai_ws_mcp_validation_2025-09-20.md",
+        "docs/archive/superseded/augment_reports/augment_review/scripts_inventory.md",
+        "docs/archive/superseded/augment_reports/ops_log.md",
+        "docs/archive/superseded/external_review/branch_listings/docs_tool-call-architecture-20250927_files.txt",
+        "docs/archive/superseded/external_review/branch_listings/snapshot_all-local-changes-20250927_files.txt",
+        "tool_validation_suite/docs/audit/audit_markdown/REDUNDANT_SCRIPTS_ANALYSIS.md",
+        "tool_validation_suite/docs/audit/audit_markdown/REPOSITORY_CLEANUP_MASTER_PLAN.md"
+      ],
+      "has_references": true,
+      "comparison": {
+        "has_equivalent": false,
+        "recommendation": "DELETE - No equivalent needed"
+      },
+      "recommendation": "DELETE - No equivalent needed"
+    }
+  ]
+}
