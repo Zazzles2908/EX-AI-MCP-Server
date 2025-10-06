@@ -42,16 +42,20 @@ async def execute_file_chat_with_fallback(
                 return True
             try:
                 obj = json.loads(txt)
-            except Exception:
+            except json.JSONDecodeError:
                 # Non-JSON text that contains common failure markers
                 low = txt.lower()
                 return any(k in low for k in ("execution_error", "cancelled", "timeout", "error"))
+            except (TypeError, ValueError) as e:
+                mlog.debug(f"[FALLBACK] Failed to parse response as JSON: {e}")
+                return False  # Assume non-JSON text is valid content
+
             if isinstance(obj, dict):
                 # NEW: explicit envelope visibility for diagnostics
                 try:
                     mlog.info(f"[FALLBACK] received envelope: status={obj.get('status')} error_class={obj.get('error_class')}")
-                except Exception:
-                    pass
+                except (AttributeError, TypeError) as e:
+                    mlog.debug(f"[FALLBACK] Failed to log envelope: {e}")
 
                 status = str(obj.get("status", "")).lower()
                 if status.startswith("execution_error") or status in {"cancelled", "error", "failed"}:
@@ -59,8 +63,12 @@ async def execute_file_chat_with_fallback(
                 # Common envelope shapes: {error: {...}}
                 if obj.get("error"):
                     return True
-        except Exception:
-            return True
+        except (AttributeError, TypeError) as e:
+            mlog.debug(f"[FALLBACK] Error checking envelope structure: {e}")
+            return False  # Don't treat structural errors as failures
+        except Exception as e:
+            mlog.warning(f"[FALLBACK] Unexpected error in envelope detection: {e}")
+            return False  # Conservative: don't trigger fallback on unexpected errors
         return False
 
     chain = [primary_name, "glm_multi_file_chat"]

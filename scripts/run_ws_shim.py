@@ -2,27 +2,25 @@
 #!/usr/bin/env python
 import asyncio
 import json
-import logging
 import os
 import sys
 import uuid
 import re
 from typing import Any, Dict, List
 
+# Bootstrap: Setup path and load environment
 from pathlib import Path
-# Ensure repository root is on sys.path
 _repo_root = Path(__file__).resolve().parents[1]
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
-# Load environment from .env if available (unify with classic). ENV_FILE overrides.
-try:
-    from dotenv import load_dotenv  # type: ignore
-    _explicit_env = os.getenv("ENV_FILE")
-    _env_path = _explicit_env if (_explicit_env and os.path.exists(_explicit_env)) else str(_repo_root / ".env")
-    load_dotenv(dotenv_path=_env_path)
-except Exception:
-    pass
+from src.bootstrap import load_env, get_repo_root, setup_logging
+
+# Load environment variables
+load_env()
+
+# Import TimeoutConfig for coordinated timeout hierarchy
+from config import TimeoutConfig
 
 import websockets
 from mcp.server import Server
@@ -31,23 +29,9 @@ from mcp.types import Tool, TextContent
 from mcp.server.models import InitializationOptions
 from mcp.server.stdio import stdio_server
 
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-logging.basicConfig(level=LOG_LEVEL, stream=sys.stderr)
-logger = logging.getLogger("ws_shim")
-logger.debug(f"EX WS Shim starting pid={os.getpid()} py={sys.executable} repo={_repo_root}")
-
-# Add file logging to capture shim startup/errors regardless of host client
-try:
-    _logs_dir = _repo_root / "logs"
-    _logs_dir.mkdir(parents=True, exist_ok=True)
-    _fh = logging.FileHandler(str(_logs_dir / "ws_shim.log"), encoding="utf-8")
-    _fh.setLevel(LOG_LEVEL)
-    _fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
-    logging.getLogger().addHandler(_fh)
-    logger.debug("File logging enabled at logs/ws_shim.log")
-except Exception:
-    # Never let logging setup break the shim
-    pass
+# Setup logging
+logger = setup_logging("ws_shim", log_file=str(get_repo_root() / "logs" / "ws_shim.log"))
+logger.debug(f"EX WS Shim starting pid={os.getpid()} py={sys.executable} repo={get_repo_root()}")
 
 EXAI_WS_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
 EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8765"))
@@ -57,9 +41,13 @@ MAX_MSG_BYTES = int(os.getenv("EXAI_WS_MAX_BYTES", str(32 * 1024 * 1024)))
 PING_INTERVAL = int(os.getenv("EXAI_WS_PING_INTERVAL", "45"))
 PING_TIMEOUT = int(os.getenv("EXAI_WS_PING_TIMEOUT", "30"))
 EXAI_WS_AUTOSTART = os.getenv("EXAI_WS_AUTOSTART", "true").strip().lower() == "true"
-EXAI_WS_CONNECT_TIMEOUT = float(os.getenv("EXAI_WS_CONNECT_TIMEOUT", "30"))
+EXAI_WS_CONNECT_TIMEOUT = float(os.getenv("EXAI_WS_CONNECT_TIMEOUT", "10"))  # Reduced from 30s to 10s for faster failure detection
 EXAI_WS_HANDSHAKE_TIMEOUT = float(os.getenv("EXAI_WS_HANDSHAKE_TIMEOUT", "15"))
 EXAI_SHIM_ACK_GRACE_SECS = float(os.getenv("EXAI_SHIM_ACK_GRACE_SECS", "120"))
+
+# Health check configuration
+HEALTH_FILE = get_repo_root() / "logs" / "ws_daemon.health.json"
+HEALTH_FRESH_SECS = 20.0  # Health file must be updated within this many seconds to be considered fresh
 
 server = Server(os.getenv("MCP_SERVER_ID", "ex-ws-shim"))
 
@@ -84,6 +72,63 @@ def _extract_clean_content(raw_text: str) -> str:
     return raw_text.strip()
 
 
+def _check_daemon_health() -> tuple[bool, str]:
+    """
+    Check if WebSocket daemon is running and healthy.
+
+    Returns:
+        tuple[bool, str]: (is_healthy, status_message)
+    """
+    import time
+
+    # Check if health file exists
+    if not HEALTH_FILE.exists():
+        return False, (
+            "WebSocket daemon health file not found.\n"
+            "This usually means the daemon is not running.\n"
+            "\n"
+            "To start the daemon:\n"
+            "  Windows: .\\scripts\\force_restart.ps1\n"
+            "  Linux/Mac: ./scripts/force_restart.sh\n"
+            "\n"
+            "To check daemon status:\n"
+            "  python scripts/ws/ws_status.py"
+        )
+
+    # Check if health file is fresh
+    try:
+        health_data = json.loads(HEALTH_FILE.read_text(encoding="utf-8"))
+        health_timestamp = float(health_data.get("t", 0))
+        age = time.time() - health_timestamp
+
+        if age > HEALTH_FRESH_SECS:
+            return False, (
+                f"WebSocket daemon health file is stale ({int(age)}s old).\n"
+                "The daemon may have crashed or stopped responding.\n"
+                "\n"
+                "To restart the daemon:\n"
+                "  Windows: .\\scripts\\force_restart.ps1\n"
+                "  Linux/Mac: ./scripts/force_restart.sh\n"
+                "\n"
+                "To check daemon logs:\n"
+                "  tail -f logs/ws_daemon.log"
+            )
+
+        # Health file is fresh - daemon is likely running
+        pid = health_data.get("pid", "unknown")
+        sessions = health_data.get("sessions", 0)
+        return True, f"Daemon appears healthy (PID: {pid}, Sessions: {sessions})"
+
+    except Exception as e:
+        return False, (
+            f"Failed to read daemon health file: {e}\n"
+            "\n"
+            "To restart the daemon:\n"
+            "  Windows: .\\scripts\\force_restart.ps1\n"
+            "  Linux/Mac: ./scripts/force_restart.sh"
+        )
+
+
 async def _start_daemon_if_configured() -> None:
     if not EXAI_WS_AUTOSTART:
         return
@@ -105,6 +150,25 @@ async def _ensure_ws():
     async with _ws_lock:
         if _ws and not _ws.closed:
             return _ws
+
+        # CRITICAL FIX: Check daemon health before attempting connection
+        is_healthy, health_message = _check_daemon_health()
+        if not is_healthy:
+            logger.error(f"Daemon health check failed: {health_message}")
+            raise RuntimeError(
+                f"WebSocket daemon is not available.\n"
+                f"\n"
+                f"{health_message}\n"
+                f"\n"
+                f"Troubleshooting:\n"
+                f"1. Check daemon status: python scripts/ws/ws_status.py\n"
+                f"2. Check daemon logs: tail -f logs/ws_daemon.log\n"
+                f"3. Verify port {EXAI_WS_PORT} is not in use: netstat -an | grep {EXAI_WS_PORT}\n"
+                f"4. Check health file: cat logs/ws_daemon.health.json"
+            )
+
+        logger.info(f"Daemon health check passed: {health_message}")
+
         uri = f"ws://{EXAI_WS_HOST}:{EXAI_WS_PORT}"
         deadline = asyncio.get_running_loop().time() + EXAI_WS_CONNECT_TIMEOUT
         autostart_attempted = False
@@ -133,12 +197,14 @@ async def _ensure_ws():
                 ack = json.loads(ack_raw)
                 if not ack.get("ok"):
                     raise RuntimeError(f"WS daemon refused connection: {ack}")
+                logger.info(f"Successfully connected to WebSocket daemon at {uri}")
                 return _ws
             except Exception as e:
                 last_err = e
                 # Try autostart once if refused
                 if not autostart_attempted:
                     autostart_attempted = True
+                    logger.info("Attempting to autostart WebSocket daemon...")
                     await _start_daemon_if_configured()
                 # Check deadline
                 if asyncio.get_running_loop().time() >= deadline:
@@ -146,8 +212,26 @@ async def _ensure_ws():
                 # Exponential backoff with cap ~2s
                 await asyncio.sleep(backoff)
                 backoff = min(2.0, backoff * 1.5)
+
         # If we reach here, we failed to connect within timeout
-        raise RuntimeError(f"Failed to connect to WS daemon at {uri} within {EXAI_WS_CONNECT_TIMEOUT}s: {last_err}")
+        logger.error(f"Failed to connect to WS daemon after {EXAI_WS_CONNECT_TIMEOUT}s: {last_err}")
+        raise RuntimeError(
+            f"Failed to connect to WebSocket daemon at {uri} within {EXAI_WS_CONNECT_TIMEOUT}s.\n"
+            f"\n"
+            f"Last error: {last_err}\n"
+            f"\n"
+            f"The daemon appears to be running (health check passed), but connection failed.\n"
+            f"This could indicate:\n"
+            f"- Network connectivity issues\n"
+            f"- Firewall blocking port {EXAI_WS_PORT}\n"
+            f"- Daemon is overloaded or not responding\n"
+            f"\n"
+            f"Troubleshooting:\n"
+            f"1. Restart daemon: .\\scripts\\force_restart.ps1 (Windows) or ./scripts/force_restart.sh (Linux/Mac)\n"
+            f"2. Check daemon logs: tail -f logs/ws_daemon.log\n"
+            f"3. Verify port is listening: netstat -an | grep {EXAI_WS_PORT}\n"
+            f"4. Check for errors: grep ERROR logs/ws_daemon.log | tail -20"
+        )
 
 
 @server.list_tools()
@@ -176,7 +260,8 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextCon
             "arguments": arguments or {},
         }))
         # Read until matching request_id with timeout
-        timeout_s = float(os.getenv("EXAI_SHIM_RPC_TIMEOUT", "300"))
+        # Use coordinated timeout hierarchy: shim timeout = 2x workflow tool timeout
+        timeout_s = float(TimeoutConfig.get_shim_timeout())  # Auto-calculated (default: 240s)
         ack_grace = float(os.getenv("EXAI_SHIM_ACK_GRACE_SECS", "30"))
         deadline = asyncio.get_running_loop().time() + timeout_s
         while True:

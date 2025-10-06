@@ -24,15 +24,17 @@ logger = logging.getLogger(__name__)
 class ConversationIntegrationMixin:
     """
     Mixin providing conversation integration for workflow tools.
-    
+
     This class handles conversation threading, turn storage, and metadata
     management for multi-step workflows with continuation support.
     """
-    
-    async def _call_expert_analysis(self, arguments: dict, request) -> dict:
-        """Call expert analysis model."""
-        pass
-    
+
+    # CRITICAL FIX: Removed stub _call_expert_analysis() method that was shadowing
+    # the real implementation in ExpertAnalysisMixin due to Python's MRO.
+    # The stub method (which just did 'pass' and returned None) was being called
+    # instead of the real implementation because ConversationIntegrationMixin
+    # comes before ExpertAnalysisMixin in BaseWorkflowMixin's inheritance list.
+
     # ================================================================================
     # Conversation Turn Storage
     # ================================================================================
@@ -205,9 +207,38 @@ class ConversationIntegrationMixin:
         elif self.requires_expert_analysis() and self.should_call_expert_analysis(self.consolidated_findings, request):  # type: ignore
             # Standard expert analysis path
             response_data["status"] = "calling_expert_analysis"
-            
+
+            # DEBUG: Print to verify execution
+            print(f"[DEBUG_EXPERT] About to call _call_expert_analysis for {self.get_name()}")
+            print(f"[DEBUG_EXPERT] use_assistant_model={self.get_request_use_assistant_model(request)}")
+            print(f"[DEBUG_EXPERT] consolidated_findings.findings count={len(self.consolidated_findings.findings)}")  # type: ignore
+
             # Call expert analysis
             expert_analysis = await self._call_expert_analysis(arguments, request)
+
+            # DEBUG: Print result
+            print(f"[DEBUG_EXPERT] _call_expert_analysis returned: {type(expert_analysis)}")
+            print(f"[DEBUG_EXPERT] expert_analysis is None: {expert_analysis is None}")
+            if expert_analysis:
+                print(f"[DEBUG_EXPERT] expert_analysis keys: {expert_analysis.keys() if isinstance(expert_analysis, dict) else 'not a dict'}")
+
+            # SAFETY CHECK: Ensure expert_analysis is never None
+            if expert_analysis is None:
+                print(f"[DEBUG_EXPERT] WARNING: expert_analysis is None! This should never happen!")
+                import traceback
+                expert_analysis = {
+                    "error": "CRITICAL BUG: Expert analysis returned None instead of dict",
+                    "status": "analysis_error",
+                    "raw_analysis": f"The _call_expert_analysis() method returned None, which should be impossible based on the code. This indicates a serious bug. Tool: {self.get_name()}, use_assistant_model: {self.get_request_use_assistant_model(request)}, findings_count: {len(self.consolidated_findings.findings)}",  # type: ignore
+                    "debug_info": {
+                        "tool_name": self.get_name(),
+                        "use_assistant_model": self.get_request_use_assistant_model(request),
+                        "findings_count": len(self.consolidated_findings.findings),  # type: ignore
+                        "relevant_files_count": len(self.consolidated_findings.relevant_files),  # type: ignore
+                        "issues_found_count": len(self.consolidated_findings.issues_found),  # type: ignore
+                    }
+                }
+
             response_data["expert_analysis"] = expert_analysis
             
             # Handle special expert analysis statuses

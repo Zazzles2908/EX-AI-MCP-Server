@@ -18,6 +18,8 @@ def is_streaming_enabled(provider_type: str | None, tool_name: str | None) -> bo
         if p == "glm" and t == "chat":
             return bool(enabled)
         return False
-    except Exception:
+    except (AttributeError, TypeError, ValueError) as e:
+        import logging
+        logging.getLogger(__name__).debug(f"Streaming flag check failed: {e}")
         return False
 

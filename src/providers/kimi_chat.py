@@ -40,10 +40,12 @@ def chat_completions_create(
     tools: Optional[list[Any]] = None,
     tool_choice: Optional[Any] = None,
     temperature: float = 0.6,
+    cache_id: Optional[str] = None,
+    reset_cache_ttl: bool = False,
     **kwargs
 ) -> dict:
     """Wrapper that injects idempotency and Kimi context-cache headers, captures cache token, and returns normalized dict.
-    
+
     Args:
         client: OpenAI-compatible client instance
         model: Model name
@@ -51,8 +53,10 @@ def chat_completions_create(
         tools: Optional list of tools
         tool_choice: Optional tool choice
         temperature: Temperature value
+        cache_id: Optional cache identifier for Moonshot context caching
+        reset_cache_ttl: Whether to reset cache TTL (keeps cache alive)
         **kwargs: Additional parameters (session_id, call_key, tool_name, etc.)
-        
+
     Returns:
         Dictionary with provider, model, content, tool_calls, usage, raw, and metadata
     """
@@ -67,23 +71,34 @@ def chat_completions_create(
         max_hdr_len = int(os.getenv("KIMI_MAX_HEADER_LEN", "4096"))
     except Exception:
         max_hdr_len = 4096
-    
+
     def _safe_set(hname: str, hval: str):
         try:
             if not hval:
                 return
-            if max_hdr_len > 0 and len(hval) > max_hdr_len:
+            # UTF-8 safe length check (count bytes, not characters)
+            hval_bytes = hval.encode('utf-8', errors='ignore')
+            if max_hdr_len > 0 and len(hval_bytes) > max_hdr_len:
                 # Drop overly large headers rather than sending
-                logger.warning("Kimi header %s too large (%s > %s), dropping", hname, len(hval), max_hdr_len)
+                logger.warning("Kimi header %s too large (%s bytes > %s), dropping", hname, len(hval_bytes), max_hdr_len)
                 return
             extra_headers[hname] = hval
-        except Exception:
-            pass
-    
+        except (TypeError, ValueError, UnicodeError) as e:
+            logger.warning(f"Failed to set header {hname}: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error setting header {hname}: {e}")
+
     if call_key:
         _safe_set("Idempotency-Key", str(call_key))
-    
-    # Attach cached context token if available
+
+    # Add Moonshot context caching headers if cache_id provided
+    if cache_id:
+        _safe_set("X-Msh-Context-Cache", cache_id)
+        if reset_cache_ttl:
+            _safe_set("X-Msh-Context-Cache-Reset-TTL", "3600")
+        logger.info(f"🔑 Kimi context cache: {cache_id} (reset_ttl={reset_cache_ttl})")
+
+    # Attach cached context token if available (legacy cache system)
     cache_token = None
     cache_attached = False
     if session_id and msg_prefix_hash:
@@ -141,7 +156,11 @@ def chat_completions_create(
                     cache_saved = True
                 else:
                     cache_saved = False
-            except Exception:
+            except (AttributeError, KeyError, TypeError) as e:
+                logger.debug(f"Failed to extract cache token from headers: {e}")
+                cache_saved = False
+            except Exception as e:
+                logger.warning(f"Unexpected error extracting cache token: {e}")
                 cache_saved = False
             
             # Pull content
@@ -165,7 +184,11 @@ def chat_completions_create(
             raw_payload = getattr(resp, "model_dump", lambda: resp)()
             try:
                 content_text = resp.choices[0].message.content
-            except Exception:
+            except (AttributeError, IndexError, KeyError) as e:
+                logger.debug(f"Failed to extract content from response object, falling back to dict access: {e}")
+                content_text = (raw_payload.get("choices", [{}])[0].get("message", {}) or {}).get("content", "")
+            except Exception as e:
+                logger.warning(f"Unexpected error extracting content: {e}")
                 content_text = (raw_payload.get("choices", [{}])[0].get("message", {}) or {}).get("content", "")
     except Exception as e:
         logger.error("Kimi chat call error: %s", e)
@@ -191,11 +214,32 @@ def chat_completions_create(
     except Exception:
         _usage = None
 
+    # Extract tool_calls from response if present
+    tool_calls_data = None
+    try:
+        if isinstance(raw_payload, dict):
+            choices = raw_payload.get("choices", [])
+        else:
+            choices = getattr(raw_payload, "choices", [])
+
+        if choices:
+            if isinstance(choices[0], dict):
+                msg = choices[0].get("message", {})
+            else:
+                msg = getattr(choices[0], "message", {})
+
+            if isinstance(msg, dict):
+                tool_calls_data = msg.get("tool_calls")
+            else:
+                tool_calls_data = getattr(msg, "tool_calls", None)
+    except Exception:
+        tool_calls_data = None
+
     return {
         "provider": "KIMI",
         "model": model,
         "content": content_text or "",
-        "tool_calls": None,
+        "tool_calls": tool_calls_data,  # Now properly extracted instead of hardcoded None
         "usage": _usage,
         "raw": getattr(raw_payload, "model_dump", lambda: raw_payload)() if hasattr(raw_payload, "model_dump") else raw_payload,
         "metadata": {

@@ -93,7 +93,14 @@ class ListModelsTool(BaseTool):
             OpenRouterModelRegistry = None  # type: ignore
         from src.providers.registry import ModelProviderRegistry
 
-        output_lines = ["# Available AI Models\n"]
+        output_lines = [
+            "# Available AI Models\n",
+            "💡 **TIP**: Use this tool to see which AI models you can call and their capabilities.\n",
+            "**Quick Examples**:",
+            "- Test a model: `chat_exai(prompt='test', model='kimi-latest')`",
+            "- Check model health: `status_exai()`",
+            "- List providers: See configured providers below\n",
+        ]
 
         # Map provider types to friendly names and their models (only Kimi/GLM)
         provider_info = {

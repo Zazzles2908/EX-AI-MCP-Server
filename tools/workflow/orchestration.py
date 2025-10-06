@@ -188,7 +188,7 @@ class OrchestrationMixin:
                     pass
                 response_data = await self.handle_work_completion(response_data, request, arguments)
             else:
-                # Force Claude to work before calling tool again
+                # Force the AI assistant to work before calling tool again
                 response_data = self.handle_work_continuation(response_data, request)
             
             # Allow tools to customize the final response
@@ -317,30 +317,7 @@ class OrchestrationMixin:
                 "current_confidence": self.get_request_confidence(request),
             },
         }
-        # Optional: attach agentic routing hints without changing behavior
-        try:
-            from config import AGENTIC_ENGINE_ENABLED, ROUTER_ENABLED, CONTEXT_MANAGER_ENABLED
-            if AGENTIC_ENGINE_ENABLED and (ROUTER_ENABLED or CONTEXT_MANAGER_ENABLED):
-                from src.core.agentic.engine import AutonomousWorkflowEngine
-                engine = AutonomousWorkflowEngine()
-                # Build a minimal request-like structure for routing hints
-                messages = []
-                try:
-                    # Prefer consolidated findings if available, else synthesize from request
-                    initial = self.get_initial_request(request.step)
-                    messages = [{"role": "user", "content": initial or (request.findings or "") }]
-                except Exception:
-                    pass
-                decision = engine.decide({"messages": messages})
-                response_data[f"{self.get_name()}_status"]["agentic_hints"] = {
-                    "platform": decision.platform,
-                    "estimated_tokens": decision.estimated_tokens,
-                    "images_present": decision.images_present,
-                    "task_type": decision.task_type,
-                }
-        except Exception:
-            # Silently ignore hint failures; behavior must remain unchanged
-            pass
+        # Agentic routing hints removed - was disabled by default and added unnecessary complexity
 
         if continuation_id:
             response_data["continuation_id"] = continuation_id
@@ -374,7 +351,7 @@ class OrchestrationMixin:
             response_data["file_context"] = {
                 "type": "reference_only",
                 "note": reference_note,
-                "context_optimization": "Files referenced but not embedded to preserve Claude's context window",
+                "context_optimization": "Files referenced but not embedded to preserve the AI assistant's context window",
             }
 
         # Provide a standard next_call skeleton for clients and tests expecting it.

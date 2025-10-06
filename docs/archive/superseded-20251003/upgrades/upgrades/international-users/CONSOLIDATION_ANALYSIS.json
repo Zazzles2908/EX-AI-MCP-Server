@@ -1,0 +1,190 @@
+[
+  {
+    "batch_number": 1,
+    "files_analyzed": 15,
+    "superseded": [
+      {
+        "file": "docs/upgrades/international-users/02-glm-4.6-and-zai-sdk-research-NEEDS-UPDATE.md",
+        "reason": "Contains inaccuracies - Kimi analysis found errors in GLM-4.6 release date, context length, and missing features",
+        "action": "delete - superseded by glm-4.6-migration-guide.md"
+      },
+      {
+        "file": "docs/upgrades/international-users/03-implementation-plan-NEEDS-UPDATE.md",
+        "reason": "Based on incorrect research document 02 - implementation plan needs rewrite with corrected information",
+        "action": "delete - superseded by dependency-matrix.md and wave1-handover.md"
+      }
+    ],
+    "duplicates": [
+      {
+        "files": [
+          "docs/system-reference/01-system-overview.md",
+          "docs/architecture/system-overview.md"
+        ],
+        "reason": "Both provide system architecture overview - system-reference version is more comprehensive and current",
+        "action": "merge into docs/system-reference/01-system-overview.md and archive the other"
+      },
+      {
+        "files": [
+          "docs/upgrades/international-users/exai-tool-ux-issues.md",
+          "docs/guides/troubleshooting.md"
+        ],
+        "reason": "Both document EXAI tool issues - troubleshooting guide is more user-focused while UX issues is developer-focused",
+        "action": "keep both - different audiences and purposes"
+      }
+    ],
+    "consolidation": [
+      {
+        "files": [
+          "docs/upgrades/international-users/dual-sdk-http-pattern-architecture.md",
+          "docs/upgrades/international-users/glm-4.6-migration-guide.md",
+          "docs/upgrades/international-users/kimi-model-selection-guide.md"
+        ],
+        "target": "docs/architecture/provider-integration-guide.md",
+        "reason": "All three documents cover provider architecture and integration - could be consolidated into comprehensive provider guide"
+      },
+      {
+        "files": [
+          "docs/upgrades/international-users/wave1-research-summary.md",
+          "docs/upgrades/international-users/wave1-handover.md"
+        ],
+        "target": "docs/current/development/wave1-complete-summary.md",
+        "reason": "Both summarize Wave 1 work - handover document is more comprehensive and includes research summary"
+      }
+    ],
+    "alignment_issues": [
+      {
+        "file": "docs/guides/parameter-reference.md",
+        "issue": "References kimi-latest in examples - should use kimi-k2-0905-preview for production stability",
+        "action": "update examples to use version-pinned models"
+      },
+      {
+        "file": "docs/guides/tool-selection-guide.md",
+        "issue": "Some examples use kimi-latest - should use version-pinned models for consistency",
+        "action": "update all model references to use kimi-k2-0905-preview"
+      },
+      {
+        "file": "docs/upgrades/international-users/agentic-architecture-discovery-2025-10-02.md",
+        "issue": "Documents discovery that agentic features already exist - this is now historical",
+        "action": "archive as historical document, create new implementation guide"
+      }
+    ],
+    "keep_as_is": [
+      "docs/system-reference/README.md",
+      "docs/system-reference/02-provider-architecture.md",
+      "docs/system-reference/03-tool-ecosystem.md",
+      "docs/system-reference/04-features-and-capabilities.md",
+      "docs/system-reference/05-api-endpoints-reference.md",
+      "docs/system-reference/06-deployment-guide.md",
+      "docs/system-reference/07-upgrade-roadmap.md",
+      "docs/guides/web-search-guide.md",
+      "docs/guides/query-examples.md",
+      "docs/guides/troubleshooting.md",
+      "docs/upgrades/international-users/dependency-matrix.md",
+      "docs/upgrades/international-users/WAVE1-COMPLETE-AUDIT-SUMMARY.md",
+      "docs/upgrades/international-users/wave1-deliverables-review-report.md"
+    ],
+    "confidence": "high"
+  },
+  {
+    "batch_number": 2,
+    "files_analyzed": 15,
+    "superseded": [
+      {
+        "file": "docs/upgrades/international-users/wave1-handover.md",
+        "reason": "Wave 1 is complete, replaced by wave2-research-synthesis.md and wave2-implementation-plan.md",
+        "action": "delete"
+      },
+      {
+        "file": "docs/upgrades/international-users/wave1-model-selection-corrections.md",
+        "reason": "Corrections have been incorporated into final documentation",
+        "action": "delete"
+      },
+      {
+        "file": "docs/upgrades/international-users/wave1-research-summary.md",
+        "reason": "Superseded by wave2-research-synthesis.md",
+        "action": "delete"
+      },
+      {
+        "file": "docs/upgrades/international-users/wave1-validation-checkpoint.md",
+        "reason": "Wave 1 validation complete, checkpoint no longer needed",
+        "action": "delete"
+      },
+      {
+        "file": "docs/upgrades/international-users/wave2-epic2.2-system-prompt-audit-summary.md",
+        "reason": "Summary of wave2-system-prompt-audit.md, main audit document is sufficient",
+        "action": "delete"
+      },
+      {
+        "file": "docs/upgrades/international-users/wave2-epic2.2-progress.md",
+        "reason": "Progress tracking document, Epic 2.2 is now complete",
+        "action": "delete"
+      },
+      {
+        "file": "docs/upgrades/international-users/wave2-progress-summary.md",
+        "reason": "Progress summary superseded by final completion documents",
+        "action": "delete"
+      },
+      {
+        "file": "docs/upgrades/international-users/wave2-wave3-preparation-complete.md",
+        "reason": "Preparation complete, superseded by wave2-implementation-plan.md",
+        "action": "delete"
+      }
+    ],
+    "duplicates": [
+      {
+        "files": [
+          "docs/upgrades/international-users/wave2-research-synthesis.md",
+          "docs/upgrades/international-users/wave2-implementation-plan.md"
+        ],
+        "reason": "Both contain similar research findings and implementation details",
+        "action": "merge into wave2-implementation-plan.md"
+      },
+      {
+        "files": [
+          "docs/upgrades/international-users/wave2-architecture-cleanup-summary.md",
+          "docs/upgrades/international-users/wave2-legacy-cleanup-summary.md"
+        ],
+        "reason": "Both document cleanup activities in Wave 2",
+        "action": "merge into single cleanup summary"
+      }
+    ],
+    "consolidation": [
+      {
+        "files": [
+          "docs/upgrades/international-users/wave2-exai-strategic-analysis.md",
+          "docs/upgrades/international-users/wave3-readiness-package.md"
+        ],
+        "target": "docs/upgrades/international-users/implementation-strategy.md",
+        "reason": "Strategic analysis and readiness planning are complementary"
+      }
+    ],
+    "alignment_issues": [
+      {
+        "file": "docs/upgrades/international-users/wave2-system-prompt-audit.md",
+        "issue": "Audit document should be in system reference, not upgrades folder",
+        "action": "move to docs/system-reference/"
+      }
+    ],
+    "keep_as_is": [
+      "docs/upgrades/international-users/wave2-research-synthesis.md",
+      "docs/upgrades/international-users/wave2-implementation-plan.md",
+      "docs/upgrades/international-users/wave2-exai-strategic-analysis.md",
+      "docs/upgrades/international-users/wave3-readiness-package.md",
+      "docs/upgrades/international-users/wave2-architecture-cleanup-summary.md",
+      "docs/upgrades/international-users/wave2-legacy-cleanup-summary.md"
+    ],
+    "confidence": "high"
+  },
+  {
+    "batch_number": 3,
+    "files_analyzed": 1,
+    "superseded": [],
+    "duplicates": [],
+    "consolidation": [],
+    "alignment_issues": [],
+    "keep_as_is": [
+      "wave3-readiness-package.md"
+    ],
+    "confidence": "high"
+  }
+]

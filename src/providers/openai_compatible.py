@@ -17,9 +17,10 @@ from .base import (
     ModelResponse,
     ProviderType,
 )
+from .mixins import RetryMixin
 
 
-class OpenAICompatibleProvider(ModelProvider):
+class OpenAICompatibleProvider(RetryMixin, ModelProvider):
     """Base class for any provider using an OpenAI-compatible API.
 
     This includes:
@@ -372,75 +373,55 @@ class OpenAICompatibleProvider(ModelProvider):
         # For responses endpoint, we only add parameters that are explicitly supported
         # Remove unsupported chat completion parameters that may cause API errors
 
-        # Retry logic with progressive delays
-        max_retries = 4
-        retry_delays = [1, 3, 5, 8]
-        last_exception = None
-        actual_attempts = 0
+        # Use RetryMixin to handle retry logic
+        def _execute_o3_request():
+            import json
 
-        for attempt in range(max_retries):
-            try:  # Log sanitized payload for debugging
-                import json
+            sanitized_params = self._sanitize_for_logging(completion_params)
+            logging.info(
+                f"o3-pro API request (sanitized): {json.dumps(sanitized_params, indent=2, ensure_ascii=False)}"
+            )
 
-                sanitized_params = self._sanitize_for_logging(completion_params)
-                logging.info(
-                    f"o3-pro API request (sanitized): {json.dumps(sanitized_params, indent=2, ensure_ascii=False)}"
-                )
+            # Use OpenAI client's responses endpoint
+            response = self.client.responses.create(**completion_params)
 
-                # Use OpenAI client's responses endpoint
-                response = self.client.responses.create(**completion_params)
+            # Extract content from responses endpoint format
+            # Use validation helper to safely extract output_text
+            content = self._safe_extract_output_text(response)
 
-                # Extract content from responses endpoint format
-                # Use validation helper to safely extract output_text
-                content = self._safe_extract_output_text(response)
+            # Try to extract usage information
+            usage = None
+            if hasattr(response, "usage"):
+                usage = self._extract_usage(response)
+            elif hasattr(response, "input_tokens") and hasattr(response, "output_tokens"):
+                # Safely extract token counts with None handling
+                input_tokens = getattr(response, "input_tokens", 0) or 0
+                output_tokens = getattr(response, "output_tokens", 0) or 0
+                usage = {
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "total_tokens": input_tokens + output_tokens,
+                }
 
-                # Try to extract usage information
-                usage = None
-                if hasattr(response, "usage"):
-                    usage = self._extract_usage(response)
-                elif hasattr(response, "input_tokens") and hasattr(response, "output_tokens"):
-                    # Safely extract token counts with None handling
-                    input_tokens = getattr(response, "input_tokens", 0) or 0
-                    output_tokens = getattr(response, "output_tokens", 0) or 0
-                    usage = {
-                        "input_tokens": input_tokens,
-                        "output_tokens": output_tokens,
-                        "total_tokens": input_tokens + output_tokens,
-                    }
+            return ModelResponse(
+                content=content,
+                usage=usage,
+                model_name=model_name,
+                friendly_name=self.FRIENDLY_NAME,
+                provider=self.get_provider_type(),
+                metadata={
+                    "model": getattr(response, "model", model_name),
+                    "id": getattr(response, "id", ""),
+                    "created": getattr(response, "created_at", 0),
+                    "endpoint": "responses",
+                },
+            )
 
-                return ModelResponse(
-                    content=content,
-                    usage=usage,
-                    model_name=model_name,
-                    friendly_name=self.FRIENDLY_NAME,
-                    provider=self.get_provider_type(),
-                    metadata={
-                        "model": getattr(response, "model", model_name),
-                        "id": getattr(response, "id", ""),
-                        "created": getattr(response, "created_at", 0),
-                        "endpoint": "responses",
-                    },
-                )
-
-            except Exception as e:
-                last_exception = e
-
-                # Check if this is a retryable error using structured error codes
-                is_retryable = self._is_error_retryable(e)
-
-                if is_retryable and attempt < max_retries - 1:
-                    delay = retry_delays[attempt]
-                    logging.warning(
-                        f"Retryable error for o3-pro responses endpoint, attempt {actual_attempts}/{max_retries}: {str(e)}. Retrying in {delay}s..."
-                    )
-                    time.sleep(delay)
-                else:
-                    break
-
-        # If we get here, all retries failed
-        error_msg = f"o3-pro responses endpoint error after {actual_attempts} attempt{'s' if actual_attempts > 1 else ''}: {str(last_exception)}"
-        logging.error(error_msg)
-        raise RuntimeError(error_msg) from last_exception
+        return self._execute_with_retry(
+            operation=_execute_o3_request,
+            operation_name="o3-pro responses endpoint",
+            is_retryable_fn=self._is_error_retryable
+        )
 
 
     def generate_content(
@@ -576,151 +557,146 @@ class OpenAICompatibleProvider(ModelProvider):
                 **kwargs,
             )
 
-        # Retry policy
-        max_retries = 4
-        retry_delays = [1, 3, 5, 8]
-        last_exception = None
-        actual_attempts = 0
-
-        for attempt in range(max_retries):
-            actual_attempts = attempt + 1
+        # Use RetryMixin to handle retry logic
+        def _execute_chat_request():
+            # Attach idempotency per attempt as well via request_options if SDK supports it
+            req_opts = {}
             try:
-                # Attach idempotency per attempt as well via request_options if SDK supports it
-                req_opts = {}
+                call_key = kwargs.get("_call_key") or kwargs.get("call_key")
+                if call_key:
+                    req_opts["idempotency_key"] = str(call_key)
+            except Exception:
+                pass
+
+            response = self.client.chat.completions.create(**completion_params, **req_opts)
+
+            # Capture Kimi context-cache token from response headers if exposed via client
+            try:
+                # Some SDKs expose last response headers; fall back to provider-specific hooks otherwise
+                headers = getattr(response, "response_headers", None) or getattr(self.client, "_last_response_headers", None)
+                token = None
+                if headers:
+                    for k, v in headers.items():
+                        lk = k.lower()
+                        if lk in ("msh-context-cache-token-saved", "msh_context_cache_token_saved"):
+                            token = v
+                            break
+                if token:
+                    # Save on the provider for reuse in this process; upper layers may also persist per session
+                    setattr(self, "_kimi_cache_token", token)
+                    logging.info("Kimi context cache saved token suffix=%s", str(token)[-6:])
+            except Exception:
+                pass
+
+            # Streaming
+            if completion_params.get("stream") is True:
+                content_parts = []
+                actual_model = None
+                response_id = None
+                created_ts = None
                 try:
-                    call_key = kwargs.get("_call_key") or kwargs.get("call_key")
-                    if call_key:
-                        req_opts["idempotency_key"] = str(call_key)
-                except Exception:
-                    pass
-                response = self.client.chat.completions.create(**completion_params, **req_opts)
-                # Capture Kimi context-cache token from response headers if exposed via client
-                try:
-                    # Some SDKs expose last response headers; fall back to provider-specific hooks otherwise
-                    headers = getattr(response, "response_headers", None) or getattr(self.client, "_last_response_headers", None)
-                    token = None
-                    if headers:
-                        for k, v in headers.items():
-                            lk = k.lower()
-                            if lk in ("msh-context-cache-token-saved", "msh_context_cache_token_saved"):
-                                token = v
-                                break
-                    if token:
-                        # Save on the provider for reuse in this process; upper layers may also persist per session
-                        setattr(self, "_kimi_cache_token", token)
-                        logging.info("Kimi context cache saved token suffix=%s", str(token)[-6:])
-                except Exception:
-                    pass
+                    for event in response:
+                        try:
+                            choice = event.choices[0]
+                            delta = getattr(choice, "delta", None)
+                            if delta and getattr(delta, "content", None):
+                                content_parts.append(delta.content)
+                            msg = getattr(choice, "message", None)
+                            if msg and getattr(msg, "content", None):
+                                content_parts.append(msg.content)
+                            if actual_model is None and getattr(event, "model", None):
+                                actual_model = event.model
+                            if response_id is None and getattr(event, "id", None):
+                                response_id = event.id
+                            if created_ts is None and getattr(event, "created", None):
+                                created_ts = event.created
+                        except Exception:
+                            continue
+                except Exception as stream_err:
+                    raise RuntimeError(f"Streaming failed: {stream_err}") from stream_err
 
-                # Streaming
-                if completion_params.get("stream") is True:
-                    content_parts = []
-                    actual_model = None
-                    response_id = None
-                    created_ts = None
-                    try:
-                        for event in response:
-                            try:
-                                choice = event.choices[0]
-                                delta = getattr(choice, "delta", None)
-                                if delta and getattr(delta, "content", None):
-                                    content_parts.append(delta.content)
-                                msg = getattr(choice, "message", None)
-                                if msg and getattr(msg, "content", None):
-                                    content_parts.append(msg.content)
-                                if actual_model is None and getattr(event, "model", None):
-                                    actual_model = event.model
-                                if response_id is None and getattr(event, "id", None):
-                                    response_id = event.id
-                                if created_ts is None and getattr(event, "created", None):
-                                    created_ts = event.created
-                            except Exception:
-                                continue
-                    except Exception as stream_err:
-                        raise RuntimeError(f"Streaming failed: {stream_err}") from stream_err
-
-                    content = "".join(content_parts)
-                    return ModelResponse(
-                        content=content,
-                        usage=None,
-                        model_name=model_name,
-                        friendly_name=self.FRIENDLY_NAME,
-                        provider=self.get_provider_type(),
-                        metadata={
-                            "finish_reason": "stop",
-                            "model": actual_model or model_name,
-                            "id": response_id,
-                            "created": created_ts,
-                            "streamed": True,
-                        },
-                    )
-
-                # Non-streaming
-                choice0 = None
-                try:
-                    choices = getattr(response, "choices", []) or []
-                    choice0 = choices[0] if len(choices) > 0 else None
-                except Exception:
-                    choice0 = None
-
-                content = None
-                try:
-                    if choice0 is not None:
-                        msg = getattr(choice0, "message", None)
-                        if msg is not None and getattr(msg, "content", None):
-                            content = msg.content
-                except Exception:
-                    pass
-                if not content and choice0 is not None:
-                    try:
-                        if getattr(choice0, "content", None):
-                            content = choice0.content
-                    except Exception:
-                        pass
-                if not content and choice0 is not None:
-                    try:
-                        delta = getattr(choice0, "delta", None)
-                        if delta is not None and getattr(delta, "content", None):
-                            content = delta.content
-                    except Exception:
-                        pass
-                if not content:
-                    content = getattr(response, "content", None) or ""
-
-                usage = self._extract_usage(response)
-
+                content = "".join(content_parts)
                 return ModelResponse(
-                    content=(content or ""),
-                    usage=(usage or {}),
-                    model_name=(getattr(response, "model", None) or model_name or ""),
+                    content=content,
+                    usage=None,
+                    model_name=model_name,
                     friendly_name=self.FRIENDLY_NAME,
                     provider=self.get_provider_type(),
                     metadata={
-                        "finish_reason": getattr(choice0, "finish_reason", None)
-                        or getattr(getattr(response, "choices", [{}])[0], "finish_reason", None)
-                        or "Unknown",
-                        "model": getattr(response, "model", None) or model_name,
-                        "id": getattr(response, "id", None),
-                        "created": getattr(response, "created", None),
+                        "finish_reason": "stop",
+                        "model": actual_model or model_name,
+                        "id": response_id,
+                        "created": created_ts,
+                        "streamed": True,
                     },
                 )
-            except Exception as e:
-                last_exception = e
-                is_retryable = self._is_error_retryable(e)
-                if attempt == max_retries - 1 or not is_retryable:
-                    break
-                delay = retry_delays[attempt]
-                logging.warning(
-                    f"{self.FRIENDLY_NAME} error for model {model_name}, attempt {actual_attempts}/{max_retries}: {str(e)}. Retrying in {delay}s..."
-                )
-                time.sleep(delay)
 
-        error_msg = (
-            f"{self.FRIENDLY_NAME} API error for model {model_name} after {actual_attempts} attempt"
-            f"{'s' if actual_attempts > 1 else ''}: {str(last_exception)}"
+            # Non-streaming
+            choice0 = None
+            try:
+                choices = getattr(response, "choices", []) or []
+                choice0 = choices[0] if len(choices) > 0 else None
+            except Exception:
+                choice0 = None
+
+            content = None
+            try:
+                if choice0 is not None:
+                    msg = getattr(choice0, "message", None)
+                    if msg is not None and getattr(msg, "content", None):
+                        content = msg.content
+            except Exception:
+                pass
+            if not content and choice0 is not None:
+                try:
+                    if getattr(choice0, "content", None):
+                        content = choice0.content
+                except Exception:
+                    pass
+            if not content and choice0 is not None:
+                try:
+                    delta = getattr(choice0, "delta", None)
+                    if delta is not None and getattr(delta, "content", None):
+                        content = delta.content
+                except Exception:
+                    pass
+            if not content:
+                content = getattr(response, "content", None) or ""
+
+            usage = self._extract_usage(response)
+
+            # Convert response to dict for metadata storage
+            raw_dict = None
+            try:
+                if hasattr(response, "model_dump"):
+                    raw_dict = response.model_dump()
+                elif isinstance(response, dict):
+                    raw_dict = response
+            except Exception:
+                raw_dict = None
+
+            return ModelResponse(
+                content=(content or ""),
+                usage=(usage or {}),
+                model_name=(getattr(response, "model", None) or model_name or ""),
+                friendly_name=self.FRIENDLY_NAME,
+                provider=self.get_provider_type(),
+                metadata={
+                    "finish_reason": getattr(choice0, "finish_reason", None)
+                    or getattr(getattr(response, "choices", [{}])[0], "finish_reason", None)
+                    or "Unknown",
+                    "model": getattr(response, "model", None) or model_name,
+                    "id": getattr(response, "id", None),
+                    "created": getattr(response, "created", None),
+                    "raw": raw_dict,  # Store raw response for tool_calls extraction
+                },
+            )
+
+        return self._execute_with_retry(
+            operation=_execute_chat_request,
+            operation_name=f"{self.FRIENDLY_NAME} chat completion for {model_name}",
+            is_retryable_fn=self._is_error_retryable
         )
-        logging.error(error_msg)
-        raise RuntimeError(error_msg) from last_exception
 
     def count_tokens(self, text: str, model_name: str) -> int:
         """Count tokens for the given text.

@@ -137,8 +137,19 @@ class ActivityTool(SimpleTool):
             if not str(selected_path).startswith(str(project_root)):
                 return [TextContent(type="text", text=f"[activity:error] Refusing to read outside project: {selected_path}")]
 
-        if not selected_path.exists() or not selected_path.is_file():
-            return [TextContent(type="text", text=f"[activity:error] Log file not found or inaccessible: {selected_path}")]
+        # Ensure log directory exists
+        if not selected_path.exists():
+            try:
+                # Create logs directory if it doesn't exist
+                selected_path.parent.mkdir(parents=True, exist_ok=True)
+                # Create empty log file
+                selected_path.touch(exist_ok=True)
+                logger.info(f"Created log file: {selected_path}")
+            except Exception as e:
+                return [TextContent(type="text", text=f"[activity:error] Failed to create log file {selected_path}: {e}")]
+
+        if not selected_path.is_file():
+            return [TextContent(type="text", text=f"[activity:error] Log path is not a file: {selected_path}")]
 
         # Clamp requested line count to schema bounds for safety
         try:

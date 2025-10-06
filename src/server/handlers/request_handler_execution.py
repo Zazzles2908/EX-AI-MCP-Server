@@ -89,8 +89,8 @@ def inject_optional_features(arguments: Dict[str, Any], tool_name: str, env_true
             fmt = os_module.getenv("DATE_FORMAT", "%Y-%m-%d")
             today = datetime.datetime.now().strftime(fmt)
             arguments["_today"] = today
-    except Exception:
-        pass
+    except (AttributeError, ValueError, TypeError) as e:
+        logger.debug(f"Failed to inject date: {e}")
     
     # Smart websearch (thinkdeep) - conservative, default off
     try:
@@ -110,27 +110,29 @@ def inject_optional_features(arguments: Dict[str, Any], tool_name: str, env_true
                     ):
                         arguments["use_websearch"] = True
                         logger.debug("[SMART_WEBSEARCH] enabled for thinkdeep due to time-sensitive cues")
-    except Exception:
-        pass
+    except (AttributeError, KeyError, TypeError) as e:
+        logger.debug(f"Smart websearch detection failed: {e}")
     
-    # Client-aware defaults (generic profile with legacy Claude fallback)
+    # Client-aware defaults (generic profile with backward compatibility)
     try:
         from utils.client_info import get_client_info_from_context
         try:
             import server as _srv  # lazy import to avoid circulars during module import
-        except Exception:
+        except ImportError as e:
+            logger.debug(f"Server module not available for client info: {e}")
             _srv = None  # type: ignore
         ci = get_client_info_from_context(_srv) or {}
-        # Generic env first, then legacy Claude-specific variables
+        # Check CLIENT_ env vars first, then legacy CLAUDE_ vars for backward compatibility
         if env_true_func("CLIENT_DEFAULTS_USE_WEBSEARCH", os_module.getenv("CLAUDE_DEFAULTS_USE_WEBSEARCH", "false")):
             if "use_websearch" not in arguments:
                 arguments["use_websearch"] = True
         if tool_name == "thinkdeep" and "thinking_mode" not in arguments:
+            # Prefer CLIENT_ prefix, fallback to legacy CLAUDE_ prefix for backward compatibility
             default_thinking = (os_module.getenv("CLIENT_DEFAULT_THINKING_MODE") or os_module.getenv("CLAUDE_DEFAULT_THINKING_MODE", "medium")).strip().lower()
             arguments["thinking_mode"] = default_thinking
-    except Exception:
-        pass
-    
+    except (ImportError, AttributeError, KeyError) as e:
+        logger.debug(f"Client-aware defaults failed: {e}")
+
     return arguments
 
 
@@ -166,8 +168,8 @@ async def execute_tool_with_fallback(
                 "path": "non_model_dispatch",
                 "note": "manager dispatcher engaged; invoking safety-net orchestrator"
             })
-        except Exception:
-            pass
+        except (AttributeError, KeyError, TypeError) as e:
+            logger.debug(f"Failed to update route plan: {e}")
         
         # Attempt 1: Kimi
         result = await execute_with_monitor_func(lambda: tool.execute(arguments))
@@ -180,20 +182,21 @@ async def execute_tool_with_fallback(
             if isinstance(last, TextContent) and last.type == "text" and last.text:
                 try:
                     payload = _json.loads(last.text)
-                except Exception:
+                except (json.JSONDecodeError, TypeError, ValueError) as e:
+                    logger.debug(f"Failed to parse response payload: {e}")
                     payload = None
             if isinstance(payload, dict) and str(payload.get("status", "")).lower() == "execution_error":
                 # Attempt 2: GLM multi-file chat
                 try:
                     logging.getLogger("mcp_activity").info("[FALLBACK] switching to glm_multi_file_chat after kimi failure")
-                except Exception:
-                    pass
+                except (AttributeError, TypeError) as e:
+                    logger.debug(f"Failed to log fallback: {e}")
                 glm_tool = tool_map.get("glm_multi_file_chat")
                 if glm_tool is not None:
                     alt = await execute_with_monitor_func(lambda: glm_tool.execute(arguments))
                     return alt
-        except Exception:
-            pass
+        except (AttributeError, KeyError, TypeError, IndexError) as e:
+            logger.debug(f"Fallback to GLM multi-file chat failed: {e}")
         
         return result
     else:
@@ -249,8 +252,8 @@ async def execute_tool_without_model(
             _rp = dict(evt.args.get("route_plan") or {})
             _rp["path"] = "non_model_dispatch"
             evt.args["route_plan"] = _rp
-    except Exception:
-        pass
+    except (AttributeError, KeyError, TypeError) as e:
+        logger.debug(f"Failed to update event route plan: {e}")
     
     try:
         if tool_name == "kimi_multi_file_chat":
@@ -263,12 +266,12 @@ async def execute_tool_without_model(
                     "path": "non_model_dispatch",
                     "note": "manager dispatcher engaged; invoking safety-net orchestrator"
                 })
-            except Exception:
-                pass
+            except (AttributeError, KeyError, TypeError) as e:
+                logger.debug(f"Failed to update route plan: {e}")
             try:
                 logging.getLogger("mcp_activity").info("[FALLBACK] orchestrator route engaged for multi-file chat")
-            except Exception:
-                pass
+            except (AttributeError, TypeError) as e:
+                logger.debug(f"Failed to log orchestrator route: {e}")
             return await execute_with_monitor_func(lambda: tool.execute(arguments))
         else:
             return await execute_with_monitor_func(lambda: tool.execute(arguments))
@@ -276,7 +279,8 @@ async def execute_tool_without_model(
         # Graceful error normalization for invalid arguments and runtime errors
         try:
             from pydantic import ValidationError as _ValidationError
-        except Exception:
+        except ImportError as e:
+            logger.debug(f"Pydantic not available for validation error handling: {e}")
             _ValidationError = None  # type: ignore
         import json as _json
         if _ValidationError and isinstance(e, _ValidationError):

@@ -173,13 +173,13 @@ class FileEmbeddingMixin:
     def _handle_workflow_file_context(self, request: Any, arguments: dict[str, Any]) -> None:
         """
         Handle file context appropriately based on workflow phase.
-        
+
         CONTEXT-AWARE FILE EMBEDDING STRATEGY:
-        1. Intermediate steps + continuation: Only reference file names (save Claude's context)
+        1. Intermediate steps + continuation: Only reference file names (save AI assistant's context)
         2. Final step: Embed full file content for expert analysis
         3. Expert analysis: Always embed relevant files with token budgeting
-        
-        This prevents wasting Claude's limited context on intermediate steps while ensuring
+
+        This prevents wasting the AI assistant's limited context on intermediate steps while ensuring
         the final expert analysis has complete file context.
         """
         continuation_id = self.get_request_continuation_id(request)
@@ -212,11 +212,11 @@ class FileEmbeddingMixin:
     ) -> bool:
         """
         Determine whether to embed file content based on workflow context.
-        
+
         CORRECT LOGIC:
-        - NEVER embed files when Claude is getting the next step (next_step_required=True)
+        - NEVER embed files when the AI assistant is getting the next step (next_step_required=True)
         - ONLY embed files when sending to external model (next_step_required=False)
-        
+
         Args:
             step_number: Current step number
             continuation_id: Thread continuation ID (None for new conversations)
@@ -320,7 +320,7 @@ class FileEmbeddingMixin:
     def _reference_workflow_files(self, request: Any) -> None:
         """
         Reference file names without embedding content for intermediate steps.
-        Saves Claude's context while still providing file awareness.
+        Saves the AI assistant's context while still providing file awareness.
         """
         # Workflow tools use relevant_files, not files
         request_files = self.get_request_relevant_files(request)
@@ -339,7 +339,7 @@ class FileEmbeddingMixin:
         file_names = [os.path.basename(f) for f in request_files]
         reference_note = (
             f"Files referenced in this step: {', '.join(file_names)}\n"
-            f"(File content available via conversation history or can be discovered by Claude)"
+            f"(File content available via conversation history or can be discovered by the AI assistant)"
         )
 
         self._file_reference_note = reference_note  # type: ignore

@@ -45,32 +45,16 @@ class KimiCapabilities(ProviderCapabilitiesBase):
     def get_websearch_tool_schema(self, config: Dict[str, Any]) -> WebSearchSchema:
         if not self.supports_websearch() or not config.get("use_websearch"):
             return WebSearchSchema(None, None)
-        # Choose schema mode via env: native | function | builtin | both (default function)
-        mode = os.getenv("KIMI_WEBSEARCH_SCHEMA", "function").strip().lower()
-        tools: list[dict] = []
-        if mode in ("native",):
-            # Note: Moonshot OpenAI-compatible /chat/completions currently rejects type=web_search
-            # Keep for future compatibility, but not the default.
-            tools.append({"type": "web_search"})
-        if mode in ("function", "both"):
-            tools.append({
-                "type": "function",
-                "function": {
-                    "name": "web_search",
-                    "description": "Internet search",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {"query": {"type": "string"}},
-                        "required": ["query"],
-                    },
-                },
-            })
-        if mode in ("builtin", "both"):
-            tools.append({
-                "type": "builtin_function",
-                "function": {"name": "$web_search"}
-            })
-        return WebSearchSchema(tools=tools or None, tool_choice="auto" if tools else None)
+
+        # Kimi supports builtin_function for SERVER-SIDE web search
+        # This means Kimi's API performs the search and returns results directly
+        # No client-side execution needed!
+        tools: list[dict] = [{
+            "type": "builtin_function",
+            "function": {"name": "$web_search"}
+        }]
+
+        return WebSearchSchema(tools=tools, tool_choice="auto")
 
 
 class GLMCapabilities(ProviderCapabilitiesBase):
@@ -83,8 +67,30 @@ class GLMCapabilities(ProviderCapabilitiesBase):
     def get_websearch_tool_schema(self, config: Dict[str, Any]) -> WebSearchSchema:
         if not self.supports_websearch() or not config.get("use_websearch"):
             return WebSearchSchema(None, None)
-        # GLM requires non-null web_search object in tool spec
-        tools = [{"type": "web_search", "web_search": {}}]
+
+        # CRITICAL: Only glm-4-plus and glm-4.6 support websearch via tools
+        # Other models (glm-4.5-flash, glm-4.5, glm-4.5-air) will HANG if websearch tools are passed
+        model_name = config.get("model_name", "")
+        websearch_supported_models = ["glm-4-plus", "glm-4.6"]
+
+        if model_name not in websearch_supported_models:
+            # Model doesn't support websearch - return empty schema to prevent hanging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Model {model_name} does not support websearch via tools - disabling websearch")
+            return WebSearchSchema(None, None)
+
+        # GLM requires web_search object with configuration parameters
+        # Default to Jina search with one week recency filter
+        web_search_config = {
+            "search_engine": "search_pro_jina",  # or "search_pro_bing"
+            "search_recency_filter": "oneWeek",  # oneDay, oneWeek, oneMonth, oneYear, noLimit
+            "content_size": "medium",  # medium: 400-600 chars, high: 2500 chars
+            "result_sequence": "after",  # Show results after response
+            "search_result": True,  # Return search results
+        }
+        tools = [{"type": "web_search", "web_search": web_search_config}]
+        # Use "auto" to let GLM decide when to execute web_search
         return WebSearchSchema(tools=tools, tool_choice="auto")
 
 

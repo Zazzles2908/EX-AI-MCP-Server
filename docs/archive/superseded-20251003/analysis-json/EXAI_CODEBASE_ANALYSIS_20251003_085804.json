@@ -1,0 +1,62 @@
+[
+  {
+    "batch_number": 1,
+    "batch_type": "code",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "raw_response": "```json\n{\n  \"batch_number\": 1,\n  \"batch_type\": \"code\",\n  \"files_analyzed\": 13,\n  \"architecture_patterns\": [\n    {\n      \"pattern\": \"Mixin-based Workflow Composition\",\n      \"description\": \"Complex workflow behavior is decomposed into 5 focused mixins (RequestAccessor, ConversationIntegration, FileEmbedding, ExpertAnalysis, Orchestration) that are composed into BaseWorkflowMixin. Each mixin handles a single concern and stays under 750 lines for AI context compatibility.\",\n      \"files\": [\"workflow_mixin.py\", \"request_accessors.py\", \"conversation_integration.py\", \"file_embedding.py\", \"expert_analysis.py\", \"orchestration.py\"]\n    },\n    {\n      \"pattern\": \"Context-Aware File Embedding\",\n      \"description\": \"Files are embedded only when necessary: intermediate steps reference filenames to save Claude\u2019s context, final steps embed full content for expert analysis. Token budgeting and conversation-history deduplication prevent waste.\",\n      \"files\": [\"file_embedding.py\", \"orchestration.py\"]"
+  },
+  {
+    "batch_number": 2,
+    "batch_type": "code",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "raw_response": "```json\n{\n  \"batch_number\": 1,\n  \"batch_type\": \"code\",\n  \"files_analyzed\": 11,\n  \"architecture_patterns\": [\n    {\n      \"pattern\": \"Mixin-based Tool Composition\",\n      \"description\": \"Tools are built by composing specialized mixins (BaseToolCore, ModelManagementMixin, FileHandlingMixin, ResponseFormattingMixin) to provide modular functionality while maintaining clean separation of concerns.\",\n      \"files\": [\"base_tool.py\", \"base_tool_core.py\", \"base_tool_model_management.py\", \"base_tool_file_handling.py\", \"base_tool_response.py\"]\n    },\n    {\n      \"pattern\": \"Provider Abstraction Layer\",\n      \"description\": \"All AI providers (Kimi, GLM, OpenAI, etc.) implement a common ModelProvider interface with standardized capabilities, temperature constraints, and model resolution, enabling seamless provider switching.\",\n      \"files\": [\"base.py\", \"kimi_intent.py\", \"kimi_tools_chat.py\", \"glm.py\"]\n    },\n    {\n      \"pattern\": \"Conversation-Aware File Deduplication\",\n      \"description\": \"Imple"
+  },
+  {
+    "batch_number": 3,
+    "batch_type": "code",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "raw_response": "```json\n{\n  \"batch_number\": 1,\n  \"batch_type\": \"code\",\n  \"files_analyzed\": 14,\n  \"architecture_patterns\": [\n    {\n      \"pattern\": \"Provider Registry with Health Monitoring\",\n      \"description\": \"Centralized registry manages model providers with health checks, circuit breakers, and retry logic. Uses singleton pattern with priority-based provider selection.\",\n      \"files\": [\"registry_core.py\", \"registry_config.py\", \"registry_selection.py\"]\n    },\n    {\n      \"pattern\": \"OpenAI-Compatible Provider Abstraction\",\n      \"description\": \"Base class for OpenAI-compatible APIs with unified interface for chat completions, streaming, and file uploads. Handles provider-specific quirks and timeouts.\",\n      \"files\": [\"openai_compatible.py\", \"base.py\"]\n    },\n    {\n      \"pattern\": \"Multi-Provider Fallback Chain\",\n      \"description\": \"Automatic fallback between providers (Kimi \u2192 GLM \u2192 Custom \u2192 OpenRouter) with cost-aware and free-tier preferences. Uses telemetry for selection decisions.\",\n      \""
+  },
+  {
+    "batch_number": 4,
+    "batch_type": "code",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "raw_response": "```json\n{\n  \"batch_number\": 1,\n  \"batch_type\": \"code\",\n  \"files_analyzed\": 12,\n  \"architecture_patterns\": [\n    {\n      \"pattern\": \"Provider-Registry Abstraction\",\n      \"description\": \"Central registry that dynamically loads model providers (Kimi, GLM, etc.) and exposes them through a unified interface. Providers are lazy-loaded to avoid import-time side effects and optional dependencies.\",\n      \"files\": [\"src/providers/__init__.py\", \"src/server/registry_bridge.py\"]\n    },\n    {\n      \"pattern\": \"Request Orchestrator Pipeline\",\n      \"description\": \"Thin orchestrator that delegates to specialized helper modules for each phase of request handling (initialization, routing, context reconstruction, execution, post-processing). Achieves 93% code reduction through modularization.\",\n      \"files\": [\"src/server/request_handler.py\"]\n    },\n    {\n      \"pattern\": \"Fallback Chain Execution\",\n      \"description\": \"Multi-tier fallback system for file-based chat tools: primary provider \u2192 GLM multi"
+  },
+  {
+    "batch_number": 5,
+    "batch_type": "code",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "raw_response": "```json\n{\n  \"batch_number\": 1,\n  \"batch_type\": \"code\",\n  \"files_analyzed\": 12,\n  \"architecture_patterns\": [\n    {\n      \"pattern\": \"Layered Request-Handler Pipeline\",\n      \"description\": \"Every tool call flows through a deterministic pipeline: initialize \u2192 route \u2192 resolve-model \u2192 monitor \u2192 execute \u2192 post-process. Each stage is a pluggable module with clear contracts, enabling uniform observability, retries, and policy injection without touching tool logic.\",\n      \"files\": [\"request_handler_init.py\", \"request_handler_routing.py\", \"request_handler_model_resolution.py\", \"request_handler_monitoring.py\", \"request_handler_post_processing.py\"]\n    },\n    {\n      \"pattern\": \"Provider-Registry with Late-Binding Factories\",\n      \"description\": \"Providers are detected at start-up, wrapped in factory callables, and registered in a singleton registry. Tools ask for a model by name; the registry lazily instantiates the correct provider and caches it. This keeps tools provider-agnostic and allows "
+  },
+  {
+    "batch_number": 6,
+    "batch_type": "docs",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "raw_response": "```json\n{\n  \"batch_number\": 1,\n  \"batch_type\": \"docs\",\n  \"files_analyzed\": 15,\n  \"design_philosophy\": {\n    \"core_principles\": [\n      \"Manager-first routing: every request is pre-processed by an AI Manager (GLM-4.5-flash) that adds context, validates parameters, and can intervene\",\n      \"Provider-native capabilities: expose each LLM's unique strengths (GLM web-search, Kimi long-context) instead of generic wrappers\",\n      \"Explainable routing: every call carries a RoutePlan showing why a model was chosen, what capabilities were requested, and what fallback logic applied\",\n      \"Zero-duplication prompts: shared prompt components injected at runtime, cutting 70 % of prompt code\",\n      \"Observable by default: JSONL logs for every decision, token usage, latency, cache hit, and error path\"\n    ],\n    \"problems_solved\": [\n      \"Static prompts that can't adapt to user intent or context\",\n      \"Under-utilized AI Manager that only routed instead of enhancing requests\",\n      \"Opaque provi"
+  },
+  {
+    "batch_number": 7,
+    "batch_type": "docs",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "raw_response": "```json\n{\n  \"batch_number\": 1,\n  \"batch_type\": \"docs\",\n  \"files_analyzed\": 16,\n  \"design_philosophy\": {\n    \"core_principles\": [\n      \"Provider-agnostic routing \u2013 any LLM (Kimi, GLM, OpenAI) can be swapped in without touching workflow code\",\n      \"Context-aware caching \u2013 long prompts are cached once and re-used across turns to cut cost & latency\",\n      \"Intent-driven model selection \u2013 short/fast queries go to GLM, long/multi-file tasks go to Kimi automatically\",\n      \"Idempotent, traceable calls \u2013 every provider call carries Idempotency-Key and trace headers so retries are safe and observable\",\n      \"Workflows as tools \u2013 agentic behaviour is delivered through composable Python tools that can be chained by the orchestrator or by an LLM itself\"\n    ],\n    \"problems_solved\": [\n      \"\u201cWhich model should I use?\u201d \u2013 automatic classification removes the manual choice\",\n      \"\u201cLong prompts are expensive\u201d \u2013 Kimi context-cache slashes cost on 128 k+ token windows\",\n      \"\u201cI need web searc"
+  },
+  {
+    "batch_number": 8,
+    "batch_type": "docs",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "raw_response": "```json\n{\n  \"batch_number\": 1,\n  \"batch_type\": \"docs\",\n  \"files_analyzed\": 15,\n  \"design_philosophy\": {\n    \"core_principles\": [\n      \"Transport-agnostic execution boundary (stdio vs WebSocket)\",\n      \"Provider-first architecture with SDK fallback\",\n      \"Tool modularity and registry-based discovery\",\n      \"Clean separation of concerns: handlers, providers, tools, transports\",\n      \"Environment-driven provider activation (no hard-coded providers)\"\n    ],\n    \"problems_solved\": [\n      \"IDEs need stdio MCP but remote clients need WebSocket\",\n      \"Multiple AI providers require unified interface\",\n      \"File uploads need deduplication and lifecycle management\",\n      \"Agent workflows need async result polling and conversation history\",\n      \"Web search needs to be native to provider, not bolt-on\"\n    ],\n    \"agentic_definition\": \"EXAI is agentic because it exposes provider-native agent APIs (Z.ai Agents), supports multi-step workflows with conversation state, and allows tools to "
+  },
+  {
+    "batch_number": 9,
+    "batch_type": "docs",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "raw_response": "I'll analyze the EXAI documentation to understand the system's design philosophy, architecture, and intended workflows. Let me start by examining the documentation structure and key components."
+  },
+  {
+    "batch_number": 10,
+    "batch_type": "docs",
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "raw_response": "I'll analyze the EXAI documentation to understand the system's design intent and architecture. Let me start by examining the core documentation files."
+  }
+]

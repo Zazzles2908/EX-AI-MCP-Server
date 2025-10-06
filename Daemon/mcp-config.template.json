@@ -1,0 +1,146 @@
+{
+  "_comment": "Base MCP Configuration Template for EX-AI MCP Server",
+  "_description": "This template defines the standard configuration structure for all MCP clients (Auggie, Augment Code, Claude Desktop). Client-specific configs should inherit these values and only override client-specific fields.",
+  "_version": "1.0.0",
+  "_last_updated": "2025-10-05",
+  
+  "_standard_env_vars": {
+    "_comment": "These environment variables MUST be identical across all client configs",
+    
+    "ENV_FILE": "C:/Project/EX-AI-MCP-Server/.env",
+    "PYTHONUNBUFFERED": "1",
+    "PYTHONIOENCODING": "utf-8",
+    "LOG_LEVEL": "INFO",
+    
+    "EXAI_WS_HOST": "127.0.0.1",
+    "EXAI_WS_PORT": "8765",
+    
+    "EX_SESSION_SCOPE_STRICT": "true",
+    "EX_SESSION_SCOPE_ALLOW_CROSS_SESSION": "false",
+    
+    "_timeout_hierarchy_comment": "Coordinated timeout hierarchy (Week 1, Day 1-2)",
+    "SIMPLE_TOOL_TIMEOUT_SECS": "60",
+    "WORKFLOW_TOOL_TIMEOUT_SECS": "120",
+    "EXPERT_ANALYSIS_TIMEOUT_SECS": "90",
+    
+    "_provider_timeouts_comment": "Provider-specific timeouts",
+    "GLM_TIMEOUT_SECS": "90",
+    "KIMI_TIMEOUT_SECS": "120",
+    "KIMI_WEB_SEARCH_TIMEOUT_SECS": "150"
+  },
+  
+  "_client_specific_vars": {
+    "_comment": "These variables MAY differ between clients based on client capabilities",
+    
+    "auggie": {
+      "AUGGIE_CLI": "true",
+      "ALLOW_AUGGIE": "true",
+      "AUGGIE_CONFIG": "C:/Project/EX-AI-MCP-Server/auggie-config.json",
+      "EXAI_WS_CONNECT_TIMEOUT": "30"
+    },
+    
+    "augmentcode": {
+      "_comment": "Augment Code uses default settings, no client-specific vars needed"
+    },
+    
+    "claude": {
+      "_comment": "Claude Desktop uses default settings, no client-specific vars needed"
+    }
+  },
+  
+  "_config_structure": {
+    "_comment": "Standard configuration structure for each client",
+    
+    "auggie": {
+      "root_key": "mcpServers",
+      "server_name": "exai",
+      "type": "stdio",
+      "trust": true,
+      "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
+      "args": ["-u", "C:/Project/EX-AI-MCP-Server/scripts/run_ws_shim.py"],
+      "cwd": "C:/Project/EX-AI-MCP-Server"
+    },
+    
+    "augmentcode": {
+      "root_key": "mcpServers",
+      "server_name": "EXAI-WS",
+      "type": "stdio",
+      "trust": true,
+      "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
+      "args": ["-u", "C:/Project/EX-AI-MCP-Server/scripts/run_ws_shim.py"],
+      "cwd": "C:/Project/EX-AI-MCP-Server"
+    },
+    
+    "claude": {
+      "root_key": "servers",
+      "server_name": "exai-mcp",
+      "type": "stdio",
+      "trust": true,
+      "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
+      "args": ["-u", "C:/Project/EX-AI-MCP-Server/scripts/run_ws_shim.py"],
+      "cwd": "C:/Project/EX-AI-MCP-Server"
+    }
+  },
+  
+  "_validation_rules": {
+    "_comment": "Rules for validating client configurations",
+    
+    "required_env_vars": [
+      "ENV_FILE",
+      "PYTHONUNBUFFERED",
+      "PYTHONIOENCODING",
+      "LOG_LEVEL",
+      "EXAI_WS_HOST",
+      "EXAI_WS_PORT",
+      "EX_SESSION_SCOPE_STRICT",
+      "EX_SESSION_SCOPE_ALLOW_CROSS_SESSION",
+      "SIMPLE_TOOL_TIMEOUT_SECS",
+      "WORKFLOW_TOOL_TIMEOUT_SECS",
+      "EXPERT_ANALYSIS_TIMEOUT_SECS",
+      "GLM_TIMEOUT_SECS",
+      "KIMI_TIMEOUT_SECS",
+      "KIMI_WEB_SEARCH_TIMEOUT_SECS"
+    ],
+    
+    "timeout_values": {
+      "SIMPLE_TOOL_TIMEOUT_SECS": 60,
+      "WORKFLOW_TOOL_TIMEOUT_SECS": 120,
+      "EXPERT_ANALYSIS_TIMEOUT_SECS": 90,
+      "GLM_TIMEOUT_SECS": 90,
+      "KIMI_TIMEOUT_SECS": 120,
+      "KIMI_WEB_SEARCH_TIMEOUT_SECS": 150
+    },
+    
+    "required_structure_fields": [
+      "type",
+      "trust",
+      "command",
+      "args",
+      "cwd",
+      "env"
+    ]
+  },
+  
+  "_usage_instructions": {
+    "_comment": "How to use this template",
+    
+    "step_1": "Copy this template to create a new client config",
+    "step_2": "Replace placeholders with client-specific values from _config_structure",
+    "step_3": "Merge _standard_env_vars with client-specific vars from _client_specific_vars",
+    "step_4": "Run validation script: python scripts/validate_mcp_configs.py",
+    "step_5": "Test the configuration with the client"
+  },
+  
+  "_change_log": {
+    "1.0.0": {
+      "date": "2025-10-05",
+      "changes": [
+        "Initial template created",
+        "Standardized timeout hierarchy from Week 1, Day 1-2",
+        "Documented client-specific differences",
+        "Added validation rules"
+      ]
+    }
+  }
+}
+

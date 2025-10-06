@@ -25,17 +25,21 @@ EX-AI-MCP-Server is a **Model Context Protocol (MCP) WebSocket daemon** that pro
 ### 1. Provider System
 
 **GLM Provider (ZhipuAI/Z.ai)**
-- **SDK:** zai-sdk v0.0.4 (international version)
-- **Flagship Model:** GLM-4.6 with 200K context window
+- **SDK:** zai-sdk v0.0.4 (international version) - **NO BREAKING CHANGES**
+- **Flagship Model:** GLM-4.6 with 200K context window (355B/32B MoE architecture)
 - **Endpoint:** https://api.z.ai/api/paas/v4/
 - **Features:** Web search, tool calling, streaming, multimodal support
 - **Pricing:** $0.60 input / $2.20 output per million tokens
+- **New Features:** CogVideoX-2 (video generation), Assistant API, CharGLM-3 (character RP)
 
 **Kimi Provider (Moonshot)**
 - **API:** Moonshot API (Tier 2 access)
-- **Models:** kimi-k2-0905-preview (256K context), moonshot-v1-128k, kimi-k2-0711-preview
+- **Recommended Model:** kimi-k2-0905-preview (256K context, 1T/32B MoE)
+- **Alternative Models:** kimi-k2-0711-preview (256K), moonshot-v1-128k (128K)
+- **Pricing:** $0.60 input / $2.50 output per million tokens
 - **Features:** Agentic intelligence, tool use, coding, long context support (256K)
 - **Use Case:** Tool integration, code generation, agentic workflows, complex reasoning
+- **Performance:** SOTA on SWE Bench Verified, Tau2, AceBench (among open models)
 
 ### 2. Agentic Routing System
 
@@ -47,29 +51,20 @@ EX-AI-MCP-Server is a **Model Context Protocol (MCP) WebSocket daemon** that pro
 
 ### 3. Tool Ecosystem
 
-**Simple Tools (Request/Response):**
-- `chat` - General conversation with web search support
-- `thinkdeep` - Multi-stage investigation and reasoning
-- `planner` - Sequential step-by-step planning
-- `consensus` - Multi-model consensus workflow
-- `challenge` - Critical analysis and truth-seeking
+The EX-AI-MCP-Server provides a comprehensive tool ecosystem with 16+ tools organized into three categories:
 
-**Workflow Tools (Multi-Step with Pause Enforcement):**
-- `analyze` - Comprehensive code analysis
-- `debug` - Root cause analysis and debugging
-- `codereview` - Systematic code review
-- `precommit` - Pre-commit validation
-- `refactor` - Refactoring analysis and recommendations
-- `testgen` - Test generation with edge case coverage
-- `tracer` - Code tracing and dependency mapping
-- `secaudit` - Security audit and vulnerability assessment
-- `docgen` - Documentation generation
+**Tool Categories:**
+- **Simple Tools** (7 tools): Request/response for conversations, planning, and analysis
+- **Workflow Tools** (9 tools): Multi-step investigation with pause enforcement
+- **Utility Tools** (2 tools): System information and diagnostics
 
-**Agentic Enhancements (Phase 1 Implementation):**
+**Key Capabilities:**
 - Self-assessment of information sufficiency
 - Early termination when goals achieved
 - Dynamic step adjustment mid-workflow
 - Configurable sufficiency thresholds
+
+**📖 For complete tool documentation, see:** [03-tool-ecosystem-overview.md](03-tool-ecosystem-overview.md)
 
 ### 4. Technology Stack
 
