@@ -67,6 +67,19 @@ class GLMCapabilities(ProviderCapabilitiesBase):
     def get_websearch_tool_schema(self, config: Dict[str, Any]) -> WebSearchSchema:
         if not self.supports_websearch() or not config.get("use_websearch"):
             return WebSearchSchema(None, None)
+
+        # CRITICAL: Only glm-4-plus and glm-4.6 support websearch via tools
+        # Other models (glm-4.5-flash, glm-4.5, glm-4.5-air) will HANG if websearch tools are passed
+        model_name = config.get("model_name", "")
+        websearch_supported_models = ["glm-4-plus", "glm-4.6"]
+
+        if model_name not in websearch_supported_models:
+            # Model doesn't support websearch - return empty schema to prevent hanging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Model {model_name} does not support websearch via tools - disabling websearch")
+            return WebSearchSchema(None, None)
+
         # GLM requires web_search object with configuration parameters
         # Default to Jina search with one week recency filter
         web_search_config = {

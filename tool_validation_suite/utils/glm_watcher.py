@@ -60,7 +60,7 @@ class GLMWatcher:
         self.base_url = os.getenv("GLM_WATCHER_BASE_URL") or os.getenv("GLM_BASE_URL", "https://api.z.ai/api/paas/v4")
         self.enabled = os.getenv("GLM_WATCHER_ENABLED", "true").lower() == "true"
         self.detail_level = os.getenv("WATCHER_DETAIL_LEVEL", "high")
-        self.timeout_secs = int(os.getenv("WATCHER_TIMEOUT_SECS", "30"))
+        self.timeout_secs = int(os.getenv("WATCHER_TIMEOUT_SECS", "60"))  # Increased from 30s to 60s
         self.save_observations = os.getenv("SAVE_WATCHER_OBSERVATIONS", "true").lower() == "true"
         self.observation_dir = Path(os.getenv("WATCHER_OBSERVATION_DIR", "./tool_validation_suite/results/latest/watcher_observations"))
 

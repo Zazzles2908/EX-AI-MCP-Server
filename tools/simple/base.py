@@ -504,6 +504,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     provider_kwargs, web_event = build_websearch_provider_kwargs(
                         provider_type=prov.get_provider_type(),
                         use_websearch=use_web,
+                        model_name=_model_name,  # CRITICAL: Pass model name to check websearch support
                         include_event=True,
                     )
                     if web_event is not None:
@@ -555,6 +556,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                         provider_kwargs, _ = build_websearch_provider_kwargs(
                             provider_type=provider.get_provider_type(),
                             use_websearch=use_web,
+                            model_name=self._model_context.model_name,  # CRITICAL: Pass model name to check websearch support
                             include_event=False,
                         )
                     except Exception:
