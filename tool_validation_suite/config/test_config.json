@@ -77,8 +77,9 @@
   "timeouts": {
     "simple_tool": 60,
     "workflow_tool": 120,
+    "complex_analysis_tool": 600,
     "provider_tool": 90,
-    "watcher": 30
+    "watcher": 60
   },
   
   "cost_limits": {
@@ -97,7 +98,7 @@
     "enabled": true,
     "model": "glm-4.5-air",
     "detail_level": "high",
-    "timeout_secs": 30,
+    "timeout_secs": 60,
     "save_observations": true
   }
 }

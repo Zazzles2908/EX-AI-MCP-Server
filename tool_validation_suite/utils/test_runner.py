@@ -50,10 +50,11 @@ class TestRunner:
 
         Args:
             run_id: Optional Supabase test_run ID for tracking
+                   If not provided, will check TEST_RUN_ID environment variable
         """
         # Configuration
         self.max_retries = int(os.getenv("MAX_RETRIES", "2"))
-        self.test_timeout = int(os.getenv("TEST_TIMEOUT_SECS", "300"))
+        self.test_timeout = int(os.getenv("TEST_TIMEOUT_SECS", "600"))  # Increased for complex analysis tools
         self.retry_delay = int(os.getenv("RETRY_DELAY_SECS", "5"))
 
         # Initialize components
@@ -67,10 +68,22 @@ class TestRunner:
         self.result_collector = ResultCollector()
         self.supabase_client = get_supabase_client()
 
-        # Supabase tracking
-        self.run_id = run_id
+        # Supabase tracking - check environment variable if not provided
+        if run_id is None:
+            env_run_id = os.getenv("TEST_RUN_ID")
+            if env_run_id:
+                try:
+                    self.run_id = int(env_run_id)
+                    logger.info(f"Using test run ID from environment: {self.run_id}")
+                except ValueError:
+                    logger.warning(f"Invalid TEST_RUN_ID in environment: {env_run_id}")
+                    self.run_id = None
+            else:
+                self.run_id = None
+        else:
+            self.run_id = run_id
 
-        logger.info("Test runner initialized")
+        logger.info(f"Test runner initialized (run_id={self.run_id})")
     
     def run_test(
         self,

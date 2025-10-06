@@ -96,11 +96,16 @@ class MCPClient:
         start_time = time.time()
 
         try:
-            # Connect to daemon
+            # Connect to daemon with timeout
+            # Use a reasonable timeout that accounts for workflow tools (120s) + daemon (180s) + buffer
+            ws_timeout = int(os.getenv("TEST_TIMEOUT_SECS", "300"))
             ws = websocket.create_connection(
                 self.ws_url,
-                timeout=int(os.getenv("TEST_TIMEOUT_SECS", "300"))
+                timeout=ws_timeout
             )
+
+            # Set socket timeout for all recv() operations to prevent infinite blocking
+            ws.sock.settimeout(ws_timeout)
 
             # Send hello handshake
             session_id = f"test_{test_name}_{int(time.time())}"
