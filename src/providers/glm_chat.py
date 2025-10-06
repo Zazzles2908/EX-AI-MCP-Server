@@ -76,10 +76,10 @@ def generate_content(
     **kwargs
 ) -> ModelResponse:
     """Generate content with streaming support.
-    
+
     Supports both SDK and HTTP client paths with automatic fallback.
     Handles streaming and non-streaming modes.
-    
+
     Args:
         sdk_client: ZhipuAI SDK client instance (if available)
         http_client: HTTP client instance for fallback
@@ -90,13 +90,16 @@ def generate_content(
         max_output_tokens: Optional max output tokens
         use_sdk: Whether SDK is available and should be used
         **kwargs: Additional parameters (stream, tools, tool_choice, etc.)
-        
+
     Returns:
         ModelResponse with generated content
-        
+
     Raises:
         RuntimeError: If generation fails
     """
+    # Log kwargs for debugging (use logger.debug, not print)
+    logger.debug(f"GLM generate_content called with kwargs keys: {list(kwargs.keys())}")
+
     payload = build_payload(prompt, system_prompt, model_name, temperature, max_output_tokens, **kwargs)
     
     try:
@@ -113,15 +116,26 @@ def generate_content(
         
         if use_sdk and sdk_client:
             # Use official SDK
-            resp = sdk_client.chat.completions.create(
-                model=model_name,
-                messages=payload["messages"],
-                temperature=payload.get("temperature"),
-                max_tokens=payload.get("max_tokens"),
-                stream=stream,
-                tools=payload.get("tools"),
-                tool_choice=payload.get("tool_choice"),
-            )
+            logger.info(f"GLM chat using SDK: model={model_name}, stream={stream}, messages_count={len(payload['messages'])}")
+
+            # CRITICAL FIX: Only pass tools/tool_choice if they exist in payload
+            # Passing tools=None can cause SDK to hang or behave unexpectedly
+            sdk_kwargs = {
+                "model": model_name,
+                "messages": payload["messages"],
+                "stream": stream,
+            }
+            if payload.get("temperature") is not None:
+                sdk_kwargs["temperature"] = payload["temperature"]
+            if payload.get("max_tokens"):
+                sdk_kwargs["max_tokens"] = payload["max_tokens"]
+            if payload.get("tools"):
+                sdk_kwargs["tools"] = payload["tools"]
+            if payload.get("tool_choice"):
+                sdk_kwargs["tool_choice"] = payload["tool_choice"]
+
+            logger.debug(f"GLM SDK kwargs keys: {list(sdk_kwargs.keys())}")
+            resp = sdk_client.chat.completions.create(**sdk_kwargs)
             
             if stream:
                 # Aggregate streamed chunks from SDK iterator
