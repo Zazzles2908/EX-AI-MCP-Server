@@ -31,7 +31,7 @@ def lru_key(session_id: str, tool_name: str, prefix_hash: str) -> str:
 
 def save_cache_token(session_id: str, tool_name: str, prefix_hash: str, token: str) -> None:
     """Save cache token with TTL.
-    
+
     Args:
         session_id: Session identifier
         tool_name: Tool name
@@ -45,18 +45,20 @@ def save_cache_token(session_id: str, tool_name: str, prefix_hash: str, token: s
         # Purge expired and over-capacity entries
         purge_cache_tokens()
         logger.info("Kimi cache token saved key=%s suffix=%s", k[-24:], token[-6:])
-    except Exception:
-        pass
+    except (TypeError, ValueError, KeyError) as e:
+        logger.warning("Failed to save cache token: %s", e)
+    except Exception as e:
+        logger.error("Unexpected error saving cache token: %s", e)
 
 
 def get_cache_token(session_id: str, tool_name: str, prefix_hash: str) -> Optional[str]:
     """Retrieve cached token if not expired.
-    
+
     Args:
         session_id: Session identifier
         tool_name: Tool name
         prefix_hash: Hash of message prefix
-        
+
     Returns:
         Cache token if found and not expired, None otherwise
     """
@@ -70,13 +72,17 @@ def get_cache_token(session_id: str, tool_name: str, prefix_hash: str) -> Option
             _cache_tokens.pop(k, None)
             return None
         return token
-    except Exception:
+    except (TypeError, ValueError, KeyError) as e:
+        logger.warning("Failed to get cache token: %s", e)
+        return None
+    except Exception as e:
+        logger.error("Unexpected error getting cache token: %s", e)
         return None
 
 
 def purge_cache_tokens() -> None:
     """Purge expired and over-capacity cache tokens (LRU + TTL).
-    
+
     Removes tokens that have exceeded TTL and enforces LRU max size limit.
     """
     global _cache_tokens, _cache_tokens_order
@@ -96,8 +102,10 @@ def purge_cache_tokens() -> None:
                     removed += 1
                     if removed >= to_remove:
                         break
-    except Exception:
-        pass
+    except (TypeError, ValueError, KeyError) as e:
+        logger.warning("Failed to purge cache tokens: %s", e)
+    except Exception as e:
+        logger.error("Unexpected error purging cache tokens: %s", e)
 
 
 __all__ = [

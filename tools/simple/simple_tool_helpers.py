@@ -109,35 +109,11 @@ class SimpleToolHelpersMixin:
             return os.getenv("EX_WEBSEARCH_DEFAULT_ON", "true").strip().lower() == "true"
         except AttributeError:
             return True
-    
-    def get_request_as_dict(self, request) -> dict:
-        """Convert request to dictionary. Override for custom serialization."""
-        try:
-            # Try Pydantic v2 method first
-            return request.model_dump()
-        except AttributeError:
-            try:
-                # Fall back to Pydantic v1 method
-                return request.dict()
-            except AttributeError:
-                # Last resort - convert to dict manually
-                return {"prompt": self.get_request_prompt(request)}
-    
-    def set_request_files(self, request, files: list) -> None:
-        """Set files on request. Override for custom file setting."""
-        try:
-            request.files = files
-        except AttributeError:
-            # If request doesn't support file setting, ignore silently
-            pass
-    
-    def get_actually_processed_files(self) -> list:
-        """Get actually processed files. Override for custom file tracking."""
-        try:
-            return self._actually_processed_files
-        except AttributeError:
-            return []
-    
+
+    # Note: get_request_as_dict(), set_request_files(), and get_actually_processed_files()
+    # are now inherited from BaseTool (tools/simple/base.py lines 257-283)
+    # to eliminate code duplication.
+
     # ================================================================================
     # Convenience Methods for Prompt Building
     # ================================================================================

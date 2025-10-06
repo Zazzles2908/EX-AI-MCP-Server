@@ -1,0 +1,349 @@
+{
+  "total_analyzed": 23,
+  "safe_to_delete_count": 13,
+  "requires_review_count": 10,
+  "safe_to_delete": [
+    "feature/cleanup-and-reorganization",
+    "feature/exai-mcp-roadmap-implementation",
+    "feature/phase-a-context-registry-fixes",
+    "feat/phaseB-import-blocker-and-docs-cleanup",
+    "feat/phaseB-router-unification",
+    "feat/phaseD-pr1-modelrouter-observability",
+    "chore/manager-ui-reorg-docs",
+    "chore/massive-cleanup-20250928",
+    "chore/registry-switch-and-docfix",
+    "snapshot/all-local-changes-20250927",
+    "stage1-cleanup-complete",
+    "integration/pr3-pr4-combined-20250926",
+    "feat/phaseF-shim-removal"
+  ],
+  "requires_review": [
+    "feature/p0-fallback-orchestrator-20250921",
+    "feat/phaseA-providers-shim",
+    "chore/docs-sweep-and-layering",
+    "chore/mcp-chat-qa-and-textcontent-hardening",
+    "chore/mcp-glm-websearch-toolcall-loop",
+    "chore/tests-routing-continuation",
+    "pr-1-review",
+    "glm-flash-intelligent-router",
+    "feat/docs-restore-phaseD-from-stash",
+    "ci/setup-ci"
+  ],
+  "detailed_results": [
+    {
+      "branch": "feature/cleanup-and-reorganization",
+      "ahead": 0,
+      "behind": 32,
+      "unique_commits": [],
+      "unique_commit_count": 0,
+      "last_commit_date": "2025-09-28 16:39:21 +1000",
+      "last_commit_msg": "chore(providers): prune legacy providers (custom, openrouter, openrouter_registry) per roadmap",
+      "is_merged": true,
+      "safe_to_delete": true
+    },
+    {
+      "branch": "feature/exai-mcp-roadmap-implementation",
+      "ahead": 0,
+      "behind": 29,
+      "unique_commits": [],
+      "unique_commit_count": 0,
+      "last_commit_date": "2025-09-29 01:16:29 +1000",
+      "last_commit_msg": "chore: save comprehensive technical debt audit and prep Phase A (context injection + registry single-source + stable aliases + CONTEXT_INJECTION_MODE)",
+      "is_merged": true,
+      "safe_to_delete": true
+    },
+    {
+      "branch": "feature/phase-a-context-registry-fixes",
+      "ahead": 0,
+      "behind": 26,
+      "unique_commits": [],
+      "unique_commit_count": 0,
+      "last_commit_date": "2025-10-01 00:07:01 +1000",
+      "last_commit_msg": "chore: Update metrics log after server restart",
+      "is_merged": true,
+      "safe_to_delete": true
+    },
+    {
+      "branch": "feature/p0-fallback-orchestrator-20250921",
+      "ahead": 14,
+      "behind": 47,
+      "unique_commits": [
+        "ca2478b docs(modularization): add Batch 0.5 provider-thread isolation & Kimi de-dup; recovery log; smart Chat plan",
+        "fa9d2c3 refactor(server): delegate tool registry to registry_bridge; centralize provider stub flags via src.config.features.env_true; add features.py",
+        "d8e2b7c fix(registry): prevent KeyError when allowlisting tools not in TOOL_MAP (e.g., smart_chat); filter allowlist for TOOL_MAP and register smart_chat separately",
+        "5456e51 fix(server): correct import path for response envelope (src.utils.response_envelope) to resolve Pylance reportMissingImports",
+        "2cbb8b6 chore(registry): unify SmartChat gating via ToolRegistry; remove server.py post-registry registration; add advisory annotations; no restart yet",
+        "2ad0165 fix(smart_chat): implement requires_model() and minimal get_descriptor; restart daemon; docs pending if needed",
+        "87789a5 docs: final registry batch closure summary; close remaining tasks for this phase",
+        "2b15046 docs: add final registry gating validation report (post Augment restart)",
+        "9d28eb8 feat(registry): enable TOOLS_CORE_ONLY gating; fix allowlist parsing; add gating log; docs: registry flip evidence",
+        "244f058 chore(registry): add version/listmodels to CORE_SET for gated diagnostics; docs: update registry guard + provider routing stability report",
+        "d81ea3a chore(server): import-safe init of response_handler/model_resolver/mcp_protocol; docs: system cleanup integration report",
+        "f737d3a chore(env): merge .env gating comments + OPENAI base_url alias; docs: env merge plan + WS Batch A validation",
+        "4aee146 feat(registry): add TOOLS_CORE_ONLY and TOOLS_ALLOWLIST gates; doc guard & restart steps",
+        "2012c2c chore: restore validated work; WS daemon start via ps1; env git-safety; response_envelope tests + timing; AI-manager routing proposal; final audit; system cleanup stubs; tools gating docs"
+      ],
+      "unique_commit_count": 14,
+      "last_commit_date": "2025-09-24 21:04:49 +1000",
+      "last_commit_msg": "docs(modularization): add Batch 0.5 provider-thread isolation & Kimi de-dup; recovery log; smart Chat plan",
+      "is_merged": false,
+      "safe_to_delete": false
+    },
+    {
+      "branch": "feat/phaseA-providers-shim",
+      "ahead": 5,
+      "behind": 84,
+      "unique_commits": [
+        "d2940c4 docs: fix Mermaid diagram; router shim; add legacy imports scan",
+        "d658435 phaseB(router): shim routing.task_router to canonical src.core.agentic; fix Mermaid diagram; add legacy imports scan doc",
+        "6a70e82 sync: push local commits to remote via gh-mcp",
+        "4dcc7f5 docs(augment_reports): add flow diagram, Phase A migration checklist, router unification plan, tools cleanup plan, import shims matrix; link user-restored previous_audit",
+        "92a1087 Phase A: restore augment_reports docs; add providers shims in providers/__init__.py; add providers/README; keep top-level providers frozen with deprecation headers. Non-destructive."
+      ],
+      "unique_commit_count": 5,
+      "last_commit_date": "2025-09-20 11:19:55 +1000",
+      "last_commit_msg": "docs: fix Mermaid diagram; router shim; add legacy imports scan",
+      "is_merged": false,
+      "safe_to_delete": false
+    },
+    {
+      "branch": "feat/phaseB-import-blocker-and-docs-cleanup",
+      "ahead": 0,
+      "behind": 61,
+      "unique_commits": [],
+      "unique_commit_count": 0,
+      "last_commit_date": "2025-09-20 22:20:02 +1000",
+      "last_commit_msg": "tests(conftest): prefer src.providers.* in helper imports; keep shim paths only when required ci: add fast-smoke workflow (blocker + a few quick tests) docs(audit): add hybrid_platform_manager mapping in import shims matrix",
+      "is_merged": true,
+      "safe_to_delete": true
+    },
+    {
+      "branch": "feat/phaseB-router-unification",
+      "ahead": 0,
+      "behind": 69,
+      "unique_commits": [],
+      "unique_commit_count": 0,
+      "last_commit_date": "2025-09-20 20:52:34 +1000",
+      "last_commit_msg": "docs(audit,architecture): reflect routing.task_router now a deprecation shim; update duplicate-domains map and removal_candidates routing(task_router): convert to shim re-exporting src.core.agentic.task_router",
+      "is_merged": true,
+      "safe_to_delete": true
+    },
+    {
+      "branch": "feat/phaseD-pr1-modelrouter-observability",
+      "ahead": 0,
+      "behind": 84,
+      "unique_commits": [],
+      "unique_commit_count": 0,
+      "last_commit_date": "2025-09-18 20:35:33 +1000",
+      "last_commit_msg": "Merge pull request #5 from Zazzles2908/chore/repo-hygiene-guidelines",
+      "is_merged": true,
+      "safe_to_delete": true
+    },
+    {
+      "branch": "chore/docs-sweep-and-layering",
+      "ahead": 13,
+      "behind": 94,
+      "unique_commits": [
+        "66ce551 Phase D PR1: add ModelRouter DEBUG observability; confirm boundary routing and MCP summary; tests green",
+        "11b5816 feat(server): prepend MCP Call Summary at boundary; duration+provider/model; skip duplicate; docs: add server-level change log",
+        "4e779a6 docs(smokes): record git push outcome and recommended approach (HTTPS + keyring)",
+        "f367b94 feat(simple): prepend MCP Call Summary one-liner to SimpleTool results; add timing; extend to error paths; add smoke log",
+        "10c0516 feat(simple): prepend MCP Call Summary one-liner (provider/model/cost/duration) to SimpleTool results; add timing; no change to JSON payload",
+        "c2b1ae9 ci: widen provider import guard exceptions; docs: add provider import audit",
+        "947d9f2 docs: pathway smokes Run 2 results after CI guard push",
+        "53ccfc0 ci: add provider import guard workflow (Option-B) and update flip plan status",
+        "e03e070 docs: pathway smokes log + OptionB provider flip plan (EXAI-guided)",
+        "934a820 docs: add quick reference table to provider pathways (GLM/Kimi use-cases)",
+        "2b67993 docs: add provider pathways inventory and tool pathways QA checklist (EXAI-generated)",
+        "14cb465 docs: sweep_reports reorg + EXAI-generated script sweep and layering blueprint; env.example: UI summary toggle; chore: add deprecation banners to legacy scripts",
+        "99d3fe4 fix(server): harden TextContent usage to module scope; docs: log post-restart MCP chat QA calls (F,G) and outcomes"
+      ],
+      "unique_commit_count": 13,
+      "last_commit_date": "2025-09-16 07:59:02 +1000",
+      "last_commit_msg": "Phase D PR1: add ModelRouter DEBUG observability; confirm boundary routing and MCP summary; tests green",
+      "is_merged": false,
+      "safe_to_delete": false
+    },
+    {
+      "branch": "chore/manager-ui-reorg-docs",
+      "ahead": 0,
+      "behind": 57,
+      "unique_commits": [],
+      "unique_commit_count": 0,
+      "last_commit_date": "2025-09-21 08:44:14 +1000",
+      "last_commit_msg": "chore(tools): scaffold provider/workflow/orchestrator/diagnostics/streaming/capabilities folders with non-breaking copies",
+      "is_merged": true,
+      "safe_to_delete": true
+    },
+    {
+      "branch": "chore/massive-cleanup-20250928",
+      "ahead": 0,
+      "behind": 38,
+      "unique_commits": [],
+      "unique_commit_count": 0,
+      "last_commit_date": "2025-09-28 14:09:06 +1000",
+      "last_commit_msg": "chore: baseline commit before branch split \u00e2\u20ac\u201c remove obsolete tools (glm_web_search, orchestrators, streaming demos), registry hardening, listmodels OpenRouter guards, add .logs/.gitkeep",
+      "is_merged": true,
+      "safe_to_delete": true
+    },
+    {
+      "branch": "chore/mcp-chat-qa-and-textcontent-hardening",
+      "ahead": 2,
+      "behind": 94,
+      "unique_commits": [
+        "14cb465 docs: sweep_reports reorg + EXAI-generated script sweep and layering blueprint; env.example: UI summary toggle; chore: add deprecation banners to legacy scripts",
+        "99d3fe4 fix(server): harden TextContent usage to module scope; docs: log post-restart MCP chat QA calls (F,G) and outcomes"
+      ],
+      "unique_commit_count": 2,
+      "last_commit_date": "2025-09-15 11:00:46 +1000",
+      "last_commit_msg": "docs: sweep_reports reorg + EXAI-generated script sweep and layering blueprint; env.example: UI summary toggle; chore: add deprecation banners to legacy scripts",
+      "is_merged": false,
+      "safe_to_delete": false
+    },
+    {
+      "branch": "chore/mcp-glm-websearch-toolcall-loop",
+      "ahead": 8,
+      "behind": 44,
+      "unique_commits": [
+        "41f620b fix(glm/agents): use absolute import for BaseTool to satisfy Pylance",
+        "85a0fe0 feat(glm): force GLM web_search tool usage via env; fix agents import; env overrides for browse validation",
+        "58b6956 docs(env): replace .env.example with minimal version matching .env (unified EX_WEB_*, timeout 180, only actively-used vars; one-line comments)",
+        "71507f5 docs(env): align .env.example with .env \u00e2\u20ac\u201d restore EX_WEB_* trio, match EXAI_WS_CALL_TIMEOUT=180; keep provider-native notes",
+        "fb53aec chore(intelligent-routing): analyzer long-text heuristic + patched test fixture; add pytest-asyncio loop scope; sync before WS daemon debug",
+        "ee23d3f feat(websearch): make chat execute real provider-native web search and inject results; unify web access flags",
+        "be3ee3b Fix core specialized functionality issues in EX-AI-MCP-Server"
+      ],
+      "unique_commit_count": 7,
+      "last_commit_date": "2025-09-26 18:32:32 +1000",
+      "last_commit_msg": "Merge PR #3: Production-Ready v2.0 (Intelligent Routing with GLM-4.5-Flash AI Manager) into local branch",
+      "is_merged": false,
+      "safe_to_delete": false
+    },
+    {
+      "branch": "chore/registry-switch-and-docfix",
+      "ahead": 0,
+      "behind": 52,
+      "unique_commits": [],
+      "unique_commit_count": 0,
+      "last_commit_date": "2025-09-21 19:42:21 +1000",
+      "last_commit_msg": "chore: auto-sync",
+      "is_merged": true,
+      "safe_to_delete": true
+    },
+    {
+      "branch": "chore/tests-routing-continuation",
+      "ahead": 1,
+      "behind": 95,
+      "unique_commits": [
+        "94ae4ab tests: validate direct-first routing, fallback on failure, and analyze continuation metadata"
+      ],
+      "unique_commit_count": 1,
+      "last_commit_date": "2025-09-15 23:27:44 +1000",
+      "last_commit_msg": "tests: validate direct-first routing, fallback on failure, and analyze continuation metadata",
+      "is_merged": false,
+      "safe_to_delete": false
+    },
+    {
+      "branch": "snapshot/all-local-changes-20250927",
+      "ahead": 0,
+      "behind": 39,
+      "unique_commits": [],
+      "unique_commit_count": 0,
+      "last_commit_date": "2025-09-27 15:26:48 +1000",
+      "last_commit_msg": "chore: snapshot all local changes (full working tree)",
+      "is_merged": true,
+      "safe_to_delete": true
+    },
+    {
+      "branch": "stage1-cleanup-complete",
+      "ahead": 0,
+      "behind": 45,
+      "unique_commits": [],
+      "unique_commit_count": 0,
+      "last_commit_date": "2025-09-25 07:18:10 +1000",
+      "last_commit_msg": "chore: sync workspace changes via gh-mcp",
+      "is_merged": true,
+      "safe_to_delete": true
+    },
+    {
+      "branch": "integration/pr3-pr4-combined-20250926",
+      "ahead": 0,
+      "behind": 41,
+      "unique_commits": [],
+      "unique_commit_count": 0,
+      "last_commit_date": "2025-09-26 18:45:33 +1000",
+      "last_commit_msg": "Scrub test secrets in tests and run_tests.py; integrate PR3+PR4 on integration/pr3-pr4-combined-20250926",
+      "is_merged": true,
+      "safe_to_delete": true
+    },
+    {
+      "branch": "pr-1-review",
+      "ahead": 6,
+      "behind": 45,
+      "unique_commits": [
+        "85a0fe0 feat(glm): force GLM web_search tool usage via env; fix agents import; env overrides for browse validation",
+        "58b6956 docs(env): replace .env.example with minimal version matching .env (unified EX_WEB_*, timeout 180, only actively-used vars; one-line comments)",
+        "71507f5 docs(env): align .env.example with .env \u00e2\u20ac\u201d restore EX_WEB_* trio, match EXAI_WS_CALL_TIMEOUT=180; keep provider-native notes",
+        "fb53aec chore(intelligent-routing): analyzer long-text heuristic + patched test fixture; add pytest-asyncio loop scope; sync before WS daemon debug",
+        "ee23d3f feat(websearch): make chat execute real provider-native web search and inject results; unify web access flags",
+        "be3ee3b Fix core specialized functionality issues in EX-AI-MCP-Server"
+      ],
+      "unique_commit_count": 6,
+      "last_commit_date": "2025-09-26 15:59:24 +1000",
+      "last_commit_msg": "feat(glm): force GLM web_search tool usage via env; fix agents import; env overrides for browse validation",
+      "is_merged": false,
+      "safe_to_delete": false
+    },
+    {
+      "branch": "glm-flash-intelligent-router",
+      "ahead": 1,
+      "behind": 45,
+      "unique_commits": [
+        "8b82087 feat: Implement GLM-4.5 Flash intelligent AI manager with preprocessing"
+      ],
+      "unique_commit_count": 1,
+      "last_commit_date": "2025-09-24 22:16:10 +0000",
+      "last_commit_msg": "feat: Implement GLM-4.5 Flash intelligent AI manager with preprocessing",
+      "is_merged": false,
+      "safe_to_delete": false
+    },
+    {
+      "branch": "feat/phaseF-shim-removal",
+      "ahead": 0,
+      "behind": 59,
+      "unique_commits": [],
+      "unique_commit_count": 0,
+      "last_commit_date": "2025-09-21 08:39:58 +1000",
+      "last_commit_msg": "docs(architecture): tools inventory + reorg proposal v2; universal UI plan; server deep dive; fix mermaid; env/thinkdeep tuning",
+      "is_merged": true,
+      "safe_to_delete": true
+    },
+    {
+      "branch": "feat/docs-restore-phaseD-from-stash",
+      "ahead": 2,
+      "behind": 89,
+      "unique_commits": [
+        "2c5bed1 chore(docs): archive misaligned docs, add Start Here index, update cleanup report",
+        "31ec47c docs: restore Augment Code guidelines (ported from chore/repo-hygiene-guidelines)"
+      ],
+      "unique_commit_count": 2,
+      "last_commit_date": "2025-09-18 21:00:46 +1000",
+      "last_commit_msg": "chore(docs): archive misaligned docs, add Start Here index, update cleanup report",
+      "is_merged": false,
+      "safe_to_delete": false
+    },
+    {
+      "branch": "ci/setup-ci",
+      "ahead": 1,
+      "behind": 94,
+      "unique_commits": [
+        "99d3fe4 fix(server): harden TextContent usage to module scope; docs: log post-restart MCP chat QA calls (F,G) and outcomes"
+      ],
+      "unique_commit_count": 1,
+      "last_commit_date": "2025-09-15 10:10:48 +1000",
+      "last_commit_msg": "fix(server): harden TextContent usage to module scope; docs: log post-restart MCP chat QA calls (F,G) and outcomes",
+      "is_merged": false,
+      "safe_to_delete": false
+    }
+  ]
+}

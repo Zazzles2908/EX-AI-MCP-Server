@@ -1,0 +1,307 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2025-10-05",
+  "description": "Pricing and model configuration for Kimi and GLM APIs",
+  
+  "kimi": {
+    "api_url": "https://api.moonshot.ai/v1",
+    "documentation": "https://platform.moonshot.ai/docs",
+    "pricing_unit": "1M tokens",
+    "currency": "USD",
+    
+    "models": {
+      "kimi-k2-0905-preview": {
+        "context_window": 262144,
+        "pricing": {
+          "input_cache_hit": 0.15,
+          "input_cache_miss": 0.60,
+          "output": 2.50
+        },
+        "features": {
+          "web_search": true,
+          "file_upload": true,
+          "thinking_mode": true,
+          "tool_use": true
+        },
+        "recommended_for": "General use, large context"
+      },
+      "kimi-k2-0711-preview": {
+        "context_window": 131072,
+        "pricing": {
+          "input_cache_hit": 0.15,
+          "input_cache_miss": 0.60,
+          "output": 2.50
+        },
+        "features": {
+          "web_search": true,
+          "file_upload": true,
+          "thinking_mode": true,
+          "tool_use": true
+        },
+        "recommended_for": "General use, medium context"
+      },
+      "kimi-k2-turbo-preview": {
+        "context_window": 262144,
+        "pricing": {
+          "input_cache_hit": 0.60,
+          "input_cache_miss": 2.40,
+          "output": 10.00
+        },
+        "features": {
+          "web_search": true,
+          "file_upload": true,
+          "thinking_mode": true,
+          "tool_use": true
+        },
+        "recommended_for": "High performance, fast response"
+      }
+    },
+    
+    "features": {
+      "web_search": {
+        "enabled": true,
+        "cost_per_use": 0.0,
+        "documentation": "https://platform.moonshot.ai/docs/guide/use-web-search",
+        "activation": "Automatic when needed or via enable_search parameter"
+      },
+      "file_upload": {
+        "enabled": true,
+        "max_file_size_mb": 100,
+        "supported_formats": [".txt", ".pdf", ".doc", ".docx", ".md", ".json", ".csv"],
+        "documentation": "https://platform.moonshot.ai/docs/api/file-upload"
+      },
+      "thinking_mode": {
+        "enabled": true,
+        "levels": ["basic", "deep", "expert"],
+        "documentation": "https://platform.moonshot.ai/docs/guide/thinking-mode"
+      },
+      "tool_use": {
+        "enabled": true,
+        "documentation": "https://platform.moonshot.ai/docs/api/tool-use"
+      }
+    }
+  },
+  
+  "glm": {
+    "api_url": "https://api.z.ai/api/paas/v4",
+    "documentation": "https://docs.z.ai/guides/develop/python/introduction",
+    "pricing_unit": "1M tokens",
+    "currency": "USD",
+    
+    "models": {
+      "glm-4.6": {
+        "context_window": 200000,
+        "pricing": {
+          "input": 0.6,
+          "cached_input": 0.11,
+          "cached_input_storage": 0.0,
+          "output": 2.2
+        },
+        "features": {
+          "web_search": true,
+          "file_upload": true,
+          "thinking_mode": false,
+          "tool_use": true
+        },
+        "recommended_for": "Latest flagship model with 200K context"
+      },
+      "glm-4.5": {
+        "context_window": 128000,
+        "pricing": {
+          "input": 0.6,
+          "cached_input": 0.11,
+          "cached_input_storage": 0.0,
+          "output": 2.2
+        },
+        "features": {
+          "web_search": true,
+          "file_upload": true,
+          "thinking_mode": false,
+          "tool_use": true
+        },
+        "recommended_for": "Previous flagship model"
+      },
+      "glm-4.5-flash": {
+        "context_window": 128000,
+        "pricing": {
+          "input": 0.0,
+          "cached_input": 0.0,
+          "cached_input_storage": 0.0,
+          "output": 0.0
+        },
+        "features": {
+          "web_search": true,
+          "file_upload": true,
+          "thinking_mode": false,
+          "tool_use": true
+        },
+        "recommended_for": "Testing, development, high volume (FREE)"
+      },
+      "glm-4.5-air": {
+        "context_window": 128000,
+        "pricing": {
+          "input": 0.2,
+          "cached_input": 0.03,
+          "cached_input_storage": 0.0,
+          "output": 1.1
+        },
+        "features": {
+          "web_search": true,
+          "file_upload": true,
+          "thinking_mode": false,
+          "tool_use": true
+        },
+        "recommended_for": "Cost-effective production use"
+      },
+      "glm-4.5-airx": {
+        "context_window": 128000,
+        "pricing": {
+          "input": 1.1,
+          "cached_input": 0.22,
+          "cached_input_storage": 0.0,
+          "output": 4.5
+        },
+        "features": {
+          "web_search": true,
+          "file_upload": true,
+          "thinking_mode": false,
+          "tool_use": true
+        },
+        "recommended_for": "Enhanced performance"
+      },
+      "glm-4.5-x": {
+        "context_window": 128000,
+        "pricing": {
+          "input": 2.2,
+          "cached_input": 0.45,
+          "cached_input_storage": 0.0,
+          "output": 8.9
+        },
+        "features": {
+          "web_search": true,
+          "file_upload": true,
+          "thinking_mode": false,
+          "tool_use": true
+        },
+        "recommended_for": "Maximum performance"
+      },
+      "glm-4.5v": {
+        "context_window": 128000,
+        "pricing": {
+          "input": 0.6,
+          "cached_input": 0.11,
+          "cached_input_storage": 0.0,
+          "output": 1.8
+        },
+        "features": {
+          "web_search": true,
+          "file_upload": true,
+          "thinking_mode": false,
+          "tool_use": true,
+          "vision": true
+        },
+        "recommended_for": "Vision tasks"
+      },
+      "glm-4-32b-0414-128k": {
+        "context_window": 128000,
+        "pricing": {
+          "input": 0.1,
+          "cached_input": 0.0,
+          "cached_input_storage": 0.0,
+          "output": 0.1
+        },
+        "features": {
+          "web_search": false,
+          "file_upload": false,
+          "thinking_mode": false,
+          "tool_use": false
+        },
+        "recommended_for": "Legacy model"
+      }
+    },
+    
+    "features": {
+      "web_search": {
+        "enabled": true,
+        "cost_per_use": 0.01,
+        "documentation": "https://docs.z.ai/guides/develop/python/web-search",
+        "activation": "Via tools parameter with web_search tool"
+      },
+      "file_upload": {
+        "enabled": true,
+        "max_file_size_mb": 50,
+        "supported_formats": [".txt", ".pdf", ".doc", ".docx", ".md", ".json", ".csv"],
+        "documentation": "https://docs.z.ai/guides/develop/python/file-upload"
+      },
+      "thinking_mode": {
+        "enabled": false,
+        "note": "GLM does not support thinking mode"
+      },
+      "tool_use": {
+        "enabled": true,
+        "documentation": "https://docs.z.ai/guides/develop/python/tool-use"
+      }
+    }
+  },
+  
+  "cost_estimation": {
+    "test_suite_estimates": {
+      "single_test": {
+        "avg_input_tokens": 500,
+        "avg_output_tokens": 200,
+        "avg_cost_kimi": 0.0004,
+        "avg_cost_glm_flash": 0.0,
+        "avg_cost_glm_air": 0.0003
+      },
+      "full_suite_360_tests": {
+        "total_input_tokens": 180000,
+        "total_output_tokens": 72000,
+        "estimated_cost_kimi": 0.25,
+        "estimated_cost_glm_flash": 0.0,
+        "estimated_cost_glm_air": 0.10,
+        "estimated_cost_mixed": 0.15,
+        "with_web_search_50_uses": 0.50,
+        "with_watcher_360_observations": 0.05
+      },
+      "recommended_budget": {
+        "conservative": 2.00,
+        "moderate": 5.00,
+        "comprehensive": 10.00
+      }
+    }
+  },
+  
+  "feature_tracking": {
+    "prompt_counter": {
+      "enabled": true,
+      "tracks": [
+        "total_prompts",
+        "prompts_per_model",
+        "prompts_per_tool",
+        "prompts_with_web_search",
+        "prompts_with_file_upload",
+        "prompts_with_thinking_mode",
+        "prompts_with_tools"
+      ]
+    },
+    "feature_activation": {
+      "web_search": {
+        "kimi": "Automatic or enable_search=true",
+        "glm": "tools=[{\"type\": \"web_search\"}]"
+      },
+      "file_upload": {
+        "kimi": "Upload file first, then reference in messages",
+        "glm": "Upload file first, then reference in messages"
+      },
+      "thinking_mode": {
+        "kimi": "thinking_mode parameter (basic/deep/expert)",
+        "glm": "Not supported"
+      },
+      "tool_use": {
+        "kimi": "tools parameter with function definitions",
+        "glm": "tools parameter with function definitions"
+      }
+    }
+  }
+}
+

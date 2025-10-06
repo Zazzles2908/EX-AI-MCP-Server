@@ -23,7 +23,7 @@ class HttpClient:
         api_key: str | None = None,
         api_key_header: str = "Authorization",
         api_key_prefix: str = "Bearer ",
-        timeout: float = 60.0,
+        timeout: float = 300.0,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key

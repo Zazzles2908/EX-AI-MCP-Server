@@ -1,5 +1,5 @@
 """
-Core Tool Interface for Zen MCP Tools
+Core Tool Interface for EXAI MCP Tools
 
 This module provides the fundamental base class interface and abstract methods
 that all tools must implement.
@@ -22,11 +22,11 @@ logger = logging.getLogger(__name__)
 
 class BaseToolCore(ABC):
     """
-    Abstract base class defining the core interface for all Zen MCP tools.
-    
+    Abstract base class defining the core interface for all EXAI MCP tools.
+
     This class defines the fundamental contract that all tools must implement,
     including tool metadata, configuration, and basic behavior.
-    
+
     To create a new tool:
     1. Inherit from BaseTool (which composes this and other mixins)
     2. Implement all abstract methods

@@ -77,8 +77,10 @@ def _collect_from_globs(globs: Iterable[str], roots: List[Path], max_each: int =
                     p = Path(m).resolve()
                     if p.is_file() and _is_under_any_root(p, roots):
                         out.append(p)
-        except Exception:
-            # ignore malformed patterns
+        except (OSError, ValueError, TypeError) as e:
+            # ignore malformed patterns - log at debug level for troubleshooting
+            import logging
+            logging.getLogger(__name__).debug(f"Glob pattern '{g}' failed: {e}")
             continue
     return out
 
@@ -94,7 +96,10 @@ def _enforce_limits(paths: List[Path], max_files: int, max_bytes: int) -> Tuple[
         seen.add(s)
         try:
             size = p.stat().st_size
-        except Exception:
+        except (OSError, PermissionError) as e:
+            # Skip files we can't stat (permissions, deleted, etc.)
+            import logging
+            logging.getLogger(__name__).debug(f"Cannot stat file '{p}': {e}")
             continue
         if total + size > max_bytes:
             break

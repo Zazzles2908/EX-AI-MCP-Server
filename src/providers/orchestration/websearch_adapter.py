@@ -7,6 +7,7 @@ def build_websearch_provider_kwargs(
     *,
     provider_type: Any,
     use_websearch: bool,
+    model_name: str = "",
     include_event: bool = False,
 ) -> Tuple[Dict[str, Any], Optional[object]]:
     """Build provider kwargs for provider-native websearch injection.
@@ -18,13 +19,17 @@ def build_websearch_provider_kwargs(
     Notes:
     - No fallback logic is introduced; this only assembles the primary provider inputs.
     - Best-effort: if capabilities lookup fails, returns empty kwargs and None event.
+    - model_name is required for GLM to check if model supports websearch
     """
     provider_kwargs: Dict[str, Any] = {}
     web_event = None
     try:
         from src.providers.capabilities import get_capabilities_for_provider
         caps = get_capabilities_for_provider(provider_type)
-        ws = caps.get_websearch_tool_schema({"use_websearch": bool(use_websearch)})
+        ws = caps.get_websearch_tool_schema({
+            "use_websearch": bool(use_websearch),
+            "model_name": model_name
+        })
         if ws.tools:
             provider_kwargs["tools"] = ws.tools
         if ws.tool_choice is not None:

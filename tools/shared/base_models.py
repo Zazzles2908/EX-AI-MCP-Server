@@ -1,5 +1,5 @@
 """
-Base models for Zen MCP tools.
+Base models for EXAI MCP tools.
 
 This module contains the shared Pydantic models used across all tools,
 extracted to avoid circular imports and promote code reuse.
@@ -69,9 +69,17 @@ WORKFLOW_FIELD_DESCRIPTIONS = {
     "relevant_context": "Methods/functions identified as involved in the issue",
     "issues_found": "Issues identified with severity levels during work",
     "confidence": (
-        "Confidence level in findings: exploring (just starting), low (early investigation), "
-        "medium (some evidence), high (strong evidence), very_high (comprehensive understanding), "
-        "almost_certain (near complete confidence), certain (100% confidence locally - no external validation needed)"
+        "Your confidence level in the current findings and analysis. This enables agentic early termination when goals are achieved.\n\n"
+        "Levels (use higher confidence when appropriate to enable efficient workflows):\n"
+        "• exploring - Just starting, forming initial hypotheses\n"
+        "• low - Early investigation, limited evidence gathered\n"
+        "• medium - Some solid evidence, partial understanding (DEFAULT for ongoing work)\n"
+        "• high - Strong evidence, clear understanding, most questions answered\n"
+        "• very_high - Comprehensive understanding, all major questions answered, ready to conclude\n"
+        "• almost_certain - Near complete confidence, minimal uncertainty remains\n"
+        "• certain - Complete confidence, analysis is thorough and conclusive\n\n"
+        "💡 TIP: Use 'very_high' or 'certain' when you've thoroughly investigated and have clear answers. "
+        "This enables early termination and saves time. Don't be overly cautious - if you're confident, say so!"
     ),
     "hypothesis": "Current theory about the issue/goal based on work",
     "backtrack_from_step": "Step number to backtrack from if work needs revision",
@@ -85,7 +93,7 @@ WORKFLOW_FIELD_DESCRIPTIONS = {
 
 class ToolRequest(BaseModel):
     """
-    Base request model for all Zen MCP tools.
+    Base request model for all EXAI MCP tools.
 
     This model defines common fields that all tools accept, including
     model selection, temperature control, and conversation threading.

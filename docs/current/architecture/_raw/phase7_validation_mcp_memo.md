@@ -1,6 +1,0 @@
-- Scope implemented: classification-driven routing hints (Phase 4), telemetry JSONL + daily aggregates, and health/circuit skip logic (Phase 7).
-- Routing hints wiring: classifier marks long_context_analysis for long prompts/≥2 files; RouterService.accept_agentic_hint prioritizes long-model, else fast-model. Verified by tests/phase4/test_routing_hints_bias.py.
-- Telemetry: emit_telemetry_jsonl writes logs/telemetry/<YYYY-MM-DD>.jsonl with provider/model + flags; rollup_aggregates writes logs/telemetry/aggregates/<YYYY-MM-DD>.json with counts per provider/model. Verified by tests/phase7/test_telemetry_jsonl_and_aggregates.py.
-- Health/circuit: utils.health exposes is_blocked/open_circuit/reset; RouterService skips blocked models during candidate iteration. Verified by tests/phase7/test_health_circuit.py.
-- Tests passing: Phase 4 bias test; Phase 7 telemetry & aggregates; Phase 7 health circuit.
-- Risks/next steps: add token/latency capture to telemetry; integrate provider error paths to open circuit automatically; consider persistence of health state; expand aggregates (latency percentiles, token totals).

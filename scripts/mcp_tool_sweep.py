@@ -184,8 +184,11 @@ async def run_sweep():
                 # Helper: categorize workflow tools and set per-tool timeout
                 workflow_tools = {'codereview', 'refactor', 'secaudit'}
 
-                # Ensure env allows these tools (override CLAUDE_* lists in this context)
+                # Ensure env allows these tools (override CLIENT_* lists in this context)
                 try:
+                    os.environ.pop('CLIENT_TOOL_DENYLIST', None)
+                    os.environ.pop('CLIENT_TOOL_ALLOWLIST', None)
+                    # Also remove legacy CLAUDE_* variables for backward compatibility
                     os.environ.pop('CLAUDE_TOOL_DENYLIST', None)
                     os.environ.pop('CLAUDE_TOOL_ALLOWLIST', None)
                 except Exception:

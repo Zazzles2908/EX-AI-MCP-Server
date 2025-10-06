@@ -33,7 +33,7 @@ async def handle_list_tools() -> list[Tool]:
 
     tools = []
 
-    # Client-aware allow/deny filtering (generic profile with legacy CLAUDE_* fallback)
+    # Client-aware allow/deny filtering (generic CLIENT_* with legacy CLAUDE_* fallback for backward compatibility)
     try:
         from utils.client_info import get_client_info_from_context
         # Lazy import to avoid circular import when server.py imports this module
@@ -44,7 +44,7 @@ async def handle_list_tools() -> list[Tool]:
             _server = None
         ci = get_client_info_from_context(_server) or {}
         client_name = (ci.get("friendly_name") or ci.get("name") or "").lower()
-        # Generic env first, then legacy Claude-specific variables
+        # Check CLIENT_* env vars first, then legacy CLAUDE_* vars for backward compatibility
         raw_allow = os.getenv("CLIENT_TOOL_ALLOWLIST", os.getenv("CLAUDE_TOOL_ALLOWLIST", ""))
         raw_deny  = os.getenv("CLIENT_TOOL_DENYLIST",  os.getenv("CLAUDE_TOOL_DENYLIST",  ""))
         allowlist = {t.strip().lower() for t in raw_allow.split(",") if t.strip()}

@@ -1244,7 +1244,7 @@ check_claude_cli_integration() {
 
         print_info "Registering EX MCP with Claude Code..."
         if claude mcp add exai -s user -- "$python_cmd" "$server_path" 2>/dev/null; then
-            print_success "Successfully added Zen to Claude Code"
+            print_success "Successfully added EXAI to Claude Code"
             return 0
         else
             echo ""

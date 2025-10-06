@@ -9,11 +9,13 @@ logger = logging.getLogger(__name__)
 
 
 # GLM Model Configurations
+# NOTE: Only glm-4-plus and glm-4.6 support websearch via tools parameter
+# Other models will HANG if websearch tools are passed to them
 SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
-    "glm-4.5-flash": ModelCapabilities(
+    "glm-4-plus": ModelCapabilities(
         provider=ProviderType.GLM,
-        model_name="glm-4.5-flash",
-        friendly_name="GLM",
+        model_name="glm-4-plus",
+        friendly_name="GLM-4-Plus",
         context_window=128000,
         max_output_tokens=8192,
         supports_images=True,
@@ -21,13 +23,51 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="GLM 4.5 Flash",
-        aliases=["glm-4.5-air"],
+        description="GLM 4 Plus - supports websearch",
+    ),
+    "glm-4-flash": ModelCapabilities(
+        provider=ProviderType.GLM,
+        model_name="glm-4-flash",
+        friendly_name="GLM-4-Flash",
+        context_window=128000,
+        max_output_tokens=8192,
+        supports_images=True,
+        supports_function_calling=True,
+        supports_streaming=True,
+        supports_system_prompts=True,
+        supports_extended_thinking=False,
+        description="GLM 4 Flash - fast and cheap",
+    ),
+    "glm-4.6": ModelCapabilities(
+        provider=ProviderType.GLM,
+        model_name="glm-4.6",
+        friendly_name="GLM-4.6",
+        context_window=200000,  # 200K context window
+        max_output_tokens=8192,
+        supports_images=True,
+        supports_function_calling=True,
+        supports_streaming=True,
+        supports_system_prompts=True,
+        supports_extended_thinking=False,
+        description="GLM 4.6 flagship model with 200K context window - supports websearch",
+    ),
+    "glm-4.5-flash": ModelCapabilities(
+        provider=ProviderType.GLM,
+        model_name="glm-4.5-flash",
+        friendly_name="GLM-4.5-Flash",
+        context_window=128000,
+        max_output_tokens=8192,
+        supports_images=True,
+        supports_function_calling=True,
+        supports_streaming=True,
+        supports_system_prompts=True,
+        supports_extended_thinking=False,
+        description="GLM 4.5 Flash - fast, does NOT support websearch",
     ),
     "glm-4.5": ModelCapabilities(
         provider=ProviderType.GLM,
         model_name="glm-4.5",
-        friendly_name="GLM",
+        friendly_name="GLM-4.5",
         context_window=128000,
         max_output_tokens=8192,
         supports_images=True,
@@ -35,12 +75,12 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="GLM 4.5",
+        description="GLM 4.5 standard",
     ),
     "glm-4.5-air": ModelCapabilities(
         provider=ProviderType.GLM,
         model_name="glm-4.5-air",
-        friendly_name="GLM",
+        friendly_name="GLM-4.5-Air",
         context_window=128000,
         max_output_tokens=8192,
         supports_images=True,
@@ -48,8 +88,7 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="GLM 4.5 Air",
-        aliases=["glm-4.5-x"],
+        description="GLM 4.5 Air - lightweight",
     ),
 }
 

@@ -67,46 +67,48 @@ def _route_auto_model(tool_name: str, requested: str | None, args: Dict[str, Any
         # Route Kimi-specific tools to Kimi by default
         kimi_tools = {"kimi_chat_with_tools", "kimi_upload_and_extract"}
         if tool_name in kimi_tools:
-            return os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0711-preview")
-        
-        # Simple tools use fast model
+            return os.getenv("KIMI_SPEED_MODEL", "kimi-k2-0905-preview")
+
+        # Simple tools use fast model (AI Manager)
         simple_tools = {"chat", "status", "provider_capabilities", "listmodels", "activity", "version"}
         if tool_name in simple_tools:
-            return os.getenv("GLM_FLASH_MODEL", "glm-4.5-flash")
-        
+            return os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
+
         # Step-aware heuristics for workflows (Option B)
         step_number = args.get("step_number")
         next_step_required = args.get("next_step_required")
         depth = str(args.get("depth") or "").strip().lower()
-        
+
         # thinkdeep: always deep
         if tool_name == "thinkdeep":
-            return os.getenv("KIMI_THINKING_MODEL", "kimi-thinking-preview")
-        
+            return os.getenv("KIMI_QUALITY_MODEL", "kimi-thinking-preview")
+
         # analyze
         if tool_name == "analyze":
             if (step_number == 1 and (next_step_required is True)):
-                return os.getenv("GLM_FLASH_MODEL", "glm-4.5-flash")
+                return os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
             # final step or unknown -> deep by default
-            return os.getenv("KIMI_THINKING_MODEL", "kimi-thinking-preview")
-        
+            return os.getenv("KIMI_QUALITY_MODEL", "kimi-thinking-preview")
+
         # codereview/refactor/debug/testgen/planner
         if tool_name in {"codereview", "refactor", "debug", "testgen", "planner"}:
             if depth == "deep" or (next_step_required is False):
-                return os.getenv("KIMI_THINKING_MODEL", "kimi-thinking-preview")
+                return os.getenv("KIMI_QUALITY_MODEL", "kimi-thinking-preview")
             if step_number == 1:
-                return os.getenv("GLM_FLASH_MODEL", "glm-4.5-flash")
+                return os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
             # Default lean toward flash unless final/deep
-            return os.getenv("GLM_FLASH_MODEL", "glm-4.5-flash")
-        
+            return os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
+
         # consensus/docgen/secaudit: deep
         if tool_name in {"consensus", "docgen", "secaudit"}:
-            return os.getenv("KIMI_THINKING_MODEL", "kimi-thinking-preview")
-        
-        # Default: prefer GLM flash
-        return os.getenv("DEFAULT_AUTO_MODEL", "glm-4.5-flash")
+            return os.getenv("KIMI_QUALITY_MODEL", "kimi-thinking-preview")
+
+        # Default: prefer GLM flash (AI Manager)
+        return os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
     except Exception:
-        return requested
+        # BUG FIX: Never return 'auto' - always return a concrete model
+        # If there's an exception, fall back to the default speed model
+        return os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
 
 
 def resolve_auto_model_legacy(args: Dict[str, Any], tool_obj, os_module=os) -> str:

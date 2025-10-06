@@ -1,17 +1,15 @@
-import sys
-sys.path.append(".")
-
 """
 Thread Context Management Module
 
 This module handles conversation thread context reconstruction and management
 for multi-turn AI conversations in the EX MCP Server.
 """
+from __future__ import annotations
 
 import logging
 from typing import Any, Dict
 import os
-from src.server.utils import get_follow_up_instructions
+from ..utils import get_follow_up_instructions
 
 
 logger = logging.getLogger(__name__)
@@ -110,8 +108,8 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
         try:
             mcp_activity_logger = logging.getLogger("mcp_activity")
             mcp_activity_logger.info(f"CONVERSATION_ERROR: Thread {continuation_id} not found or expired")
-        except Exception:
-            pass
+        except (AttributeError, TypeError) as e:
+            logger.debug(f"Failed to log to mcp_activity: {e}")
 
         # Return error asking Claude to restart conversation with full context
         raise ValueError(
@@ -142,8 +140,8 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
                 mcp_activity_logger.warning(
                     f"CONVERSATION_SCOPE_BLOCK: thread={continuation_id} stored_fp={stored_fp} current_fp={current_fp}"
                 )
-            except Exception:
-                pass
+            except (AttributeError, TypeError) as e:
+                logger.debug(f"Failed to log scope block warning: {e}")
             raise ValueError(
                 "This continuation_id belongs to a different client session. "
                 "To avoid accidental cross-window sharing, session-scoped conversations are enabled. "
@@ -157,11 +155,11 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
                 mcp_activity_logger.info(
                     f"CONVERSATION_SCOPE_WARN: cross-session continuation allowed thread={continuation_id}"
                 )
-            except Exception:
-                pass
-    except Exception:
+            except (AttributeError, TypeError) as e:
+                logger.debug(f"Failed to log scope warning: {e}")
+    except (ImportError, AttributeError, TypeError) as e:
         # Never hard-fail scope checks; proceed if anything goes wrong
-        pass
+        logger.debug(f"Session scope check failed (non-critical): {e}")
 
     # Add user's new input to the conversation
     user_prompt = arguments.get("prompt", "")
@@ -204,10 +202,10 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
             try:
                 from src.server.providers import configure_providers  # type: ignore
                 configure_providers()
-            except Exception:
-                pass
-    except Exception:
-        pass
+            except (ImportError, AttributeError) as e:
+                logger.debug(f"Provider configuration skipped during context reconstruction: {e}")
+    except (ImportError, AttributeError) as e:
+        logger.debug(f"Failed to import provider registry: {e}")
 
     # Map 'auto' to a concrete model for context/token calculations during reconstruction
     try:
@@ -219,9 +217,9 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
                 model_name = ModelProviderRegistry.get_preferred_fallback_model()
             arguments["model"] = model_name
             logger.debug(f"[CONVERSATION_DEBUG] Mapped 'auto' to concrete model for reconstruction: {model_name}")
-    except Exception:
+    except (ImportError, AttributeError, KeyError) as e:
         # Safe fallback: leave as-is; downstream guards will attempt mapping as well
-        pass
+        logger.debug(f"Failed to map 'auto' model during reconstruction: {e}")
 
     model_context = ModelContext.from_arguments(arguments)
 
@@ -304,8 +302,8 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
             f"CONVERSATION_CONTINUATION: Thread {continuation_id} turn {len(context.turns)} - "
             f"{len(context.turns)} previous turns loaded"
         )
-    except Exception:
-        pass
+    except (AttributeError, TypeError) as e:
+        logger.debug(f"Failed to log conversation continuation: {e}")
 
     return enhanced_arguments
 

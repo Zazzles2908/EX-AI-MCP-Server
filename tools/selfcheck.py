@@ -1,5 +1,5 @@
 """
-Self-Check Tool - Quick diagnostics for Zen MCP Server
+Self-Check Tool - Quick diagnostics for EXAI MCP Server
 
 Returns:
 - Providers configured (with API keys present)

@@ -11,8 +11,11 @@ Goal: provider-agnostic embeddings with an external adapter option.
 """
 from __future__ import annotations
 
+import logging
 import os
 from typing import List, Sequence, Optional, Any, Dict
+
+logger = logging.getLogger(__name__)
 
 
 class EmbeddingsProvider:
@@ -23,26 +26,45 @@ class EmbeddingsProvider:
 class KimiEmbeddingsProvider(EmbeddingsProvider):
     def __init__(self, model: Optional[str] = None) -> None:
         self.model = model or os.getenv("KIMI_EMBED_MODEL", "text-embedding-3-large")
-        # Resolve Kimi client either via provider registry or direct OpenAI-compatible client
-        from src.providers.registry import ModelProviderRegistry  # lazy import
-        from src.providers.kimi import KimiModelProvider  # type: ignore
+        logger.info(f"Initializing KimiEmbeddingsProvider with model: {self.model}")
 
-        prov = ModelProviderRegistry.get_provider_for_model(os.getenv("KIMI_DEFAULT_MODEL", "kimi-latest"))
+        # Resolve Kimi client either via provider registry or direct OpenAI-compatible client
+        try:
+            from src.providers.registry import ModelProviderRegistry  # lazy import
+            from src.providers.kimi import KimiModelProvider  # type: ignore
+        except ImportError as e:
+            logger.error(f"Failed to import provider modules: {e}")
+            raise RuntimeError("Provider modules not available for Kimi embeddings") from e
+
+        try:
+            prov = ModelProviderRegistry.get_provider_for_model(os.getenv("KIMI_DEFAULT_MODEL", "kimi-latest"))
+        except Exception as e:
+            logger.warning(f"Failed to get provider from registry: {e}; falling back to direct client")
+            prov = None
+
         if not isinstance(prov, KimiModelProvider):
             api_key = os.getenv("KIMI_API_KEY", "").strip()
             if not api_key:
+                logger.error("KIMI_API_KEY is not configured")
                 raise RuntimeError("KIMI_API_KEY is not configured")
             base_url = os.getenv("KIMI_API_URL", "https://api.moonshot.ai/v1").strip()
             try:
                 from openai import OpenAI  # type: ignore
-            except Exception as e:
+                self.client = OpenAI(api_key=api_key, base_url=base_url)
+                logger.info(f"Created direct OpenAI client for Kimi embeddings (base_url={base_url})")
+            except ImportError as e:
+                logger.error(f"OpenAI SDK not available: {e}")
                 raise RuntimeError("OpenAI SDK not available for Kimi embeddings") from e
-            self.client = OpenAI(api_key=api_key, base_url=base_url)
+            except Exception as e:
+                logger.error(f"Failed to create OpenAI client: {e}")
+                raise RuntimeError(f"Failed to initialize Kimi embeddings client: {e}") from e
         else:
             client = getattr(prov, "client", None)
             if client is None or not hasattr(client, "embeddings"):
+                logger.error("Kimi provider client does not expose embeddings API")
                 raise RuntimeError("Kimi provider client does not expose embeddings API")
             self.client = client
+            logger.info("Using Kimi provider client from registry")
 
     def embed(self, texts: Sequence[str]) -> List[List[float]]:
         if not texts:
@@ -69,8 +91,17 @@ class ExternalEmbeddingsProvider(EmbeddingsProvider):
     def __init__(self, url: Optional[str] = None, timeout: float = 30.0) -> None:
         self.url = (url or os.getenv("EXTERNAL_EMBEDDINGS_URL", "")).strip()
         if not self.url:
+            logger.error("EXTERNAL_EMBEDDINGS_URL is not set for external provider")
             raise RuntimeError("EXTERNAL_EMBEDDINGS_URL is not set for external provider")
         self.timeout = timeout
+        logger.info(f"Initialized ExternalEmbeddingsProvider (url={self.url}, timeout={timeout}s)")
+
+        # Validate requests library is available
+        try:
+            import requests  # noqa: F401
+        except ImportError as e:
+            logger.error(f"requests library not available: {e}")
+            raise RuntimeError("requests library required for ExternalEmbeddingsProvider") from e
 
     def embed(self, texts: Sequence[str]) -> List[List[float]]:
         if not texts:
@@ -88,12 +119,19 @@ class ExternalEmbeddingsProvider(EmbeddingsProvider):
 
 def get_embeddings_provider() -> EmbeddingsProvider:
     choice = (os.getenv("EMBEDDINGS_PROVIDER", "").strip() or "external").lower()
-    if choice == "external":
+    logger.info(f"Selecting embeddings provider: {choice}")
+
+    try:
+        if choice == "external":
+            return ExternalEmbeddingsProvider()
+        if choice == "kimi":
+            return KimiEmbeddingsProvider()
+        if choice == "glm":
+            return GLMEmbeddingsProvider()
+        # Fallback for safety
+        logger.warning(f"Unknown embeddings provider '{choice}', falling back to external")
         return ExternalEmbeddingsProvider()
-    if choice == "kimi":
-        return KimiEmbeddingsProvider()
-    if choice == "glm":
-        return GLMEmbeddingsProvider()
-    # Fallback for safety
-    return ExternalEmbeddingsProvider()
+    except Exception as e:
+        logger.error(f"Failed to initialize embeddings provider '{choice}': {e}")
+        raise RuntimeError(f"Failed to initialize embeddings provider '{choice}': {e}") from e
 

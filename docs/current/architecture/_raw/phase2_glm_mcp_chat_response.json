@@ -1,7 +1,0 @@
-{
-  "tool": "chat_EXAI-WS",
-  "model": "glm-4.5-flash",
-  "prompt": "Reply with exactly: GLM_PHASE2_PROOF — and nothing else.",
-  "response_text": "GLM_PHASE2_PROOF"
-}
-
