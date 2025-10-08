@@ -9,8 +9,9 @@ logger = logging.getLogger(__name__)
 
 
 # GLM Model Configurations
-# NOTE: Only glm-4-plus and glm-4.6 support websearch via tools parameter
-# Other models will HANG if websearch tools are passed to them
+# NOTE: Only glm-4-plus and glm-4.6 support NATIVE web search via tools parameter
+# Other models can still use web search via direct /web_search API endpoint
+# See tools/providers/glm/glm_web_search.py for direct API implementation
 SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
     "glm-4-plus": ModelCapabilities(
         provider=ProviderType.GLM,
@@ -62,7 +63,7 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="GLM 4.5 Flash - fast, does NOT support websearch",
+        description="GLM 4.5 Flash - fast, does not support native web search tool calling (use direct API instead)",
     ),
     "glm-4.5": ModelCapabilities(
         provider=ProviderType.GLM,
@@ -89,6 +90,20 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_system_prompts=True,
         supports_extended_thinking=False,
         description="GLM 4.5 Air - lightweight",
+        aliases=["glm-4.5-x"],  # GLM-4.5-X is an alias for glm-4.5-air
+    ),
+    "glm-4.5v": ModelCapabilities(
+        provider=ProviderType.GLM,
+        model_name="glm-4.5v",
+        friendly_name="GLM-4.5V",
+        context_window=65536,  # 64K = 65536 tokens
+        max_output_tokens=8192,
+        supports_images=True,
+        supports_function_calling=True,
+        supports_streaming=True,
+        supports_system_prompts=True,
+        supports_extended_thinking=False,
+        description="GLM 4.5V - Vision-language multimodal model with 64K context",
     ),
 }
 

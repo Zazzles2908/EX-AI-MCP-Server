@@ -93,6 +93,13 @@ class ResponseValidator:
         if not execution_check["passed"]:
             validation_result["valid"] = False
             validation_result["errors"].extend(execution_check.get("errors", []))
+
+        # Check 1.5: Validation errors in response content
+        validation_error_check = self._check_validation_errors(response)
+        validation_result["checks"]["validation_errors"] = validation_error_check
+        if not validation_error_check["passed"]:
+            validation_result["valid"] = False
+            validation_result["errors"].extend(validation_error_check.get("errors", []))
         
         # Check 2: Response structure
         structure_check = self._check_structure(response, expected_fields)
@@ -170,7 +177,41 @@ class ResponseValidator:
             "passed": len(errors) == 0,
             "errors": errors
         }
-    
+
+    def _check_validation_errors(self, response: Dict[str, Any]) -> Dict[str, Any]:
+        """Check for validation errors in response content."""
+        errors = []
+
+        # Convert response to string for pattern matching
+        response_str = str(response).lower()
+
+        # Check for validation error patterns
+        validation_patterns = [
+            "validation error",
+            "field required",
+            "input_value=",
+            "input_type=",
+            "pydantic",
+            "validationerror"
+        ]
+
+        for pattern in validation_patterns:
+            if pattern in response_str:
+                errors.append(f"Response contains validation error (pattern: '{pattern}')")
+                break  # Only report once
+
+        # Check for specific error messages in content field
+        if isinstance(response, dict):
+            content = response.get("content", "")
+            if isinstance(content, str):
+                if "validation error" in content.lower() or "field required" in content.lower():
+                    errors.append("Response content contains validation error message")
+
+        return {
+            "passed": len(errors) == 0,
+            "errors": errors
+        }
+
     def _check_structure(self, response: Dict[str, Any], expected_fields: Optional[List[str]]) -> Dict[str, Any]:
         """Check response structure."""
         errors = []

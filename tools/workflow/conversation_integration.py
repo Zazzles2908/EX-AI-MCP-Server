@@ -213,8 +213,49 @@ class ConversationIntegrationMixin:
             print(f"[DEBUG_EXPERT] use_assistant_model={self.get_request_use_assistant_model(request)}")
             print(f"[DEBUG_EXPERT] consolidated_findings.findings count={len(self.consolidated_findings.findings)}")  # type: ignore
 
-            # Call expert analysis
-            expert_analysis = await self._call_expert_analysis(arguments, request)
+            # DIAGNOSTIC: Check method existence and type
+            print(f"[DEBUG_MRO] _call_expert_analysis exists: {hasattr(self, '_call_expert_analysis')}")
+            print(f"[DEBUG_MRO] _call_expert_analysis callable: {callable(getattr(self, '_call_expert_analysis', None))}")
+            import inspect
+            method = getattr(self, '_call_expert_analysis', None)
+            if method:
+                print(f"[DEBUG_MRO] _call_expert_analysis is coroutine function: {inspect.iscoroutinefunction(method)}")
+                print(f"[DEBUG_MRO] _call_expert_analysis module: {method.__module__ if hasattr(method, '__module__') else 'unknown'}")
+                print(f"[DEBUG_MRO] _call_expert_analysis qualname: {method.__qualname__ if hasattr(method, '__qualname__') else 'unknown'}")
+
+            # DIAGNOSTIC: Check MRO
+            print(f"[DEBUG_MRO] Class MRO: {[cls.__name__ for cls in self.__class__.__mro__]}")
+            for cls in self.__class__.__mro__:
+                if hasattr(cls, '_call_expert_analysis') and '_call_expert_analysis' in cls.__dict__:
+                    print(f"[DEBUG_MRO] _call_expert_analysis defined in class: {cls.__name__}")
+                    print(f"[DEBUG_MRO] Method from {cls.__name__}: {cls.__dict__['_call_expert_analysis']}")
+                    break
+
+            # Call expert analysis with timeout protection
+            print(f"[DEBUG_EXPERT] About to await _call_expert_analysis...")
+            import asyncio
+            try:
+                expert_analysis = await asyncio.wait_for(
+                    self._call_expert_analysis(arguments, request),
+                    timeout=180.0  # 3 minute absolute timeout
+                )
+                print(f"[DEBUG_EXPERT] _call_expert_analysis completed successfully")
+            except asyncio.TimeoutError:
+                print(f"[DEBUG_EXPERT] CRITICAL: _call_expert_analysis timed out after 180s!")
+                logger.error(f"Expert analysis timed out after 180s for {self.get_name()}")
+                expert_analysis = {
+                    "error": "Expert analysis timed out after 180 seconds",
+                    "status": "analysis_timeout",
+                    "raw_analysis": ""
+                }
+            except Exception as e:
+                print(f"[DEBUG_EXPERT] CRITICAL: _call_expert_analysis raised exception: {e}")
+                logger.error(f"Expert analysis failed for {self.get_name()}: {e}", exc_info=True)
+                expert_analysis = {
+                    "error": f"Expert analysis failed: {str(e)}",
+                    "status": "analysis_error",
+                    "raw_analysis": ""
+                }
 
             # DEBUG: Print result
             print(f"[DEBUG_EXPERT] _call_expert_analysis returned: {type(expert_analysis)}")

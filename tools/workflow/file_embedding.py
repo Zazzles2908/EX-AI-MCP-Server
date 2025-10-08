@@ -104,20 +104,58 @@ class FileEmbeddingMixin:
     def _force_embed_files_for_expert_analysis(self, files: list[str]) -> tuple[str, list[str]]:
         """
         Force embed files for expert analysis, bypassing conversation history filtering.
-        
+
         Expert analysis has different requirements than normal workflow steps:
         - Normal steps: Optimize tokens by skipping files in conversation history
         - Expert analysis: Needs actual file content regardless of conversation history
-        
+
+        Respects EXPERT_ANALYSIS_MAX_FILE_SIZE_KB env variable to prevent massive files
+        from being embedded and causing timeouts.
+
         Args:
             files: List of file paths to embed
-        
+
         Returns:
             tuple[str, list[str]]: (file_content, processed_files)
         """
         # Use read_files directly with token budgeting, bypassing filter_new_files
         from utils.file_utils import expand_paths, read_files
-        
+        import os
+
+        # Get max file size from env (default 10KB)
+        try:
+            max_file_size_kb = int(os.getenv("EXPERT_ANALYSIS_MAX_FILE_SIZE_KB", "10"))
+        except ValueError:
+            logger.warning("Invalid EXPERT_ANALYSIS_MAX_FILE_SIZE_KB, defaulting to 10KB")
+            max_file_size_kb = 10
+
+        # Filter out files that are too large
+        filtered_files = []
+        skipped_files = []
+        for file_path in files:
+            try:
+                if os.path.isfile(file_path):
+                    file_size_kb = os.path.getsize(file_path) / 1024
+                    if file_size_kb <= max_file_size_kb:
+                        filtered_files.append(file_path)
+                    else:
+                        skipped_files.append((file_path, file_size_kb))
+                        logger.info(
+                            f"[WORKFLOW_FILES] {self.get_name()}: Skipping large file {file_path} "
+                            f"({file_size_kb:.1f}KB > {max_file_size_kb}KB limit)"
+                        )
+                else:
+                    filtered_files.append(file_path)  # Directory or non-existent, let read_files handle it
+            except Exception as e:
+                logger.warning(f"[WORKFLOW_FILES] {self.get_name()}: Error checking file size for {file_path}: {e}")
+                filtered_files.append(file_path)  # Include it anyway, let read_files handle errors
+
+        if skipped_files:
+            logger.info(
+                f"[WORKFLOW_FILES] {self.get_name()}: Skipped {len(skipped_files)} large files "
+                f"(>{max_file_size_kb}KB): {[f[0] for f in skipped_files]}"
+            )
+
         # Get token budget for files
         current_model_context = self.get_current_model_context()
         if current_model_context:
@@ -132,11 +170,11 @@ class FileEmbeddingMixin:
                 max_tokens = 100_000  # Fallback
         else:
             max_tokens = 100_000  # Fallback
-        
+
         # Read files directly without conversation history filtering
-        logger.debug(f"[WORKFLOW_FILES] {self.get_name()}: Force embedding {len(files)} files for expert analysis")
+        logger.debug(f"[WORKFLOW_FILES] {self.get_name()}: Force embedding {len(filtered_files)} files for expert analysis")
         file_content = read_files(
-            files,
+            filtered_files,
             max_tokens=max_tokens,
             reserve_tokens=1000,
             include_line_numbers=self.wants_line_numbers_by_default(),
