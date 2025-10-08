@@ -21,6 +21,9 @@ def configure_providers() -> None:
     """
     Configure and validate AI providers based on available API keys.
 
+    NOTE: This function is called by src/bootstrap/singletons.ensure_providers_configured()
+    to ensure idempotent provider initialization across both entry points (server.py, ws_server.py).
+
     Thin orchestrator that delegates to helper modules:
     1. Detect available providers
     2. Validate at least one provider exists
