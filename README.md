@@ -1,5 +1,9 @@
 # EX-AI MCP Server - Production-Ready v2.1
 
+![Twin Entry-Points](https://img.shields.io/badge/twin--entry--points-safe-brightgreen)
+![Tool Count](https://img.shields.io/badge/tools-29-blue)
+![Python](https://img.shields.io/badge/python-3.13-blue)
+
 > **2025-09-30 Major Refactoring Complete** 🎉
 >
 > **Phase 1.3 & 3.4 Refactoring Achievements:**
@@ -26,6 +30,27 @@
 
 
 A production-ready MCP (Model Context Protocol) server with intelligent routing capabilities using GLM-4.5-Flash as an AI manager. Now featuring a massively refactored, modular codebase with 86% code reduction while maintaining 100% backward compatibility.
+
+## 🏥 Quick Health Check
+
+Check the WebSocket daemon status:
+
+```powershell
+# Windows PowerShell
+Get-Content logs/ws_daemon.health.json | ConvertFrom-Json | Select-Object tool_count,uptime_human,sessions,global_capacity
+
+# Expected output:
+# tool_count    : 29
+# uptime_human  : 0:05:23
+# sessions      : 0
+# global_capacity : 24
+```
+
+Or view the full health snapshot:
+
+```bash
+cat logs/ws_daemon.health.json | jq
+```
 
 ## 🚀 Key Features
 

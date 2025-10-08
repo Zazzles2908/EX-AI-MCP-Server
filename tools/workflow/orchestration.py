@@ -31,15 +31,14 @@ MCP_PROMPT_SIZE_LIMIT = 100_000
 class OrchestrationMixin:
     """
     Mixin providing workflow orchestration for workflow tools.
-    
+
     This class handles the main workflow execution loop, step processing,
     and coordination between different workflow phases.
+
+    Note: handle_work_completion() is implemented in ConversationIntegrationMixin.
+    We don't override it here to avoid MRO conflicts.
     """
-    
-    async def handle_work_completion(self, response_data: dict, request, arguments: dict) -> dict:
-        """Handle work completion logic - expert analysis decision and response building."""
-        pass
-    
+
     # ================================================================================
     # Main Workflow Orchestration
     # ================================================================================
@@ -210,12 +209,35 @@ class OrchestrationMixin:
                 send_progress(f"{self.get_name()}: Step {request.step_number}/{request.total_steps} complete")
             except Exception:
                 pass
-            
+
             # Store in conversation memory
             if continuation_id:
                 self.store_conversation_turn(continuation_id, response_data, request)
-            
-            return [TextContent(type="text", text=json.dumps(response_data, indent=2, ensure_ascii=False))]
+
+            # DIAGNOSTIC: Log before JSON serialization
+            logger.info(f"[SERIALIZATION_DEBUG] About to serialize response_data for {self.get_name()}")
+            logger.info(f"[SERIALIZATION_DEBUG] response_data type: {type(response_data)}")
+            logger.info(f"[SERIALIZATION_DEBUG] response_data keys: {response_data.keys() if isinstance(response_data, dict) else 'not a dict'}")
+
+            # DIAGNOSTIC: Try JSON serialization with detailed error handling
+            try:
+                json_str = json.dumps(response_data, indent=2, ensure_ascii=False)
+                logger.info(f"[SERIALIZATION_DEBUG] JSON serialization successful, length: {len(json_str)}")
+            except Exception as json_err:
+                logger.error(f"[SERIALIZATION_DEBUG] JSON serialization FAILED: {json_err}", exc_info=True)
+                logger.error(f"[SERIALIZATION_DEBUG] response_data content: {response_data}")
+                # Try to identify non-serializable objects
+                for key, value in response_data.items():
+                    try:
+                        json.dumps({key: value})
+                    except Exception as key_err:
+                        logger.error(f"[SERIALIZATION_DEBUG] Non-serializable key '{key}': type={type(value)}, error={key_err}")
+                raise
+
+            logger.info(f"[SERIALIZATION_DEBUG] About to create TextContent and return")
+            result = [TextContent(type="text", text=json_str)]
+            logger.info(f"[SERIALIZATION_DEBUG] TextContent created, about to return")
+            return result
         
         except Exception as e:
             logger.error(f"Error in {self.get_name()} work: {e}", exc_info=True)
