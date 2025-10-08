@@ -27,7 +27,8 @@ class HybridPlatformManager:
         self.moonshot_base_url = (
             moonshot_base_url or os.getenv("MOONSHOT_BASE_URL", "https://api.moonshot.ai/v1")
         )
-        self.zai_base_url = zai_base_url or os.getenv("ZAI_BASE_URL", "https://api.zhipuai.cn/api/paas/v4")
+        # Use z.ai proxy (3x faster than bigmodel.cn according to user testing)
+        self.zai_base_url = zai_base_url or os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/paas/v4")
 
         # Placeholders for future SDK clients
         self.moonshot_client = None

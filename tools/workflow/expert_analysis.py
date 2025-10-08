@@ -116,19 +116,39 @@ class ExpertAnalysisMixin:
     
     def requires_expert_analysis(self) -> bool:
         """
-        Override this to completely disable expert analysis for the tool.
-        
-        Returns True if the tool supports expert analysis (default).
-        Returns False if the tool is self-contained (like planner).
+        Check if expert analysis is enabled globally via environment variable.
+
+        Can be disabled via EXPERT_ANALYSIS_ENABLED=false in .env
+        This provides a centralized way to disable expert analysis across all tools
+        without modifying individual tool implementations.
+
+        Individual tools can still override this method to force-disable expert analysis
+        (e.g., planner tool which is self-contained).
+
+        Returns True if expert analysis is enabled globally AND the tool supports it.
+        Returns False if disabled globally OR the tool doesn't support it.
         """
-        return True
+        import os
+        # Check global enable/disable flag
+        enabled = os.getenv("EXPERT_ANALYSIS_ENABLED", "false").strip().lower()
+        return enabled in ("true", "1", "yes")
     
     def should_include_files_in_expert_prompt(self) -> bool:
         """
-        Whether to include file content in the expert analysis prompt.
-        Override this to return True if your tool needs files in the prompt.
+        Check if files should be included in expert analysis prompt via environment variable.
+
+        Can be enabled via EXPERT_ANALYSIS_INCLUDE_FILES=true in .env
+        When enabled, embeds entire file contents into prompt, significantly increasing size and latency.
+
+        Individual tools can still override this method to force-enable file inclusion
+        (e.g., precommit tool which needs to see actual code changes).
+
+        Returns True if file inclusion is enabled globally AND the tool supports it.
+        Returns False if disabled globally OR the tool doesn't need files.
         """
-        return False
+        import os
+        enabled = os.getenv("EXPERT_ANALYSIS_INCLUDE_FILES", "false").strip().lower()
+        return enabled in ("true", "1", "yes")
     
     def should_embed_system_prompt(self) -> bool:
         """
@@ -137,12 +157,42 @@ class ExpertAnalysisMixin:
         """
         return False
     
-    def get_expert_thinking_mode(self) -> str:
+    def get_expert_thinking_mode(self, request=None) -> str:
         """
-        Get the thinking mode for expert analysis.
-        Override this to customize the thinking mode.
+        Get the thinking mode for expert analysis with hybrid fallback.
+
+        Priority:
+        1. User-provided parameter (request.thinking_mode)
+        2. Environment variable (EXPERT_ANALYSIS_THINKING_MODE)
+        3. Default (minimal for speed)
+
+        Modes:
+        - minimal: 0.5% model capacity, ~5-7s response time (DEFAULT for speed)
+        - low: 8% model capacity, ~8-10s response time
+        - medium: 33% model capacity, ~15-20s response time
+        - high: 67% model capacity, ~25-30s response time
+        - max: 100% model capacity, ~40-60s response time
         """
-        return "high"
+        import os
+
+        # 1. Check if user provided thinking_mode parameter
+        if request and hasattr(request, 'thinking_mode') and request.thinking_mode:
+            mode = request.thinking_mode.strip().lower()
+            logger.warning(f"🎯 [THINKING_MODE] SOURCE=USER_PARAMETER | MODE={mode} | REQUEST_HAS_PARAM=True")
+        else:
+            # 2. Fall back to environment variable
+            mode = os.getenv("EXPERT_ANALYSIS_THINKING_MODE", "minimal").strip().lower()
+            env_value = os.getenv("EXPERT_ANALYSIS_THINKING_MODE", "NOT_SET")
+            logger.warning(f"🎯 [THINKING_MODE] SOURCE=ENV_FALLBACK | MODE={mode} | ENV_VALUE={env_value} | REQUEST_HAS_PARAM=False")
+
+        # Validate mode
+        valid_modes = ["minimal", "low", "medium", "high", "max"]
+        if mode not in valid_modes:
+            logger.warning(f"❌ [THINKING_MODE] INVALID_MODE={mode} | FALLING_BACK_TO=minimal")
+            return "minimal"
+
+        logger.warning(f"✅ [THINKING_MODE] FINAL_MODE={mode} | VALID=True")
+        return mode
     
     def get_expert_timeout_secs(self, request=None) -> float:
         """Return wall-clock timeout for expert analysis.
@@ -188,14 +238,29 @@ class ExpertAnalysisMixin:
         CRITICAL FIX: Implements duplicate call prevention using global cache and in-progress tracking.
         This prevents the duplicate expert analysis calls that were causing 300+ second timeouts.
         """
-        logger.info(f"Expert analysis called for tool: {self.get_name()}")
+        # CRITICAL DIAGNOSTIC: Log entry IMMEDIATELY
+        import sys
+        print(f"[EXPERT_ENTRY] ========== ENTERED _call_expert_analysis ==========", file=sys.stderr, flush=True)
+        print(f"[EXPERT_ENTRY] Tool: {self.get_name()}", file=sys.stderr, flush=True)
+        print(f"[EXPERT_ENTRY] Thread: {__import__('threading').current_thread().name}", file=sys.stderr, flush=True)
+        print(f"[EXPERT_ENTRY] ========================================", file=sys.stderr, flush=True)
+
+        print(f"[EXPERT_ENTRY] ENTERED _call_expert_analysis for {self.get_name()}")
+        logger.info(f"[EXPERT_ENTRY] Expert analysis called for tool: {self.get_name()}")
+        print(f"[EXPERT_ENTRY] About to create cache key")
 
         # CRITICAL FIX: Duplicate call prevention
         # Create cache key from request_id and consolidated findings content
         # This ensures we don't call expert analysis twice for the same content
+        print(f"[EXPERT_ENTRY] Getting request_id from arguments")
         request_id = arguments.get("request_id", "unknown")
+        print(f"[EXPERT_ENTRY] request_id={request_id}")
+        print(f"[EXPERT_ENTRY] About to hash findings")
         findings_hash = hash(str(self.consolidated_findings.findings))  # type: ignore
+        print(f"[EXPERT_ENTRY] findings_hash={findings_hash}")
+        print(f"[EXPERT_ENTRY] Creating cache_key string")
         cache_key = f"{self.get_name()}:{request_id}:{findings_hash}"
+        print(f"[EXPERT_ENTRY] cache_key created: {cache_key}")
 
         logger.info(f"[EXPERT_DEDUP] Cache key: {cache_key}")
         logger.info(f"[EXPERT_DEDUP] Cache size: {len(_expert_validation_cache)}")
@@ -207,7 +272,9 @@ class ExpertAnalysisMixin:
             return _expert_validation_cache[cache_key]
 
         # Acquire lock to check/set in-progress status
+        logger.info(f"[EXPERT_DEDUP] About to acquire lock for {cache_key}")
         async with _expert_validation_lock:
+            logger.info(f"[EXPERT_DEDUP] Lock acquired for {cache_key}")
             # Double-check cache after acquiring lock
             if cache_key in _expert_validation_cache:
                 logger.info(f"[EXPERT_DEDUP] Using cached expert validation (after lock) for {cache_key}")
@@ -216,6 +283,7 @@ class ExpertAnalysisMixin:
             # Check if already in progress
             if cache_key in _expert_validation_in_progress:
                 logger.warning(f"Expert validation already in progress for {cache_key}, waiting...")
+            logger.info(f"[EXPERT_DEDUP] About to release lock for {cache_key}")
 
         # Wait for in-progress validation to complete (outside lock to allow progress)
         if cache_key in _expert_validation_in_progress:
@@ -267,13 +335,19 @@ class ExpertAnalysisMixin:
 
             # Prepare expert analysis context
             expert_context = self.prepare_expert_analysis_context(self.consolidated_findings)  # type: ignore
-            logger.info(f"[EXPERT_ANALYSIS_DEBUG] Expert context prepared, about to call provider.generate_content()")
+            logger.info(f"[EXPERT_ANALYSIS_DEBUG] Expert context prepared ({len(expert_context)} chars)")
             
             # Check if tool wants to include files in prompt
             if self.should_include_files_in_expert_prompt():
+                logger.info(f"[EXPERT_ANALYSIS_DEBUG] File inclusion enabled, preparing files...")
                 file_content = self._prepare_files_for_expert_analysis()
                 if file_content:
+                    logger.info(f"[EXPERT_ANALYSIS_DEBUG] Adding {len(file_content)} chars of file content to expert context")
                     expert_context = self._add_files_to_expert_context(expert_context, file_content)
+                else:
+                    logger.info(f"[EXPERT_ANALYSIS_DEBUG] No file content to add")
+            else:
+                logger.info(f"[EXPERT_ANALYSIS_DEBUG] File inclusion disabled (EXPERT_ANALYSIS_INCLUDE_FILES=false)")
             
             # Get system prompt for this tool with localization support
             base_system_prompt = self.get_system_prompt()
@@ -323,34 +397,63 @@ class ExpertAnalysisMixin:
             # causing hangs with models that don't support websearch (glm-4.5-flash)
             provider_kwargs = {}
             try:
+                logger.info(f"[EXPERT_DEBUG] About to build websearch kwargs for {model_name}")
                 from src.providers.orchestration.websearch_adapter import build_websearch_provider_kwargs
+                logger.info(f"[EXPERT_DEBUG] Imported websearch_adapter successfully")
                 use_web = self.get_request_use_websearch(request)
+                logger.info(f"[EXPERT_DEBUG] use_websearch={use_web}")
                 provider_kwargs, _ = build_websearch_provider_kwargs(
                     provider_type=provider.get_provider_type(),
                     use_websearch=use_web,
                     model_name=model_name,  # CRITICAL: Pass model name for validation
                     include_event=False,
                 )
+                logger.info(f"[EXPERT_DEBUG] Built websearch kwargs successfully: {provider_kwargs}")
             except Exception as e:
-                logger.warning(f"Failed to build websearch kwargs: {e}")
+                logger.error(f"[EXPERT_DEBUG] Failed to build websearch kwargs: {e}")
                 # Fallback: no websearch
                 provider_kwargs = {}
 
+            # Get thinking mode for expert analysis (with parameter support)
+            import time
+            thinking_mode_start = time.time()
+            expert_thinking_mode = self.get_expert_thinking_mode(request)
+            thinking_mode_elapsed = time.time() - thinking_mode_start
+
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_START] ========================================")
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_START] Tool: {self.get_name()}")
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_START] Model: {model_name}")
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_START] Thinking Mode: {expert_thinking_mode}")
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_START] Temperature: {validated_temperature}")
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_START] Prompt Length: {len(prompt)} chars")
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_START] Thinking Mode Selection Time: {thinking_mode_elapsed:.3f}s")
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_START] ========================================")
+
             # Run provider call in a thread to allow cancellation/timeouts even if provider blocks
+            logger.info(
+                f"[EXPERT_DEBUG] About to call provider.generate_content() for {self.get_name()}: "
+                f"prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}, "
+                f"thinking_mode={expert_thinking_mode}"
+            )
             logger.debug(f"Calling provider.generate_content() for {self.get_name()}: prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}")
             loop = asyncio.get_running_loop()
             def _invoke_provider():
+                logger.info(f"[EXPERT_DEBUG] Inside _invoke_provider thread, about to call provider.generate_content()")
                 logger.debug(f"Inside _invoke_provider, calling provider.generate_content()")
-                return provider.generate_content(
+                result = provider.generate_content(
                     prompt=prompt,
                     model_name=model_name,
                     system_prompt=system_prompt,
                     temperature=validated_temperature,
-                    thinking_mode=self.get_request_thinking_mode(request),
+                    thinking_mode=expert_thinking_mode,  # Use pre-fetched thinking mode
                     images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
                     **provider_kwargs,  # CRITICAL: Use adapter-validated kwargs instead of raw use_websearch
                 )
+                logger.info(f"[EXPERT_DEBUG] provider.generate_content() returned successfully")
+                return result
+            logger.info(f"[EXPERT_DEBUG] About to submit _invoke_provider to executor")
             task = loop.run_in_executor(None, _invoke_provider)
+            logger.info(f"[EXPERT_DEBUG] Task submitted to executor, entering poll loop")
 
             # Poll until done or deadline; emit progress breadcrumbs so UI stays alive
             # CRITICAL FIX: Removed max(5.0, ...) to allow 2s heartbeat for better UX
@@ -476,6 +579,15 @@ class ExpertAnalysisMixin:
                 # Sleep only up to remaining time to avoid overshooting deadline
                 await asyncio.sleep(min(hb, max(0.1, deadline - time.time())))
 
+
+            expert_analysis_duration = time.time() - thinking_mode_start
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] ========================================")
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] Tool: {self.get_name()}")
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] Model: {model_name}")
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] Thinking Mode: {expert_thinking_mode}")
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] Total Duration: {expert_analysis_duration:.2f}s")
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] Response Length: {len(model_response.content) if model_response.content else 0} chars")
+            logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] ========================================")
 
             logger.info(f"Provider call completed, processing response")
             if model_response.content:

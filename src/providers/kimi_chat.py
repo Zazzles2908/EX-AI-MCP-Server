@@ -28,7 +28,9 @@ def prefix_hash(messages: list[dict[str, Any]]) -> str:
             parts.append(role + "\n" + content + "\n")
         joined = "\n".join(parts)
         return hashlib.sha256(joined.encode("utf-8", errors="ignore")).hexdigest()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Failed to generate call key hash from messages: {e}")
+        # Continue - empty call key means no caching/deduplication, but request will still work
         return ""
 
 
@@ -69,7 +71,9 @@ def chat_completions_create(
     extra_headers = {"Msh-Trace-Mode": "on"}
     try:
         max_hdr_len = int(os.getenv("KIMI_MAX_HEADER_LEN", "4096"))
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Failed to parse KIMI_MAX_HEADER_LEN env variable: {e}")
+        # Continue with default - header length limit will be 4096
         max_hdr_len = 4096
 
     def _safe_set(hname: str, hval: str):
@@ -115,8 +119,9 @@ def chat_completions_create(
             tools = None
         if not tools:
             tool_choice = None
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to sanitize tools/tool_choice (model: {model}): {e}")
+        # Continue - tools/tool_choice will be sent as-is, API may reject if invalid
 
     # Call with raw response to capture headers when possible
     content_text = ""
@@ -138,7 +143,9 @@ def chat_completions_create(
             # Parse JSON body
             try:
                 raw_payload = raw.parse()
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Failed to parse raw response, falling back to http_response attribute: {e}")
+                # Continue - fallback to http_response attribute
                 raw_payload = getattr(raw, "http_response", None)
             
             # Extract headers
@@ -168,7 +175,9 @@ def chat_completions_create(
                 choice0 = (raw_payload.choices if hasattr(raw_payload, "choices") else raw_payload.get("choices"))[0]
                 msg = getattr(choice0, "message", None) or choice0.get("message", {})
                 content_text = getattr(msg, "content", None) or msg.get("content", "")
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Failed to extract content from Kimi response (model: {model}): {e}")
+                # Continue - empty content will be returned, may indicate API response format change
                 content_text = ""
         else:
             # Fallback without raw headers support
@@ -211,7 +220,9 @@ def chat_completions_create(
                 }
         elif isinstance(raw_payload, dict):
             _usage = raw_payload.get("usage")
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Failed to extract usage from Kimi response (model: {model}): {e}")
+        # Continue - usage will be None, metrics may be incomplete but response is still valid
         _usage = None
 
     # Extract tool_calls from response if present
@@ -232,7 +243,9 @@ def chat_completions_create(
                 tool_calls_data = msg.get("tool_calls")
             else:
                 tool_calls_data = getattr(msg, "tool_calls", None)
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Failed to extract tool_calls from Kimi response (model: {model}): {e}")
+        # Continue - tool_calls will be None, tool use functionality may not work but response is still valid
         tool_calls_data = None
 
     return {
