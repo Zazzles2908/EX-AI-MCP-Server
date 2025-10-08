@@ -61,8 +61,10 @@ def ensure_providers_configured() -> None:
         return
     
     try:
+        # NOTE: This imports from src/server/providers/provider_config.py
+        # which is a thin orchestrator that delegates to helper modules
         from src.server.providers import configure_providers
-        
+
         logger.info("Configuring providers (first-time initialization)")
         configure_providers()
         _providers_configured = True
