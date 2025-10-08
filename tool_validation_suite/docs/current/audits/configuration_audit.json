@@ -1,0 +1,506 @@
+[
+  {
+    "file": "src\\daemon\\ws_server.py",
+    "line": 136,
+    "category": "timeout",
+    "value": "0",
+    "context": "with socket.create_connection((host, port), timeout=0.25):"
+  },
+  {
+    "file": "src\\daemon\\ws_server.py",
+    "line": 486,
+    "category": "timeout",
+    "value": "0",
+    "context": "await asyncio.wait_for(_global_sem.acquire(), timeout=0.001)"
+  },
+  {
+    "file": "src\\daemon\\ws_server.py",
+    "line": 507,
+    "category": "timeout",
+    "value": "0",
+    "context": "await asyncio.wait_for(_provider_sems[prov_key].acquire(), timeout=0.001)"
+  },
+  {
+    "file": "src\\daemon\\ws_server.py",
+    "line": 522,
+    "category": "timeout",
+    "value": "0",
+    "context": "await asyncio.wait_for((await _sessions.get(session_id)).sem.acquire(), timeout=0.001)  # type: ignore"
+  },
+  {
+    "file": "src\\daemon\\ws_server.py",
+    "line": 959,
+    "category": "timeout",
+    "value": "10",
+    "context": "await asyncio.wait_for(stop_event.wait(), timeout=10.0)"
+  },
+  {
+    "file": "src\\daemon\\ws_server.py",
+    "line": 1008,
+    "category": "timeout",
+    "value": "1",
+    "context": "close_timeout=1.0,"
+  },
+  {
+    "file": "src\\daemon\\ws_server.py",
+    "line": 486,
+    "category": "timeout",
+    "value": "0",
+    "context": "await asyncio.wait_for(_global_sem.acquire(), timeout=0.001)"
+  },
+  {
+    "file": "src\\daemon\\ws_server.py",
+    "line": 507,
+    "category": "timeout",
+    "value": "0",
+    "context": "await asyncio.wait_for(_provider_sems[prov_key].acquire(), timeout=0.001)"
+  },
+  {
+    "file": "src\\daemon\\ws_server.py",
+    "line": 522,
+    "category": "timeout",
+    "value": "0",
+    "context": "await asyncio.wait_for((await _sessions.get(session_id)).sem.acquire(), timeout=0.001)  # type: ignore"
+  },
+  {
+    "file": "src\\daemon\\ws_server.py",
+    "line": 959,
+    "category": "timeout",
+    "value": "10",
+    "context": "await asyncio.wait_for(stop_event.wait(), timeout=10.0)"
+  },
+  {
+    "file": "src\\daemon\\ws_server.py",
+    "line": 386,
+    "category": "size_limit",
+    "value": "500",
+    "context": "args_preview = json.dumps(arguments, indent=2)[:500]"
+  },
+  {
+    "file": "src\\providers\\glm_chat.py",
+    "line": 231,
+    "category": "size_limit",
+    "value": "200",
+    "context": "logger.warning(f\"GLM returned tool call as TEXT: {text[:200]}\")"
+  },
+  {
+    "file": "src\\providers\\glm_chat.py",
+    "line": 335,
+    "category": "size_limit",
+    "value": "200",
+    "context": "logger.warning(f\"GLM returned tool call as TEXT (HTTP path): {text[:200]}\")"
+  },
+  {
+    "file": "src\\providers\\kimi_chat.py",
+    "line": 27,
+    "category": "size_limit",
+    "value": "2048",
+    "context": "content = str(m.get(\"content\", \"\"))[:2048]"
+  },
+  {
+    "file": "src\\providers\\openai_compatible.py",
+    "line": 297,
+    "category": "size_limit",
+    "value": "100",
+    "context": "content_item[\"text\"] = text[:100] + \"... [truncated]\""
+  },
+  {
+    "file": "src\\providers\\tool_executor.py",
+    "line": 42,
+    "category": "timeout",
+    "value": "25",
+    "context": "with urllib.request.urlopen(req, timeout=25) as resp:"
+  },
+  {
+    "file": "src\\providers\\tool_executor.py",
+    "line": 57,
+    "category": "timeout",
+    "value": "25",
+    "context": "with urllib.request.urlopen(req, timeout=25) as resp:"
+  },
+  {
+    "file": "src\\providers\\tool_executor.py",
+    "line": 76,
+    "category": "timeout",
+    "value": "15",
+    "context": "with urllib.request.urlopen(req, timeout=15) as resp:"
+  },
+  {
+    "file": "src\\providers\\mixins\\retry_mixin.py",
+    "line": 26,
+    "category": "retry",
+    "value": "4",
+    "context": "DEFAULT_MAX_RETRIES = 4"
+  },
+  {
+    "file": "tools\\version.py",
+    "line": 97,
+    "category": "timeout",
+    "value": "10",
+    "context": "with urlopen(github_url, timeout=10) as response:"
+  },
+  {
+    "file": "tools\\capabilities\\version.py",
+    "line": 97,
+    "category": "timeout",
+    "value": "10",
+    "context": "with urlopen(github_url, timeout=10) as response:"
+  },
+  {
+    "file": "tools\\diagnostics\\batch_markdown_reviews.py",
+    "line": 56,
+    "category": "timeout",
+    "value": "30",
+    "context": "async with websockets.connect(uri, ping_interval=60, ping_timeout=30, close_timeout=10) as ws:"
+  },
+  {
+    "file": "tools\\diagnostics\\batch_markdown_reviews.py",
+    "line": 56,
+    "category": "timeout",
+    "value": "10",
+    "context": "async with websockets.connect(uri, ping_interval=60, ping_timeout=30, close_timeout=10) as ws:"
+  },
+  {
+    "file": "tools\\diagnostics\\batch_markdown_reviews.py",
+    "line": 56,
+    "category": "interval",
+    "value": "60",
+    "context": "async with websockets.connect(uri, ping_interval=60, ping_timeout=30, close_timeout=10) as ws:"
+  },
+  {
+    "file": "tools\\diagnostics\\diagnose_ws_stack.py",
+    "line": 179,
+    "category": "timeout",
+    "value": "20",
+    "context": "await asyncio.wait_for(session.initialize(), timeout=20)"
+  },
+  {
+    "file": "tools\\diagnostics\\diagnose_ws_stack.py",
+    "line": 180,
+    "category": "timeout",
+    "value": "20",
+    "context": "tools = await asyncio.wait_for(session.list_tools(), timeout=20)"
+  },
+  {
+    "file": "tools\\diagnostics\\diagnose_ws_stack.py",
+    "line": 179,
+    "category": "timeout",
+    "value": "20",
+    "context": "await asyncio.wait_for(session.initialize(), timeout=20)"
+  },
+  {
+    "file": "tools\\diagnostics\\diagnose_ws_stack.py",
+    "line": 180,
+    "category": "timeout",
+    "value": "20",
+    "context": "tools = await asyncio.wait_for(session.list_tools(), timeout=20)"
+  },
+  {
+    "file": "tools\\diagnostics\\diagnose_ws_stack.py",
+    "line": 157,
+    "category": "size_limit",
+    "value": "120",
+    "context": "text = outs[0].get(\"text\")[:120] if outs else \"<none>\""
+  },
+  {
+    "file": "tools\\diagnostics\\ping_activity.py",
+    "line": 13,
+    "category": "timeout",
+    "value": "30",
+    "context": "async with websockets.connect(uri, ping_interval=60, ping_timeout=30, close_timeout=10) as ws:"
+  },
+  {
+    "file": "tools\\diagnostics\\ping_activity.py",
+    "line": 13,
+    "category": "timeout",
+    "value": "10",
+    "context": "async with websockets.connect(uri, ping_interval=60, ping_timeout=30, close_timeout=10) as ws:"
+  },
+  {
+    "file": "tools\\diagnostics\\ping_activity.py",
+    "line": 29,
+    "category": "size_limit",
+    "value": "400",
+    "context": "print(\"activity ok, preview:\\n\", text[:400])"
+  },
+  {
+    "file": "tools\\diagnostics\\ping_activity.py",
+    "line": 13,
+    "category": "interval",
+    "value": "60",
+    "context": "async with websockets.connect(uri, ping_interval=60, ping_timeout=30, close_timeout=10) as ws:"
+  },
+  {
+    "file": "tools\\diagnostics\\ws_daemon_smoke.py",
+    "line": 20,
+    "category": "size_limit",
+    "value": "180",
+    "context": "preview = outs[0].get(\"text\")[:180] if outs and isinstance(outs[0], dict) else str(outs)[:180]"
+  },
+  {
+    "file": "tools\\diagnostics\\ws_daemon_smoke.py",
+    "line": 20,
+    "category": "size_limit",
+    "value": "180",
+    "context": "preview = outs[0].get(\"text\")[:180] if outs and isinstance(outs[0], dict) else str(outs)[:180]"
+  },
+  {
+    "file": "tools\\workflow\\expert_analysis.py",
+    "line": 484,
+    "category": "size_limit",
+    "value": "500",
+    "context": "response_preview = model_response.content[:500] if len(model_response.content) > 500 else model_response.content"
+  },
+  {
+    "file": "tools\\workflow\\expert_analysis.py",
+    "line": 495,
+    "category": "size_limit",
+    "value": "1000",
+    "context": "f\"Response preview (first 1000 chars): {model_response.content[:1000]}\\n\""
+  },
+  {
+    "file": "tools\\workflow\\expert_analysis.py",
+    "line": 223,
+    "category": "interval",
+    "value": "0",
+    "context": "wait_interval = 0.5"
+  },
+  {
+    "file": "tools\\providers\\kimi\\kimi_tools_chat.py",
+    "line": 437,
+    "category": "timeout",
+    "value": "25",
+    "context": "with urllib.request.urlopen(req, timeout=25) as resp:"
+  },
+  {
+    "file": "tools\\providers\\kimi\\kimi_tools_chat.py",
+    "line": 452,
+    "category": "timeout",
+    "value": "25",
+    "context": "with urllib.request.urlopen(req, timeout=25) as resp:"
+  },
+  {
+    "file": "tools\\providers\\kimi\\kimi_tools_chat.py",
+    "line": 462,
+    "category": "timeout",
+    "value": "20",
+    "context": "with urllib.request.urlopen(url, timeout=20) as resp:"
+  },
+  {
+    "file": "tools\\providers\\kimi\\kimi_tools_chat.py",
+    "line": 314,
+    "category": "timeout",
+    "value": "240",
+    "context": "timeout_secs = 240.0"
+  },
+  {
+    "file": "tools\\providers\\kimi\\kimi_tools_chat.py",
+    "line": 496,
+    "category": "timeout",
+    "value": "180",
+    "context": "timeout_secs = 180.0"
+  },
+  {
+    "file": "tools\\providers\\kimi\\kimi_tools_chat.py",
+    "line": 237,
+    "category": "size_limit",
+    "value": "2048",
+    "context": "parts.append(str(m.get(\"role\",\"\")) + \"\\n\" + str(m.get(\"content\",\"\"))[:2048])"
+  },
+  {
+    "file": "tools\\providers\\kimi\\kimi_tools_chat.py",
+    "line": 285,
+    "category": "size_limit",
+    "value": "2048",
+    "context": "parts.append(str(m.get(\"role\",\"\")) + \"\\n\" + str(m.get(\"content\",\"\"))[:2048])"
+  },
+  {
+    "file": "tools\\providers\\kimi\\kimi_tools_chat.py",
+    "line": 525,
+    "category": "size_limit",
+    "value": "256",
+    "context": "\"content_preview\": (content_text or \"\")[:256],"
+  },
+  {
+    "file": "tool_validation_suite\\utils\\file_uploader.py",
+    "line": 93,
+    "category": "timeout",
+    "value": "60",
+    "context": "timeout=60"
+  },
+  {
+    "file": "tool_validation_suite\\utils\\file_uploader.py",
+    "line": 155,
+    "category": "timeout",
+    "value": "60",
+    "context": "timeout=60"
+  },
+  {
+    "file": "tool_validation_suite\\utils\\glm_watcher.py",
+    "line": 170,
+    "category": "size_limit",
+    "value": "1000",
+    "context": "input_str = json.dumps(test_input, indent=2)[:1000]"
+  },
+  {
+    "file": "tool_validation_suite\\utils\\glm_watcher.py",
+    "line": 171,
+    "category": "size_limit",
+    "value": "2000",
+    "context": "output_str = json.dumps(actual_output, indent=2)[:2000]"
+  },
+  {
+    "file": "tool_validation_suite\\utils\\glm_watcher.py",
+    "line": 362,
+    "category": "size_limit",
+    "value": "500",
+    "context": "logger.debug(f\"Content was: {content[:500]}\")"
+  },
+  {
+    "file": "tool_validation_suite\\utils\\glm_watcher.py",
+    "line": 369,
+    "category": "size_limit",
+    "value": "500",
+    "context": "\"observations\": content[:500]  # Increased from 200 to 500"
+  },
+  {
+    "file": "tool_validation_suite\\utils\\mcp_client.py",
+    "line": 135,
+    "category": "size_limit",
+    "value": "500",
+    "context": "logger.debug(f\"Raw response: {response_str[:500]}\")"
+  },
+  {
+    "file": "tool_validation_suite\\utils\\mcp_client.py",
+    "line": 142,
+    "category": "size_limit",
+    "value": "500",
+    "context": "logger.error(f\"Response was: {response_str[:500]}\")"
+  },
+  {
+    "file": "tool_validation_suite\\utils\\mcp_client.py",
+    "line": 143,
+    "category": "size_limit",
+    "value": "200",
+    "context": "raise Exception(f\"Invalid JSON response: {response_str[:200]}\")"
+  },
+  {
+    "file": "tool_validation_suite\\utils\\performance_monitor.py",
+    "line": 165,
+    "category": "interval",
+    "value": "0",
+    "context": "return self.process.cpu_percent(interval=0.1)"
+  },
+  {
+    "file": "tool_validation_suite\\utils\\performance_monitor.py",
+    "line": 180,
+    "category": "interval",
+    "value": "2",
+    "context": "time.sleep(2)"
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\audit_hardcoded_configs.py",
+    "line": 29,
+    "category": "size_limit",
+    "value": "1000",
+    "context": "r\"\\[:(\\d{3,})\\]\",  # String slicing like [:1000]"
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\create_remaining_tests.py",
+    "line": 58,
+    "category": "size_limit",
+    "value": "200",
+    "context": "\"response\": response[:200],"
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\generate_test_templates.py",
+    "line": 73,
+    "category": "size_limit",
+    "value": "200",
+    "context": "\"response\": response[:200],"
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\generate_test_templates.py",
+    "line": 100,
+    "category": "size_limit",
+    "value": "200",
+    "context": "\"response\": response[:200],"
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\generate_test_templates.py",
+    "line": 127,
+    "category": "size_limit",
+    "value": "200",
+    "context": "\"response\": response[:200],"
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\generate_test_templates.py",
+    "line": 154,
+    "category": "size_limit",
+    "value": "200",
+    "context": "\"response\": response[:200],"
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\regenerate_all_tests.py",
+    "line": 204,
+    "category": "size_limit",
+    "value": "200",
+    "context": "\"content\": content[:200] if content else \"\","
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\regenerate_all_tests.py",
+    "line": 227,
+    "category": "size_limit",
+    "value": "200",
+    "context": "\"content\": content[:200] if content else \"\","
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\run_all_tests_simple.py",
+    "line": 144,
+    "category": "timeout",
+    "value": "5",
+    "context": "branch = sp.run([\"git\", \"branch\", \"--show-current\"], capture_output=True, text=True, timeout=5).stdout.strip()"
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\run_all_tests_simple.py",
+    "line": 145,
+    "category": "timeout",
+    "value": "5",
+    "context": "commit = sp.run([\"git\", \"rev-parse\", \"--short\", \"HEAD\"], capture_output=True, text=True, timeout=5).stdout.strip()"
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\run_all_tests_simple.py",
+    "line": 219,
+    "category": "size_limit",
+    "value": "200",
+    "context": "print(f\"Error: {result['errors'][:200]}\")"
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\run_all_tests_simple.py",
+    "line": 226,
+    "category": "size_limit",
+    "value": "200",
+    "context": "print(f\"Error: {result['errors'][:200]}\")"
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\validate_setup.py",
+    "line": 199,
+    "category": "timeout",
+    "value": "10",
+    "context": "timeout=10"
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\validate_setup.py",
+    "line": 231,
+    "category": "timeout",
+    "value": "10",
+    "context": "timeout=10"
+  },
+  {
+    "file": "tool_validation_suite\\scripts\\validate_setup.py",
+    "line": 262,
+    "category": "timeout",
+    "value": "10",
+    "context": "timeout=10"
+  }
+]

@@ -71,6 +71,13 @@ class ThinkDeepWorkflowRequest(WorkflowRequest):
         "Do NOT use 'certain' unless the thinking is comprehensively complete, use 'very_high' or 'almost_certain' instead when in doubt. "
         "Using 'certain' means you have complete confidence locally and prevents external model validation.",
     )
+    thinking_mode: Optional[str] = Field(
+        default=None,
+        description="Control the depth of expert analysis reasoning (minimal, low, medium, high, max). "
+        "Trade-off between speed and depth: minimal (~5-7s, quick validation), low (~8-10s, standard validation), "
+        "medium (~15-20s, thorough analysis), high (~25-30s, deep analysis), max (~40-60s, exhaustive reasoning). "
+        "If not specified, falls back to EXPERT_ANALYSIS_THINKING_MODE env variable (default: minimal for speed).",
+    )
 
     # Advanced workflow features
     backtrack_from_step: Optional[int] = Field(

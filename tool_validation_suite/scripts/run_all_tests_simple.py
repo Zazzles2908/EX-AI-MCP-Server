@@ -70,11 +70,14 @@ def run_test_script(script_path: Path, dry_run: bool = False, test_run_id: str =
         if test_run_id:
             env["TEST_RUN_ID"] = str(test_run_id)
 
+        # Get script timeout from environment (default 15 minutes for workflow tools)
+        script_timeout = int(os.getenv("SCRIPT_TIMEOUT_SECS", "900"))
+
         result = subprocess.run(
             [sys.executable, str(script_path)],
             capture_output=True,
             text=True,
-            timeout=600,  # 10 minute timeout per script (increased for complex analysis tools)
+            timeout=script_timeout,
             cwd=Path.cwd(),
             env=env  # Pass environment with TEST_RUN_ID
         )
@@ -92,12 +95,13 @@ def run_test_script(script_path: Path, dry_run: bool = False, test_run_id: str =
     
     except subprocess.TimeoutExpired:
         duration = time.time() - start_time
+        script_timeout = int(os.getenv("SCRIPT_TIMEOUT_SECS", "900"))
         return {
             "script": str(script_path),
             "status": "timeout",
             "duration": duration,
             "output": "",
-            "errors": "Test script timed out after 600 seconds"
+            "errors": f"Test script timed out after {script_timeout} seconds"
         }
     
     except Exception as e:

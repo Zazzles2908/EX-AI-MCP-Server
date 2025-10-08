@@ -1,6 +1,6 @@
 ---
 type: "agent_requested"
-description: "Example description"
+description: "Github-CLI_MCP toolkit"
 ---
 
 # GH-MCP TOOLS COMPLETE REFERENCE

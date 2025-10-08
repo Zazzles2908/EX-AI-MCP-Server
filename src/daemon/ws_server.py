@@ -5,6 +5,7 @@ import os
 import signal
 import time
 import uuid
+from datetime import timedelta
 from pathlib import Path
 import socket
 
@@ -29,9 +30,16 @@ if str(_bootstrap_path) not in sys.path:
     sys.path.insert(0, str(_bootstrap_path))
 
 from src.bootstrap import setup_logging, get_repo_root
+from src.core.config import get_config
+from src.core.message_bus_client import MessageBusClient
 
 LOG_DIR = get_repo_root() / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+# CRITICAL FIX: Setup async-safe logging to prevent deadlocks in async contexts
+# Python's standard logging uses thread locks that can deadlock in async code
+from src.utils.async_logging import setup_async_safe_logging
+_log_listener = setup_async_safe_logging(level=logging.INFO)
 
 # Setup logging with UTF-8 support for Windows consoles
 logger = setup_logging("ws_daemon", log_file=str(LOG_DIR / "ws_daemon.log"))
@@ -39,6 +47,25 @@ logger = setup_logging("ws_daemon", log_file=str(LOG_DIR / "ws_daemon.log"))
 EXAI_WS_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
 EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8765"))
 MAX_MSG_BYTES = int(os.getenv("EXAI_WS_MAX_BYTES", str(32 * 1024 * 1024)))
+
+# Initialize message bus client (lazy initialization, won't crash if config invalid)
+_message_bus_client: Optional[MessageBusClient] = None
+
+def _get_message_bus_client() -> Optional[MessageBusClient]:
+    """Get or initialize the message bus client."""
+    global _message_bus_client
+    if _message_bus_client is None:
+        try:
+            config = get_config()
+            if config.message_bus_enabled:
+                _message_bus_client = MessageBusClient()
+                logger.info("Message bus client initialized successfully")
+            else:
+                logger.info("Message bus disabled in configuration")
+        except Exception as e:
+            logger.error(f"Failed to initialize message bus client: {e}")
+            logger.warning("Message bus will not be available")
+    return _message_bus_client
 
 
 # Thread-safe token manager for secure token rotation with audit logging
@@ -78,8 +105,19 @@ _auth_token_manager = _TokenManager(os.getenv("EXAI_WS_TOKEN", ""))
 PING_INTERVAL = int(os.getenv("EXAI_WS_PING_INTERVAL", "45"))  # wider interval to reduce false timeouts
 PING_TIMEOUT = int(os.getenv("EXAI_WS_PING_TIMEOUT", "30"))    # allow slower systems to respond to pings
 # WS-level hard ceiling for a single tool invocation; keep small to avoid client-perceived hangs
-# Reuse tool implementations directly from the stdio server
-# Prefer calling the MCP boundary function to benefit from model resolution, caches, etc.
+
+# ============================================================================
+# SINGLETON TOOL REGISTRY (Mission 2: One authoritative tool list)
+# ============================================================================
+# CRITICAL: Import TOOLS from server.py to ensure both entry points share the
+# same dict object reference. server.py initializes TOOLS via bootstrap.singletons
+# which ensures idempotent initialization.
+#
+# Identity check: assert server.TOOLS is ws_server.SERVER_TOOLS  # Same object!
+#
+# This replaces the previous pattern where ws_server.py might build its own
+# tool registry, causing divergence between stdio and WebSocket transports.
+
 from server import TOOLS as SERVER_TOOLS  # type: ignore
 from server import _ensure_providers_configured  # type: ignore
 from server import handle_call_tool as SERVER_HANDLE_CALL_TOOL  # type: ignore
@@ -100,7 +138,13 @@ GLOBAL_MAX_INFLIGHT = int(os.getenv("EXAI_WS_GLOBAL_MAX_INFLIGHT", "24"))
 KIMI_MAX_INFLIGHT = int(os.getenv("EXAI_WS_KIMI_MAX_INFLIGHT", "6"))
 GLM_MAX_INFLIGHT = int(os.getenv("EXAI_WS_GLM_MAX_INFLIGHT", "4"))
 
+# ============================================================================
+# OBSERVABILITY FILES (Mission 4: Document JSONL vs JSON intent)
+# ============================================================================
+# JSONL (append-only time-series): Metrics are appended for historical analysis
 _metrics_path = LOG_DIR / "ws_daemon.metrics.jsonl"
+
+# JSON (overwrite snapshot): Health is overwritten for current status checks
 _health_path = LOG_DIR / "ws_daemon.health.json"
 
 PID_FILE = LOG_DIR / "ws_daemon.pid"
@@ -128,8 +172,9 @@ def _remove_pidfile() -> None:
     try:
         if PID_FILE.exists():
             PID_FILE.unlink(missing_ok=True)  # type: ignore[arg-type]
-    except Exception:
-        pass
+    except (OSError, PermissionError) as e:
+        logger.warning(f"Failed to remove PID file {PID_FILE}: {e}")
+        # Continue - stale PID file is not critical for operation
 
 def _is_port_listening(host: str, port: int) -> bool:
     try:
@@ -183,8 +228,9 @@ def _gc_results_cache() -> None:
         expired_keys = [k for k, rec in _results_cache_by_key.items() if now - rec.get("t", 0) > RESULT_TTL_SECS]
         for k in expired_keys:
             _results_cache_by_key.pop(k, None)
-    except Exception:
-        pass
+    except (KeyError, AttributeError, TypeError) as e:
+        logger.error(f"Failed to clean up results cache: {e}", exc_info=True)
+        # Continue - cache cleanup failure is not critical for current request
 
 
 def _store_result(req_id: str, payload: dict) -> None:
@@ -246,8 +292,9 @@ def _normalize_tool_name(name: str) -> str:
         for suf in ("_EXAI-WS", "-EXAI-WS", "_EXAI_WS", "-EXAI_WS"):
             if name.endswith(suf):
                 return name[: -len(suf)]
-    except Exception:
-        pass
+    except (AttributeError, TypeError) as e:
+        logger.warning(f"Failed to normalize tool name '{name}': {e}")
+        # Return original name - normalization is cosmetic
     return name
 
 
@@ -351,12 +398,14 @@ def _validate_message(msg: Dict[str, Any]) -> tuple[bool, Optional[str]]:
 async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dict[str, Any]) -> None:
     op = msg.get("op")
     if op == "list_tools":
-        # Ensure provider-specific tools are present before listing
+        # CRITICAL: Ensure providers are configured AND provider tools are registered
+        # This must happen on first list_tools call to populate the full tool list
         try:
-            _ensure_providers_configured()
-            register_provider_specific_tools()
-        except Exception:
-            pass
+            _ensure_providers_configured()  # Step 1: Configure providers (idempotent)
+            register_provider_specific_tools()  # Step 2: Register provider tools (idempotent)
+        except Exception as e:
+            logger.error(f"Failed to register provider-specific tools for list_tools: {e}", exc_info=True)
+            # Continue - core tools still available even if provider tools fail
         # Build a minimal tool descriptor set
         tools = []
         for name, tool in SERVER_TOOLS.items():
@@ -366,7 +415,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                     "description": tool.description,
                     "inputSchema": tool.get_input_schema(),
                 })
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Failed to get full schema for tool '{name}': {e}")
+                # Fallback to minimal descriptor
                 tools.append({"name": name, "description": getattr(tool, "description", name), "inputSchema": {"type": "object"}})
         await _safe_send(ws, {"op": "list_tools_res", "tools": tools})
         return
@@ -385,7 +436,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
         try:
             args_preview = json.dumps(arguments, indent=2)[:500]
             logger.info(f"Arguments (first 500 chars): {args_preview}")
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to serialize arguments for logging: {e}")
+            # Continue - logging failure should not block execution
             logger.info(f"Arguments: <unable to serialize>")
         logger.info(f"=== PROCESSING ===")
 
@@ -393,8 +446,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
             _ensure_providers_configured()
             # Ensure provider-specific tools are registered prior to lookup
             register_provider_specific_tools()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to register provider-specific tools for call_tool: {e}", exc_info=True)
+            # Continue - core tools still available even if provider tools fail
         tool = SERVER_TOOLS.get(name)
         if not tool:
             await _safe_send(ws, {
@@ -417,7 +471,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                     prov_key = "KIMI"
                 elif model_name in set(ModelProviderRegistry.get_available_model_names(provider_type=ProviderType.GLM)):
                     prov_key = "GLM"
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to detect provider for tool '{name}': {e}")
+            # Continue with empty provider key - metrics may be less accurate
             prov_key = ""
 
         # Backpressure: try acquire global, provider and per-session slots without waiting
@@ -430,7 +486,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
         # Build a call_key that includes model and provider to reduce collisions across providers/models
         try:
             _args_for_key = dict(arguments)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to convert arguments to dict for call_key (type: {type(arguments)}): {e}")
+            # Fallback to original arguments or empty dict
             _args_for_key = arguments or {}
         # Include provider hint explicitly (may be empty if unknown)
         if prov_key:
@@ -442,7 +500,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
         # Optional: disable semantic coalescing per tool via env EXAI_WS_DISABLE_COALESCE_FOR_TOOLS
         try:
             _disable_set = {s.strip().lower() for s in os.getenv("EXAI_WS_DISABLE_COALESCE_FOR_TOOLS", "").split(",") if s.strip()}
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to parse EXAI_WS_DISABLE_COALESCE_FOR_TOOLS env variable: {e}")
+            # Continue with empty set - coalescing will work normally
             _disable_set = set()
         if name.lower() in _disable_set:
             # Make call_key unique to avoid coalescing for this tool
@@ -468,7 +528,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                     _inflight_meta_by_key.pop(call_key, None)
                     _inflight_by_key.pop(call_key, None)
                     meta = None
-            except Exception:
+            except Exception as e:
+                logger.error(f"Failed to retrieve inflight metadata for call_key '{call_key}': {e}", exc_info=True)
+                # Continue without metadata - duplicate detection may not work for this call
                 meta = None
             if call_key in _inflight_by_key and meta:
                 await _safe_send(ws, {
@@ -529,8 +591,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                 })
                 try:
                     _global_sem.release()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.error(f"Failed to release global semaphore (over capacity path): {e}", exc_info=True)
+                    # Continue - semaphore state may be corrupted but don't block response
                 return
             start = time.time()
             # Single ACK after global+provider+session acquisition
@@ -547,8 +610,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                 arguments = dict(arguments)
                 arguments.setdefault("_session_id", session_id)
                 arguments.setdefault("_call_key", call_key)
-            except Exception:
-                pass
+            except (TypeError, AttributeError) as e:
+                logger.warning(f"Failed to inject session metadata into arguments: {e}")
+                # Continue with original arguments - tracking will be incomplete but tool can still execute
 
             _inflight_reqs.add(req_id)
             try:
@@ -564,15 +628,16 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                         use_web = False
                         try:
                             use_web = bool(arguments.get("use_websearch"))
-                        except Exception:
+                        except (AttributeError, TypeError, KeyError):
                             use_web = False
                         if use_web:
                             # For web-enabled calls, allow the higher web timeout explicitly
                             tool_timeout = int(_kimiweb)
                         else:
                             tool_timeout = min(tool_timeout, int(_kimitt))
-                except Exception:
-                    pass
+                except (KeyError, ValueError, TypeError) as e:
+                    logger.warning(f"Failed to calculate Kimi-specific timeout: {e}, using default")
+                    # tool_timeout already set to default value above
                 deadline = start + float(tool_timeout)
 
 
@@ -598,8 +663,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                         if time.time() >= deadline:
                             try:
                                 tool_task.cancel()
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                logger.warning(f"Failed to cancel tool task for '{name}' (req_id: {req_id}): {e}")
+                                # Continue - task may complete anyway
                             await _safe_send(ws, {
                                 "op": "call_tool_res",
                                 "request_id": req_id,
@@ -611,8 +677,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                                         _inflight_by_key[call_key].set()
                                         _inflight_by_key.pop(call_key, None)
                                     _inflight_meta_by_key.pop(call_key, None)
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                logger.error(f"Failed to clean up inflight tracking after timeout (call_key: {call_key}): {e}", exc_info=True)
+                                # Continue - cleanup failure may cause memory leak but don't block response
                             return
                 latency = time.time() - start
 
@@ -632,8 +699,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                             "t": time.time(), "op": "call_tool", "lat": latency,
                             "sess": session_id, "name": name, "prov": prov_key or ""
                         }) + "\n")
-                except Exception:
-                    pass
+                except (OSError, PermissionError, IOError) as e:
+                    logger.error(f"Failed to write JSONL metrics: {e}")
+                    # Continue - metrics logging failure should not block response
                 outputs_norm = _normalize_outputs(outputs)
                 # Payload delivery guard: ensure a first non-empty block if enabled
                 try:
@@ -646,12 +714,66 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                             "ts": time.time(),
                         }
                         outputs_norm = [{"type": "text", "text": json.dumps(diag, separators=(",", ":"))}]
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Failed to create diagnostic stub for empty payload (tool: {name}): {e}")
+                    # Continue - diagnostic stub is optional, empty outputs will be handled below
 
                 # Ensure at least one text block for UI surfacing even if tool returned no outputs
                 if not outputs_norm:
                     outputs_norm = [{"type": "text", "text": ""}]
+
+                # MESSAGE BUS INTEGRATION: Check if payload should be stored in message bus
+                message_bus_used = False
+                try:
+                    message_bus_client = _get_message_bus_client()
+                    if message_bus_client is not None:
+                        # Calculate payload size
+                        payload_json = json.dumps({"outputs": outputs_norm})
+                        payload_size = len(payload_json.encode('utf-8'))
+
+                        # Check if should use message bus (>1MB threshold)
+                        if message_bus_client.should_use_message_bus(payload_size):
+                            # Generate transaction ID
+                            transaction_id = f"txn_{uuid.uuid4().hex}"
+
+                            # Store in message bus
+                            logger.info(f"Storing large payload in message bus: {payload_size} bytes, txn={transaction_id}")
+                            success = await message_bus_client.store_message(
+                                transaction_id=transaction_id,
+                                session_id=session_id,
+                                tool_name=name,
+                                provider_name=prov_key or "unknown",
+                                payload={"outputs": outputs_norm},
+                                metadata={
+                                    "request_id": req_id,
+                                    "timestamp": time.time(),
+                                    "payload_size_bytes": payload_size
+                                }
+                            )
+
+                            if success:
+                                # Replace outputs with transaction ID reference
+                                logger.info(f"Message bus storage successful, returning transaction ID")
+                                outputs_norm = [{
+                                    "type": "text",
+                                    "text": json.dumps({
+                                        "message_bus_transaction_id": transaction_id,
+                                        "payload_size_bytes": payload_size,
+                                        "retrieval_required": True,
+                                        "session_id": session_id,
+                                        "tool_name": name
+                                    }, separators=(",", ":"))
+                                }]
+                                message_bus_used = True
+                            else:
+                                # Circuit breaker opened, fallback to WebSocket
+                                logger.warning(f"Message bus storage failed (circuit breaker), using WebSocket fallback")
+                        else:
+                            logger.debug(f"Payload size {payload_size} bytes below threshold, using WebSocket")
+                except Exception as e:
+                    logger.error(f"Message bus integration error: {e}", exc_info=True)
+                    logger.warning("Falling back to WebSocket delivery")
+                    # Continue with original outputs_norm
 
                 # Detect serialized ToolOutput error-style payloads and surface via error channel
                 error_obj = None
@@ -670,7 +792,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                                         "metadata": parsed.get("metadata") or {}
                                     }
                                     break
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Failed to parse error object from tool output (tool: {name}): {e}")
+                    # Continue - error object parsing is optional, tool output will be sent as-is
                     error_obj = None
 
                 result_payload = {
@@ -686,8 +810,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                     if os.getenv("EXAI_WS_COMPAT_TEXT", "true").strip().lower() == "true":
                         texts = [o.get("text", "") for o in outputs_norm if isinstance(o, dict)]
                         result_payload["text"] = "\n\n".join([t for t in texts if t])
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to create compatibility text field (tool: {name}): {e}")
+                    # Continue - compatibility field is optional
 
                 await _safe_send(ws, result_payload)
                 _store_result(req_id, result_payload)
@@ -700,8 +825,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                             _inflight_by_key[call_key].set()
                             _inflight_by_key.pop(call_key, None)
                         _inflight_meta_by_key.pop(call_key, None)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.error(f"Failed to clean up inflight tracking after success (call_key: {call_key}): {e}", exc_info=True)
+                    # Continue - cleanup failure may cause memory leak but response already sent
             except asyncio.TimeoutError:
                 # CRITICAL FIX: Log timeout errors
                 latency_timeout = time.time() - start
@@ -725,8 +851,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                             "session": session_id,
                             "request_id": req_id
                         }) + "\n")
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Failed to write timeout to failures log (tool: {name}): {e}")
+                    # Continue - failure logging is not critical
 
                 await _safe_send(ws, {
                     "op": "call_tool_res",
@@ -739,8 +866,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                             _inflight_by_key[call_key].set()
                             _inflight_by_key.pop(call_key, None)
                         _inflight_meta_by_key.pop(call_key, None)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.error(f"Failed to clean up inflight tracking after timeout (call_key: {call_key}): {e}", exc_info=True)
+                    # Continue - cleanup failure may cause memory leak but error response already sent
             except Exception as e:
                 # CRITICAL FIX: Log tool execution errors
                 latency_error = time.time() - start
@@ -765,8 +893,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                             "session": session_id,
                             "request_id": req_id
                         }) + "\n")
-                except Exception:
-                    pass
+                except Exception as e2:
+                    logger.warning(f"Failed to write error to failures log (tool: {name}): {e2}")
+                    # Continue - failure logging is not critical
 
                 await _safe_send(ws, {
                     "op": "call_tool_res",
@@ -779,23 +908,27 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                             _inflight_by_key[call_key].set()
                             _inflight_by_key.pop(call_key, None)
                         _inflight_meta_by_key.pop(call_key, None)
-                except Exception:
-                    pass
+                except Exception as e2:
+                    logger.error(f"Failed to clean up inflight tracking after error (call_key: {call_key}): {e2}", exc_info=True)
+                    # Continue - cleanup failure may cause memory leak but error response already sent
         finally:
             if acquired_session:
                 try:
                     (await _sessions.get(session_id)).sem.release()  # type: ignore
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.error(f"Failed to release session semaphore (session: {session_id}): {e}", exc_info=True)
+                    # Continue - semaphore state may be corrupted but don't block cleanup
             if prov_acquired:
                 try:
                     _provider_sems[prov_key].release()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.error(f"Failed to release provider semaphore (provider: {prov_key}): {e}", exc_info=True)
+                    # Continue - semaphore state may be corrupted but don't block cleanup
             try:
                 _global_sem.release()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Failed to release global semaphore: {e}", exc_info=True)
+                # Continue - semaphore state may be corrupted but don't block cleanup
         return
 
     if op == "rotate_token":
@@ -813,15 +946,20 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
         return
 
     if op == "health":
-        # Snapshot basic health
+        # Snapshot basic health (Mission 4: Add tool_count for divergence detection)
         try:
             sess_ids = await _sessions.list_ids()
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to list session IDs for health check: {e}")
+            # Continue with empty list - health check will show 0 sessions
             sess_ids = []
+        uptime_seconds = int(time.time() - STARTED_AT) if STARTED_AT else 0
         snapshot = {
             "t": time.time(),
+            "uptime_human": str(timedelta(seconds=uptime_seconds)),
             "sessions": len(sess_ids),
             "global_capacity": GLOBAL_MAX_INFLIGHT,
+            "tool_count": len(SERVER_TOOLS),  # Mission 4: Detect tool list divergence
         }
         await _safe_send(ws, {"op": "health_res", "ok": True, "health": snapshot})
         return
@@ -840,46 +978,56 @@ async def _serve_connection(ws: WebSocketServerProtocol) -> None:
         # Client connected but did not send hello or disconnected; close quietly
         try:
             await ws.close(code=4002, reason="hello timeout or disconnect")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to close connection after hello timeout: {e}")
+            # Continue - connection may already be closed
         return
 
 
     try:
         hello = json.loads(hello_raw)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Failed to parse hello message: {e}")
         try:
             await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "invalid_hello"})
             try:
                 await ws.close(code=4000, reason="invalid hello")
-            except Exception:
-                pass
-        except Exception:
-            pass
+            except Exception as e2:
+                logger.debug(f"Failed to close connection after invalid hello: {e2}")
+                # Continue - connection may already be closed
+        except Exception as e2:
+            logger.debug(f"Failed to send hello_ack error: {e2}")
+            # Continue - connection may already be closed
         return
 
     if hello.get("op") != "hello":
+        logger.warning(f"Client sent message without hello op: {hello.get('op')}")
         try:
             await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "missing_hello"})
             try:
                 await ws.close(code=4001, reason="missing hello")
-            except Exception:
-                pass
-        except Exception:
-            pass
+            except Exception as e:
+                logger.debug(f"Failed to close connection after missing hello: {e}")
+                # Continue - connection may already be closed
+        except Exception as e:
+            logger.debug(f"Failed to send missing_hello error: {e}")
+            # Continue - connection may already be closed
         return
 
     token = hello.get("token", "")
     current_auth_token = await _auth_token_manager.get()
     if current_auth_token and token != current_auth_token:
+        logger.warning(f"Client sent invalid auth token")
         try:
             await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "unauthorized"})
             try:
                 await ws.close(code=4003, reason="unauthorized")
-            except Exception:
-                pass
-        except Exception:
-            pass
+            except Exception as e:
+                logger.debug(f"Failed to close connection after unauthorized: {e}")
+                # Continue - connection may already be closed
+        except Exception as e:
+            logger.debug(f"Failed to send unauthorized error: {e}")
+            # Continue - connection may already be closed
         return
 
     # Always assign a fresh daemon-side session id for isolation
@@ -897,21 +1045,25 @@ async def _serve_connection(ws: WebSocketServerProtocol) -> None:
         async for raw in ws:
             try:
                 msg = json.loads(raw)
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Failed to parse JSON message from client (session: {sess.session_id}): {e}")
                 # Try to inform client; ignore if already closed
                 try:
                     await _safe_send(ws, {"op": "error", "message": "invalid_json"})
-                except Exception:
-                    pass
+                except Exception as e2:
+                    logger.debug(f"Failed to send invalid_json error: {e2}")
+                    # Continue - connection may already be closed
                 continue
 
             # Validate message structure before processing
             is_valid, error_msg = _validate_message(msg)
             if not is_valid:
+                logger.warning(f"Invalid message structure from client (session: {sess.session_id}): {error_msg}")
                 try:
                     await _safe_send(ws, {"op": "error", "message": f"invalid_message: {error_msg}"})
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to send invalid_message error: {e}")
+                    # Continue - connection may already be closed
                 continue
 
             try:
@@ -925,36 +1077,45 @@ async def _serve_connection(ws: WebSocketServerProtocol) -> None:
     finally:
         try:
             await _sessions.remove(sess.session_id)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to remove session {sess.session_id}: {e}")
+            # Continue - session cleanup failure is not critical
 
 
 async def _health_writer(stop_event: asyncio.Event) -> None:
     while not stop_event.is_set():
         try:
             sess_ids = await _sessions.list_ids()
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Failed to list session IDs for health writer: {e}")
+            # Continue with empty list - health file will show 0 sessions
             sess_ids = []
 
         # Approximate inflight via semaphore value
         try:
             inflight_global = GLOBAL_MAX_INFLIGHT - _global_sem._value  # type: ignore[attr-defined]
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Failed to get global semaphore value for health writer: {e}")
+            # Continue with None - health file will show null for inflight
             inflight_global = None
+        uptime_seconds = int(time.time() - STARTED_AT) if STARTED_AT else 0
         snapshot = {
             "t": time.time(),
             "pid": os.getpid(),
             "host": EXAI_WS_HOST,
             "port": EXAI_WS_PORT,
             "started_at": STARTED_AT,
+            "uptime_human": str(timedelta(seconds=uptime_seconds)),
             "sessions": len(sess_ids),
             "global_capacity": GLOBAL_MAX_INFLIGHT,
             "global_inflight": inflight_global,
+            "tool_count": len(SERVER_TOOLS),  # Mission 4: Detect tool list divergence
         }
         try:
-            _health_path.write_text(json.dumps(snapshot), encoding="utf-8")
-        except Exception:
-            pass
+            _health_path.write_text(json.dumps(snapshot, sort_keys=True, indent=2), encoding="utf-8")
+        except Exception as e:
+            logger.warning(f"Failed to write health file: {e}")
+            # Continue - health file write failure is not critical
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=10.0)
         except asyncio.TimeoutError:
@@ -1024,6 +1185,9 @@ async def main_async() -> None:
         raise
     finally:
         _remove_pidfile()
+        # Shutdown async logging to flush all messages
+        from src.utils.async_logging import shutdown_async_logging
+        shutdown_async_logging()
 
 
 def main() -> None:

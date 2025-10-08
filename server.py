@@ -223,67 +223,39 @@ logger = logging.getLogger(__name__)
 # Initialize MCP server
 server = Server("EX MCP Server")
 
-# Tool registry - consolidated to use ToolRegistry as single source of truth
-from tools.registry import ToolRegistry
-_registry = ToolRegistry()
-_registry.build_tools()
-TOOLS = _registry.list_tools()
+# ============================================================================
+# SINGLETON INITIALIZATION (Mission 1: Kill the singleton race)
+# ============================================================================
+# CRITICAL: Use bootstrap.singletons to ensure providers and tools are initialized
+# exactly once per process, regardless of whether server.py or ws_server.py imports first.
+#
+# This replaces the previous pattern where both entry points could independently call:
+# - configure_providers()
+# - ToolRegistry().build_tools()
+# - register_provider_specific_tools()
+#
+# Now all initialization happens through idempotent bootstrap functions that use
+# module-level flags to prevent re-execution.
 
+from src.bootstrap import ensure_tools_built, ensure_provider_tools_registered
+
+# Build tools once (idempotent - safe to call multiple times)
+TOOLS = ensure_tools_built()
+
+# NOTE: Provider-specific tools are NOT registered at import time
+# They will be registered on-demand when:
+# 1. main() is called (stdio server)
+# 2. list_tools is called (WebSocket daemon)
+# This ensures providers are configured before attempting tool registration
+
+# Legacy function kept for backward compatibility with ws_server.py imports
+# Now delegates to bootstrap.singletons for idempotent behavior
 def register_provider_specific_tools() -> None:
-    """Idempotently register provider-specific tools after providers are configured.
-    Mutates TOOLS in-place so any imported references (e.g., WS daemon) see updates.
     """
-    try:
-        from src.providers.registry import ModelProviderRegistry, ProviderType
-        import importlib
-        prov_tools: dict[str, Any] = {}
-        # Kimi extras (lenient registration: import if available)
-        # NOTE: kimi_upload_and_extract and kimi_chat_with_tools are INTERNAL ONLY
-        # They are used by the provider layer and should not be exposed to end users
-        for name, modcls in [
-            # ("kimi_upload_and_extract", ("tools.providers.kimi.kimi_upload", "KimiUploadAndExtractTool")),  # HIDDEN: Internal function only
-            ("kimi_multi_file_chat", ("tools.providers.kimi.kimi_upload", "KimiMultiFileChatTool")),
-            ("kimi_intent_analysis", ("tools.providers.kimi.kimi_intent", "KimiIntentAnalysisTool")),
-            # ("kimi_chat_with_tools", ("tools.providers.kimi.kimi_tools_chat", "KimiChatWithToolsTool")),  # HIDDEN: Internal function only
-        ]:
-            try:
-                mod = importlib.import_module(modcls[0])
-                cls = getattr(mod, modcls[1])
-                if name not in TOOLS:
-                    prov_tools[name] = cls()
-            except Exception as e:
-                try:
-                    logger.info("Provider tool import failed: %s from %s (%s)", name, modcls[0], e)
-                except Exception:
-                    pass
-        # GLM extras (lenient registration)
-        # NOTE: glm_web_search is INTERNAL ONLY - web search is auto-injected via
-        # build_websearch_provider_kwargs() when use_websearch=true in tools like chat_exai
-        for name, modcls in [
-            ("glm_upload_file", ("tools.providers.glm.glm_files", "GLMUploadFileTool")),
-            # ("glm_web_search", ("tools.providers.glm.glm_web_search", "GLMWebSearchTool")),  # HIDDEN: Internal function only
-            # Removed: glm_multi_file_chat (de-scoped until stabilized)
-            # Removed: glm_agent_* (agents de-scoped)
-        ]:
-            try:
-                mod = importlib.import_module(modcls[0])
-                cls = getattr(mod, modcls[1])
-                if name not in TOOLS:
-                    prov_tools[name] = cls()
-            except Exception as e:
-                try:
-                    logger.info("Provider tool import failed: %s from %s (%s)", name, modcls[0], e)
-                except Exception:
-                    pass
-        if prov_tools:
-            logger.info("Registering provider-specific tools: %s", sorted(prov_tools.keys()))
-            TOOLS.update(prov_tools)
-    except Exception:
-        # best-effort; never crash server on registration attempt
-        pass
-
-# Perform a first-pass registration at import (may no-op if providers not configured yet)
-register_provider_specific_tools()
+    Legacy wrapper for backward compatibility.
+    Delegates to bootstrap.singletons.ensure_provider_tools_registered().
+    """
+    ensure_provider_tools_registered(TOOLS)
 
 # Auggie tool registration
 if (AUGGIE_ACTIVE or detect_auggie_cli()) and AUGGIE_WRAPPERS_AVAILABLE:
@@ -319,17 +291,19 @@ if (AUGGIE_ACTIVE or detect_auggie_cli()) and AUGGIE_WRAPPERS_AVAILABLE:
 
 # Global state
 IS_AUTO_MODE = _env_true("EX_AUTO_MODE")
-_providers_configured = False
 
 def _ensure_providers_configured():
-    """Ensure providers are configured when server is used as a module."""
-    global _providers_configured
-    if not _providers_configured:
-        try:
-            configure_providers()
-            _providers_configured = True
-        except Exception as e:
-            logger.warning(f"Provider configuration failed: {e}")
+    """
+    Ensure providers are configured when server is used as a module.
+
+    Legacy wrapper for backward compatibility with ws_server.py imports.
+    Delegates to bootstrap.singletons.ensure_providers_configured().
+    """
+    from src.bootstrap import ensure_providers_configured
+    try:
+        ensure_providers_configured()
+    except Exception as e:
+        logger.warning(f"Provider configuration failed: {e}")
 
 # Register MCP handlers
 @server.list_tools()
@@ -475,15 +449,19 @@ async def get_prompt_handler(name: str, arguments: dict[str, Any] = None):
 
 async def main():
     """Main server entry point."""
-    # Configure providers
+    global TOOLS  # Declare global before any use
+
+    # Configure providers using bootstrap singleton (idempotent)
+    from src.bootstrap import ensure_providers_configured, ensure_provider_tools_registered
     try:
-        configure_providers()
+        ensure_providers_configured()
+        # Register provider-specific tools now that providers are configured
+        ensure_provider_tools_registered(TOOLS)
     except Exception as e:
         logger.error(f"Failed to configure providers: {e}")
         sys.exit(1)
 
     # Filter disabled tools
-    global TOOLS
     TOOLS = filter_disabled_tools(TOOLS)
     TOOLS = filter_by_provider_capabilities(TOOLS)
     # Set up stdio streams and run server

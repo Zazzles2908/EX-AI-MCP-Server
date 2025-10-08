@@ -56,9 +56,9 @@ def build_payload(
         tool_choice = kwargs.get("tool_choice")
         if tool_choice:
             payload["tool_choice"] = tool_choice
-    except Exception:
-        # be permissive
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to add tools/tool_choice to GLM payload (model: {model}): {e}")
+        # Continue - payload will be sent without tools, API may reject if tools were required
     
     # Images handling placeholder
     return payload
@@ -108,7 +108,9 @@ def generate_content(
         # Env gate: allow streaming only when GLM_STREAM_ENABLED=true
         try:
             _stream_env = os.getenv("GLM_STREAM_ENABLED", "false").strip().lower() in ("1", "true", "yes")
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Failed to parse GLM_STREAM_ENABLED env variable: {e}")
+            # Continue with streaming disabled - safer default
             _stream_env = False
         if stream and not _stream_env:
             logger.info("GLM streaming disabled via GLM_STREAM_ENABLED; falling back to non-streaming")
@@ -161,7 +163,9 @@ def generate_content(
                                 response_id = event.id
                             if created_ts is None and getattr(event, "created", None):
                                 created_ts = event.created
-                        except Exception:
+                        except Exception as e:
+                            logger.debug(f"Failed to parse GLM streaming event metadata: {e}")
+                            # Continue - skip this event, next event may have valid data
                             continue
                 except Exception as stream_err:
                     raise RuntimeError(f"GLM SDK streaming failed: {stream_err}") from stream_err
@@ -253,7 +257,8 @@ def generate_content(
                             break
                         try:
                             evt = json.loads(line)
-                        except Exception:
+                        except Exception as e:
+                            logger.debug(f"Failed to parse GLM streaming JSON line, treating as raw text: {e}")
                             # Some implementations send raw text chunks; append directly
                             content_parts.append(line)
                             continue
@@ -273,7 +278,9 @@ def generate_content(
                             if finish_reason in ("stop", "length"):
                                 # Let loop continue to consume until provider sends DONE
                                 pass
-                        except Exception:
+                        except Exception as e:
+                            logger.debug(f"Failed to parse GLM streaming choice data: {e}")
+                            # Continue - skip this chunk, next chunk may have valid data
                             continue
                 except Exception as stream_err:
                     raise RuntimeError(f"GLM HTTP streaming failed: {stream_err}") from stream_err
