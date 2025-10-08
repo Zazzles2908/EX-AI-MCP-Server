@@ -7,6 +7,12 @@ This module contains all initialization logic for the request handler including:
 - Tool registry building
 - Request ID generation
 - Shared utility functions
+
+ARCHITECTURE NOTE (v2.0.2+):
+- This module delegates to singleton registry via src/server/registry_bridge
+- NEVER instantiate ToolRegistry directly - always use get_registry()
+- registry_bridge.build() is idempotent and delegates to src/bootstrap/singletons
+- Ensures TOOLS is SERVER_TOOLS identity check always passes
 """
 
 import logging
@@ -85,6 +91,7 @@ def build_tool_registry() -> Dict[str, Any]:
     try:
         from src.server.registry_bridge import get_registry as _get_reg  # type: ignore
         _reg = _get_reg()
+        # Idempotent guard: build() delegates to singleton, safe to call multiple times
         _reg.build()
         return _reg.list_tools()
     except Exception:
