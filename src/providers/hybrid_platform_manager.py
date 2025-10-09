@@ -30,7 +30,10 @@ class HybridPlatformManager:
         # Use z.ai proxy (3x faster than bigmodel.cn according to user testing)
         self.zai_base_url = zai_base_url or os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/paas/v4")
 
-        # Placeholders for future SDK clients
+        # NOTE: SDK client placeholders - intentionally None for MVP
+        # Current implementation uses simple_ping() and health_check() without SDK clients
+        # Used by: monitoring/health_monitor_factory.py for platform health probes
+        # Future enhancement: Initialize SDK clients here if needed for advanced features
         self.moonshot_client = None
         self.zai_client = None
 

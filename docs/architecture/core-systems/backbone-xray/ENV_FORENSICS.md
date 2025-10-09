@@ -304,6 +304,65 @@ EXPERT_ANALYSIS_ENABLED=false     # Disable to save API costs
 
 ---
 
+## 5. GLM Embeddings Not Implemented
+
+### Current Status
+```python
+# src/embeddings/provider.py
+class GLMEmbeddingsProvider(EmbeddingsProvider):
+    def __init__(self, model: Optional[str] = None):
+        raise NotImplementedError("GLM embeddings not implemented yet...")
+```
+
+### What It Means
+- GLM embeddings provider exists but raises `NotImplementedError`
+- Cannot use `EMBEDDINGS_PROVIDER=glm` in environment configuration
+- System will fail if GLM embeddings are requested
+
+### Why It's Not Implemented
+
+**Reason 1: Alternative Solutions Available**
+- Kimi embeddings work well (OpenAI-compatible API)
+- External embeddings adapter provides flexibility
+- No immediate need for GLM-specific embeddings
+
+**Reason 2: API Availability**
+- ZhipuAI embeddings API may have different interface
+- Need to verify API endpoint and authentication
+- Requires testing and validation
+
+**Reason 3: User Preference**
+- User prefers pluggable embeddings setup
+- Current focus: Kimi now, external adapter later
+- GLM embeddings not prioritized
+
+### Recommended Alternatives
+
+**Option 1: Use Kimi Embeddings (Recommended)**
+```env
+EMBEDDINGS_PROVIDER=kimi
+KIMI_EMBED_MODEL=text-embedding-3-large
+```
+
+**Option 2: Use External Adapter**
+```env
+EMBEDDINGS_PROVIDER=external
+EXTERNAL_EMBEDDINGS_URL=http://your-embeddings-service/embed
+```
+
+### Future Implementation
+
+If GLM embeddings are needed:
+1. Review ZhipuAI embeddings API documentation
+2. Implement SDK client initialization in `GLMEmbeddingsProvider.__init__()`
+3. Implement `embed()` method following Kimi pattern
+4. Add tests in `tool_validation_suite/`
+5. Update documentation
+
+**Reference:** https://open.bigmodel.cn/dev/api#text_embedding
+
+---
+
 ## Related Files
 
 ### Streaming Flags
