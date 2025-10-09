@@ -48,27 +48,27 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         provider=ProviderType.GLM,
         model_name="glm-4.5",
         friendly_name="GLM-4.5",
-        context_window=128000,
+        context_window=128000,  # 128K context window (verified 2025-10-09)
         max_output_tokens=8192,
         supports_images=True,
         supports_function_calling=True,
         supports_streaming=True,
         supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="GLM 4.5 standard",
+        supports_extended_thinking=True,  # Hybrid reasoning model with thinking mode (verified 2025-10-09)
+        description="GLM 4.5 hybrid reasoning model with thinking mode and web search",
     ),
     "glm-4.5-air": ModelCapabilities(
         provider=ProviderType.GLM,
         model_name="glm-4.5-air",
         friendly_name="GLM-4.5-Air",
-        context_window=128000,
+        context_window=128000,  # 128K context window (verified 2025-10-09)
         max_output_tokens=8192,
         supports_images=True,
         supports_function_calling=True,
         supports_streaming=True,
         supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="GLM 4.5 Air - lightweight",
+        supports_extended_thinking=True,  # Hybrid reasoning model with thinking mode (verified 2025-10-09)
+        description="GLM 4.5 Air - efficient hybrid reasoning with thinking mode",
         aliases=["glm-4.5-x"],  # GLM-4.5-X is an alias for glm-4.5-air
     ),
     "glm-4.5v": ModelCapabilities(

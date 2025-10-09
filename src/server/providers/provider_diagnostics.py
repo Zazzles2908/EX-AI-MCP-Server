@@ -48,38 +48,60 @@ def log_provider_summary(valid_providers: List[str]):
 def write_provider_snapshot():
     """
     Write provider registry snapshot to JSON file for diagnostics.
-    
+
     Creates logs/provider_registry_snapshot.json with:
     - Timestamp
     - Registered providers
     - Initialized providers (with keys)
-    - Available models
+    - Available models with detailed capabilities
     """
     try:
         from src.providers.registry import ModelProviderRegistry
-        
+        from src.providers.base import ProviderType
+
         reg = ModelProviderRegistry()
-        
+
         # Registered providers reflect classes known to the registry (post-registration)
         registered = [p.name for p in reg.get_available_providers()]
-        
+
         # Initialized providers require keys and successful init
         with_keys_snapshot = [p.name for p in ModelProviderRegistry.get_available_providers_with_keys()]
-        
+
         # Available models mapping (respects restrictions)
         models_map = ModelProviderRegistry.get_available_models(respect_restrictions=True)
-        
+
+        # Build detailed model info
+        detailed_models = {}
+        for model_name, provider_type in models_map.items():
+            try:
+                caps = ModelProviderRegistry.get_capabilities(model_name)
+                detailed_models[model_name] = {
+                    "provider": provider_type.name if hasattr(provider_type, "name") else str(provider_type),
+                    "context_window": caps.context_window,
+                    "max_output_tokens": caps.max_output_tokens,
+                    "supports_function_calling": caps.supports_function_calling,
+                    "supports_images": caps.supports_images,
+                    "supports_streaming": caps.supports_streaming,
+                    "supports_extended_thinking": caps.supports_extended_thinking,
+                    "description": caps.description if hasattr(caps, "description") else "",
+                }
+            except Exception:
+                # Fallback to simple provider name if capabilities lookup fails
+                detailed_models[model_name] = {
+                    "provider": provider_type.name if hasattr(provider_type, "name") else str(provider_type),
+                }
+
         snapshot = {
             "timestamp": _now(),
             "registered_providers": registered,
             "initialized_providers": with_keys_snapshot,
-            "available_models": {k: (v.name if hasattr(v, "name") else str(v)) for k, v in models_map.items()},
+            "models": detailed_models,
         }
-        
+
         out = Path("logs") / "provider_registry_snapshot.json"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
-        
+
         logger.debug("Provider registry snapshot written to %s", out)
     except Exception as e:
         logger.debug("Provider snapshot write skipped: %s", e)
