@@ -27,21 +27,24 @@ Validate ALL model configurations against official API documentation and SDK req
 
 ### Findings
 
-#### ❌ ISSUE FOUND: kimi-k2-0711-preview Context Window
+#### ✅ CORRECTED: kimi-k2-0711-preview Configuration
 
-**Current Configuration:**
-```python
-"kimi-k2-0711-preview": ModelCapabilities(
-    context_window=131072,  # 128K = 131072 tokens ❌ WRONG
+**INITIAL ERROR:** I incorrectly stated it had 256K context
+**ACTUAL:** 128K context (131,072 tokens)
+
+**Official Source:** https://platform.moonshot.ai/docs/pricing/chat
+```
+kimi-k2-0711-preview: 131,072 tokens (128K)
+- Does NOT support vision functionality
+- Supports ToolCalls, JSON Mode, Partial Mode
+- Supports internet search functionality
 ```
 
-**Official Documentation:**
-- docs/system-reference/providers/kimi.md: "**kimi-k2-0711-preview** - Context: **256K tokens**"
-- Web search result: "kimi-k2-0711-preview model, with an expanded 256K context window"
-
-**Correction Needed:**
+**Corrected Configuration:**
 ```python
-context_window=262144,  # 256K = 262144 tokens ✅ CORRECT
+context_window=131072,  # 128K (verified 2025-10-09)
+supports_images=False,  # Does NOT support vision
+supports_function_calling=True,  # Supports ToolCalls
 ```
 
 #### ✅ VERIFIED: kimi-k2-0905-preview
@@ -209,18 +212,36 @@ response = client.chat.completions.create(
 
 ---
 
-## Issues Found
+## Issues Found & Fixed
 
-### 1. ❌ CRITICAL: kimi-k2-0711-preview Context Window
+### 1. ✅ FIXED: GLM Web Search Blocking Code
 
-**File:** `src/providers/kimi_config.py` line 33  
-**Current:** `context_window=131072` (128K)  
-**Correct:** `context_window=262144` (256K)  
-**Source:** Official documentation states 256K context
+**File:** `src/providers/capabilities.py` line 71-84
+**Issue:** Code was blocking web search for all models except glm-4-plus and glm-4.6
+**Reality:** ALL GLM models support web search (verified 2025-10-09)
 
-**Impact:** Users may hit context limits earlier than expected
+**Removed:**
+```python
+websearch_supported_models = ["glm-4-plus", "glm-4.6"]  # ❌ WRONG
+if model_name not in websearch_supported_models:
+    return WebSearchSchema(None, None)  # ❌ BLOCKING
+```
 
-**Fix Required:** Update kimi_config.py
+**Fixed:** Removed blocking code, all GLM models now support web search
+
+### 2. ✅ FIXED: GLM-4.6 Thinking Mode Support
+
+**File:** `src/providers/glm_config.py` line 31
+**Was:** `supports_extended_thinking=False`
+**Now:** `supports_extended_thinking=True`
+**Source:** https://api.z.ai/api/paas/v4 documentation shows `"thinking": {"type": "enabled"}` parameter
+
+### 3. ✅ FIXED: kimi-k2-0711-preview Vision Support
+
+**File:** `src/providers/kimi_config.py` line 39
+**Was:** `supports_images=True`
+**Now:** `supports_images=False`
+**Source:** https://platform.moonshot.ai/docs/pricing/chat states "Does not support vision functionality"
 
 ---
 

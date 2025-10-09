@@ -22,14 +22,14 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         provider=ProviderType.GLM,
         model_name="glm-4.6",
         friendly_name="GLM-4.6",
-        context_window=200000,  # 200K context window (verified 2025-10-09)
+        context_window=200000,  # 200K context window (verified 2025-10-09 from api.z.ai docs)
         max_output_tokens=8192,
         supports_images=True,
-        supports_function_calling=True,
+        supports_function_calling=True,  # Via tools parameter
         supports_streaming=True,
         supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="GLM 4.6 flagship model with 200K context window and web search support",
+        supports_extended_thinking=True,  # Via "thinking": {"type": "enabled"} parameter (verified 2025-10-09)
+        description="GLM 4.6 flagship with 200K context, web search, thinking mode",
     ),
     "glm-4.5-flash": ModelCapabilities(
         provider=ProviderType.GLM,
