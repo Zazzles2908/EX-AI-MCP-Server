@@ -1,4 +1,7 @@
-"""GLM model configuration and validation."""
+"""GLM model configuration and validation.
+
+Last Updated: 2025-10-09
+"""
 
 import logging
 from typing import Optional
@@ -9,36 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 # GLM Model Configurations
-# NOTE: Only glm-4-plus and glm-4.6 support NATIVE web search via tools parameter
-# Other models can still use web search via direct /web_search API endpoint
-# See tools/providers/glm/glm_web_search.py for direct API implementation
+# Last Updated: 2025-10-09
+# NOTE: ALL GLM models support web search functionality
+# See tools/providers/glm/glm_web_search.py for web search implementation
 SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
-    "glm-4-plus": ModelCapabilities(
-        provider=ProviderType.GLM,
-        model_name="glm-4-plus",
-        friendly_name="GLM-4-Plus",
-        context_window=128000,
-        max_output_tokens=8192,
-        supports_images=True,
-        supports_function_calling=True,
-        supports_streaming=True,
-        supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="GLM 4 Plus - supports websearch",
-    ),
-    "glm-4-flash": ModelCapabilities(
-        provider=ProviderType.GLM,
-        model_name="glm-4-flash",
-        friendly_name="GLM-4-Flash",
-        context_window=128000,
-        max_output_tokens=8192,
-        supports_images=True,
-        supports_function_calling=True,
-        supports_streaming=True,
-        supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="GLM 4 Flash - fast and cheap",
-    ),
     "glm-4.6": ModelCapabilities(
         provider=ProviderType.GLM,
         model_name="glm-4.6",
@@ -50,7 +27,7 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="GLM 4.6 flagship model with 200K context window - supports websearch",
+        description="GLM 4.6 flagship model with 200K context window and web search support",
     ),
     "glm-4.5-flash": ModelCapabilities(
         provider=ProviderType.GLM,
@@ -63,7 +40,7 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="GLM 4.5 Flash - fast, does not support native web search tool calling (use direct API instead)",
+        description="GLM 4.5 Flash - fast and cost-effective with web search support",
     ),
     "glm-4.5": ModelCapabilities(
         provider=ProviderType.GLM,
