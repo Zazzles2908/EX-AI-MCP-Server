@@ -14,7 +14,13 @@ import os
 import sys
 
 # Add project root to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)
+
+# Load .env file
+from dotenv import load_dotenv
+env_path = os.path.join(project_root, '.env')
+load_dotenv(env_path)
 
 from src.embeddings.provider import GLMEmbeddingsProvider
 

@@ -94,9 +94,14 @@ class GLMEmbeddingsProvider(EmbeddingsProvider):
     Documentation: https://open.bigmodel.cn/dev/api#text_embedding (docs site, not API endpoint)
     """
     def __init__(self, model: Optional[str] = None) -> None:
-        self.model = model or os.getenv("GLM_EMBED_MODEL", "embedding-3")
+        self.model = model or os.getenv("GLM_EMBED_MODEL", "embedding-2")
         self.api_key = os.getenv("GLM_API_KEY")
-        self.base_url = os.getenv("GLM_BASE_URL", "https://api.z.ai/api/paas/v4")
+
+        # CRITICAL: Use official bigmodel.cn endpoint for embeddings
+        # The z.ai proxy (https://api.z.ai/api/paas/v4) does NOT support embeddings endpoint
+        # Embeddings must use: https://open.bigmodel.cn/api/paas/v4
+        # Chat can use z.ai proxy (3x faster), but embeddings cannot
+        self.base_url = os.getenv("GLM_EMBEDDINGS_BASE_URL", "https://open.bigmodel.cn/api/paas/v4")
 
         if not self.api_key:
             raise RuntimeError(
@@ -105,6 +110,7 @@ class GLMEmbeddingsProvider(EmbeddingsProvider):
             )
 
         logger.info(f"Initializing GLMEmbeddingsProvider with model: {self.model}")
+        logger.info(f"Using embeddings endpoint: {self.base_url}")
 
         # Initialize ZhipuAI SDK client
         try:
@@ -113,7 +119,7 @@ class GLMEmbeddingsProvider(EmbeddingsProvider):
                 api_key=self.api_key,
                 base_url=self.base_url
             )
-            logger.info(f"GLM embeddings client initialized successfully (base_url: {self.base_url})")
+            logger.info(f"GLM embeddings client initialized successfully")
         except ImportError as e:
             logger.error(f"Failed to import zhipuai SDK: {e}")
             raise RuntimeError(
