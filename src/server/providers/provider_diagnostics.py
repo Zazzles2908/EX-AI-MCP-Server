@@ -2,12 +2,13 @@
 Provider Diagnostics Module
 
 Handles logging, diagnostics, and snapshot generation for provider configuration.
+
+Last Updated: 2025-10-09 (Phase 6 - Added Melbourne timezone timestamps)
 """
 
 import json
 import logging
 from pathlib import Path
-from time import time as _now
 from typing import List
 
 logger = logging.getLogger(__name__)
@@ -91,8 +92,12 @@ def write_provider_snapshot():
                     "provider": provider_type.name if hasattr(provider_type, "name") else str(provider_type),
                 }
 
+        # Import timezone utilities for Melbourne timestamps
+        from src.utils.timezone import json_timestamp
+
+        # Create snapshot with Melbourne timezone timestamps
         snapshot = {
-            "timestamp": _now(),
+            **json_timestamp(),  # Adds timestamp, timestamp_iso, timestamp_human, timezone
             "registered_providers": registered,
             "initialized_providers": with_keys_snapshot,
             "models": detailed_models,
