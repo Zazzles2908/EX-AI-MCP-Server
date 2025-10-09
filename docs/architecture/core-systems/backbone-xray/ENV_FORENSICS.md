@@ -306,6 +306,8 @@ EXPERT_ANALYSIS_ENABLED=false     # Disable to save API costs
 
 ## 5. GLM Embeddings Not Implemented
 
+**Last Updated:** 2025-10-09
+
 ### Current Status
 ```python
 # src/embeddings/provider.py
@@ -326,15 +328,15 @@ class GLMEmbeddingsProvider(EmbeddingsProvider):
 - External embeddings adapter provides flexibility
 - No immediate need for GLM-specific embeddings
 
-**Reason 2: API Availability**
-- ZhipuAI embeddings API may have different interface
-- Need to verify API endpoint and authentication
-- Requires testing and validation
-
-**Reason 3: User Preference**
+**Reason 2: User Preference**
 - User prefers pluggable embeddings setup
 - Current focus: Kimi now, external adapter later
 - GLM embeddings not prioritized
+
+**Reason 3: Can Be Implemented When Needed**
+- ZhipuAI SDK (zhipuai>=2.1.0) DOES support embeddings
+- Same SDK already used successfully for chat completions
+- Implementation would follow same pattern as GLMModelProvider
 
 ### Recommended Alternatives
 
@@ -353,13 +355,15 @@ EXTERNAL_EMBEDDINGS_URL=http://your-embeddings-service/embed
 ### Future Implementation
 
 If GLM embeddings are needed:
-1. Review ZhipuAI embeddings API documentation
+1. Use ZhipuAI SDK (already installed and working)
 2. Implement SDK client initialization in `GLMEmbeddingsProvider.__init__()`
-3. Implement `embed()` method following Kimi pattern
-4. Add tests in `tool_validation_suite/`
-5. Update documentation
+3. Use same base_url as chat: `https://api.z.ai/api/paas/v4`
+4. Implement `embed()` method following Kimi pattern
+5. Add tests in `tool_validation_suite/`
 
-**Reference:** https://open.bigmodel.cn/dev/api#text_embedding
+**API Endpoint:** `https://api.z.ai/api/paas/v4` (same as chat completions)
+**Documentation:** https://open.bigmodel.cn/dev/api#text_embedding
+**Note:** Documentation site URL is different from API endpoint URL
 
 ---
 
