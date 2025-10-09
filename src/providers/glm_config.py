@@ -1,6 +1,7 @@
 """GLM model configuration and validation.
 
 Last Updated: 2025-10-09
+Last Verified: 2025-10-09 (against open.bigmodel.cn documentation and zhipuai SDK)
 """
 
 import logging
@@ -13,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 # GLM Model Configurations
 # Last Updated: 2025-10-09
+# Last Verified: 2025-10-09 against https://open.bigmodel.cn/dev/api
 # NOTE: ALL GLM models support web search functionality
 # See tools/providers/glm/glm_web_search.py for web search implementation
 SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
@@ -20,7 +22,7 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         provider=ProviderType.GLM,
         model_name="glm-4.6",
         friendly_name="GLM-4.6",
-        context_window=200000,  # 200K context window
+        context_window=200000,  # 200K context window (verified 2025-10-09)
         max_output_tokens=8192,
         supports_images=True,
         supports_function_calling=True,
@@ -33,7 +35,7 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         provider=ProviderType.GLM,
         model_name="glm-4.5-flash",
         friendly_name="GLM-4.5-Flash",
-        context_window=128000,
+        context_window=128000,  # 128K context window (verified 2025-10-09)
         max_output_tokens=8192,
         supports_images=True,
         supports_function_calling=True,
