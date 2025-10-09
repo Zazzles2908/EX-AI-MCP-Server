@@ -95,7 +95,8 @@ class GLMEmbeddingsProvider(EmbeddingsProvider):
     The SDK is already installed and working for chat completions.
     Use same base_url: https://api.z.ai/api/paas/v4
 
-    Documentation: https://open.bigmodel.cn/dev/api#text_embedding
+    API Endpoint: https://api.z.ai/api/paas/v4
+    Documentation: https://open.bigmodel.cn/dev/api#text_embedding (docs site, not API endpoint)
     """
     def __init__(self, model: Optional[str] = None) -> None:
         # Note: Default model should be GLM embedding model, not OpenAI model

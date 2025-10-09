@@ -1,7 +1,7 @@
 # Setup Guide - Tool Validation Suite
 
 **Time:** 10 minutes
-**Last Updated:** 2025-10-05
+**Last Updated:** 2025-10-09
 
 ---
 
@@ -26,7 +26,7 @@ KIMI_BASE_URL=https://api.moonshot.ai/v1
 
 # GLM API
 GLM_API_KEY=your_glm_key_here
-GLM_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+GLM_BASE_URL=https://api.z.ai/api/paas/v4
 ```
 
 ### 2. Start WebSocket Daemon

@@ -340,7 +340,8 @@ KIMI_EMBED_MODEL=text-embedding-3-large  # Kimi embeddings model
 # Required for Kimi models (kimi-k2, moonshot-v1-*)
 KIMI_API_KEY=sk-your-key-here
 
-# ZhipuAI API key - Get from https://open.bigmodel.cn
+# ZhipuAI API key - Get from https://open.bigmodel.cn (documentation site)
+# API Endpoint: https://api.z.ai/api/paas/v4 (international, 3x faster)
 # Required for GLM models (glm-4.6, glm-4.5-flash, etc.)
 GLM_API_KEY=your-key-here
 ```
