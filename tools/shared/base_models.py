@@ -19,11 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 # Shared field descriptions to avoid duplication
+# Last Updated: 2025-10-09
 COMMON_FIELD_DESCRIPTIONS = {
     "model": (
         "Model to use. Use 'auto' to let the server select the best model. "
-        "Supported examples (if providers are configured): GLM: 'glm-4','glm-4-air','glm-4-flash','glm-4-plus','glm-4.5','glm-4.5-air','glm-4.5-flash','glm-4.5-x','glm-4.5v'; "
-        "Kimi/Moonshot: 'kimi','kimi-k2','kimi-k2-turbo','kimi-k2-thinking','moonshot-128k','moonshot-32k','moonshot-8k','moonshot-v1-128k','moonshot-v1-32k','moonshot-v1-8k'."
+        "Supported examples (if providers are configured): GLM: 'glm-4.6','glm-4.5','glm-4.5-flash','glm-4.5-air','glm-4.5-x','glm-4.5v'; "
+        "Kimi/Moonshot: 'kimi-k2-0905-preview','kimi-k2-0711-preview','kimi-k2-turbo-preview','kimi-thinking-preview','moonshot-v1-128k','moonshot-v1-32k','moonshot-v1-8k','kimi-latest'."
     ),
     "temperature": (
         "Temperature for response (0.0 to 1.0). Lower values are more focused and deterministic, "
