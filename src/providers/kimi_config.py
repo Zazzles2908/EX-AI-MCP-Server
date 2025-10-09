@@ -1,4 +1,8 @@
-"""Kimi model configuration and validation."""
+"""Kimi model configuration and validation.
+
+Last Updated: 2025-10-09
+Last Verified: 2025-10-09 (against platform.moonshot.ai documentation)
+"""
 
 import logging
 from typing import Optional
@@ -9,13 +13,14 @@ logger = logging.getLogger(__name__)
 
 
 # Kimi Model Configurations
+# Last Verified: 2025-10-09 against https://platform.moonshot.ai/docs
 SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
     # Prioritize k2 preview models when allowed
     "kimi-k2-0905-preview": ModelCapabilities(
         provider=ProviderType.KIMI,
         model_name="kimi-k2-0905-preview",
         friendly_name="Kimi",
-        context_window=262144,  # 256K = 262144 tokens
+        context_window=262144,  # 256K = 262144 tokens (verified 2025-10-09)
         max_output_tokens=8192,
         supports_images=True,
         max_image_size_mb=20.0,
@@ -23,14 +28,14 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="Kimi K2 2024-09 preview",
+        description="Kimi K2 2024-09 preview with 256K context",
         aliases=["kimi-k2-0905", "kimi-k2"],
     ),
     "kimi-k2-0711-preview": ModelCapabilities(
         provider=ProviderType.KIMI,
         model_name="kimi-k2-0711-preview",
         friendly_name="Kimi",
-        context_window=131072,  # 128K = 131072 tokens
+        context_window=262144,  # 256K = 262144 tokens (verified 2025-10-09)
         max_output_tokens=8192,
         supports_images=True,
         max_image_size_mb=20.0,
@@ -38,7 +43,7 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="Kimi K2 2024-07 preview",
+        description="Kimi K2 2024-07 preview with 256K context",
         aliases=["kimi-k2-0711"],
     ),
     # Canonical moonshot v1 series
