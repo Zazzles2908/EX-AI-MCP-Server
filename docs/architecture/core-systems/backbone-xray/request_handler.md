@@ -38,7 +38,6 @@
 
 2. ROUTING (request_handler_routing.py)
    ├─> normalize_tool_name() - Handle aliases (deepthink → thinkdeep)
-   ├─> check_client_filters() - Apply allow/deny lists
    └─> handle_unknown_tool() - Suggest similar tools
 
 3. MODEL RESOLUTION (request_handler_model_resolution.py)
