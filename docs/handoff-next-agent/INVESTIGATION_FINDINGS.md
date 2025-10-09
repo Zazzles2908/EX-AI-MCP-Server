@@ -43,41 +43,44 @@ python backbone_tracer.py {component}
 
 ## Critical Findings
 
-### Finding 1: Placeholder SDK Clients
+### Finding 1: Placeholder SDK Clients ✅ RESOLVED
 
-**File:** `src/providers/hybrid_platform_manager.py`  
-**Lines:** 33-35  
-**Severity:** ⚠️ MEDIUM
+**Last Updated:** 2025-10-09
+**File:** `src/providers/hybrid_platform_manager.py`
+**Lines:** 33-38
+**Severity:** ✅ LOW (Not an issue - working as intended)
 
 **Code:**
 ```python
-# Placeholders for future SDK clients
+# NOTE: SDK client placeholders - intentionally None for MVP
+# Current implementation uses simple_ping() and health_check() without SDK clients
+# Used by: monitoring/health_monitor_factory.py for platform health probes
+# Future enhancement: Initialize SDK clients here if needed for advanced features
 self.moonshot_client = None
 self.zai_client = None
 ```
 
+**Resolution:**
+- ✅ **File IS actively used** by `monitoring/health_monitor_factory.py`
+- ✅ **SDK clients intentionally None** - not needed for health monitoring
+- ✅ **Actual SDK usage** happens in GLMModelProvider and KimiModelProvider
+- ✅ **Documented with clarifying comments** (2025-10-09)
+
 **Context:**
-- HybridPlatformManager class exists
-- Supposed to manage Moonshot and Z.ai SDK clients
-- Currently just stores None values
-- No actual SDK initialization
+- HybridPlatformManager is for **health monitoring only** (simple ping checks)
+- Doesn't need full SDK clients - just URL availability checks via `simple_ping()`
+- The actual providers (GLMModelProvider, KimiModelProvider) DO use SDKs successfully
+- This is intentional separation of concerns
 
 **Impact Analysis:**
-- File appears to be unused in current system
-- No imports found in backbone tracer analysis
-- May be legacy code or future enhancement
+- ✅ No impact - working as designed
+- ✅ SDKs ARE being used in the right places (provider classes)
+- ✅ Health monitoring works correctly without SDK overhead
 
-**Validation Needed:**
-1. Search entire codebase for `HybridPlatformManager` usage
-2. Check if file is imported anywhere
-3. Review git history to understand intent
-
-**Proposed Actions:**
-- **Option A:** Remove file if truly unused (move to archive)
-- **Option B:** Implement SDK client initialization if needed
-- **Option C:** Document as future enhancement and leave as-is
-
-**Effort Estimate:** 2-4 hours (investigation + decision + implementation)
+**Action Taken:**
+- Added clarifying comments to code (2025-10-09)
+- Updated documentation to reflect correct understanding
+- No further action needed
 
 ---
 
@@ -131,44 +134,50 @@ def check_client_filters(name: str) -> Optional[str]:
 
 ---
 
-### Finding 3: GLM Embeddings Not Implemented
+### Finding 3: GLM Embeddings Not Implemented ✅ DOCUMENTED
 
-**File:** `src/embeddings/provider.py`  
-**Lines:** 83-87  
-**Severity:** ⚠️ LOW
+**Last Updated:** 2025-10-09
+**File:** `src/embeddings/provider.py`
+**Lines:** 83-107
+**Severity:** ✅ LOW (Not an issue - documented limitation)
 
 **Code:**
 ```python
 class GLMEmbeddingsProvider(EmbeddingsProvider):
+    """GLM Embeddings Provider - Not Yet Implemented
+
+    Last Updated: 2025-10-09
+
+    Future enhancement: Can be implemented using ZhipuAI SDK (zhipuai>=2.1.0).
+    Use same base_url: https://api.z.ai/api/paas/v4
+    """
     def __init__(self, model: Optional[str] = None) -> None:
-        self.model = model or os.getenv("GLM_EMBED_MODEL", "text-embedding-ada-002")
-        # Placeholder: implement using ZhipuAI embeddings API if/when available.
-        raise NotImplementedError("GLM embeddings not implemented yet; prefer external adapter or Kimi short-term")
+        self.model = model or os.getenv("GLM_EMBED_MODEL", "embedding-2")
+        raise NotImplementedError("GLM embeddings not implemented yet...")
 ```
 
+**Resolution:**
+- ✅ **Documented with correct information** (2025-10-09)
+- ✅ **Added to .env configuration** with EMBEDDINGS_PROVIDER, KIMI_EMBED_MODEL
+- ✅ **Clarified implementation path** - can use existing ZhipuAI SDK
+- ✅ **Fixed incorrect default model** (was OpenAI model, now GLM model)
+
 **Context:**
-- GLMEmbeddingsProvider class exists
-- Raises NotImplementedError on initialization
-- Comment says "if/when available"
-- System defaults to Kimi or external embeddings
+- GLM embeddings CAN be implemented - ZhipuAI SDK (zhipuai>=2.1.0) supports it
+- Same SDK already used successfully for chat completions
+- User preference: "Kimi now, external adapter later" - no immediate need
+- Kimi embeddings working well as alternative
 
 **Impact Analysis:**
-- LOW impact - system works without it
-- Users can use Kimi or external embeddings
-- Class exists but is unusable
-- May confuse users who try to use it
+- ✅ No impact - system works with Kimi or external embeddings
+- ✅ Clear path forward if GLM embeddings needed in future
+- ✅ Proper environment configuration now in place
 
-**Validation Needed:**
-1. Check if GLM API supports embeddings
-2. Verify if anyone is trying to use this
-3. Check ENV_FORENSICS.md mentions this limitation
-
-**Proposed Actions:**
-- **Option A:** Implement GLM embeddings if API supports it
-- **Option B:** Remove class entirely
-- **Option C:** Keep as placeholder but document limitation clearly
-
-**Effort Estimate:** 30 minutes (documentation) OR 4-8 hours (implementation)
+**Action Taken:**
+- Updated code documentation with correct information (2025-10-09)
+- Added embeddings configuration to .env and .env.example
+- Fixed API endpoint documentation (z.ai vs bigmodel.cn)
+- No implementation needed unless user requests it
 
 ---
 

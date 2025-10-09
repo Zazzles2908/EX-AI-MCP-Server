@@ -83,17 +83,24 @@ class KimiEmbeddingsProvider(EmbeddingsProvider):
 class GLMEmbeddingsProvider(EmbeddingsProvider):
     """GLM Embeddings Provider - Not Yet Implemented
 
+    Last Updated: 2025-10-09
+
     LIMITATION: GLM embeddings are not currently supported in this implementation.
 
     Recommended alternatives:
     1. Use Kimi embeddings (set EMBEDDINGS_PROVIDER=kimi)
     2. Use external embeddings adapter (set EMBEDDINGS_PROVIDER=external)
 
-    Future enhancement: Implement using ZhipuAI embeddings API when available.
-    See: https://open.bigmodel.cn/dev/api#text_embedding
+    Future enhancement: Can be implemented using ZhipuAI SDK (zhipuai>=2.1.0).
+    The SDK is already installed and working for chat completions.
+    Use same base_url: https://api.z.ai/api/paas/v4
+
+    Documentation: https://open.bigmodel.cn/dev/api#text_embedding
     """
     def __init__(self, model: Optional[str] = None) -> None:
-        self.model = model or os.getenv("GLM_EMBED_MODEL", "text-embedding-ada-002")
+        # Note: Default model should be GLM embedding model, not OpenAI model
+        # TODO: Update to "embedding-2" or "embedding-3" when implementing
+        self.model = model or os.getenv("GLM_EMBED_MODEL", "embedding-2")
         raise NotImplementedError(
             "GLM embeddings not implemented yet. "
             "Use EMBEDDINGS_PROVIDER=kimi or EMBEDDINGS_PROVIDER=external instead."
