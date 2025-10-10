@@ -72,14 +72,29 @@ Phase 1.5: Cleanup & Consolidation (1-2 weeks)
 ### Goal
 Document the SINGLE RESPONSIBILITY for each module before refactoring
 
+**CRITICAL:** This is NOT designing a new system - this is **analyzing the existing system** to refactor it safely!
+
 ### Tasks
 
-**1.1.1: Document Large Files (3-4 days)**
+**1.1.1: Dependency Analysis (2-3 days) - NEW! CRITICAL!**
+- For each file >10KB, FIRST analyze dependencies:
+  - **UPSTREAM:** What calls this file? (subclasses, importers, callers)
+  - **DOWNSTREAM:** What does this file call? (parents, imports, dependencies)
+  - **PUBLIC INTERFACE:** What methods/constants CANNOT change?
+  - **INTEGRATION POINTS:** How does this fit in the system architecture?
+- Document complete dependency graph
+- Identify all methods called by external code
+- Identify all constants referenced externally
+- Identify inheritance chain that must be preserved
+
+**1.1.2: Document Large Files (3-4 days)**
 - For each file >10KB, document:
   - Current responsibilities (what does it do?)
   - Single responsibility (what SHOULD it do?)
   - Misplaced responsibilities (what doesn't belong?)
   - Proposed module breakdown (how to split it?)
+  - **PUBLIC INTERFACE that must be preserved** (NEW!)
+  - **Facade pattern approach** (NEW!)
 
 **Files to document:**
 - tools/simple/base.py (55.3KB)
@@ -90,26 +105,39 @@ Document the SINGLE RESPONSIBILITY for each module before refactoring
 - tools/shared/base_tool_model_management.py (24.4KB)
 - [All files >10KB from Task 0.1]
 
-**1.1.2: Create Design Intent Templates (1-2 days)**
+**1.1.3: Create Design Intent Templates (1-2 days)**
 - Create template for module documentation
-- Include: Purpose, Responsibilities, Dependencies, Used By, Examples
+- Include: **Dependency Analysis** (NEW!), Purpose, Responsibilities, Dependencies, Used By, Examples
+- Include: **Facade Pattern Approach** (NEW!)
 - Apply to systemprompts/ as reference (already perfect!)
 
-**1.1.3: Document Proposed Module Structure (2-3 days)**
-- For each large file, propose modular breakdown
+**1.1.4: Document Proposed Module Structure (2-3 days)**
+- For each large file, propose modular breakdown **using Facade Pattern**
 - Create folder structure diagrams
 - Document interfaces between modules
+- **Document which public methods must be preserved** (NEW!)
+- **Show facade delegation examples** (NEW!)
 - Estimate effort and risk
 
-**1.1.4: Get User Approval (1 day)**
+**1.1.5: Create Integration Tests (2-3 days) - NEW! CRITICAL!**
+- For each file being refactored, create integration tests
+- Test all subclasses/callers BEFORE refactoring (baseline)
+- Document expected behavior
+- These tests will verify no breaking changes after refactoring
+
+**1.1.6: Get User Approval (1 day)**
 - Present design intent documents
-- Review proposed module structures
+- Present dependency analysis
+- Review proposed module structures with Facade pattern
+- Review integration test plans
 - Adjust based on feedback
 - Get approval to proceed
 
 **Deliverables:**
-- Design intent document for each large file
+- **Dependency analysis for each large file** (NEW!)
+- Design intent document for each large file (with Facade pattern)
 - Proposed module structure diagrams
+- **Integration tests for all subclasses/callers** (NEW!)
 - Effort and risk estimates
 - User approval
 

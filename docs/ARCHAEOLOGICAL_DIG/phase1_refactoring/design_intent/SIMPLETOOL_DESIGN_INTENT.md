@@ -1,17 +1,85 @@
 # SIMPLETOOL DESIGN INTENT
-**Date:** 2025-10-10 1:45 PM AEDT  
-**File:** `tools/simple/base.py`  
-**Status:** DRAFT - Phase 1.1
+**Date:** 2025-10-10 2:15 PM AEDT (REVISED after dependency analysis)
+**File:** `tools/simple/base.py`
+**Status:** REVISED - Phase 1.1 (Facade Pattern Approach)
+
+---
+
+## ⚠️ CRITICAL UPDATE
+
+**User Feedback:** "It appeared you were building a template and filling it in afterwards... it looked like you were just building brand new."
+
+**Response:** CORRECT! I was designing a "new system" instead of **refactoring the existing system**.
+
+**Revised Approach:** Use **Facade Pattern** to refactor internal implementation while preserving 100% backward compatibility.
+
+**See:** `SIMPLETOOL_DEPENDENCY_ANALYSIS.md` for complete dependency graph.
 
 ---
 
 ## FILE INFORMATION
 
-**File Path:** `tools/simple/base.py`  
-**Current Size:** `55.3KB`  
-**Lines of Code:** `1220 lines`  
-**Used By:** `4 simple tools (activity, challenge, chat, recommend)`  
+**File Path:** `tools/simple/base.py`
+**Current Size:** `55.3KB`
+**Lines of Code:** `1220 lines`
+**Used By:** `4 simple tools (activity, challenge, chat, recommend)`
 **Impact Radius:** `MEDIUM (4 tools, but foundational for simple tool pattern)`
+
+---
+
+## DEPENDENCY ANALYSIS (CRITICAL!)
+
+### UPSTREAM: What Inherits FROM SimpleTool?
+
+**Direct Subclasses (4 tools):**
+- ActivityTool (tools/activity.py)
+- ChallengeTool (tools/challenge.py)
+- ChatTool (tools/chat.py) ← **HEAVILY uses SimpleTool methods!**
+- RecommendTool (tools/capabilities/recommend.py)
+
+**What They Call (from ChatTool analysis):**
+- `prepare_chat_style_prompt(request)` ← **CRITICAL!**
+- `build_standard_prompt(...)` ← **CRITICAL!**
+- `get_chat_style_websearch_guidance()` ← **CRITICAL!**
+- All `get_request_*()` methods (13 methods) ← **CRITICAL!**
+- `get_validated_temperature()` ← **CRITICAL!**
+
+**Key Finding:** Subclasses **DEPEND ON** many SimpleTool methods - cannot remove them!
+
+### DOWNSTREAM: What Does SimpleTool INHERIT FROM?
+
+**Inheritance Chain:**
+```
+SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixin, BaseTool)
+└── BaseTool(BaseToolCore, FileHandlingMixin, ModelManagementMixin, ResponseFormattingMixin)
+```
+
+**What SimpleTool USES:**
+- File processing (from BaseTool)
+- Model calling (from BaseTool)
+- Web search (from WebSearchMixin)
+- Streaming (from StreamingMixin)
+- Conversation continuation (from ContinuationMixin)
+
+### PUBLIC INTERFACE: What CANNOT Change?
+
+**Methods Called by Subclasses (MUST PRESERVE):**
+- `prepare_chat_style_prompt(request, system_prompt=None)` ← ChatTool calls this
+- `build_standard_prompt(...)` ← Multiple tools call this
+- `handle_prompt_file_with_fallback(request)` ← File handling
+- All `get_request_*()` methods (13 methods) ← All tools use these
+- `get_validated_temperature(request, model_context)` ← Temperature handling
+- `get_input_schema()` ← Schema generation
+- `get_tool_fields()` ← Abstract method (subclasses implement)
+- `get_required_fields()` ← Abstract method (subclasses implement)
+- `format_response()` ← Hook method (subclasses override)
+
+**Class Constants (MUST PRESERVE):**
+- `FILES_FIELD` ← Referenced by subclasses
+- `IMAGES_FIELD` ← Referenced by subclasses
+
+**Inheritance Chain (MUST PRESERVE):**
+- `SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixin, BaseTool)` ← Cannot change!
 
 ---
 
@@ -188,9 +256,55 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
 
 ---
 
+## REFACTORING APPROACH: FACADE PATTERN
+
+**CRITICAL:** This is NOT building a new system - this is **refactoring the existing system**!
+
+**Approach:** SimpleTool becomes a **FACADE**
+- Keeps ALL public methods (same signatures)
+- Delegates to internal modules for implementation
+- Maintains 100% backward compatibility
+- Subclasses see NO changes
+
+**Why Facade Pattern?**
+- ✅ Public interface unchanged (ChatTool, ActivityTool, etc. work without modification)
+- ✅ Internal code is modular (easy to maintain)
+- ✅ Easy to test modules independently
+- ✅ Zero breaking changes
+- ✅ Can refactor incrementally (one module at a time)
+
+**Example:**
+```python
+# BEFORE (current - monolithic):
+class SimpleTool:
+    def build_standard_prompt(self, system_prompt, user_content, request, file_context_title="CONTEXT FILES"):
+        # 50 lines of implementation
+        client_info = get_cached_client_info()
+        if client_info:
+            full_prompt += f"\n\n## CLIENT CONTEXT\n{format_client_info(client_info)}"
+        # ... more code ...
+        return full_prompt
+
+# AFTER (refactored - facade):
+class SimpleTool:
+    def build_standard_prompt(self, system_prompt, user_content, request, file_context_title="CONTEXT FILES"):
+        # Same signature, delegate to module
+        from tools.simple.prompt.builder import PromptBuilder
+        return PromptBuilder.build_standard(system_prompt, user_content, request, file_context_title)
+```
+
+**ChatTool sees NO difference:**
+```python
+# ChatTool code - UNCHANGED!
+def prepare_prompt(self, request):
+    base_prompt = self.build_standard_prompt(...)  # ✅ Still works exactly the same!
+```
+
+---
+
 ## PROPOSED REFACTORING
 
-### Target State: Modular Structure
+### Target State: Modular Structure with Facade
 
 **Proposed folder structure:**
 ```
