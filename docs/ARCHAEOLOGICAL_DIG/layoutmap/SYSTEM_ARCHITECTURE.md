@@ -273,51 +273,256 @@ tools/
 
 ## INVESTIGATION TASKS
 
-### Phase 1: Determine Active vs Orphaned (IN PROGRESS)
+### Phase 0: Architectural Mapping ✅ COMPLETE
+
+**Completed Tasks:**
+- [x] Task 0.1: Layout Map - Complete System Inventory
+  - [x] 22 top-level directories mapped
+  - [x] 433 Python files inventoried
+  - [x] Large files identified (34 files >10KB)
+  - [x] Folder purposes documented
+
+- [x] Task 0.2: Shared Infrastructure Identification
+  - [x] 3 base classes identified (BaseTool, SimpleTool, WorkflowTool)
+  - [x] 13 mixins identified
+  - [x] 37 utils files classified
+  - [x] Provider separation understood
+
+- [x] Task 0.3: Dependency Mapping
+  - [x] 4-tier architecture documented
+  - [x] Import chains traced
+  - [x] No circular dependencies found
+  - [x] Impact radius mapped
+
+- [x] Task 0.4: Duplicate Detection
+  - [x] All duplicates investigated
+  - [x] No true duplicates found (different purposes or orphaned)
+  - [x] Recommendations documented
+
+- [x] Task 0.5: Architecture Pattern Recognition
+  - [x] Layered + Mixin Composition pattern identified
+  - [x] 85% match with design intent
+  - [x] Gaps documented
+
+- [x] Task 0.6: Modular Refactoring Strategy
+  - [x] Top-Down Design (Option C) created
+  - [x] 5-phase plan (7-12 weeks)
+  - [x] User approval obtained
+
+**Documentation Created:**
+- ✅ layoutmap/COMPLETE_SYSTEM_INVENTORY.md
+- ✅ layoutmap/SYSTEM_ARCHITECTURE.md
+- ✅ shared_infrastructure/SHARED_COMPONENTS_INVENTORY.md
+- ✅ shared_infrastructure/DEPENDENCY_MAP.md
+- ✅ shared_infrastructure/DUPLICATE_FUNCTIONALITY.md
+- ✅ shared_infrastructure/ARCHITECTURE_PATTERN_ANALYSIS.md
+- ✅ MODULAR_REFACTORING_STRATEGY.md
+- ✅ OPTION_D_PRINCIPLED_REFACTORING.md
+
+---
+
+### Phase 1: Discovery & Classification ✅ COMPLETE
 
 **For Each Category:**
-- [ ] Search for imports in codebase
-- [ ] Check .env configuration
-- [ ] Read implementation files
-- [ ] Classify: ACTIVE / ORPHANED / DUPLICATE
-- [ ] Document findings
+- [x] Search for imports in codebase
+- [x] Check .env configuration
+- [x] Read implementation files
+- [x] Classify: ACTIVE / ORPHANED / PLANNED
+- [x] Document findings
+- [x] Execute cleanup strategy
 
-**Categories:**
-- [x] Message Bus (type error fixed, design documented)
-- [ ] Monitoring (9 files)
-- [ ] Security (2 files)
-- [ ] Streaming (1 file + tools/streaming/)
-- [ ] System Prompts (15 files)
-- [ ] Timezone (1 file)
-- [ ] Model Routing (4-5 files)
-- [ ] Utilities (30+ files)
-- [ ] Tools Structure (40+ files)
-- [ ] Src Duplicates (multiple folders)
+**Categories Investigated:**
+- [x] System Prompts (15 files) - ✅ ACTIVE - Fully integrated
+- [x] Timezone (1 file) - ✅ ACTIVE - In use
+- [x] Model Routing (4-5 files) - ✅ ACTIVE - Working as designed
+- [x] Utilities (37 files) - ✅ ACTIVE - Reorganized into 6 folders
+- [x] Monitoring (9 files) - ⚠️ PLANNED - Archived (0 imports)
+- [x] Security/RBAC (2 files) - ⚠️ PLANNED - Archived (0 imports)
+- [x] Streaming (2 locations) - ⚠️ MIXED - tools/streaming/ archived (empty)
+- [x] Tools Structure (40+ files) - ✅ ACTIVE - Different purposes confirmed
+- [x] Src Duplicates (multiple folders) - ⚠️ MIXED - Orphaned deleted, active kept
+- [x] Message Bus - ✅ ACTIVE - Type error fixed, design documented
 
-### Phase 2: Map Connections
+**Cleanup Actions Completed:**
+- [x] Phase 1.A: Deleted 4 orphaned directories (src/conf/, src/config/, src/server/conversation/, tools/streaming/)
+- [x] Phase 1.B: Archived 3 planned systems (monitoring/, security/, streaming/)
+- [x] Phase 1.C: Reorganized utils/ into 6 folders (37 files)
+- [x] Fixed circular imports (utils.model.context, utils.model.restrictions)
+- [x] Archived instrumentation.py (0 imports, depends on archived monitoring/)
+- [x] All changes committed and pushed
 
-**For Active Components:**
-- [ ] Trace import chains
-- [ ] Map data flow
-- [ ] Identify entry points
-- [ ] Document dependencies
+**Documentation Created:**
+- ✅ prompts/SYSTEMPROMPTS_BYPASS_INVESTIGATION.md
+- ✅ timezone/TIMEZONE_DETECTION_STRATEGY.md
+- ✅ routing/MODEL_ROUTING_REGISTRY_ANALYSIS.md
+- ✅ utilities/UTILS_FOLDER_CHAOS_AUDIT.md
+- ✅ monitoring/MONITORING_INFRASTRUCTURE_ANALYSIS.md
+- ✅ security/SECURITY_RBAC_IMPLEMENTATION.md
+- ✅ streaming/STREAMING_ADAPTER_ARCHITECTURE.md
+- ✅ tools/TOOLS_FOLDER_STRUCTURE_ANALYSIS.md
+- ✅ src_structure/SRC_FOLDER_DUPLICATION_ANALYSIS.md
+- ✅ CONSOLIDATION_STRATEGY.md
+- ✅ MASTER_CHECKLIST_PHASE1.md
+- ✅ MASTER_CHECKLIST_PHASE1_CLEANUP.md
+- ✅ AUDIT_TRAIL_PHASE1.md
 
-### Phase 3: Identify Duplicates
+---
 
-**For Duplicate Folders:**
-- [ ] Compare contents
-- [ ] Determine which is active
-- [ ] Identify best implementation
-- [ ] Mark for consolidation
+### Phase 2: Map Connections ⏳ NEXT
 
-### Phase 4: Recommend Actions
+**Goal:** Map HOW active components connect and communicate
 
-**For Each Component:**
-- **FIX:** Broken but needed
-- **CONNECT:** Exists but not integrated
-- **REMOVE:** Dead/orphaned code
-- **CONSOLIDATE:** Merge duplicates
-- **REORGANIZE:** Good code, wrong location
+**Investigation Tasks:**
+- [ ] Task 2.1: Entry Point Analysis (30 min)
+  - [ ] Map scripts/run_ws_shim.py execution flow
+  - [ ] Map src/daemon/ws_server.py execution flow
+  - [ ] Map src/server/handlers/request_handler.py execution flow
+  - [ ] Create ENTRY_POINTS_FLOW_MAP.md
+
+- [ ] Task 2.2: Tool Execution Flow Tracing (45 min)
+  - [ ] Trace tool registry and discovery
+  - [ ] Trace SimpleTool execution path
+  - [ ] Trace WorkflowTool execution path
+  - [ ] Create TOOL_EXECUTION_FLOW.md
+
+- [ ] Task 2.3: Provider Integration Mapping (30 min)
+  - [ ] Trace provider registry and selection
+  - [ ] Trace Kimi provider execution
+  - [ ] Trace GLM provider execution
+  - [ ] Create PROVIDER_INTEGRATION_MAP.md
+
+- [ ] Task 2.4: Utils Dependency Tracing (60 min)
+  - [ ] Map utils/file/ imports
+  - [ ] Map utils/conversation/ imports
+  - [ ] Map utils/model/ imports
+  - [ ] Map high-traffic utils (progress.py, observability.py)
+  - [ ] Create UTILS_DEPENDENCY_MAP.md
+
+- [ ] Task 2.5: SimpleTool Connection Analysis (45 min)
+  - [ ] Map upstream dependencies (tools using SimpleTool)
+  - [ ] Map downstream dependencies (SimpleTool imports)
+  - [ ] Identify critical public interface (CANNOT CHANGE)
+  - [ ] Create SIMPLETOOL_CONNECTION_MAP.md
+
+- [ ] Task 2.6: WorkflowTool Connection Analysis (45 min)
+  - [ ] Map upstream dependencies (12 workflow tools)
+  - [ ] Map downstream dependencies (mixins, utils)
+  - [ ] Map ExpertAnalysisMixin integration
+  - [ ] Create WORKFLOWTOOL_CONNECTION_MAP.md
+
+- [ ] Task 2.7: Data Flow Mapping (60 min)
+  - [ ] Trace complete request lifecycle
+  - [ ] Map data transformation points
+  - [ ] Identify validation points
+  - [ ] Create DATA_FLOW_MAP.md
+
+- [ ] Task 2.8: Critical Path Identification (30 min)
+  - [ ] Identify top 5 critical execution paths
+  - [ ] Identify bottlenecks
+  - [ ] Create CRITICAL_PATHS.md
+
+- [ ] Task 2.9: Integration Pattern Documentation (30 min)
+  - [ ] Document mixin composition pattern
+  - [ ] Document facade pattern usage
+  - [ ] Document registry pattern usage
+  - [ ] Create INTEGRATION_PATTERNS.md
+
+- [ ] Task 2.10: Create Phase 2 Summary & Call Graph (60 min)
+  - [ ] Synthesize all Phase 2 findings
+  - [ ] Create visual call graph (Mermaid)
+  - [ ] Document key insights for Phase 3
+  - [ ] Create PHASE2_COMPREHENSIVE_SUMMARY.md
+
+**Estimated Time:** ~7 hours
+
+**Documentation to Create:**
+- ⏳ ENTRY_POINTS_FLOW_MAP.md
+- ⏳ TOOL_EXECUTION_FLOW.md
+- ⏳ PROVIDER_INTEGRATION_MAP.md
+- ⏳ UTILS_DEPENDENCY_MAP.md
+- ⏳ SIMPLETOOL_CONNECTION_MAP.md
+- ⏳ WORKFLOWTOOL_CONNECTION_MAP.md
+- ⏳ DATA_FLOW_MAP.md
+- ⏳ CRITICAL_PATHS.md
+- ⏳ INTEGRATION_PATTERNS.md
+- ⏳ PHASE2_COMPREHENSIVE_SUMMARY.md
+
+**See:** `MASTER_CHECKLIST_PHASE2.md` for detailed task breakdown
+
+---
+
+### Phase 3: SimpleTool Refactoring (Top-Down Design) ⏳ FUTURE
+
+**Goal:** Refactor SimpleTool using Top-Down Design (Option C - Hybrid)
+
+**Approach:** Facade Pattern + Top-Down Design
+- SimpleTool becomes thin orchestrator
+- Delegates to conceptual modules
+- Maintains 100% backward compatibility
+- Organizes by domain language (definition, intake, preparation, execution, delivery)
+
+**Refactoring Plan:**
+- [ ] Phase 3.1: Document Design Intent (1-2 weeks)
+  - [ ] Document SimpleTool's single responsibility
+  - [ ] Identify misplaced responsibilities
+  - [ ] Create design intent documents
+  - [ ] Get user approval
+
+- [ ] Phase 3.2: Create Foundation (1 week)
+  - [ ] Create folder structure (5 folders)
+  - [ ] Create __init__.py files
+  - [ ] Set up backward compatibility
+
+- [ ] Phase 3.3: Implement Top-Down Design (2-3 weeks)
+  - [ ] Create definition/ module (schema, contract)
+  - [ ] Create intake/ module (request processing)
+  - [ ] Create preparation/ module (prompt building)
+  - [ ] Create execution/ module (model calling)
+  - [ ] Create delivery/ module (response formatting)
+
+- [ ] Phase 3.4: Update Dependencies (1 week)
+  - [ ] Update 4 simple tools
+  - [ ] Update tests
+  - [ ] Verify backward compatibility
+
+- [ ] Phase 3.5: Testing & Validation (1 week)
+  - [ ] Run all tests
+  - [ ] Verify all 4 tools work
+  - [ ] Performance testing
+  - [ ] User acceptance testing
+
+**Estimated Time:** 7-12 weeks
+
+**See:** `phase1_refactoring/design_intent/SIMPLETOOL_DESIGN_INTENT_TOP_DOWN.md`
+
+---
+
+### Phase 4: WorkflowTool Refactoring ⏳ FUTURE
+
+**Goal:** Refactor WorkflowTool and ExpertAnalysisMixin
+
+**Approach:** Similar to SimpleTool refactoring
+- Split ExpertAnalysisMixin (34.1KB) into focused modules
+- Split OrchestrationMixin into focused modules
+- Each module has ONE clear purpose
+
+**Estimated Time:** 2-3 weeks
+
+---
+
+### Phase 5: Final Cleanup & Documentation ⏳ FUTURE
+
+**Goal:** Final polish and comprehensive documentation
+
+**Tasks:**
+- [ ] Update all documentation
+- [ ] Create architecture diagrams
+- [ ] Write developer guide
+- [ ] Create onboarding documentation
+
+**Estimated Time:** 1-2 weeks
+
+---
 
 ---
 
@@ -502,34 +707,66 @@ src/
 9. ✅ **Security/RBAC** - Role-based access control (2 files)
 10. ✅ **Streaming Adapter** - Streaming response handling
 
-### Critical Issues 🚨
+### Issues Resolved ✅
 
-**1. MASSIVE DUPLICATION**
-- conf/ vs config/
-- conversation/ (2 locations)
-- providers/ (2 locations)
-- utils/ (3 locations!)
-- workflow/ vs workflows/
-- streaming/ (2 locations)
+**Phase 1 Cleanup Completed:**
+1. ✅ **Orphaned Directories Deleted**
+   - src/conf/ (1 file, 0 imports) - DELETED
+   - src/config/ (only __pycache__) - DELETED
+   - src/server/conversation/ (empty) - DELETED
+   - tools/streaming/ (empty) - DELETED
 
-**2. DISCONNECTED SYSTEMS**
-- systemprompts/ may be bypassed
-- timezone.py may not be imported
-- async_logging.py may not be used
-- monitoring/ may not be active
-- security/ may not be active
-- streaming/ may not be active
+2. ✅ **Planned Infrastructure Archived**
+   - monitoring/ (9 files, 0 imports) - ARCHIVED
+   - security/ (2 files, 0 imports) - ARCHIVED
+   - streaming/ (1 file, 0 imports) - ARCHIVED
+   - instrumentation.py (0 imports) - ARCHIVED
 
-**3. CHAOTIC ORGANIZATION**
-- utils/ - 30+ scripts, no folders
-- tools/ - 13 subfolders, confusing names
-- src/providers/ - 20+ files, flat structure
+3. ✅ **Utils Reorganized**
+   - 37 files reorganized into 6 folders
+   - utils/file/ (9 files)
+   - utils/conversation/ (4 files)
+   - utils/model/ (4 files)
+   - utils/config/ (3 files)
+   - utils/progress_utils/ (1 file)
+   - utils/infrastructure/ (7 files)
+   - High-traffic files kept at root (progress.py, observability.py, etc.)
 
-**4. UNCLEAR ARCHITECTURE**
-- Layered vs feature-based?
-- src/ vs src/server/ separation unclear
-- Multiple refactoring attempts visible
-- Incomplete migrations
+4. ✅ **Circular Imports Fixed**
+   - utils.model.context - imports moved inside methods
+   - utils.model.restrictions - used __future__ annotations
+
+5. ✅ **All Systems Validated**
+   - systemprompts/ - ✅ ACTIVE (14 imports, fully integrated)
+   - timezone.py - ✅ ACTIVE (2 imports, in use)
+   - model routing - ✅ ACTIVE (working as designed)
+   - async_logging.py - ✅ ACTIVE (used by logging system)
+
+### Remaining Work 🔄
+
+**Phase 2: Map Connections** (⏳ NEXT - ~7 hours)
+- Trace execution flow from entry points
+- Map tool execution paths
+- Document provider integration
+- Map utils dependencies
+- Analyze SimpleTool/WorkflowTool connections
+- Create call graphs and flow diagrams
+
+**Phase 3: SimpleTool Refactoring** (⏳ FUTURE - 7-12 weeks)
+- Implement Top-Down Design (Option C)
+- 7 files across 5 conceptual folders
+- Facade Pattern for backward compatibility
+- Complete testing and validation
+
+**Phase 4: WorkflowTool Refactoring** (⏳ FUTURE - 2-3 weeks)
+- Refactor ExpertAnalysisMixin (34.1KB)
+- Split into focused modules
+- Maintain backward compatibility
+
+**Phase 5: Final Cleanup** (⏳ FUTURE - 1-2 weeks)
+- Update documentation
+- Create architecture diagrams
+- Write developer guide
 
 ### Root Cause Analysis
 
@@ -677,64 +914,99 @@ src/
 
 ---
 
-## NEXT STEPS
+## PROGRESS SUMMARY
 
-### Immediate (Today)
-1. ✅ Create investigation structure (DONE)
-2. ✅ Document all categories (DONE)
-3. ✅ Fix message_bus type error (DONE)
-4. ⏳ Begin import analysis for each category
+### Phase 0: Architectural Mapping ✅ COMPLETE (2025-10-10)
+1. ✅ Complete system inventory (433 Python files)
+2. ✅ Shared infrastructure identification (3 base classes, 13 mixins)
+3. ✅ Dependency mapping (4-tier architecture, no circular dependencies)
+4. ✅ Duplicate detection (no true duplicates found)
+5. ✅ Architecture pattern recognition (Layered + Mixin Composition)
+6. ✅ Modular refactoring strategy (Top-Down Design approved)
 
-### Phase 1: Import Analysis (Next)
-1. Search for imports of each component
-2. Check .env configuration
-3. Classify: ACTIVE / ORPHANED / DUPLICATE
-4. Update investigation markdowns
+### Phase 1: Discovery & Classification ✅ COMPLETE (2025-10-10)
+1. ✅ All 9 categories investigated and classified
+2. ✅ Orphaned directories deleted (4 directories)
+3. ✅ Planned infrastructure archived (3 systems)
+4. ✅ Utils folder reorganized (37 files → 6 folders)
+5. ✅ Circular imports fixed (2 files)
+6. ✅ All changes committed and pushed
+7. ✅ Consolidation strategy executed
 
-### Phase 2: Detailed Investigation
-1. Read active components
-2. Trace connections
-3. Map data flow
-4. Document findings
+### Phase 2: Map Connections ⏳ NEXT (~7 hours)
+1. ⏳ Entry point analysis
+2. ⏳ Tool execution flow tracing
+3. ⏳ Provider integration mapping
+4. ⏳ Utils dependency tracing
+5. ⏳ SimpleTool connection analysis (critical for refactoring)
+6. ⏳ WorkflowTool connection analysis
+7. ⏳ Data flow mapping
+8. ⏳ Critical path identification
+9. ⏳ Integration pattern documentation
+10. ⏳ Comprehensive summary with call graphs
 
-### Phase 3: Recommendations
-1. Consolidation strategy
-2. Reorganization plan
-3. Connection strategy
-4. Cleanup checklist
+### Phase 3: SimpleTool Refactoring ⏳ FUTURE (7-12 weeks)
+- Top-Down Design (Option C - Hybrid)
+- 7 files across 5 conceptual folders
+- Facade Pattern for backward compatibility
+- Complete testing and validation
 
-### Phase 4: Implementation
-1. Break into phases
-2. Prioritize by impact
-3. Create detailed tasks
-4. Get user approval
-5. Execute systematically
+### Phase 4: WorkflowTool Refactoring ⏳ FUTURE (2-3 weeks)
+- Refactor ExpertAnalysisMixin (34.1KB)
+- Split into focused modules
+- Maintain backward compatibility
+
+### Phase 5: Final Cleanup ⏳ FUTURE (1-2 weeks)
+- Update documentation
+- Create architecture diagrams
+- Write developer guide
 
 ---
 
 ## SUCCESS CRITERIA
 
-### Investigation Complete When:
-- [ ] All components classified (active/orphaned/duplicate)
-- [ ] All duplicates identified
-- [ ] All disconnections mapped
-- [ ] All findings documented
-- [ ] Recommendations created
+### Phase 0 ✅ COMPLETE
+- [x] All components mapped
+- [x] Dependencies understood
+- [x] Architecture pattern identified
+- [x] Refactoring strategy approved
 
-### Ready for Implementation When:
-- [ ] Clear consolidation strategy
-- [ ] Phased reorganization plan
-- [ ] Connection strategy defined
-- [ ] Cleanup checklist created
+### Phase 1 ✅ COMPLETE
+- [x] All components classified (ACTIVE/ORPHANED/PLANNED)
+- [x] All orphaned code removed
+- [x] All planned infrastructure archived
+- [x] Utils folder reorganized
+- [x] All changes committed and pushed
+- [x] User approval obtained
+
+### Phase 2 ⏳ NEXT
+- [ ] All entry points mapped
+- [ ] Tool execution flow documented
+- [ ] Provider integration mapped
+- [ ] Utils dependencies traced
+- [ ] SimpleTool connections mapped (critical for refactoring)
+- [ ] WorkflowTool connections mapped
+- [ ] Data flow documented
+- [ ] Critical paths identified
+- [ ] Integration patterns documented
+- [ ] Comprehensive summary created with visual diagrams
+- [ ] User approval obtained
+
+### Phase 3 ⏳ FUTURE
+- [ ] SimpleTool refactored using Top-Down Design
+- [ ] All 4 simple tools working
+- [ ] Tests passing
 - [ ] User approval obtained
 
 ---
 
-**STATUS: COMPREHENSIVE INVESTIGATION IN PROGRESS**
+**STATUS: PHASE 1 COMPLETE - READY FOR PHASE 2**
 
 **This is the master architecture document that ties all investigations together.**
 
 **All investigation documents are in:** `docs/ARCHAEOLOGICAL_DIG/`
 
-**Next Action:** Begin import analysis for each category to determine active vs orphaned status.
+**Next Action:** Begin Phase 2 - Map Connections (see `MASTER_CHECKLIST_PHASE2.md`)
+
+**Last Updated:** 2025-10-10 (Phase 1 complete, Phase 2 checklist created)
 
