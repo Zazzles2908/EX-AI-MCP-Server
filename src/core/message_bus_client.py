@@ -24,7 +24,8 @@ try:
     SUPABASE_AVAILABLE = True
 except ImportError:
     SUPABASE_AVAILABLE = False
-    Client = None
+    # Use Any for type hints when supabase is not available
+    from typing import Any as Client  # type: ignore
 
 from src.core.config import get_config
 
