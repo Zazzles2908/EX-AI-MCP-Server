@@ -312,7 +312,7 @@ class CodeReviewTool(WorkflowTool):
         """Embed system prompt in expert analysis for proper context."""
         return True
 
-    def get_expert_thinking_mode(self, request=None) -> str:
+    def get_expert_thinking_mode(self) -> str:
         """Use high thinking mode for thorough code review analysis."""
         return "high"
 
