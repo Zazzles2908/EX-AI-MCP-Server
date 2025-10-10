@@ -1,20 +1,42 @@
-# MODULAR REFACTORING STRATEGY (OPTION D)
-**Date:** 2025-10-10 1:35 PM AEDT  
-**Task:** Phase 0, Task 0.6 - Modular Refactoring Strategy  
-**Status:** ✅ COMPLETE  
-**Approval:** ⏳ PENDING USER APPROVAL
+# MODULAR REFACTORING STRATEGY (OPTION D - TOP-DOWN DESIGN)
+**Date:** 2025-10-10 4:00 PM AEDT (UPDATED with Top-Down Design)
+**Task:** Phase 0, Task 0.6 - Modular Refactoring Strategy
+**Status:** ✅ COMPLETE - Updated with Top-Down Design (Option C - Hybrid)
+**Approval:** ✅ APPROVED BY USER
+
+---
+
+## CRITICAL UPDATE: TOP-DOWN DESIGN
+
+**User Feedback:**
+> "Should be more like Top-Down Design (Stepwise Refinement or Decomposition) so it like splits into categories."
+
+> "I would consider the top being even to the point of the entrance point, which is the daemon and mcp server point right?"
+
+**Response:** Pivot from bottom-up to **Top-Down Design (Option C - Hybrid)**:
+- ✅ Organize by **conceptual responsibility** (what concept it represents)
+- ✅ NOT by implementation details (what code does)
+- ✅ Use **domain language**: definition, intake, preparation, execution, delivery
+- ✅ TRUE top-down starts from **entry points**: User → IDE → MCP Server → Daemon → Tools
+- ✅ Result: **7 files (5 folders)** instead of 9 files (6 folders) - SMARTER!
 
 ---
 
 ## EXECUTIVE SUMMARY
 
-**Strategy:** Principled Refactoring based on Single Responsibility Principle  
-**Timeline:** 7-12 weeks for Phase 1 execution  
-**Approach:** Incremental, tested, documented refactoring  
-**Goal:** Long-term stability through modular architecture
+**Strategy:** Principled Refactoring based on:
+1. **Single Responsibility Principle (SRP)**
+2. **Top-Down Design (Stepwise Refinement)**
+3. **Conceptual Categories** (Domain Language)
+
+**Timeline:** 7-12 weeks for Phase 1 execution
+**Approach:** Incremental, tested, documented refactoring with Top-Down organization
+**Goal:** Long-term stability through modular architecture with clear conceptual boundaries
 
 **User's Vision:**
 > "Each script should have ONE clear purpose. Easy to find which script to modify. Modular design with proper separation of concerns."
+
+> "Should be more like Top-Down Design (Stepwise Refinement or Decomposition) so it like splits into categories."
 
 **This strategy delivers that vision!** ✅
 
@@ -22,26 +44,40 @@
 
 ## GUIDING PRINCIPLES
 
-### 1. Single Responsibility Principle (SRP)
+### 1. Top-Down Design (NEW!)
+- Start from entry points: User → IDE → MCP Server → Daemon → Tools
+- Organize by **conceptual responsibility** (what it represents)
+- NOT by implementation details (what code does)
+- Use **domain language** that matches the problem domain
+
+### 2. Single Responsibility Principle (SRP)
 - Each module does ONE thing
 - Each module does it well
 - Easy to find, easy to modify
 
-### 2. Separation of Concerns
-- Prompt building ≠ Model calling ≠ Response formatting
-- Each concern gets its own module
+### 3. Conceptual Categories (NEW!)
+- **definition/** - "What does this tool promise?" (Tool contract)
+- **intake/** - "What did the user ask for?" (Request processing)
+- **preparation/** - "How do we ask the AI?" (Prompt building)
+- **execution/** - "How do we call the AI?" (Model invocation)
+- **delivery/** - "How do we deliver the result?" (Response formatting)
 
-### 3. Modular Design
-- Small, focused modules (50-200 lines ideal)
+### 4. Separation of Concerns
+- Tool definition ≠ Request intake ≠ Prompt preparation ≠ Model execution ≠ Response delivery
+- Each concern gets its own module with clear conceptual boundary
+
+### 5. Modular Design
+- Small, focused modules (150-250 lines ideal)
 - Clear interfaces between modules
 - Easy to test independently
+- Facade Pattern: Keep public interface, refactor internally
 
-### 4. Industry-Standard Organization
-- Folder structure reflects responsibilities
-- Consistent naming conventions
-- Clear hierarchy
+### 6. Industry-Standard Organization
+- Folder structure reflects **conceptual responsibilities**
+- Domain language naming conventions
+- Clear hierarchy matching execution flow
 
-### 5. Incremental Refactoring
+### 7. Incremental Refactoring
 - One module at a time
 - Test after each change
 - Commit frequently
@@ -238,9 +274,9 @@ utils/
 ## PHASE 1.3: REFACTOR SIMPLETOOL FRAMEWORK (2-3 weeks)
 
 ### Goal
-Split SimpleTool (55.3KB) into focused modules
+Split SimpleTool (55.3KB) into focused modules using **Top-Down Design (Option C - Hybrid)**
 
-### Current State
+### Current State (Bottom-Up - WRONG!)
 ```
 tools/simple/
 ├── base.py (55.3KB - DOES EVERYTHING!)
@@ -259,59 +295,91 @@ tools/simple/
 └── mixins/ (already modular - keep as-is)
 ```
 
-### Target State
+### Target State (Top-Down - Option C - CORRECT!)
 ```
 tools/simple/
-├── base.py (orchestration only - ~100 lines)
+├── base.py (ORCHESTRATOR - ~150-200 lines)
 │   class SimpleTool:
-│       def execute(self, request):
-│           prompt = self.prompt_builder.build(request)
-│           response = self.model_caller.call(prompt)
-│           return self.response_formatter.format(response)
+│       """Facade that delegates to conceptual modules"""
 │
-├── prompt/
+│       # DEFINITION: Tool Contract
+│       def get_input_schema(self):
+│           from tools.simple.definition.schema import SchemaBuilder
+│           return SchemaBuilder.build_schema(self)
+│
+│       # INTAKE: Request Processing
+│       def get_request_prompt(self, request):
+│           from tools.simple.intake.accessor import RequestAccessor
+│           return RequestAccessor.get_prompt(request)
+│
+│       # PREPARATION: Prompt Building
+│       def build_standard_prompt(self, ...):
+│           from tools.simple.preparation.prompt import PromptBuilder
+│           return PromptBuilder.build_standard(...)
+│
+│       # EXECUTION: Model Calling
+│       def execute(self, arguments):
+│           from tools.simple.execution.caller import ModelCaller
+│           return ModelCaller.execute(self, arguments)
+│
+│       # DELIVERY: Response Formatting
+│       def format_response(self, response, request, model_info=None):
+│           from tools.simple.delivery.formatter import ResponseFormatter
+│           return ResponseFormatter.format(response, request, model_info)
+│
+├── definition/          ← "What does this tool promise?"
 │   ├── __init__.py
-│   ├── builder.py (~50-100 lines)
-│   │   SINGLE RESPONSIBILITY: Build prompts
-│   │   - Takes request data
-│   │   - Constructs prompt string
-│   │   - Adds system prompt
-│   │   - Returns complete prompt
+│   └── schema.py (~150-200 lines)
+│       CONCEPTUAL RESPONSIBILITY: Tool Contract
+│       - Define input/output schema
+│       - Tool metadata
+│       - Field definitions
+│       Methods: get_input_schema, get_tool_fields, get_required_fields, etc.
+│
+├── intake/              ← "What did the user ask for?"
+│   ├── __init__.py
+│   ├── accessor.py (~200-250 lines)
+│   │   CONCEPTUAL RESPONSIBILITY: Request Field Access
+│   │   - Extract request fields
+│   │   - Transform request data
+│   │   Methods: get_request_prompt, get_request_files, get_request_*, etc.
 │   │
-│   └── validator.py (~50 lines)
-│       SINGLE RESPONSIBILITY: Validate prompts
+│   └── validator.py (~150-200 lines)
+│       CONCEPTUAL RESPONSIBILITY: Request Validation
+│       - Validate file paths
+│       - Validate temperature
+│       Methods: _validate_file_paths, get_validated_temperature
 │
-├── model/
+├── preparation/         ← "How do we ask the AI?"
 │   ├── __init__.py
-│   ├── caller.py (~50-100 lines)
-│   │   SINGLE RESPONSIBILITY: Call AI models
-│   │   - Takes prompt
-│   │   - Calls provider
-│   │   - Returns raw response
+│   ├── prompt.py (~200-250 lines)
+│   │   CONCEPTUAL RESPONSIBILITY: Prompt Building
+│   │   - Build standard prompts
+│   │   - Build chat-style prompts
+│   │   - Size validation
+│   │   Methods: build_standard_prompt, prepare_chat_style_prompt, etc.
 │   │
-│   └── selector.py (~50 lines)
-│       SINGLE RESPONSIBILITY: Select model
+│   └── files.py (~80-100 lines)
+│       CONCEPTUAL RESPONSIBILITY: Prompt File Handling
+│       - Handle prompt.txt files
+│       Methods: handle_prompt_file_with_fallback
 │
-├── response/
+├── execution/           ← "How do we call the AI?"
 │   ├── __init__.py
-│   ├── formatter.py (~50-100 lines)
-│   │   SINGLE RESPONSIBILITY: Format responses
-│   │   - Takes raw response
-│   │   - Formats for MCP
-│   │   - Returns formatted response
-│   │
-│   └── validator.py (~50 lines)
-│       SINGLE RESPONSIBILITY: Validate responses
+│   └── caller.py (~200-250 lines)
+│       CONCEPTUAL RESPONSIBILITY: Model Invocation
+│       - Execute tool logic
+│       - Call AI model
+│       Methods: execute, _call_with_model
 │
-├── execution/
-│   ├── __init__.py
-│   └── executor.py (~100 lines)
-│       SINGLE RESPONSIBILITY: Execute tool logic
-│
-├── schema/
-│   ├── __init__.py
-│   └── builder.py (~100 lines)
-│       SINGLE RESPONSIBILITY: Build JSON schemas
+└── delivery/            ← "How do we deliver the result?"
+    ├── __init__.py
+    └── formatter.py (~150-200 lines)
+        CONCEPTUAL RESPONSIBILITY: Response Formatting
+        - Parse responses
+        - Format responses
+        - Track processed files
+        Methods: _parse_response, format_response, get_actually_processed_files
 │
 └── mixins/ (existing - keep as-is)
     ├── continuation_mixin.py

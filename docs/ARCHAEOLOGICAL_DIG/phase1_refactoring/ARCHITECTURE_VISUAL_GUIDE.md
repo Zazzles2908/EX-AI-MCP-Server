@@ -1,6 +1,6 @@
-# ARCHITECTURE VISUAL GUIDE
-**Date:** 2025-10-10 2:45 PM AEDT  
-**Purpose:** Visual diagrams to understand the complete system architecture  
+# ARCHITECTURE VISUAL GUIDE (TOP-DOWN DESIGN)
+**Date:** 2025-10-10 4:15 PM AEDT (UPDATED with Top-Down Design)
+**Purpose:** Visual diagrams to understand the complete system architecture
 **Status:** CRITICAL - Use this to maintain context!
 
 ---
@@ -10,12 +10,80 @@
 **User Feedback:**
 > "This is getting quite big, which if I can barely handle it, then I can't imagine you have all this context information stored right now in you."
 
+> "Should be more like Top-Down Design (Stepwise Refinement or Decomposition) so it like splits into categories."
+
+> "I would consider the top being even to the point of the entrance point, which is the daemon and mcp server point right?"
+
 **Response:** You're RIGHT! We need visual diagrams to:
-- ✅ See the big picture
+- ✅ See the big picture (TRUE top-down from entry points)
 - ✅ Understand dependencies at a glance
 - ✅ Make informed refactoring decisions
 - ✅ Maintain context across conversations
 - ✅ Avoid getting lost in details
+- ✅ Organize by conceptual categories (not implementation details)
+
+---
+
+## DIAGRAM 0: TRUE TOP-DOWN FLOW (Entry Points to Providers)
+
+**User Feedback:** "I would consider the top being even to the point of the entrance point, which is the daemon and mcp server point right?"
+
+**Response:** YES! This diagram shows the TRUE top-down flow starting from the user.
+
+```mermaid
+graph TD
+    U[USER] -->|Types request| IDE[Augment IDE<br/>VSCode]
+    IDE -->|stdio protocol| MCP[MCP Server<br/>mcp_server.py]
+    MCP -->|WebSocket| WS[WebSocket Daemon<br/>ws_daemon.py<br/>Port 8079]
+    WS -->|Tool dispatch| TR[Tool Registry<br/>SERVER_TOOLS dict]
+
+    TR -->|Route to framework| TF{Tool Framework?}
+
+    TF -->|Simple tools| ST[SimpleTool Framework<br/>4 tools]
+    TF -->|Workflow tools| WT[WorkflowTool Framework<br/>12 tools]
+
+    ST --> STFLOW[SimpleTool Flow<br/>definition → intake →<br/>preparation → execution → delivery]
+    WT --> WTFLOW[WorkflowTool Flow<br/>definition → intake →<br/>orchestration → delivery]
+
+    STFLOW --> BASE[Base Infrastructure<br/>BaseTool + Mixins + Utils]
+    WTFLOW --> BASE
+
+    BASE --> PROV{AI Provider?}
+
+    PROV -->|Kimi| KIMI[Kimi API<br/>Moonshot]
+    PROV -->|GLM| GLM[GLM API<br/>ZhipuAI]
+
+    KIMI -->|Response| BASE
+    GLM -->|Response| BASE
+
+    BASE -->|Format| STFLOW
+    BASE -->|Format| WTFLOW
+
+    STFLOW -->|Return| TR
+    WTFLOW -->|Return| TR
+
+    TR -->|Response| WS
+    WS -->|Response| MCP
+    MCP -->|Response| IDE
+    IDE -->|Display| U
+
+    classDef entry fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    classDef framework fill:#fff9c4,stroke:#f57f17,stroke-width:3px
+    classDef infra fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef provider fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+
+    class U,IDE,MCP,WS,TR entry
+    class ST,WT,STFLOW,WTFLOW framework
+    class BASE infra
+    class KIMI,GLM provider
+```
+
+**Key Insights:**
+- **TRUE top-down** starts from USER, not from tools!
+- Entry points: User → IDE → MCP Server → Daemon → Tool Registry
+- Tool frameworks organize by conceptual flow (definition → intake → preparation → execution → delivery)
+- Base infrastructure supports all tools
+- AI providers are at the bottom of the stack
 
 ---
 
@@ -160,9 +228,9 @@ graph TB
 
 ---
 
-## DIAGRAM 2: SIMPLETOOL ECOSYSTEM (DETAILED)
+## DIAGRAM 2: SIMPLETOOL ECOSYSTEM (TOP-DOWN DESIGN - OPTION C)
 
-This shows what we're refactoring RIGHT NOW.
+This shows what we're refactoring RIGHT NOW using **Top-Down Design (Option C - Hybrid)**.
 
 ```mermaid
 graph TB
@@ -188,16 +256,22 @@ graph TB
             PI9[Hook: format_response]
         end
         
-        subgraph "PROPOSED MODULES (FACADE PATTERN)"
-            M1[prompt/builder.py<br/>~180-250 lines]
-            M2[prompt/file_handler.py<br/>~80-100 lines]
-            M3[request/accessor.py<br/>~120-150 lines]
-            M4[validation/file_validator.py<br/>~100-120 lines]
-            M5[validation/size_validator.py<br/>~50-80 lines]
-            M6[validation/temperature_validator.py<br/>~40-60 lines]
-            M7[response/parser.py<br/>~100-120 lines]
-            M8[schema/generator.py<br/>~60-80 lines]
-            M9[execution/executor.py<br/>~200-250 lines]
+        subgraph "TOP-DOWN MODULES (OPTION C - CONCEPTUAL CATEGORIES)"
+            M1[definition/schema.py<br/>~150-200 lines<br/>Tool Contract]
+            M2[intake/accessor.py<br/>~200-250 lines<br/>Request Access]
+            M3[intake/validator.py<br/>~150-200 lines<br/>Request Validation]
+            M4[preparation/prompt.py<br/>~200-250 lines<br/>Prompt Building]
+            M5[preparation/files.py<br/>~80-100 lines<br/>File Handling]
+            M6[execution/caller.py<br/>~200-250 lines<br/>Model Calling]
+            M7[delivery/formatter.py<br/>~150-200 lines<br/>Response Formatting]
+        end
+
+        subgraph "CONCEPTUAL FLOW"
+            F1[1. DEFINITION<br/>What does tool promise?]
+            F2[2. INTAKE<br/>What did user ask?]
+            F3[3. PREPARATION<br/>How do we ask AI?]
+            F4[4. EXECUTION<br/>How do we call AI?]
+            F5[5. DELIVERY<br/>How do we deliver result?]
         end
     end
     
@@ -222,11 +296,21 @@ graph TB
     CT -.calls.-> PI5
     
     %% SimpleTool delegates to modules (FACADE)
-    PI1 -.delegates.-> M1
-    PI2 -.delegates.-> M1
-    PI3 -.delegates.-> M2
-    PI4 -.delegates.-> M3
-    PI5 -.delegates.-> M6
+    PI1 -.delegates.-> M4
+    PI2 -.delegates.-> M4
+    PI3 -.delegates.-> M5
+    PI4 -.delegates.-> M2
+    PI5 -.delegates.-> M3
+    PI6 -.delegates.-> M1
+
+    %% Conceptual flow
+    M1 --> F1
+    M2 --> F2
+    M3 --> F2
+    M4 --> F3
+    M5 --> F3
+    M6 --> F4
+    M7 --> F5
     
     %% SimpleTool inherits from
     ST --> WSM
@@ -250,15 +334,18 @@ graph TB
     class AT,CT,CHT,RT user
     class ST target
     class PI1,PI2,PI3,PI4,PI5,PI6,PI7,PI8,PI9 public
-    class M1,M2,M3,M4,M5,M6,M7,M8,M9 module
+    class M1,M2,M3,M4,M5,M6,M7 module
+    class F1,F2,F3,F4,F5 flow
     class WSM,TCM,STM,CM,BT,U1,U2,U3 dep
 ```
 
-**Key Insights:**
+**Key Insights (Top-Down Design):**
 - **ChatTool** heavily uses SimpleTool methods (prepare_chat_style_prompt, build_standard_prompt)
 - **Public interface** has 9 critical methods that CANNOT change
-- **Facade Pattern**: SimpleTool keeps public methods, delegates to modules
-- **6 proposed modules** to split 1220 lines into manageable pieces
+- **Facade Pattern**: SimpleTool keeps public methods, delegates to conceptual modules
+- **7 modules (5 folders)** organized by conceptual responsibility (NOT implementation details!)
+- **Conceptual flow**: definition → intake → preparation → execution → delivery
+- **Domain language**: Each module name describes WHAT it represents, not what code it contains
 
 ---
 
