@@ -284,24 +284,32 @@
 **Investigation Steps:**
 - [ ] Identify critical paths:
   - [ ] Most common tool execution path
-  - [ ] Error handling path
+  - [ ] Error handling path (GLM-4.6 recommendation: trace error propagation across layers)
   - [ ] Streaming response path
   - [ ] File upload path
   - [ ] Conversation continuation path
-  
+
 - [ ] Bottleneck identification:
   - [ ] Where are performance bottlenecks?
   - [ ] Where are complexity bottlenecks?
   - [ ] Where are maintenance bottlenecks?
 
+- [ ] Additional analysis (GLM-4.6 recommendations):
+  - [ ] Document error propagation across all layers
+  - [ ] Map configuration flow through system
+  - [ ] Identify testing infrastructure patterns
+  - [ ] Document performance metrics and characteristics
+
 **Deliverable:**
 - [ ] Create CRITICAL_PATHS.md
 - [ ] Document top 5 critical paths
+- [ ] Document error handling pathways
+- [ ] Map configuration dependencies
 - [ ] Identify bottlenecks
 - [ ] Recommend optimizations
 - [ ] Mark task 2.8 complete in task manager
 
-**Output:** Critical path documentation with bottleneck analysis
+**Output:** Critical path documentation with bottleneck analysis, error handling, and config flow
 
 ---
 
