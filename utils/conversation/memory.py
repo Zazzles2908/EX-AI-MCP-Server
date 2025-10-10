@@ -113,14 +113,14 @@ All public APIs are re-exported from this module for backward compatibility.
 """
 
 # Re-export all public APIs from sub-modules for backward compatibility
-from utils.conversation_models import (
+from utils.conversation.models import (
     CONVERSATION_TIMEOUT_SECONDS,
     MAX_CONVERSATION_TURNS,
     ConversationTurn,
     ThreadContext,
     get_storage,
 )
-from utils.conversation_threads import (
+from utils.conversation.threads import (
     add_turn,
     create_thread,
     get_conversation_file_list,
@@ -128,7 +128,7 @@ from utils.conversation_threads import (
     get_thread,
     get_thread_chain,
 )
-from utils.conversation_history import build_conversation_history
+from utils.conversation.history import build_conversation_history
 
 __all__ = [
     # Models

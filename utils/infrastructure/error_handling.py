@@ -12,7 +12,7 @@ Key Features:
 - Global singleton for consistent state management
 
 Usage:
-    from utils.error_handling import get_graceful_degradation
+    from utils.infrastructure.error_handling import get_graceful_degradation
     
     gd = get_graceful_degradation()
     

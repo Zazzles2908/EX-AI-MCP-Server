@@ -150,7 +150,7 @@ def _get_allowed_models_for_provider(provider: ModelProvider, provider_type: Pro
     falls back to the provider's SUPPORTED_MODELS keys.
     """
     try:
-        from utils.model_restrictions import get_restriction_service
+        from utils.model.restrictions import get_restriction_service
     except Exception:
         get_restriction_service = None  # type: ignore
 

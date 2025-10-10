@@ -323,7 +323,7 @@ class ExpertAnalysisMixin:
                     logger.error(f"Failed to resolve model context for expert analysis: {e}")
                     # Use request model as fallback (preserves existing test behavior)
                     model_name = self.get_request_model_name(request)
-                    from utils.model_context import ModelContext
+                    from utils.model.context import ModelContext
                     model_context = ModelContext(model_name)
                     self._model_context = model_context  # type: ignore
                     self._current_model_name = model_name  # type: ignore

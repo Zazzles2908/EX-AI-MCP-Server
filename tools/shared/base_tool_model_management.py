@@ -248,7 +248,7 @@ class ModelManagementMixin:
                 raise ValueError(error_message)
 
             # Create model context for tests
-            from utils.model_context import ModelContext
+            from utils.model.context import ModelContext
             model_context = ModelContext(model_name)
 
         return model_name, model_context

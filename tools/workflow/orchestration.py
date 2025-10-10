@@ -19,7 +19,7 @@ from typing import Any, Optional
 from mcp.types import TextContent
 
 from tools.shared.base_models import ConsolidatedFindings
-from utils.conversation_memory import create_thread
+from utils.conversation.memory import create_thread
 from utils.progress import send_progress
 
 logger = logging.getLogger(__name__)

@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict
 
-from utils.token_estimator import estimate_tokens
+from utils.model.token_estimator import estimate_tokens
 
 
 @dataclass

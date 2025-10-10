@@ -24,7 +24,7 @@ from mcp.types import TextContent
 
 from utils.client_info import get_current_session_fingerprint, get_cached_client_info, format_client_info
 from utils.progress import send_progress
-from utils.progress_messages import ProgressMessages
+from utils.progress_utils.messages import ProgressMessages
 
 
 class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixin, BaseTool):
@@ -344,7 +344,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 logger.debug(f"{self.get_name()}: Using model context from arguments")
             else:
                 # Create model context if not provided
-                from utils.model_context import ModelContext
+                from utils.model.context import ModelContext
                 from src.providers.registry import ModelProviderRegistry as _Registry
                 # Avoid constructing ModelContext('auto') which triggers provider lookup error.
                 if (model_name or "").strip().lower() == "auto":
@@ -382,7 +382,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     logger.debug(f"{self.get_name()}: No embedded history found, reconstructing conversation")
 
                     # Get thread context
-                    from utils.conversation_memory import add_turn, build_conversation_history, get_thread
+                    from utils.conversation.memory import add_turn, build_conversation_history, get_thread
 
                     thread_context = get_thread(continuation_id)
 
@@ -472,7 +472,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
             system_prompt = language_instruction + web_search_instruction + base_system_prompt
 
             # Estimate tokens for logging
-            from utils.token_utils import estimate_tokens
+            from utils.model.token_utils import estimate_tokens
 
             estimated_tokens = estimate_tokens(prompt)
             logger.debug(f"Prompt length: {len(prompt)} characters (~{estimated_tokens:,} tokens)")
@@ -893,7 +893,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         continuation_id = self.get_request_continuation_id(request)
         if continuation_id:
             # Add turn to conversation memory
-            from utils.conversation_memory import add_turn
+            from utils.conversation.memory import add_turn
 
             # Extract model metadata for conversation tracking
             model_provider = None
@@ -1112,7 +1112,7 @@ Please provide a thoughtful, comprehensive response:"""
         """
         import os
         from pathlib import Path
-        from utils.file_utils import resolve_and_validate_path
+        from utils.file.operations import resolve_and_validate_path
 
         # Check if request has 'files' attribute (used by most tools)
         files = self.get_request_files(request)

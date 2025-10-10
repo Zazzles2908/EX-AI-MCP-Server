@@ -93,7 +93,7 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
         4. Debug tool can reference specific findings from analyze tool
         5. Natural cross-tool collaboration without context loss
     """
-    from utils.conversation_memory import add_turn, build_conversation_history, get_thread
+    from utils.conversation.memory import add_turn, build_conversation_history, get_thread
 
     continuation_id = arguments["continuation_id"]
 
@@ -167,7 +167,7 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
         # Capture files referenced in this turn
         user_files = arguments.get("files", [])
         logger.debug(f"[CONVERSATION_DEBUG] Adding user turn to thread {continuation_id}")
-        from utils.token_utils import estimate_tokens
+        from utils.model.token_utils import estimate_tokens
 
         user_prompt_tokens = estimate_tokens(user_prompt)
         logger.debug(
@@ -182,7 +182,7 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
             logger.debug(f"[CONVERSATION_DEBUG] Successfully added user turn to thread {continuation_id}")
 
     # Create model context early to use for history building
-    from utils.model_context import ModelContext
+    from utils.model.context import ModelContext
 
     # Check if we should use the model from the previous conversation turn
     model_from_args = arguments.get("model")

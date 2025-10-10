@@ -16,7 +16,7 @@ import json
 import logging
 from typing import Any, Optional
 
-from utils.conversation_memory import add_turn
+from utils.conversation.memory import add_turn
 
 logger = logging.getLogger(__name__)
 

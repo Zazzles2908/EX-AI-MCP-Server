@@ -20,11 +20,16 @@ Example:
     OPENROUTER_ALLOWED_MODELS=opus,sonnet,mistral
 """
 
+from __future__ import annotations  # Enable string annotations to avoid circular import
+
 import logging
 import os
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-from src.providers.base import ProviderType
+# Avoid circular import: src.providers.base imports utils, utils.model.restrictions imports src.providers.base
+# Import only for type checking, use string literals at runtime
+if TYPE_CHECKING:
+    from src.providers.base import ProviderType
 
 logger = logging.getLogger(__name__)
 
@@ -39,20 +44,26 @@ class ModelRestrictionService:
     3. Provides a simple interface to check if a model is allowed
     """
 
-    # Environment variable names
-    ENV_VARS = {
-        ProviderType.OPENAI: "OPENAI_ALLOWED_MODELS",
-        ProviderType.GOOGLE: "GOOGLE_ALLOWED_MODELS",
-        ProviderType.XAI: "XAI_ALLOWED_MODELS",
-        ProviderType.OPENROUTER: "OPENROUTER_ALLOWED_MODELS",
-        ProviderType.DIAL: "DIAL_ALLOWED_MODELS",
-        ProviderType.KIMI: "KIMI_ALLOWED_MODELS",
-        ProviderType.GLM: "GLM_ALLOWED_MODELS",
-    }
+    # Environment variable names - will be populated in __init__
+    ENV_VARS = None
 
     def __init__(self):
         """Initialize the restriction service by loading from environment."""
-        self.restrictions: dict[ProviderType, set[str]] = {}
+        from src.providers.base import ProviderType  # Import here to avoid circular import
+
+        # Initialize ENV_VARS if not already done
+        if ModelRestrictionService.ENV_VARS is None:
+            ModelRestrictionService.ENV_VARS = {
+                ProviderType.OPENAI: "OPENAI_ALLOWED_MODELS",
+                ProviderType.GOOGLE: "GOOGLE_ALLOWED_MODELS",
+                ProviderType.XAI: "XAI_ALLOWED_MODELS",
+                ProviderType.OPENROUTER: "OPENROUTER_ALLOWED_MODELS",
+                ProviderType.DIAL: "DIAL_ALLOWED_MODELS",
+                ProviderType.KIMI: "KIMI_ALLOWED_MODELS",
+                ProviderType.GLM: "GLM_ALLOWED_MODELS",
+            }
+
+        self.restrictions = {}
         self._load_from_env()
 
     def _load_from_env(self) -> None:

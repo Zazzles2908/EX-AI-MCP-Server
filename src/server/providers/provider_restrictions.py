@@ -16,7 +16,7 @@ def validate_model_restrictions():
     Checks restriction service for configured restrictions and validates
     them against known models from registered providers.
     """
-    from utils.model_restrictions import get_restriction_service
+    from utils.model.restrictions import get_restriction_service
     from src.providers.registry import ModelProviderRegistry
     from src.providers.base import ProviderType
     

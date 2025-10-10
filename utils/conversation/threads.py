@@ -21,7 +21,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from utils.conversation_models import (
+from utils.conversation.models import (
     CONVERSATION_TIMEOUT_SECONDS,
     MAX_CONVERSATION_TURNS,
     ConversationTurn,

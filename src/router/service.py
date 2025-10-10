@@ -192,7 +192,7 @@ class RouterService:
 
         # Health circuit filter: skip candidates with open circuits
         try:
-            from utils.health import is_blocked
+            from utils.infrastructure.health import is_blocked
         except Exception:
             is_blocked = None
 

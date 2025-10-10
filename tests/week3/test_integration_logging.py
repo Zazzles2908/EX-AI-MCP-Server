@@ -16,7 +16,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock
 from utils.logging_unified import UnifiedLogger
-from utils.error_handling import GracefulDegradation
+from utils.infrastructure.error_handling import GracefulDegradation
 
 
 class TestUnifiedLoggingIntegration:

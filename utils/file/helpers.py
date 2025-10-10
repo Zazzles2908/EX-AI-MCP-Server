@@ -56,7 +56,7 @@ def is_text_file(file_path: str) -> bool:
     Returns:
         True if file appears to be text, False otherwise
     """
-    from .file_types import is_text_file as check_text_type
+    from .types import is_text_file as check_text_type
 
     return check_text_type(file_path)
 

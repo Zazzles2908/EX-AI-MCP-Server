@@ -18,8 +18,8 @@ import logging
 import os
 from typing import Any, Callable, Optional
 
-from utils.conversation_models import MAX_CONVERSATION_TURNS, ConversationTurn, ThreadContext
-from utils.conversation_threads import get_conversation_file_list, get_thread_chain
+from utils.conversation.models import MAX_CONVERSATION_TURNS, ConversationTurn, ThreadContext
+from utils.conversation.threads import get_conversation_file_list, get_thread_chain
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ def _plan_file_inclusion_by_size(all_files: list[str], max_file_tokens: int) -> 
 
     for file_path in all_files:
         try:
-            from utils.file_utils import estimate_file_tokens
+            from utils.file.operations import estimate_file_tokens
 
             if os.path.exists(file_path) and os.path.isfile(file_path):
                 # Use centralized token estimation for consistency
@@ -302,7 +302,7 @@ def build_conversation_history(
     # Get model-specific token allocation early (needed for both files and turns)
     if model_context is None:
         from config import DEFAULT_MODEL, IS_AUTO_MODE
-        from utils.model_context import ModelContext
+        from utils.model.context import ModelContext
 
         # In auto mode, use an intelligent fallback model for token calculations
         # since "auto" is not a real model with a provider
@@ -362,7 +362,7 @@ def build_conversation_history(
             )
 
             if read_files_func is None:
-                from utils.file_utils import read_file_content
+                from utils.file.operations import read_file_content
 
                 # Process files for embedding
                 file_contents = []
@@ -419,7 +419,7 @@ def build_conversation_history(
                 files_content = read_files_func(all_files)
                 if files_content:
                     # Add token validation for the combined file content
-                    from utils.token_utils import check_token_limit
+                    from utils.modelutils.model.token_utils import check_token_limit
 
                     within_limit, estimated_tokens = check_token_limit(files_content)
                     if within_limit:
@@ -532,7 +532,7 @@ def build_conversation_history(
 
     # Calculate total tokens for the complete conversation history
     complete_history = "\n".join(history_parts)
-    from utils.token_utils import estimate_tokens
+    from utils.modelutils.model.token_utils import estimate_tokens
 
     total_conversation_tokens = estimate_tokens(complete_history)
 
