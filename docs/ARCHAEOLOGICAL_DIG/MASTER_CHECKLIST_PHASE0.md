@@ -98,27 +98,33 @@
 
 ---
 
-### Task 0.3: Dependency Mapping
+### Task 0.3: Dependency Mapping ✅ COMPLETE
 
 **Goal:** Understand what depends on what (import graph)
 
 **For Each Shared Component:**
-- [ ] Search for imports of tools/workflow/expert_analysis.py
-- [ ] Search for imports of tools/shared/base_tool.py
-- [ ] Search for imports of tools/simple/base.py
-- [ ] Search for imports of tools/workflow/base.py
-- [ ] Search for imports from utils/ (each major utility)
-- [ ] Search for imports from src/providers/
-- [ ] Create dependency graph (what imports what)
+- [x] Search for imports of tools/workflow/expert_analysis.py (via BaseWorkflowMixin)
+- [x] Search for imports of tools/shared/base_tool.py (20+ tools)
+- [x] Search for imports of tools/simple/base.py (4 tools)
+- [x] Search for imports of tools/workflow/base.py (12 workflows)
+- [x] Search for imports from utils/ (top 10 identified)
+- [x] Search for imports from src/providers/ (mapped)
+- [x] Create dependency graph (4-tier architecture)
 
 **Document findings:**
-- [ ] Create shared_infrastructure/DEPENDENCY_MAP.md
-- [ ] List high-impact components (imported by many files)
-- [ ] List low-impact components (imported by few files)
-- [ ] Identify circular dependencies
-- [ ] Mark task 0.3 complete
+- [x] Create shared_infrastructure/DEPENDENCY_MAP.md
+- [x] List high-impact components (BaseTool: 30+ tools, progress.py: 30 files)
+- [x] List low-impact components (SimpleTool: 4 tools)
+- [x] Identify circular dependencies (NONE FOUND! ✅)
+- [x] Mark task 0.3 complete
 
-**Output:** Dependency map showing import relationships
+**Output:** ✅ Dependency map showing import relationships
+
+**Key Findings:**
+- ✅ NO circular dependencies!
+- Clean 4-tier architecture: utils → tools/shared → tools/simple|workflow → implementations
+- Impact radius: BaseTool (30+ tools), ExpertAnalysisMixin (12 workflows), progress.py (30 files)
+- Cross-layer: src/ → tools/ (10 files, for registry/discovery - expected)
 
 ---
 
@@ -214,8 +220,8 @@
 
 ### Overall Progress
 - Setup: 5/5 (100%) ✅
-- Investigations: 2/6 (33%) 🔄
-- **Total: 7/11 (64%)**
+- Investigations: 3/6 (50%) 🔄
+- **Total: 8/11 (73%)**
 
 ### Time Estimates
 - Task 0.1: Layout Map - ~30 minutes

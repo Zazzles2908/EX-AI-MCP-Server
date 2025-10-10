@@ -323,7 +323,61 @@ This document tracks EVERY action taken during Phase 0 of the archaeological dig
 
 ---
 
-**STATUS: TASK 0.2 COMPLETE ✅**
+### 2025-10-10 1:10 PM - Task 0.3 Complete: Dependency Mapping
 
-Ready to begin Task 0.3: Dependency Mapping.
+**Action:** Mapped all dependencies and import relationships
+
+**Analysis Performed:**
+1. Analyzed BaseTool dependency chain
+2. Analyzed SimpleTool dependency chain
+3. Analyzed WorkflowTool dependency chain
+4. Analyzed BaseWorkflowMixin mixin composition
+5. Checked for circular dependencies (utils → tools, src → tools)
+6. Mapped cross-layer dependencies
+7. Calculated impact radius for each shared component
+
+**Document Created:**
+- `shared_infrastructure/DEPENDENCY_MAP.md` - Complete dependency analysis
+
+**Key Findings:**
+
+**✅ CLEAN ARCHITECTURE:**
+- NO runtime circular dependencies found!
+- Clean 4-tier layered architecture
+- Proper separation of concerns
+- TYPE_CHECKING imports prevent runtime cycles
+
+**Dependency Tiers:**
+1. Tier 1: utils/ (foundation - no project imports)
+2. Tier 2: tools/shared/ (base classes - imports utils only)
+3. Tier 3: tools/simple/, tools/workflow/ (intermediate)
+4. Tier 4: Tool implementations
+
+**Impact Radius:**
+- BaseTool: 30+ tools (ENTIRE SYSTEM!)
+- WorkflowTool: 12 tools (ALL workflows)
+- ExpertAnalysisMixin: 12 tools (ALL workflows)
+- utils/progress.py: 30 files
+- utils/observability.py: 21 files
+
+**Cross-Layer Dependencies:**
+- src/ → tools/: 10 files (for registry/discovery - expected)
+- utils/ → tools/: 1 file (dynamic import - safe)
+- No circular dependencies!
+
+**Concerns:**
+- ExpertAnalysisMixin (34.1KB) affects ALL workflows
+- SimpleTool (55.3KB) is very large
+- High-impact utils (progress, observability) affect many files
+
+**Classification:**
+- ✅ COMPLETE - All dependencies mapped
+- ✅ CLEAN - No circular dependencies
+- ⏭️ NEXT - Task 0.4: Duplicate Detection
+
+---
+
+**STATUS: TASK 0.3 COMPLETE ✅**
+
+Ready to begin Task 0.4: Duplicate Detection.
 
