@@ -12,7 +12,7 @@ Trace how tools are discovered, loaded, and executed from registry to completion
 
 **Components Analyzed:**
 1. **tools/registry.py** - Tool discovery and loading
-2. **tools/simple/base.py** - SimpleTool base class (4 simple tools)
+2. **tools/simple/base.py** - SimpleTool base class (3 simple tools)
 3. **tools/workflow/base.py** - WorkflowTool base class (12 workflow tools)
 4. **Mixin Integration** - How mixins compose functionality
 5. **Expert Analysis** - How external AI validation is triggered
