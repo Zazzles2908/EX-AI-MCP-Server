@@ -6,7 +6,9 @@
 
 ---
 
-## 🚨 CRITICAL CHANGE: PHASE 0 CREATED + OPTION D ADOPTED
+## 🚨 CRITICAL CHANGES & LEARNINGS
+
+### Change 1: PHASE 0 CREATED + OPTION D ADOPTED
 
 **What Happened:**
 - Started Phase 1 investigations
@@ -14,6 +16,16 @@
 - Paused Phase 1, created Phase 0
 - Phase 0 = Architectural Mapping (comes BEFORE Phase 1)
 - **NEW: User proposed Option D - Principled Refactoring based on Single Responsibility Principle**
+
+### Change 2: DEPENDENCY ANALYSIS FIRST! (CRITICAL LEARNING)
+
+**What Happened:**
+- Started Phase 1.1 (Document Design Intent)
+- Created template and started documenting SimpleTool
+- **User caught critical gap:** "It appeared you were building a template and filling it in afterwards... it looked like you were just building brand new."
+- **User was RIGHT:** I was designing a "new system" instead of refactoring the existing system
+- **Added:** Complete dependency analysis BEFORE designing refactoring
+- **Added:** Facade Pattern approach to preserve backward compatibility
 
 **Why Phase 0 Exists:**
 - Need to understand src/ vs tools/ vs utils/ separation FIRST
