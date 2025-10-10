@@ -1908,3 +1908,10 @@
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1772, "output_tokens": 540, "t": 1759502107.537674}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0711-preview", "input_tokens": 4676, "output_tokens": 1, "t": 1759529573.03918}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1548, "output_tokens": 830, "t": 1760050803.7824633}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "ea582b625811866ad32a2d90318e01570058347971b446b19632a7a8a7a8ae5a", "t": 1760131009.034664}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "e3229ef4605cd88a544dd6918d249e52817fa124fb755f5636c3a1d5bec53def", "t": 1760131009.0347085}
+{"event": "file_cache", "action": "miss", "provider": "kimi", "sha": "a5360b27060c2216e28d213313526c4071ba9c9f1e3cb5a106014dded501797d", "t": 1760131009.0346892}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1760131010.468538}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1760131010.8502026}
+{"event": "file_count_delta", "provider": "kimi", "delta": 1, "t": 1760131011.0490973}
+{"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "a5360b27060c2216e28d213313526c4071ba9c9f1e3cb5a106014dded501797d", "t": 1760131011.3151164}
