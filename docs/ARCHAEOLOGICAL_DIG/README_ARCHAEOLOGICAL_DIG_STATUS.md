@@ -27,6 +27,17 @@
 - **Added:** Complete dependency analysis BEFORE designing refactoring
 - **Added:** Facade Pattern approach to preserve backward compatibility
 
+### Change 3: TOP-DOWN DESIGN, NOT BOTTOM-UP! (CRITICAL PIVOT)
+
+**What Happened:**
+- Was splitting SimpleTool by "what code does" (bottom-up)
+- **User feedback:** "Should be more like Top-Down Design (Stepwise Refinement or Decomposition) so it like splits into categories."
+- **User was RIGHT:** Should organize by conceptual categories, not implementation details
+- **Pivot:** From bottom-up "split code" to top-down "conceptual responsibility"
+- **TRUE top-down:** Starts from entry points (User → IDE → MCP Server → Daemon → Tools)
+- **Adopted:** Option C (Hybrid) - definition, intake, preparation, execution, delivery
+- **Result:** 7 files (5 folders) instead of 9 files (6 folders) - SMARTER organization!
+
 **Why Phase 0 Exists:**
 - Need to understand src/ vs tools/ vs utils/ separation FIRST
 - Need to map shared vs specific components FIRST

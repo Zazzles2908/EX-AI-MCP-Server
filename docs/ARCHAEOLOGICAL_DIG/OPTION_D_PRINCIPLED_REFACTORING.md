@@ -1,13 +1,31 @@
-# OPTION D: PRINCIPLED REFACTORING STRATEGY
-**Date:** 2025-10-10 1:20 PM AEDT  
-**Status:** ✅ APPROVED BY USER  
+# OPTION D: PRINCIPLED REFACTORING STRATEGY (TOP-DOWN DESIGN)
+**Date:** 2025-10-10 3:30 PM AEDT (UPDATED with Top-Down Design)
+**Status:** ✅ APPROVED BY USER with Top-Down Design (Option C - Hybrid)
 **Timeline:** 7-12 weeks for Phase 1 execution
+
+---
+
+## CRITICAL UPDATE: TOP-DOWN DESIGN
+
+**User Feedback:**
+> "Should be more like Top-Down Design (Stepwise Refinement or Decomposition) so it like splits into categories."
+
+> "I would consider the top being even to the point of the entrance point, which is the daemon and mcp server point right?"
+
+**Response:** User is 100% correct! Updated Option D to use **Top-Down Design (Option C - Hybrid)**:
+- ✅ Organize by **conceptual responsibility**, not implementation details
+- ✅ Use **domain language**: definition, intake, preparation, execution, delivery
+- ✅ TRUE top-down starts from **entry points**: User → IDE → MCP Server → Daemon → Tools
+- ✅ Result: **7 files (5 folders)** instead of 9 files (6 folders) - SMARTER organization!
 
 ---
 
 ## USER'S VISION
 
-**Core Principle: Single Responsibility**
+**Core Principles:**
+1. **Single Responsibility Principle (SRP)**
+2. **Top-Down Design (Stepwise Refinement)**
+3. **Conceptual Categories** (not implementation details)
 
 > "A script's purpose, for example, is to import a system prompt - it should just focus on that and have the libraries and other requirements to be imported and it is just managing those items. Then the script being called should focus on having the function call of the dynamic prompt retriever, and from that another script would be the dynamic maker of the prompt generator."
 
