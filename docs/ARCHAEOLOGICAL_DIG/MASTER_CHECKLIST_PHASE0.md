@@ -33,21 +33,28 @@
 
 ## 📋 PHASE 0 INVESTIGATION TASKS
 
-### Task 0.1: Layout Map - Complete System Inventory
+### Task 0.1: Layout Map - Complete System Inventory ✅ COMPLETE
 
 **Goal:** Create complete inventory of ALL folders and files
 
-- [ ] Read existing SYSTEM_ARCHITECTURE.md
-- [ ] List ALL top-level directories
-- [ ] List ALL subdirectories (2 levels deep minimum)
-- [ ] Count files in each directory
-- [ ] Identify large files (>10KB)
-- [ ] Document folder purposes (from names/README files)
-- [ ] Create visual folder tree
-- [ ] Update layoutmap/SYSTEM_ARCHITECTURE.md with findings
-- [ ] Mark task 0.1 complete
+- [x] Read existing SYSTEM_ARCHITECTURE.md
+- [x] List ALL top-level directories (22 directories)
+- [x] List ALL subdirectories (2 levels deep minimum)
+- [x] Count files in each directory (1779 total, 433 Python)
+- [x] Identify large files (>10KB) - 34 files found
+- [x] Document folder purposes (from names/README files)
+- [x] Create visual folder tree
+- [x] Create layoutmap/COMPLETE_SYSTEM_INVENTORY.md
+- [x] Mark task 0.1 complete
 
-**Output:** Complete system inventory with folder counts and purposes
+**Output:** ✅ Complete system inventory with folder counts and purposes
+
+**Key Findings:**
+- 22 top-level directories
+- 433 Python files (excluding .venv)
+- Largest file: tools/simple/base.py (55.3KB)
+- utils/ has 37 files with ZERO folder structure (chaos!)
+- Multiple duplicates detected (conf/ vs config/, conversation/ in 2 places, etc.)
 
 ---
 
@@ -202,8 +209,8 @@
 
 ### Overall Progress
 - Setup: 5/5 (100%) ✅
-- Investigations: 0/6 (0%) ⏳
-- **Total: 5/11 (45%)**
+- Investigations: 1/6 (17%) 🔄
+- **Total: 6/11 (55%)**
 
 ### Time Estimates
 - Task 0.1: Layout Map - ~30 minutes
