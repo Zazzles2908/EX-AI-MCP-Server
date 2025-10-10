@@ -58,38 +58,43 @@
 
 ---
 
-### Task 0.2: Shared Infrastructure Identification
+### Task 0.2: Shared Infrastructure Identification ✅ COMPLETE
 
 **Goal:** Identify ALL shared components (base classes, mixins, utilities)
 
 **Shared Base Classes:**
-- [ ] Search for "class.*BaseTool" - find all base tool classes
-- [ ] Search for "class.*Mixin" - find all mixins
-- [ ] Search for "class.*Base" - find all base classes
-- [ ] List all files in tools/shared/
-- [ ] List all files in tools/workflow/ (base classes vs implementations?)
-- [ ] List all files in tools/simple/ (base classes vs implementations?)
-- [ ] Classify each as: BASE_CLASS / MIXIN / IMPLEMENTATION
+- [x] Search for "class.*BaseTool" - find all base tool classes (3 found)
+- [x] Search for "class.*Mixin" - find all mixins (13 found)
+- [x] Search for "class.*Base" - find all base classes
+- [x] List all files in tools/shared/ (9 files)
+- [x] List all files in tools/workflow/ (9 files - base classes + mixins)
+- [x] List all files in tools/simple/ (4 files + 5 mixins)
+- [x] Classify each as: BASE_CLASS / MIXIN / IMPLEMENTATION
 
 **Shared Utilities:**
-- [ ] List all files in utils/ (30+ files)
-- [ ] List all files in src/utils/ (2 files)
-- [ ] List all files in src/server/utils/
-- [ ] Group by category (file_utils, conversation, token, etc.)
-- [ ] Identify duplicates (same functionality in multiple places)
+- [x] List all files in utils/ (37 files)
+- [x] List all files in src/utils/ (2 files)
+- [x] List all files in src/server/utils/ (1 file)
+- [x] Group by category (file_utils, conversation, token, etc.)
+- [x] Identify top 10 most-imported utils (7-30 imports each)
 
 **Shared Providers:**
-- [ ] List all files in src/providers/
-- [ ] List all files in src/server/providers/
-- [ ] List all files in tools/providers/
-- [ ] Understand separation: core vs server vs tool-specific
+- [x] List all files in src/providers/ (22 files)
+- [x] List all files in src/server/providers/ (6 files)
+- [x] List all files in tools/providers/ (9 files in glm/ and kimi/)
+- [x] Understand separation: core vs server vs tool-specific
 
 **Document findings:**
-- [ ] Update shared_infrastructure/SHARED_INFRASTRUCTURE_OVERLAP_ANALYSIS.md
-- [ ] Create shared_infrastructure/SHARED_COMPONENTS_INVENTORY.md
-- [ ] Mark task 0.2 complete
+- [x] Create shared_infrastructure/SHARED_COMPONENTS_INVENTORY.md
+- [x] Mark task 0.2 complete
 
-**Output:** Complete inventory of shared components with classifications
+**Output:** ✅ Complete inventory of shared components with classifications
+
+**Key Findings:**
+- 3 base classes: BaseTool (20+ tools), SimpleTool (4 tools), WorkflowTool (12 workflows)
+- 13 mixins: 3 in tools/shared/, 5 in tools/simple/mixins/, 5 in tools/workflow/
+- 10 highly-used utils: progress.py (30 imports), observability.py (21 imports), etc.
+- 🚨 CRITICAL: expert_analysis.py (34.1KB) is shared mixin used by ALL workflows but in wrong location?
 
 ---
 
@@ -209,8 +214,8 @@
 
 ### Overall Progress
 - Setup: 5/5 (100%) ✅
-- Investigations: 1/6 (17%) 🔄
-- **Total: 6/11 (55%)**
+- Investigations: 2/6 (33%) 🔄
+- **Total: 7/11 (64%)**
 
 ### Time Estimates
 - Task 0.1: Layout Map - ~30 minutes

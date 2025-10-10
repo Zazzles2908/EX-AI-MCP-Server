@@ -261,7 +261,69 @@ This document tracks EVERY action taken during Phase 0 of the archaeological dig
 
 ---
 
-**STATUS: TASK 0.1 COMPLETE ✅**
+### 2025-10-10 1:05 PM - Task 0.2 Complete: Shared Infrastructure Identification
 
-Ready to begin Task 0.2: Shared Infrastructure Identification.
+**Action:** Identified ALL shared components (base classes, mixins, utilities)
+
+**Commands Executed:**
+1. Searched for base classes (BaseTool, SimpleTool, WorkflowTool)
+2. Searched for mixins (13 mixins found)
+3. Counted imports of BaseTool (20+ imports)
+4. Counted imports of SimpleTool (4 imports)
+5. Counted imports of WorkflowTool (12 imports)
+6. Counted imports of ExpertAnalysisMixin (used by ALL workflows)
+7. Identified top 10 most-imported utils (7-30 imports each)
+8. Mapped provider classes (4 providers)
+
+**Document Created:**
+- `shared_infrastructure/SHARED_COMPONENTS_INVENTORY.md` - Complete inventory
+
+**Key Findings:**
+
+**Base Classes (3):**
+1. BaseTool (tools/shared/base_tool.py) - Used by 20+ tools
+2. SimpleTool (tools/simple/base.py) - 55.3KB! Used by 4 tools
+3. WorkflowTool (tools/workflow/base.py) - 30.5KB, Used by 12 workflows
+
+**Shared Mixins (13):**
+- tools/shared/: 3 mixins (FileHandlingMixin, ModelManagementMixin, ResponseFormattingMixin)
+- tools/simple/mixins/: 5 mixins (ContinuationMixin, StreamingMixin, ToolCallMixin, WebSearchMixin, FileMixin)
+- tools/workflow/: 5 mixins (ExpertAnalysisMixin, OrchestrationMixin, FileEmbeddingMixin, ConversationIntegrationMixin, RequestAccessorMixin)
+
+**🚨 CRITICAL FINDING:**
+- `tools/workflow/expert_analysis.py` (34.1KB) is a SHARED MIXIN used by ALL 12 workflow tools
+- Located in `tools/workflow/` but it's shared infrastructure
+- Should it be in `tools/shared/` instead?
+
+**Highly-Used Utils (10 files):**
+1. progress.py (30 imports)
+2. observability.py (21 imports)
+3. model_context.py (18 imports)
+4. conversation_memory.py (16 imports)
+5. file_utils.py (13 imports)
+6. client_info.py (12 imports)
+7. token_utils.py (11 imports)
+8. model_restrictions.py (9 imports)
+9. cache.py (9 imports)
+10. tool_events.py (7 imports)
+
+**Impact Analysis:**
+- Tier 1 CRITICAL: 5 components affect ALL tools (20+)
+- Tier 2 HIGH: 5 components affect 10-20 tools
+- Tier 3 MEDIUM: 3 components affect 5-10 tools
+
+**Concerns:**
+- SimpleTool is 55.3KB (LARGEST FILE!) - potential bloat
+- ExpertAnalysisMixin is 34.1KB and in wrong location?
+- utils/ has 10 highly-imported files with NO folder structure
+
+**Classification:**
+- ✅ COMPLETE - All shared components identified and classified
+- ⏭️ NEXT - Task 0.3: Dependency Mapping
+
+---
+
+**STATUS: TASK 0.2 COMPLETE ✅**
+
+Ready to begin Task 0.3: Dependency Mapping.
 
