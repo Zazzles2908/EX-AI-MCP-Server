@@ -1,14 +1,45 @@
 # ARCHAEOLOGICAL DIG - COMPREHENSIVE STATUS REPORT
 **Date:** 2025-10-10 (10th October 2025, Thursday)
 **Timezone:** AEDT (Melbourne, Australia)
-**Status:** 📋 Documentation Phase Complete | 🔍 Comprehensive Investigation Ready
-**Last Updated:** 2025-10-10 12:00 PM AEDT
+**Status:** 🔍 PHASE 0 IN PROGRESS - Architectural Mapping
+**Last Updated:** 2025-10-10 12:56 PM AEDT
+
+---
+
+## 🚨 CRITICAL CHANGE: PHASE 0 CREATED
+
+**What Happened:**
+- Started Phase 1 investigations
+- User identified critical issue: fixing shared infrastructure without understanding architecture
+- Paused Phase 1, created Phase 0
+- Phase 0 = Architectural Mapping (comes BEFORE Phase 1)
+
+**Why Phase 0 Exists:**
+- Need to understand src/ vs tools/ vs utils/ separation FIRST
+- Need to map shared vs specific components FIRST
+- Need to identify duplicates FIRST
+- Then make informed decisions in Phase 1
+
+---
+
+## CURRENT STATUS
+
+**Phase:** Phase 0 - Architectural Mapping
+**Progress:** 0/6 tasks complete (0%)
+**Current Task:** 0.1 - Layout Map - Complete System Inventory
+
+**Phase 1 Status:**
+- Task 1.1: System Prompts ✅ COMPLETE (no changes needed)
+- Task 1.2: Timezone Utility ⏸️ PAUSED (resume after Phase 0)
+- Tasks 1.3-1.7: NOT STARTED (will be informed by Phase 0)
+- Task 1.8: Tools Structure → MOVED TO PHASE 0
+- Task 1.9: Src Duplicates → MOVED TO PHASE 0
 
 ---
 
 ## WHAT WE'VE DONE
 
-### ✅ Phase 0 Setup Complete
+### ✅ Phase 0 Setup Complete (12:55 PM)
 
 1. **Fixed Critical Bug**
    - ✅ Fixed type error in `src/core/message_bus_client.py` line 139
