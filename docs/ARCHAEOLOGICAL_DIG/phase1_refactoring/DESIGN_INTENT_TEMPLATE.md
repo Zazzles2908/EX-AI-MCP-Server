@@ -1,6 +1,19 @@
-# DESIGN INTENT TEMPLATE
-**Date:** 2025-10-10  
-**Purpose:** Template for documenting design intent before refactoring
+# DESIGN INTENT TEMPLATE (TOP-DOWN DESIGN)
+**Date:** 2025-10-10 4:30 PM AEDT (UPDATED with Top-Down Design)
+**Purpose:** Template for documenting design intent before refactoring using Top-Down Design
+
+---
+
+## CRITICAL: TOP-DOWN DESIGN APPROACH
+
+**User Feedback:**
+> "Should be more like Top-Down Design (Stepwise Refinement or Decomposition) so it like splits into categories."
+
+**This template uses:**
+1. **Top-Down Design** (Stepwise Refinement)
+2. **Conceptual Categories** (what it represents, not what code does)
+3. **Domain Language** (definition, intake, preparation, execution, delivery)
+4. **Facade Pattern** (preserve public interface, refactor internally)
 
 ---
 
@@ -9,10 +22,12 @@
 For each large file (>10KB), create a design intent document using this template.
 
 **Steps:**
-1. Copy this template
-2. Fill in all sections
-3. Review with user if needed
-4. Use as guide for refactoring
+1. **Dependency Analysis FIRST** (understand what calls this, what this calls)
+2. Copy this template
+3. Fill in all sections using **Top-Down Design** principles
+4. Organize by **conceptual responsibility**, NOT implementation details
+5. Review with user if needed
+6. Use as guide for refactoring
 
 ---
 
@@ -249,26 +264,60 @@ def prepare_prompt(self, request):
 
 ---
 
-### Module Breakdown
+### Module Breakdown (Top-Down - Conceptual Categories)
 
-**Module 1: [Name]**
-- **Purpose:** [Single responsibility]
+**IMPORTANT:** Organize by **conceptual responsibility** (what it represents), NOT implementation details!
+
+**Example: SimpleTool (Top-Down - Option C)**
+
+**Module 1: definition/** - "What does this tool promise?"
+- **Conceptual Responsibility:** Tool Contract
 - **Files:**
-  - `[file_1].py` - [Specific responsibility]
-  - `[file_2].py` - [Specific responsibility]
-- **Size estimate:** [XX lines total]
-- **Dependencies:** [What it imports]
-- **Used by:** [What uses it]
+  - `schema.py` - Define input/output schema, tool metadata
+- **Size estimate:** ~150-200 lines
+- **Methods:** get_input_schema, get_tool_fields, get_required_fields, etc.
+- **Dependencies:** SchemaBuilder
+- **Used by:** MCP Server (for tool registration)
 
-**Module 2: [Name]**
-- **Purpose:** [Single responsibility]
+**Module 2: intake/** - "What did the user ask for?"
+- **Conceptual Responsibility:** Request Processing
 - **Files:**
-  - `[file_3].py` - [Specific responsibility]
-- **Size estimate:** [XX lines total]
-- **Dependencies:** [What it imports]
-- **Used by:** [What uses it]
+  - `accessor.py` - Extract request fields
+  - `validator.py` - Validate request
+- **Size estimate:** ~350-450 lines total
+- **Methods:** get_request_*, _validate_file_paths, get_validated_temperature
+- **Dependencies:** None (pure data access)
+- **Used by:** All other modules (need request data)
 
-[Repeat for each module...]
+**Module 3: preparation/** - "How do we ask the AI?"
+- **Conceptual Responsibility:** Prompt Building
+- **Files:**
+  - `prompt.py` - Build prompts
+  - `files.py` - Handle prompt files
+- **Size estimate:** ~280-350 lines total
+- **Methods:** build_standard_prompt, prepare_chat_style_prompt, handle_prompt_file_with_fallback
+- **Dependencies:** intake/ (for request data)
+- **Used by:** execution/ (needs prompts)
+
+**Module 4: execution/** - "How do we call the AI?"
+- **Conceptual Responsibility:** Model Invocation
+- **Files:**
+  - `caller.py` - Execute tool logic, call AI model
+- **Size estimate:** ~200-250 lines
+- **Methods:** execute, _call_with_model
+- **Dependencies:** preparation/ (for prompts), BaseTool (for model calling)
+- **Used by:** SimpleTool.execute() (main entry point)
+
+**Module 5: delivery/** - "How do we deliver the result?"
+- **Conceptual Responsibility:** Response Formatting
+- **Files:**
+  - `formatter.py` - Format and parse responses
+- **Size estimate:** ~150-200 lines
+- **Methods:** _parse_response, format_response, get_actually_processed_files
+- **Dependencies:** None (pure formatting)
+- **Used by:** execution/ (needs to format results)
+
+[Repeat for each module using conceptual categories...]
 
 ---
 
