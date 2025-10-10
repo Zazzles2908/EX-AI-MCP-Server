@@ -6,19 +6,30 @@
 
 ---
 
-## 🚨 CRITICAL CHANGE: PHASE 0 CREATED
+## 🚨 CRITICAL CHANGE: PHASE 0 CREATED + OPTION D ADOPTED
 
 **What Happened:**
 - Started Phase 1 investigations
 - User identified critical issue: fixing shared infrastructure without understanding architecture
 - Paused Phase 1, created Phase 0
 - Phase 0 = Architectural Mapping (comes BEFORE Phase 1)
+- **NEW: User proposed Option D - Principled Refactoring based on Single Responsibility Principle**
 
 **Why Phase 0 Exists:**
 - Need to understand src/ vs tools/ vs utils/ separation FIRST
 - Need to map shared vs specific components FIRST
 - Need to identify duplicates FIRST
+- **NEW: Need to identify SINGLE RESPONSIBILITY for each module**
+- **NEW: Need to create MODULAR REFACTORING STRATEGY (not just consolidation)**
 - Then make informed decisions in Phase 1
+
+**User's Vision (Option D):**
+- Each script should have ONE clear purpose
+- Easy to find which script to modify
+- Modular design: prompt builder → model caller → response formatter
+- Long-term stability through proper separation of concerns
+- Industry-standard clean architecture
+- Timeline: 7-12 weeks for proper refactoring (approved by user)
 
 ---
 

@@ -12,12 +12,16 @@
 - What's src/ vs tools/ vs utils/ separation
 - What's duplicate vs unique
 - What's the intended design vs historical accident
+- **NEW: What's the SINGLE RESPONSIBILITY of each module?**
+- **NEW: How to refactor for long-term stability?**
 
 **WHY THIS IS CRITICAL:**
 - Prevents fixing "shared" code without understanding impact
 - Prevents tracking chaos (fixing same thing in multiple investigations)
-- Ensures informed decisions about consolidation
+- Ensures informed decisions about refactoring
 - Maps dependencies before making changes
+- **NEW: Enables principled refactoring based on Single Responsibility Principle**
+- **NEW: Creates modular architecture for long-term maintainability**
 
 ---
 
@@ -183,36 +187,53 @@
 
 ---
 
-### Task 0.6: Consolidation Strategy
+### Task 0.6: Modular Refactoring Strategy (UPDATED FROM "Consolidation Strategy")
 
-**Goal:** Based on all findings, create consolidation strategy
+**Goal:** Create principled refactoring strategy based on Single Responsibility Principle
 
-**For Each Duplicate:**
-- [ ] Determine which is active
-- [ ] Determine which is better implementation
-- [ ] Recommend: KEEP / MERGE / DELETE
-- [ ] Estimate impact of consolidation
+**USER'S VISION:**
+- Each script should have ONE clear purpose
+- Easy to find which script to modify
+- Modular design: prompt builder → model caller → response formatter
+- Long-term stability through proper separation of concerns
+- Industry-standard clean architecture
+
+**For Each Large File:**
+- [ ] Document current responsibilities (what does it do?)
+- [ ] Identify single responsibility (what SHOULD it do?)
+- [ ] Identify misplaced responsibilities (what doesn't belong?)
+- [ ] Propose module breakdown (how to split it?)
+- [ ] Estimate impact and effort
 
 **For Shared Infrastructure:**
 - [ ] Recommend proper location for each component
-- [ ] Propose folder reorganization if needed
+- [ ] Propose modular folder structure
+- [ ] Document design intent for each module
 - [ ] Identify breaking changes
 - [ ] Propose migration strategy
 
 **For Utils Chaos:**
-- [ ] Propose folder structure for utils/
-- [ ] Group related utilities
-- [ ] Recommend consolidation of file_utils_*.py (7 files)
-- [ ] Recommend consolidation of conversation_*.py (4 files)
+- [ ] Propose modular folder structure (file/, conversation/, model/, etc.)
+- [ ] Group by single responsibility
+- [ ] Document purpose of each module
+- [ ] Plan import updates
+
+**For Duplicates:**
+- [ ] Determine which is active
+- [ ] Determine which follows single responsibility better
+- [ ] Recommend: KEEP / MERGE / DELETE / REFACTOR
+- [ ] Estimate impact of consolidation
 
 **Document findings:**
-- [ ] Create CONSOLIDATION_STRATEGY_PHASE0.md
-- [ ] Break into phases (Phase 1, 2, 3)
-- [ ] Prioritize by impact
+- [ ] Create MODULAR_REFACTORING_STRATEGY.md
+- [ ] Document design intent for each module
+- [ ] Break into phases (Phase 1: Refactoring, Phase 2: Testing, Phase 3: Documentation)
+- [ ] Prioritize by impact and dependencies
+- [ ] Create timeline estimate (7-12 weeks)
 - [ ] Get user approval
 - [ ] Mark task 0.6 complete
 
-**Output:** Detailed consolidation strategy with phases
+**Output:** Detailed modular refactoring strategy with design intent documentation
 
 ---
 
@@ -242,8 +263,12 @@
 - [ ] Dependency map created
 - [ ] All duplicates identified
 - [ ] Architecture pattern understood
-- [ ] Consolidation strategy created and approved
-- [ ] Ready to begin Phase 1 with informed decisions
+- [ ] **Modular refactoring strategy created (not just consolidation)**
+- [ ] **Design intent documented for each module**
+- [ ] **Single responsibility identified for each large file**
+- [ ] **Timeline estimated (7-12 weeks for Phase 1)**
+- [ ] User approval obtained
+- [ ] Ready to begin Phase 1: Modular Refactoring with informed decisions
 
 ---
 
