@@ -34,8 +34,8 @@
 **Deliverable:** `TOOL_EXECUTION_FLOW.md` (300 lines)
 
 **Key Findings:**
-- Tool registry with lazy loading (30+ tools)
-- SimpleTool execution (4 tools + 4 mixins)
+- Tool registry with lazy loading (29 tools)
+- SimpleTool execution (3 tools + 4 mixins)
 - WorkflowTool execution (12 tools + 5 mixins)
 - Expert analysis triggering (confidence + criteria)
 - Mixin composition pattern
@@ -157,8 +157,8 @@ graph TB
     end
     
     subgraph "Tool Layer"
-        ToolRegistry[Tool Registry<br/>30+ Tools]
-        SimpleTool[SimpleTool<br/>4 tools]
+        ToolRegistry[Tool Registry<br/>29 Tools]
+        SimpleTool[SimpleTool<br/>3 tools]
         WorkflowTool[WorkflowTool<br/>12 tools]
     end
     
@@ -252,9 +252,9 @@ graph TB
 
 **Current State:**
 - 55.3KB monolithic file (1,220 lines)
-- 27 public methods (CANNOT CHANGE)
+- 25 public methods (CANNOT CHANGE)
 - 13 request accessors (heavily used)
-- 4 tools depend on it
+- 3 tools depend on it (ChatTool, ChallengeTool, ActivityTool)
 
 **Refactoring Strategy:**
 - **Use Facade Pattern** - Keep all public methods
