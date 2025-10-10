@@ -61,6 +61,81 @@ This document tracks EVERY action taken during Phase 1 of the archaeological dig
 
 ---
 
+### 2025-10-10 12:30 PM - Task 1.1: System Prompts Investigation
+
+**Action:** Searched for systemprompts imports
+- Command: `Get-ChildItem -Recurse -Include "*.py" | Select-String -Pattern "from systemprompts import|import systemprompts"`
+- Results: Found 20 imports total
+
+**Evidence Collected:**
+
+**Active Imports (14 files in tools/):**
+1. tools/workflows/analyze.py (line 26: `from systemprompts import ANALYZE_PROMPT`)
+2. tools/workflows/codereview.py (line 26: `from systemprompts import CODEREVIEW_PROMPT`)
+3. tools/workflows/consensus.py (line 32: `from systemprompts import CONSENSUS_PROMPT`)
+4. tools/workflows/consensus_config.py (line 9: `from systemprompts import CONSENSUS_PROMPT`)
+5. tools/workflows/debug.py (line 27: `from systemprompts import DEBUG_ISSUE_PROMPT`)
+6. tools/workflows/docgen.py (line 30: `from systemprompts import DOCGEN_PROMPT`)
+7. tools/workflows/planner.py (line 32: `from systemprompts import PLANNER_PROMPT`)
+8. tools/workflows/precommit.py (line 25: `from systemprompts import PRECOMMIT_PROMPT`)
+9. tools/workflows/refactor.py (line 26: `from systemprompts import REFACTOR_PROMPT`)
+10. tools/workflows/secaudit.py (line 27: `from systemprompts import SECAUDIT_PROMPT`)
+11. tools/workflows/testgen.py (line 28: `from systemprompts import TESTGEN_PROMPT`)
+12. tools/workflows/thinkdeep.py (line 26: `from systemprompts import THINKDEEP_PROMPT`)
+13. tools/workflows/tracer.py (line 29: `from systemprompts import TRACER_PROMPT`)
+14. tools/chat.py (line 17: `from systemprompts import CHAT_PROMPT`)
+
+**Archive Imports (6 files - legacy backups):**
+- docs/archive/legacy-scripts/2025-10-02/*.py (6 backup files)
+
+**Action:** Traced execution flow
+- Checked tools/workflows/analyze.py: `get_system_prompt()` returns `ANALYZE_PROMPT` (line 80)
+- Checked tools/chat.py: `get_system_prompt()` returns `CHAT_PROMPT` (line 83)
+- Searched for where `get_system_prompt()` is called
+
+**Execution Flow Confirmed:**
+1. Tool defines `get_system_prompt()` method that returns imported prompt
+2. SimpleTool.execute() calls `self.get_system_prompt()` (tools/simple/base.py line 453)
+3. System prompt is passed to provider.generate_content() (line 574)
+4. Provider sends system prompt to external AI
+
+**Code Evidence:**
+```python
+# tools/simple/base.py line 453
+base_system_prompt = self.get_system_prompt()
+
+# tools/simple/base.py line 574
+model_response = provider.generate_content(
+    prompt=prompt,
+    model_name=self._current_model_name,
+    system_prompt=system_prompt,  # ← System prompt is used!
+    temperature=temperature,
+    ...
+)
+```
+
+**EXAI Tool Test:**
+- Attempted to use `codereview_EXAI-WS` for analysis
+- Result: ❌ ERROR - "cannot access local variable 'time' where it is not associated with a value"
+- Note: EXAI tools can be unreliable (user warned about this)
+- Continued with manual investigation instead
+
+**Classification:** ✅ **ACTIVE - FULLY INTEGRATED**
+
+**Findings:**
+- systemprompts/ is ACTIVELY USED by 14 tools
+- NO hardcoded prompt bypass detected
+- Prompts flow correctly: import → get_system_prompt() → provider → external AI
+- System is working as designed
+- Archive files are legacy backups (can be ignored)
+
+**Recommendation:**
+- ✅ Keep systemprompts/ - it's the correct centralized prompt system
+- ✅ No changes needed - system is properly integrated
+- ⚠️ Consider adding tests to ensure prompts are never bypassed
+
+---
+
 ## TASK CHECKLIST
 
 ### ✅ Completed Tasks
@@ -89,9 +164,11 @@ This document tracks EVERY action taken during Phase 1 of the archaeological dig
 ## FINDINGS SUMMARY
 
 ### Category 1: System Prompts
-**Status:** Not yet investigated  
-**Files:** 15 specialized prompts in systemprompts/  
-**Investigation:** Pending
+**Status:** ✅ COMPLETE - ACTIVE
+**Files:** 15 specialized prompts in systemprompts/
+**Classification:** ACTIVE - Fully integrated into 14 tools
+**Evidence:** 14 imports found, execution flow traced and confirmed
+**Recommendation:** Keep as-is, system working correctly
 
 ### Category 2: Timezone Utility
 **Status:** Not yet investigated  
@@ -143,7 +220,13 @@ This document tracks EVERY action taken during Phase 1 of the archaeological dig
 ## CLASSIFICATION RESULTS
 
 ### ACTIVE Components
-(To be filled as investigations complete)
+
+**1. systemprompts/ (15 files)**
+- ✅ ACTIVE - Fully integrated
+- Used by 14 tools in tools/workflows/ and tools/chat.py
+- Execution flow confirmed: import → get_system_prompt() → provider → AI
+- No bypass detected
+- **Action:** Keep as-is
 
 ### ORPHANED Components
 (To be filled as investigations complete)
