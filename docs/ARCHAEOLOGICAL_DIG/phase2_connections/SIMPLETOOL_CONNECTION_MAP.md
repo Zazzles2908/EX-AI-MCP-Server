@@ -37,22 +37,27 @@ SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixin, Bas
 
 ## 🔼 UPSTREAM: TOOLS INHERITING FROM SIMPLETOOL
 
-### Direct Subclasses (4 tools)
+### Direct Subclasses (3 tools) ✅ VALIDATED
 
 1. **ChatTool** (`tools/chat.py`) - 292 lines
 2. **ChallengeTool** (`tools/challenge.py`) - 237 lines
 3. **ActivityTool** (`tools/activity.py`) - ~200 lines
-4. **RecommendTool** (`tools/capabilities/recommend.py`) - ~150 lines
+
+**VALIDATION NOTE:** RecommendTool was initially documented but does NOT exist in TOOL_MAP registry (tools/registry.py). Count corrected from 4 to 3 tools.
 
 ---
 
-## 🔍 CRITICAL PUBLIC INTERFACE (CANNOT CHANGE)
+## 🔍 CRITICAL PUBLIC INTERFACE (25 METHODS - CANNOT CHANGE) ✅ VALIDATED
+
+**These 25 public methods form the critical interface that CANNOT CHANGE during Phase 3 refactoring.**
+
+All 3 tools (ChatTool, ChallengeTool, ActivityTool) depend on this interface.
 
 ### Abstract Methods (Subclasses MUST Implement)
 
 **1. get_tool_fields() → dict[str, dict[str, Any]]**
 - **Purpose:** Return tool-specific field definitions
-- **Used By:** All 4 tools
+- **Used By:** All 3 tools
 - **Example:**
 ```python
 def get_tool_fields(self) -> dict[str, dict[str, Any]]:
