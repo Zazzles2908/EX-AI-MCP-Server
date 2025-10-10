@@ -69,12 +69,14 @@
 ### ✅ Task 2.5: SimpleTool Connection Map (45 min) 🔥 CRITICAL
 **Deliverable:** `SIMPLETOOL_CONNECTION_MAP.md` (300 lines)
 
-**Key Findings:**
-- 4 tools inheriting from SimpleTool
-- 27 public methods (CANNOT CHANGE)
+**Key Findings:** ✅ VALIDATED & CORRECTED
+- 3 tools inheriting from SimpleTool (ChatTool, ChallengeTool, ActivityTool)
+- 25 public methods (CANNOT CHANGE) - corrected from 27
 - 13 request accessor methods (heavily used)
 - Facade pattern recommended for Phase 3
 - 100% backward compatibility REQUIRED
+
+**Validation Note:** RecommendTool removed (not in registry), method count corrected 27→25
 
 ---
 
