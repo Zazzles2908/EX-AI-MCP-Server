@@ -1,1 +1,0 @@
-This is sample file B for Kimi multi-file chat validation.
