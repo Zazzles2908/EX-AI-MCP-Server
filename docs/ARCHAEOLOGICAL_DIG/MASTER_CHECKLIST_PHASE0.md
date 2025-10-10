@@ -296,7 +296,7 @@
 
 ## 🚨 CRITICAL LESSONS LEARNED
 
-### What Went Wrong:
+### Lesson 1: Understand Architecture First
 1. Started fixing bugs without understanding architecture
 2. Fixed `expert_analysis.py` (shared infrastructure) during "timezone investigation"
 3. Created tracking chaos - exactly what we're trying to prevent
@@ -308,10 +308,27 @@
 3. ✅ Creating proper categorization
 4. ✅ Then making informed decisions
 
+### Lesson 2: Dependency Analysis Before Design
+1. User caught missing dependency analysis: "How do you know what is existing to be put into what you are building?"
+2. Was designing "new system" instead of refactoring existing system
+3. Added: Complete dependency analysis BEFORE designing refactoring
+4. Added: Facade Pattern to preserve backward compatibility
+
+### Lesson 3: Top-Down Design, Not Bottom-Up
+1. User feedback: "Should be more like Top-Down Design (Stepwise Refinement)"
+2. Was splitting by "what code does" instead of "what concept it represents"
+3. Pivot from bottom-up to top-down conceptual categories
+4. TRUE top-down starts from entry points: User → IDE → MCP Server → Daemon → Tools
+5. Organize by domain language: definition, intake, preparation, execution, delivery
+
 ### User's Feedback Validated:
 > "When I mention suggestions like this, then scripts start going in other places, which is difficult to track and not considered when other categories are tackled/assessed"
 
-**User was 100% correct. Phase 0 prevents this.**
+> "It appeared you were building a template and filling it in afterwards... it looked like you were just building brand new."
+
+> "Should be more like Top-Down Design (Stepwise Refinement or Decomposition) so it like splits into categories."
+
+**User was 100% correct on all counts. Phase 0 + Top-Down Design prevents this.**
 
 ---
 
