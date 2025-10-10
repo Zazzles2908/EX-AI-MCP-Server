@@ -69,7 +69,7 @@ def get_tool_fields(self) -> dict[str, dict[str, Any]]:
 
 **2. get_required_fields() → list[str]**
 - **Purpose:** Return list of required field names
-- **Used By:** All 4 tools
+- **Used By:** All 3 tools
 - **Example:**
 ```python
 def get_required_fields(self) -> list[str]:
@@ -303,7 +303,7 @@ from utils.progress_utils.messages import ProgressMessages
 
 1. **Class Name:** `SimpleTool` must remain
 2. **Inheritance Chain:** Must preserve mixin composition and BaseTool inheritance
-3. **Public Method Signatures:** All 27 public methods must keep exact signatures
+3. **Public Method Signatures:** All 25 public methods must keep exact signatures
 4. **Class Constants:** `FILES_FIELD`, `IMAGES_FIELD` must remain
 5. **Abstract Methods:** `get_tool_fields()`, `get_required_fields()` must remain abstract
 6. **Hook Methods:** `get_annotations()`, `format_response()`, `get_request_model()` must remain overridable
@@ -356,10 +356,10 @@ class SimpleTool(...):
 **Deliverable:** SIMPLETOOL_CONNECTION_MAP.md ✅
 
 **Key Findings:**
-- 4 tools inherit from SimpleTool
-- 27 public methods in critical interface (CANNOT CHANGE)
+- 3 tools inherit from SimpleTool (ChatTool, ChallengeTool, ActivityTool)
+- 25 public methods in critical interface (CANNOT CHANGE)
 - 13 request accessor methods heavily used
-- Facade pattern recommended for Phase 3
+- Facade pattern recommended for Phase 2 Cleanup
 - 100% backward compatibility required
 
 **Next Task:** Task 2.6 - WorkflowTool Connection Analysis
