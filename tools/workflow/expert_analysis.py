@@ -415,7 +415,7 @@ class ExpertAnalysisMixin:
                 provider_kwargs = {}
 
             # Get thinking mode for expert analysis (with parameter support)
-            # Note: time module already imported at module level (line 19)
+            import time
             thinking_mode_start = time.time()
             expert_thinking_mode = self.get_expert_thinking_mode(request)
             thinking_mode_elapsed = time.time() - thinking_mode_start
