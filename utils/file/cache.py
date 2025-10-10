@@ -2,10 +2,22 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import time
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+logger = logging.getLogger(__name__)
+
+# Import performance metrics (optional)
+try:
+    from utils.infrastructure.performance_metrics import record_cache_hit, record_cache_miss
+    _METRICS_AVAILABLE = True
+except ImportError:
+    _METRICS_AVAILABLE = False
+    def record_cache_hit(cache_name: str): pass
+    def record_cache_miss(cache_name: str): pass
 
 
 class FileCache:
@@ -39,8 +51,9 @@ class FileCache:
     def _save(self) -> None:
         try:
             self.path.write_text(json.dumps(self._data, ensure_ascii=False), encoding="utf-8")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to save file cache to {self.path}: {e}")
+            # Don't raise - cache save failures shouldn't break the application
 
     @staticmethod
     def sha256_file(path: Path) -> str:
@@ -54,6 +67,8 @@ class FileCache:
         now = time.time()
         rec = self._data.get("items", {}).get(sha256, {}).get(provider)
         if not rec:
+            if _METRICS_AVAILABLE:
+                record_cache_miss("file_cache")
             return None
         ts = float(rec.get("ts") or 0)
         if self.ttl_secs > 0 and (now - ts) > self.ttl_secs:
@@ -65,7 +80,11 @@ class FileCache:
                 self._save()
             except Exception:
                 pass
+            if _METRICS_AVAILABLE:
+                record_cache_miss("file_cache")
             return None
+        if _METRICS_AVAILABLE:
+            record_cache_hit("file_cache")
         return rec.get("file_id")
 
     def set(self, sha256: str, provider: str, file_id: str) -> None:

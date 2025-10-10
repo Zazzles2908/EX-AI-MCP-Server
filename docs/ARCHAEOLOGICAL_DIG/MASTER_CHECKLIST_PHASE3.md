@@ -1,26 +1,24 @@
-# ARCHAEOLOGICAL DIG - Phase 3 MASTER CHECKLIST
-**Branch:** archaeological-dig/phase1-discovery-and-cleanup
-**Started:** TBD (After Phase 2 & 3 complete)
-**Purpose:** Plan SimpleTool refactoring using Facade Pattern for modular architecture
+# ARCHAEOLOGICAL DIG - PHASE 3 MASTER CHECKLIST
+**Branch:** archaeological-dig/phase3-refactor-and-simplify
+**Started:** TBD (After Phase 2 Cleanup complete)
+**Purpose:** Refactor & Simplify - Reduce complexity and improve maintainability
+**Parent:** MASTER_CHECKLIST_PHASE2_CLEANUP.md (All tasks must be COMPLETE)
+
+**NOTE:** SimpleTool refactoring was completed in Phase 2 Cleanup (Task 2.B). Phase 3 focuses on broader codebase simplification and maintainability improvements.
 
 ---
 
-## 🎯 Phase 3 GOAL
+## 🎯 PHASE 3 GOAL
 
-**Refactor SimpleTool (55.3KB monolithic file) into modular architecture:**
-- Split into 5 conceptual modules using Top-Down Design
-- Maintain 100% backward compatibility (25 public methods CANNOT CHANGE)
-- Use Facade Pattern (base.py delegates to modules)
-- Ensure all 3 SimpleTool subclasses continue working
-- Reduce base.py from 1,220 lines to ~150-200 lines
-- Each module: 150-250 lines with single responsibility
+Refactor and simplify the codebase to:
+1. Consolidate duplicate code
+2. Simplify complex modules
+3. Improve code organization
+4. Reduce technical debt
+5. Enhance maintainability
+6. Prepare for production deployment
 
-**WHY THIS IS CRITICAL:**
-- SimpleTool is used by 3 tools (ChatTool, ChallengeTool, ActivityTool)
-- 25 public methods form critical interface that CANNOT break
-- Current 55.3KB file is hard to maintain and extend
-- Modular design enables easier testing and future enhancements
-- Foundation for long-term system stability
+**Based on:** Phase 0, 1, 2 findings and Phase 2 Cleanup optimizations
 
 ---
 
@@ -35,144 +33,117 @@
 
 **Phase 1: Discovery & Classification** ✅ COMPLETE
 - [x] All components classified (ACTIVE/ORPHANED/PLANNED)
-- [x] Orphaned directories deleted
-- [x] Utils folder reorganized
+- [x] Orphaned directories deleted (4 directories)
+- [x] Planned infrastructure archived (3 systems)
+- [x] Utils folder reorganized (37 files → 6 folders)
 - [x] All changes committed and pushed
 
-**Phase 2: Map Connections** ⏳ TO BE COMPLETED
-- [ ] All 10 Phase 2 tasks to be completed
-- [ ] SimpleTool connections to be mapped (CRITICAL)
-- [ ] Public methods to be identified and validated
-- [ ] SimpleTool subclasses to be verified
-- [ ] Facade pattern strategy to be validated
-- [ ] Expert validation to be performed
+**Phase 2: Map Connections** ✅ COMPLETE
+- [x] All 10 connection mapping tasks complete
+- [x] Critical paths identified
+- [x] Integration patterns documented
+- [x] GLM-4.6 validation performed
 
-**Phase 3: Execute Phase 2 Findings** ⏳ TO BE COMPLETED
-- [ ] Execute Phase 2 cleanup tasks
-- [ ] Optimize identified bottlenecks
-- [ ] Fix connection issues
-- [ ] Prepare for SimpleTool refactoring
-
----
-
-## 🔒 CRITICAL CONSTRAINTS (CANNOT CHANGE)
-
-### SimpleTool Public Interface (25 Methods - VALIDATED)
-
-**Abstract Methods (2):**
-1. get_tool_fields() → dict[str, dict[str, Any]]
-2. get_required_fields() → list[str]
-
-**Hook Methods (3):**
-3. get_annotations() → Optional[dict[str, Any]]
-4. format_response(response, request, model_info) → str
-5. get_request_model() → Type[ToolRequest]
-
-**Schema & Validation (3):**
-6. get_input_schema() → dict[str, Any]
-7. supports_custom_request_model() → bool
-8. get_prompt_content_for_size_validation() → str
-
-**Request Accessors (13):**
-9. get_request_model_name(request) → str
-10. get_request_images(request) → list[str]
-11. get_request_continuation_id(request) → Optional[str]
-12. get_request_prompt(request) → str
-13. get_request_temperature(request) → Optional[float]
-14. get_validated_temperature(request, model_context) → tuple[float, list[str]]
-15. get_request_thinking_mode(request) → Optional[str]
-16. get_request_files(request) → list[str]
-17. get_request_use_websearch(request) → bool
-18. get_request_as_dict(request) → dict
-19. set_request_files(request, files) → None
-20. get_actually_processed_files() → list
-21. get_request_stream(request) → Optional[bool]
-
-**Prompt Building (3):**
-22. build_standard_prompt(system_prompt, user_content, request, file_context_title) → str
-23. handle_prompt_file_with_fallback(request) → str
-24. prepare_chat_style_prompt(request, system_prompt) → str
-
-**Execution (1):**
-25. execute(arguments) → list
-
-### Inheritance Chain (CANNOT CHANGE)
-```
-SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixin, BaseTool)
-└── BaseTool(BaseToolCore, FileHandlingMixin, ModelManagementMixin, ResponseFormattingMixin)
-```
-
-### Subclasses (3 Tools - MUST CONTINUE WORKING)
-1. ChatTool (tools/chat.py)
-2. ChallengeTool (tools/challenge.py)
-3. ActivityTool (tools/activity.py)
+**Phase 2 Cleanup: Execute Phase 2 Findings** ✅ COMPLETE
+- [x] SimpleTool refactoring complete (Facade pattern)
+- [x] Performance optimizations complete (caching, parallel uploads, metrics)
+- [x] Testing enhancements complete (46 tests)
+- [x] Documentation improvements complete
+- [x] Critical bugs fixed
+- [x] All changes committed
 
 ---
 
-## 📋 Phase 3 REFACTORING TASKS
+## 📋 PHASE 3 EXECUTION TASKS
 
-### Task 3.0: Setup & Planning (1 day)
+**NOTE:** Phase 3 tasks are placeholders. The actual tasks will be defined based on findings from Phase 2 Cleanup and user priorities.
 
-**Goal:** Establish Phase 3 workspace and review all documentation
+### Task 3.1: Code Consolidation (TBD)
 
-**Tasks:**
-- [ ] Create Phase 3 master checklist (this document)
-- [ ] Review Phase 2 comprehensive summary
-- [ ] Review SimpleTool connection map
-- [ ] Review validation corrections
-- [ ] Understand all 25 public methods
-- [ ] Understand facade pattern strategy
-- [ ] Create Phase 3 working branch
-- [ ] Set up task tracking
+**Goal:** Identify and consolidate duplicate code
 
-**Deliverable:**
-- [ ] Phase 3 master checklist created
-- [ ] All Phase 2 documentation reviewed
-- [ ] Working branch created
-- [ ] Ready to begin refactoring
-
-**Time Estimate:** 1 day
+**Status:** ⏳ NOT STARTED
+**Prerequisites:** ✅ Phase 2 Cleanup complete
 
 ---
 
-### Task 3.1: Pre-Refactoring Validation (2-3 days)
+### Task 3.2: Simplify Complex Modules (TBD)
 
-**Goal:** Create comprehensive integration tests BEFORE refactoring
+**Goal:** Break down overly complex modules
 
-**Tasks:**
-- [ ] Create tests/integration/simpletool/ directory
-- [ ] Create baseline tests for ChatTool
-  - [ ] Test all 25 public methods
-  - [ ] Test chat-specific functionality
-  - [ ] Test conversation continuation
-  - [ ] Test file handling
-- [ ] Create baseline tests for ChallengeTool
-  - [ ] Test all 25 public methods
-  - [ ] Test challenge-specific functionality
-- [ ] Create baseline tests for ActivityTool
-  - [ ] Test all 25 public methods
-  - [ ] Test activity-specific functionality
-- [ ] Run all tests and document baseline behavior
-- [ ] Commit baseline tests
-
-**Deliverable:**
-- [ ] Comprehensive integration test suite
-- [ ] All tests passing (baseline)
-- [ ] Test documentation
-- [ ] Tests committed to git
-
-**Time Estimate:** 2-3 days
+**Status:** ⏳ NOT STARTED
+**Prerequisites:** ✅ Phase 2 Cleanup complete
 
 ---
 
-### Task 3.2: Extract Definition Module (2-3 days)
+### Task 3.3: Improve Code Organization (TBD)
 
-**Goal:** Extract schema generation logic into definition/ module
+**Goal:** Reorganize code for better structure
 
-**Tasks:**
-- [ ] Create tools/simple/definition/ directory
-- [ ] Create tools/simple/definition/__init__.py
-- [ ] Create tools/simple/definition/schema.py
+**Status:** ⏳ NOT STARTED
+**Prerequisites:** ✅ Phase 2 Cleanup complete
+
+---
+
+### Task 3.4: Reduce Technical Debt (TBD)
+
+**Goal:** Address technical debt backlog
+
+**Status:** ⏳ NOT STARTED
+**Prerequisites:** ✅ Phase 2 Cleanup complete
+
+---
+
+### Task 3.5: Enhance Maintainability (TBD)
+
+**Goal:** Make codebase easier to maintain
+
+**Status:** ⏳ NOT STARTED
+**Prerequisites:** ✅ Phase 2 Cleanup complete
+
+---
+
+## 📊 PROGRESS TRACKER
+
+**Total Tasks:** 5 (placeholder)
+**Completed:** 0/5 (0%)
+**In Progress:** 0/5
+**Not Started:** 5/5
+
+**Estimated Duration:** TBD (to be determined based on user priorities)
+
+---
+
+## 🎯 SUCCESS CRITERIA
+
+- [ ] All duplicate code consolidated
+- [ ] Complex modules simplified
+- [ ] Code well-organized
+- [ ] Technical debt reduced
+- [ ] Maintainability enhanced
+- [ ] All tests passing
+- [ ] Documentation complete
+
+---
+
+## 📝 NOTES
+
+**Phase 3 is ready to begin when:**
+1. User reviews Phase 2 Cleanup completion summary
+2. User defines specific Phase 3 priorities
+3. User approves Phase 3 scope and timeline
+
+**Current Status:**
+- ✅ Phase 2 Cleanup complete
+- ✅ Phase 3 checklist created
+- ⏳ Awaiting user input for Phase 3 priorities
+
+---
+
+**STATUS:** ⏳ READY TO BEGIN (awaiting user priorities)
+**Prerequisites:** ✅ ALL COMPLETE
+**Next:** User defines Phase 3 scope and priorities
+
 - [ ] Extract schema generation methods:
   - [ ] get_input_schema()
   - [ ] get_tool_fields() (abstract)

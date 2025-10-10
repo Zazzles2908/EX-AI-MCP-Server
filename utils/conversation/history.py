@@ -532,7 +532,7 @@ def build_conversation_history(
 
     # Calculate total tokens for the complete conversation history
     complete_history = "\n".join(history_parts)
-    from utils.modelutils.model.token_utils import estimate_tokens
+    from utils.model.token_utils import estimate_tokens
 
     total_conversation_tokens = estimate_tokens(complete_history)
 

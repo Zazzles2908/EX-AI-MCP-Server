@@ -102,7 +102,13 @@ class KimiUploadAndExtractTool(BaseTool):
 
         skipped: List[str] = []
 
-        for idx, fp in enumerate(effective_files, start=1):
+        # Parallel upload configuration
+        parallel_uploads_enabled = os.getenv("KIMI_FILES_PARALLEL_UPLOADS", "true").strip().lower() == "true"
+        max_parallel = int(os.getenv("KIMI_FILES_MAX_PARALLEL", "3"))  # Limit concurrent uploads
+
+        # Helper function to process a single file
+        def process_single_file(fp):
+            """Process a single file upload and extraction"""
             evt = ToolCallEvent(provider=prov.get_provider_type().value, tool_name="file_upload_extract", args={"path": str(fp), "purpose": purpose})
             try:
                 pth = _P(str(fp))
@@ -121,7 +127,7 @@ class KimiUploadAndExtractTool(BaseTool):
                             sink.record(evt)
                         except Exception:
                             pass
-                        continue
+                        return None
 
                 # FileCache: reuse existing file_id if enabled and present
                 cache_enabled = os.getenv("FILECACHE_ENABLED", "true").strip().lower() == "true"
@@ -151,27 +157,7 @@ class KimiUploadAndExtractTool(BaseTool):
 
                 # Upload with timeout when not cached
                 if not file_id:
-                    def _upload():
-                        return prov.upload_file(str(pth), purpose=purpose)
-                    try:
-                        with _fut.ThreadPoolExecutor(max_workers=1) as _pool:
-                            _future = _pool.submit(_upload)
-                            file_id = _future.result(timeout=upload_timeout)
-                    except _fut.TimeoutError:
-                        raise TimeoutError(f"Kimi files.upload() timed out after {int(upload_timeout)}s for path={pth}")
-                    except Exception as upload_err:
-                        # Handle upload failures gracefully (e.g., Moonshot "text extract error")
-                        import logging
-                        logger = logging.getLogger(__name__)
-                        logger.warning(f"⚠️ File upload failed for {pth.name}: {upload_err}")
-                        logger.warning(f"   Skipping file and continuing with batch...")
-                        skipped.append(str(pth))
-                        evt.end(ok=False, error=f"upload failed: {upload_err}")
-                        try:
-                            sink.record(evt)
-                        except Exception:
-                            pass
-                        continue
+                    file_id = prov.upload_file(str(pth), purpose=purpose)
 
                     # on new upload, cache it
                     try:
@@ -183,12 +169,12 @@ class KimiUploadAndExtractTool(BaseTool):
                         pass
                     # Observability: record file count +1 for fresh upload
                     try:
-                        from utils.observability import record_file_count  # lazy import
+                        from utils.observability import record_file_count
                         record_file_count(prov_name, +1)
                     except Exception:
                         pass
 
-                # Retrieve parsed content with retry/backoff (provider may throttle on multiple files)
+                # Retrieve parsed content with retry/backoff
                 def _fetch():
                     attempts = int(os.getenv("KIMI_FILES_FETCH_RETRIES", "3"))
                     backoff = float(os.getenv("KIMI_FILES_FETCH_BACKOFF", "0.8"))
@@ -199,40 +185,189 @@ class KimiUploadAndExtractTool(BaseTool):
                             return prov.client.files.content(file_id=file_id).text
                         except Exception as e:
                             last_err = e
-                            # backoff before retry
-                            try:
-                                import time as _t
-                                _t.sleep(delay)
-                            except Exception:
-                                pass
+                            import time
+                            time.sleep(delay)
                             delay *= (1.0 + backoff)
                     if last_err:
                         raise last_err
                     raise RuntimeError("Failed to fetch file content (unknown error)")
 
-                try:
-                    with _fut.ThreadPoolExecutor(max_workers=1) as _pool:
-                        _future = _pool.submit(_fetch)
-                        content = _future.result(timeout=fetch_timeout)
-                except _fut.TimeoutError:
-                    raise TimeoutError(f"Kimi files.content() timed out after {int(fetch_timeout)}s for file_id={file_id}")
-
-                messages.append({"role": "system", "content": content, "_file_id": file_id})
+                content = _fetch()
                 evt.end(ok=True)
+                try:
+                    sink.record(evt)
+                except Exception:
+                    pass
+                return {"role": "system", "content": content, "_file_id": file_id}
+
             except Exception as e:
                 evt.end(ok=False, error=str(e))
-                # Observability: record provider error
+                try:
+                    sink.record(evt)
+                except Exception:
+                    pass
+                # Handle upload failures gracefully
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"⚠️ File processing failed for {fp}: {e}")
+                logger.warning(f"   Skipping file and continuing with batch...")
+                skipped.append(str(fp))
                 try:
                     from utils.observability import record_error
                     record_error(prov.get_provider_type().value, getattr(prov, 'FRIENDLY_NAME', 'Kimi'), 'upload_error', str(e))
                 except Exception:
                     pass
-                raise
-            finally:
+                return None
+
+        # Process files in parallel or sequential
+        if parallel_uploads_enabled and len(effective_files) > 1:
+            # Parallel processing using ThreadPoolExecutor
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Processing {len(effective_files)} files in parallel (max {max_parallel} concurrent)")
+
+            with _fut.ThreadPoolExecutor(max_workers=max_parallel) as executor:
+                # Submit all files for processing
+                future_to_file = {executor.submit(process_single_file, fp): fp for fp in effective_files}
+
+                # Collect results as they complete
+                for future in _fut.as_completed(future_to_file):
+                    result = future.result()
+                    if result is not None:
+                        messages.append(result)
+        else:
+            # Sequential processing (fallback or single file)
+            for idx, fp in enumerate(effective_files, start=1):
+                evt = ToolCallEvent(provider=prov.get_provider_type().value, tool_name="file_upload_extract", args={"path": str(fp), "purpose": purpose})
                 try:
-                    sink.record(evt)
-                except Exception:
-                    pass
+                    pth = _P(str(fp))
+                    # Size gate if configured
+                    if max_bytes and pth.exists() and pth.is_file():
+                        try:
+                            sz = pth.stat().st_size
+                        except Exception:
+                            sz = -1
+                        if sz >= 0 and sz > max_bytes:
+                            if oversize_behavior == "fail":
+                                raise RuntimeError(f"File exceeds max size: {pth.name} ({(sz + 1048575)//1048576} MB > {int(max_mb)} MB cap)")
+                            skipped.append(str(pth))
+                            evt.end(ok=False, error=f"skipped: oversize ({(sz + 1048575)//1048576} MB > {int(max_mb)} MB cap)")
+                            try:
+                                sink.record(evt)
+                            except Exception:
+                                pass
+                            continue
+
+                    # FileCache: reuse existing file_id if enabled and present
+                    cache_enabled = os.getenv("FILECACHE_ENABLED", "true").strip().lower() == "true"
+                    file_id = None
+                    prov_name = prov.get_provider_type().value
+                    if cache_enabled:
+                        try:
+                            sha = FileCache.sha256_file(pth)
+                            fc = FileCache()
+                            cached = fc.get(sha, prov_name)
+                            if cached:
+                                # cache hit
+                                try:
+                                    from utils.observability import record_cache_hit
+                                    record_cache_hit(prov_name, sha)
+                                except Exception:
+                                    pass
+                                file_id = cached
+                            else:
+                                try:
+                                    from utils.observability import record_cache_miss
+                                    record_cache_miss(prov_name, sha)
+                                except Exception:
+                                    pass
+                        except Exception:
+                            file_id = None
+
+                    # Upload with timeout when not cached
+                    if not file_id:
+                        def _upload():
+                            return prov.upload_file(str(pth), purpose=purpose)
+                        try:
+                            with _fut.ThreadPoolExecutor(max_workers=1) as _pool:
+                                _future = _pool.submit(_upload)
+                                file_id = _future.result(timeout=upload_timeout)
+                        except _fut.TimeoutError:
+                            raise TimeoutError(f"Kimi files.upload() timed out after {int(upload_timeout)}s for path={pth}")
+                        except Exception as upload_err:
+                            # Handle upload failures gracefully (e.g., Moonshot "text extract error")
+                            import logging
+                            logger = logging.getLogger(__name__)
+                            logger.warning(f"⚠️ File upload failed for {pth.name}: {upload_err}")
+                            logger.warning(f"   Skipping file and continuing with batch...")
+                            skipped.append(str(pth))
+                            evt.end(ok=False, error=f"upload failed: {upload_err}")
+                            try:
+                                sink.record(evt)
+                            except Exception:
+                                pass
+                            continue
+
+                        # on new upload, cache it
+                        try:
+                            if cache_enabled:
+                                sha = FileCache.sha256_file(pth)
+                                fc = FileCache()
+                                fc.set(sha, prov_name, file_id)
+                        except Exception:
+                            pass
+                        # Observability: record file count +1 for fresh upload
+                        try:
+                            from utils.observability import record_file_count  # lazy import
+                            record_file_count(prov_name, +1)
+                        except Exception:
+                            pass
+
+                    # Retrieve parsed content with retry/backoff (provider may throttle on multiple files)
+                    def _fetch():
+                        attempts = int(os.getenv("KIMI_FILES_FETCH_RETRIES", "3"))
+                        backoff = float(os.getenv("KIMI_FILES_FETCH_BACKOFF", "0.8"))
+                        delay = float(os.getenv("KIMI_FILES_FETCH_INITIAL_DELAY", "0.5"))
+                        last_err = None
+                        for _ in range(attempts):
+                            try:
+                                return prov.client.files.content(file_id=file_id).text
+                            except Exception as e:
+                                last_err = e
+                                # backoff before retry
+                                try:
+                                    import time as _t
+                                    _t.sleep(delay)
+                                except Exception:
+                                    pass
+                                delay *= (1.0 + backoff)
+                        if last_err:
+                            raise last_err
+                        raise RuntimeError("Failed to fetch file content (unknown error)")
+
+                    try:
+                        with _fut.ThreadPoolExecutor(max_workers=1) as _pool:
+                            _future = _pool.submit(_fetch)
+                            content = _future.result(timeout=fetch_timeout)
+                    except _fut.TimeoutError:
+                        raise TimeoutError(f"Kimi files.content() timed out after {int(fetch_timeout)}s for file_id={file_id}")
+
+                    messages.append({"role": "system", "content": content, "_file_id": file_id})
+                    evt.end(ok=True)
+                except Exception as e:
+                    evt.end(ok=False, error=str(e))
+                    # Observability: record provider error
+                    try:
+                        from utils.observability import record_error
+                        record_error(prov.get_provider_type().value, getattr(prov, 'FRIENDLY_NAME', 'Kimi'), 'upload_error', str(e))
+                    except Exception:
+                        pass
+                    raise
+                finally:
+                    try:
+                        sink.record(evt)
+                    except Exception:
+                        pass
 
         # If we skipped everything, fail clearly
         if not messages:

@@ -683,6 +683,13 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                             return
                 latency = time.time() - start
 
+                # Record performance metrics
+                try:
+                    from utils.infrastructure.performance_metrics import record_tool_call
+                    record_tool_call(name, success=True, latency_ms=latency * 1000)
+                except Exception:
+                    pass  # Don't fail if metrics unavailable
+
                 # CRITICAL FIX: Log successful tool completion
                 logger.info(f"=== TOOL CALL COMPLETE ===")
                 logger.info(f"Tool: {name}")
@@ -831,6 +838,14 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
             except asyncio.TimeoutError:
                 # CRITICAL FIX: Log timeout errors
                 latency_timeout = time.time() - start
+
+                # Record performance metrics
+                try:
+                    from utils.infrastructure.performance_metrics import record_tool_call
+                    record_tool_call(name, success=False, latency_ms=latency_timeout * 1000, error_type="TimeoutError")
+                except Exception:
+                    pass  # Don't fail if metrics unavailable
+
                 logger.error(f"=== TOOL CALL TIMEOUT ===")
                 logger.error(f"Tool: {name}")
                 logger.error(f"Duration: {latency_timeout:.2f}s")
@@ -872,6 +887,15 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
             except Exception as e:
                 # CRITICAL FIX: Log tool execution errors
                 latency_error = time.time() - start
+
+                # Record performance metrics
+                try:
+                    from utils.infrastructure.performance_metrics import record_tool_call
+                    error_type = type(e).__name__
+                    record_tool_call(name, success=False, latency_ms=latency_error * 1000, error_type=error_type)
+                except Exception:
+                    pass  # Don't fail if metrics unavailable
+
                 logger.error(f"=== TOOL CALL FAILED ===")
                 logger.error(f"Tool: {name}")
                 logger.error(f"Duration: {latency_error:.2f}s")

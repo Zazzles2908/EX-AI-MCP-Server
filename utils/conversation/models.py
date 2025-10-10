@@ -135,7 +135,7 @@ def get_storage():
     Returns:
         InMemoryStorage: Thread-safe in-memory storage backend
     """
-    from .storage_backend import get_storage_backend
+    from utils.infrastructure.storage_backend import get_storage_backend
 
     return get_storage_backend()
 

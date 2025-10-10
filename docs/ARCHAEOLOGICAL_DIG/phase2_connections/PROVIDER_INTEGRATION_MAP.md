@@ -587,11 +587,11 @@ Return to tool
 | **Context Caching** | ✅ Yes (X-Kimi-Context-Cache) | ❌ No |
 | **Idempotency** | ✅ Yes (X-Idempotency-Key) | ❌ No |
 | **File Upload** | ✅ Yes (file-extract, assistants) | ✅ Yes (agent purpose) |
-| **Web Search** | ❌ No | ✅ Yes (native support) |
-| **Vision Models** | ✅ Yes (moonshot-v1-8k-vision-preview) | ✅ Yes (glm-4.5v) |
-| **Thinking Mode** | ✅ Yes (kimi-thinking-preview) | ❌ No |
+| **Web Search** | ✅ Yes ($web_search builtin) | ✅ Yes (native support) |
+| **Vision Models** | ✅ Yes (kimi-k2-0905-preview, kimi-k2-0711-preview) | ✅ Yes (glm-4.5v) |
+| **Thinking Mode** | ✅ Yes (kimi-thinking-preview) | ✅ Yes (glm-4.6, glm-4.5, glm-4.5-air) |
 | **Default Timeout** | 300s | Standard HTTP timeout |
-| **Model Count** | 8 models | 5 models |
+| **Model Count** | 14 models | 5 models |
 
 ---
 

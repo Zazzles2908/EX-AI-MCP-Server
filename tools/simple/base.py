@@ -64,8 +64,18 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
     """
 
     # Common field definitions that simple tools can reuse
-    FILES_FIELD = SchemaBuilder.SIMPLE_FIELD_SCHEMAS["files"]
-    IMAGES_FIELD = SchemaBuilder.COMMON_FIELD_SCHEMAS["images"]
+    # Now delegated to SimpleToolSchemaBuilder for better separation of concerns
+    @property
+    def FILES_FIELD(self) -> dict[str, Any]:
+        """Get FILES field schema from Definition Module"""
+        from tools.simple.definition.schema import SimpleToolSchemaBuilder
+        return SimpleToolSchemaBuilder.get_files_field()
+
+    @property
+    def IMAGES_FIELD(self) -> dict[str, Any]:
+        """Get IMAGES field schema from Definition Module"""
+        from tools.simple.definition.schema import SimpleToolSchemaBuilder
+        return SimpleToolSchemaBuilder.get_images_field()
 
     @abstractmethod
     def get_tool_fields(self) -> dict[str, dict[str, Any]]:
@@ -154,13 +164,13 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
 
         Returns:
             Complete JSON schema for the tool
+
+        Note:
+            Schema generation is now delegated to SimpleToolSchemaBuilder
+            in the Definition Module for better separation of concerns.
         """
-        return SchemaBuilder.build_schema(
-            tool_specific_fields=self.get_tool_fields(),
-            required_fields=self.get_required_fields(),
-            model_field_schema=self.get_model_field_schema(),
-            auto_mode=self.is_effective_auto_mode(),
-        )
+        from tools.simple.definition.schema import SimpleToolSchemaBuilder
+        return SimpleToolSchemaBuilder.build_input_schema(self)
 
     def get_request_model(self):
         """
@@ -172,41 +182,32 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         return ToolRequest
 
     # Hook methods for safe attribute access without hasattr/getattr
+    # Now delegated to RequestAccessor in Intake Module for better separation of concerns
 
     def get_request_model_name(self, request) -> Optional[str]:
         """Get model name from request. Override for custom model name handling."""
-        try:
-            return request.model
-        except AttributeError:
-            return None
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_model_name(request)
 
     def get_request_images(self, request) -> list:
         """Get images from request. Override for custom image handling."""
-        try:
-            return request.images if request.images is not None else []
-        except AttributeError:
-            return []
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_images(request)
 
     def get_request_continuation_id(self, request) -> Optional[str]:
         """Get continuation_id from request. Override for custom continuation handling."""
-        try:
-            return request.continuation_id
-        except AttributeError:
-            return None
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_continuation_id(request)
 
     def get_request_prompt(self, request) -> str:
         """Get prompt from request. Override for custom prompt handling."""
-        try:
-            return request.prompt
-        except AttributeError:
-            return ""
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_prompt(request)
 
     def get_request_temperature(self, request) -> Optional[float]:
         """Get temperature from request. Override for custom temperature handling."""
-        try:
-            return request.temperature
-        except AttributeError:
-            return None
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_temperature(request)
 
     def get_validated_temperature(self, request, model_context: Any) -> tuple[float, list[str]]:
         """
@@ -229,51 +230,30 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
 
     def get_request_thinking_mode(self, request) -> Optional[str]:
         """Get thinking_mode from request. Override for custom thinking mode handling."""
-        try:
-            return request.thinking_mode
-        except AttributeError:
-            return None
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_thinking_mode(request)
 
     def get_request_files(self, request) -> list:
         """Get files from request. Override for custom file handling."""
-        try:
-            return request.files if request.files is not None else []
-        except AttributeError:
-            return []
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_files(request)
 
     def get_request_use_websearch(self, request) -> bool:
         """Get use_websearch from request, falling back to env default.
         EX_WEBSEARCH_DEFAULT_ON controls default when request doesn't specify.
         """
-        try:
-            val = getattr(request, "use_websearch", None)
-            if val is not None:
-                return bool(val)
-            import os as __os
-            return __os.getenv("EX_WEBSEARCH_DEFAULT_ON", "true").strip().lower() == "true"
-        except AttributeError:
-            return True
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_use_websearch(request)
 
     def get_request_as_dict(self, request) -> dict:
         """Convert request to dictionary. Override for custom serialization."""
-        try:
-            # Try Pydantic v2 method first
-            return request.model_dump()
-        except AttributeError:
-            try:
-                # Fall back to Pydantic v1 method
-                return request.dict()
-            except AttributeError:
-                # Last resort - convert to dict manually
-                return {"prompt": self.get_request_prompt(request)}
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_as_dict(request)
 
     def set_request_files(self, request, files: list) -> None:
         """Set files on request. Override for custom file setting."""
-        try:
-            request.files = files
-        except AttributeError:
-            # If request doesn't support file setting, ignore silently
-            pass
+        from tools.simple.intake.accessor import RequestAccessor
+        RequestAccessor.set_files(request, files)
 
     def get_actually_processed_files(self) -> list:
         """Get actually processed files. Override for custom file tracking."""
@@ -568,15 +548,52 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                             provider_kwargs["stream"] = True
                     except Exception:
                         pass
-                    model_response = provider.generate_content(
+
+                    # Try semantic cache first
+                    from utils.infrastructure.semantic_cache import get_semantic_cache
+                    import hashlib
+                    cache = get_semantic_cache()
+
+                    # Hash system prompt to avoid false cache hits from truncation
+                    system_prompt_hash = None
+                    if system_prompt:
+                        system_prompt_hash = hashlib.sha256(system_prompt.encode()).hexdigest()[:16]
+
+                    cached_response = cache.get(
                         prompt=prompt,
-                        model_name=self._current_model_name,
-                        system_prompt=system_prompt,
+                        model=self._current_model_name,
                         temperature=temperature,
                         thinking_mode=thinking_mode if provider.supports_thinking_mode(self._current_model_name) else None,
-                        images=images if images else None,
-                        **provider_kwargs,
+                        use_websearch=self.get_request_use_websearch(request),
+                        system_prompt_hash=system_prompt_hash,  # Use hash instead of truncated text
                     )
+
+                    if cached_response is not None:
+                        logger.info(f"Semantic cache HIT for {self.get_name()} (model={self._current_model_name})")
+                        model_response = cached_response
+                    else:
+                        logger.debug(f"Semantic cache MISS for {self.get_name()} (model={self._current_model_name})")
+                        model_response = provider.generate_content(
+                            prompt=prompt,
+                            model_name=self._current_model_name,
+                            system_prompt=system_prompt,
+                            temperature=temperature,
+                            thinking_mode=thinking_mode if provider.supports_thinking_mode(self._current_model_name) else None,
+                            images=images if images else None,
+                            **provider_kwargs,
+                        )
+
+                        # Cache the response
+                        if model_response is not None:
+                            cache.set(
+                                prompt=prompt,
+                                model=self._current_model_name,
+                                response=model_response,
+                                temperature=temperature,
+                                thinking_mode=thinking_mode if provider.supports_thinking_mode(self._current_model_name) else None,
+                                use_websearch=self.get_request_use_websearch(request),
+                                system_prompt_hash=system_prompt_hash,  # Use hash instead of truncated text
+                            )
                 except Exception as _explicit_err:
                     if _fb_on_failure:
                         logger.warning(f"Explicit model call failed; entering fallback chain: {str(_explicit_err)}")
