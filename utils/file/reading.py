@@ -9,10 +9,10 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from .file_types import BINARY_EXTENSIONS, IMAGE_EXTENSIONS, TEXT_EXTENSIONS
-from .file_utils_expansion import expand_paths
-from .file_utils_security import resolve_and_validate_path
-from .token_utils import DEFAULT_CONTEXT_WINDOW, estimate_tokens
+from .types import BINARY_EXTENSIONS, IMAGE_EXTENSIONS, TEXT_EXTENSIONS
+from .expansion import expand_paths
+from .security import resolve_and_validate_path
+from utils.model.token_utils import DEFAULT_CONTEXT_WINDOW, estimate_tokens
 
 logger = logging.getLogger(__name__)
 

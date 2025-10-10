@@ -56,7 +56,7 @@ def get_follow_up_instructions(current_turn_count: int, max_turns: int = None) -
         Follow-up instructions to append to the tool prompt
     """
     if max_turns is None:
-        from utils.conversation_memory import MAX_CONVERSATION_TURNS
+        from utils.conversation.memory import MAX_CONVERSATION_TURNS
 
         max_turns = MAX_CONVERSATION_TURNS
 

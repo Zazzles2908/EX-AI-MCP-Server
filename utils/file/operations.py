@@ -38,7 +38,7 @@ multi-turn file handling:
 """
 
 # Import all functions from specialized modules
-from .file_utils_security import (
+from .security import (
     _is_builtin_custom_models_config,
     is_mcp_directory,
     get_user_home_directory,
@@ -46,27 +46,27 @@ from .file_utils_security import (
     resolve_and_validate_path,
 )
 
-from .file_utils_reading import (
+from .reading import (
     detect_file_type,
     should_add_line_numbers,
     read_file_content,
     read_files,
 )
 
-from .file_utils_expansion import expand_paths
+from .expansion import expand_paths
 
-from .file_utils_tokens import (
+from .tokens import (
     estimate_file_tokens,
     check_files_size_limit,
     check_total_file_size,
 )
 
-from .file_utils_json import (
+from .json import (
     read_json_file,
     write_json_file,
 )
 
-from .file_utils_helpers import (
+from .helpers import (
     get_file_size,
     ensure_directory_exists,
     is_text_file,

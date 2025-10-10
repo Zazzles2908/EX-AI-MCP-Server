@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 
-from utils.docs_validator import validate_docs
+from utils.infrastructure.docs_validator import validate_docs
 
 
 def test_validator_detects_broken_link_and_kebab():

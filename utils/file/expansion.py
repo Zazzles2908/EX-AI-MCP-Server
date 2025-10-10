@@ -10,9 +10,9 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from .file_types import CODE_EXTENSIONS
-from .file_utils_security import is_home_directory_root, is_mcp_directory, resolve_and_validate_path
-from .security_config import EXCLUDED_DIRS
+from .types import CODE_EXTENSIONS
+from .security import is_home_directory_root, is_mcp_directory, resolve_and_validate_path
+from utils.config.security import EXCLUDED_DIRS
 
 logger = logging.getLogger(__name__)
 

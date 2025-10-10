@@ -14,7 +14,7 @@ import time
 import psutil
 import os
 from src.daemon.session_manager import SessionManager
-from utils.error_handling import GracefulDegradation
+from utils.infrastructure.error_handling import GracefulDegradation
 from utils.progress import ProgressHeartbeat
 
 

@@ -272,7 +272,7 @@ class TestGracefulDegradationIntegration:
     @pytest.mark.asyncio
     async def test_circuit_breaker_opens_after_failures(self):
         """Test that circuit breaker opens after consecutive failures."""
-        from utils.error_handling import GracefulDegradation
+        from utils.infrastructure.error_handling import GracefulDegradation
         
         degradation = GracefulDegradation()
         
@@ -297,7 +297,7 @@ class TestGracefulDegradationIntegration:
     @pytest.mark.asyncio
     async def test_fallback_executed_on_failure(self):
         """Test that fallback is executed when primary fails."""
-        from utils.error_handling import GracefulDegradation
+        from utils.infrastructure.error_handling import GracefulDegradation
         
         degradation = GracefulDegradation()
         
@@ -320,7 +320,7 @@ class TestGracefulDegradationIntegration:
     @pytest.mark.asyncio
     async def test_exponential_backoff_on_retries(self):
         """Test that exponential backoff is used on retries."""
-        from utils.error_handling import GracefulDegradation
+        from utils.infrastructure.error_handling import GracefulDegradation
         
         degradation = GracefulDegradation()
         

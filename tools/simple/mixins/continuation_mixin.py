@@ -54,7 +54,7 @@ class ContinuationMixin:
         logger.debug(f"{self.get_name()}: No embedded history found, reconstructing conversation")
         
         try:
-            from utils.conversation_memory import add_turn, build_conversation_history, get_thread
+            from utils.conversation.memory import add_turn, build_conversation_history, get_thread
             
             thread_context = get_thread(continuation_id)
             
@@ -109,7 +109,7 @@ class ContinuationMixin:
         continuation_id = self.get_request_continuation_id(request)
 
         try:
-            from utils.conversation_memory import create_thread, get_thread
+            from utils.conversation.memory import create_thread, get_thread
             from utils.client_info import get_current_session_fingerprint, get_cached_client_info, format_client_info
 
             if continuation_id:
@@ -117,7 +117,7 @@ class ContinuationMixin:
                 thread_context = get_thread(continuation_id)
                 if thread_context and thread_context.turns:
                     turn_count = len(thread_context.turns)
-                    from utils.conversation_memory import MAX_CONVERSATION_TURNS
+                    from utils.conversation.memory import MAX_CONVERSATION_TURNS
 
                     if turn_count >= MAX_CONVERSATION_TURNS - 1:
                         return None  # No more turns allowed
@@ -150,7 +150,7 @@ class ContinuationMixin:
                 )
 
                 # Add the initial user turn to the new thread
-                from utils.conversation_memory import MAX_CONVERSATION_TURNS, add_turn
+                from utils.conversation.memory import MAX_CONVERSATION_TURNS, add_turn
 
                 user_prompt = self.get_request_prompt(request)
                 user_files = self.get_request_files(request)
@@ -239,7 +239,7 @@ class ContinuationMixin:
             return
             
         try:
-            from utils.conversation_memory import add_turn
+            from utils.conversation.memory import add_turn
             
             # Extract model metadata for conversation tracking
             model_provider = None

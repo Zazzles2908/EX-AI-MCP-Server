@@ -221,7 +221,7 @@ def attach_progress_and_summary(
     """
     try:
         from utils.progress import get_progress_log
-        from utils.token_utils import estimate_tokens as __est_tokens
+        from utils.model.token_utils import estimate_tokens as __est_tokens
         
         progress_log = get_progress_log()
         if isinstance(result, list) and result:

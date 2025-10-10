@@ -218,7 +218,7 @@ LOCALE: str = os.getenv("LOCALE", "")
 # Auggie config discovery (optional helper)
 # Moved to utils/config_helpers.py for better separation of concerns
 # Import here for backward compatibility
-from utils.config_helpers import get_auggie_config_path
+from utils.config.helpers import get_auggie_config_path
 
 
 # =============================================================================

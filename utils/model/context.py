@@ -28,10 +28,14 @@ optimal token allocation for multi-turn conversations:
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 
 from config import DEFAULT_MODEL
-from src.providers import ModelCapabilities, ModelProviderRegistry
+
+# Avoid circular import: src.providers imports utils, utils.model.context imports src.providers
+# Move imports inside methods where they're actually used
+if TYPE_CHECKING:
+    from src.providers import ModelCapabilities, ModelProviderRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +75,7 @@ class ModelContext:
     def provider(self):
         """Get the model provider lazily."""
         if self._provider is None:
+            from src.providers import ModelProviderRegistry  # Import here to avoid circular import
             self._provider = ModelProviderRegistry.get_provider_for_model(self.model_name)
             if not self._provider:
                 available_models = ModelProviderRegistry.get_available_models()
@@ -78,9 +83,10 @@ class ModelContext:
         return self._provider
 
     @property
-    def capabilities(self) -> ModelCapabilities:
+    def capabilities(self):  # Remove type hint to avoid circular import at module level
         """Get model capabilities lazily."""
         if self._capabilities is None:
+            from src.providers import ModelCapabilities  # Import here to avoid circular import
             self._capabilities = self.provider.get_capabilities(self.model_name)
         return self._capabilities
 

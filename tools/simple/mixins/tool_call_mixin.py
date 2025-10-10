@@ -87,7 +87,7 @@ class ToolCallMixin:
             Final model response after tool execution completes
         """
         from utils.progress import send_progress
-        from utils.progress_messages import ProgressMessages
+        from utils.progress_utils.messages import ProgressMessages
         
         try:
             max_iterations = 5  # Prevent infinite loops
@@ -187,7 +187,7 @@ class ToolCallMixin:
             Tool message dictionary for conversation
         """
         from utils.progress import send_progress
-        from utils.progress_messages import ProgressMessages
+        from utils.progress_utils.messages import ProgressMessages
         
         # Check if this is a builtin_function (server-side execution)
         if tc.get("type") == "builtin_function":

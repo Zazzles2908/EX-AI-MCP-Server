@@ -93,7 +93,7 @@ class SimpleToolExecutionMixin:
                 tool_logger.debug(f"{self.get_name()}: Using model context from arguments")
             else:
                 # Create model context if not provided
-                from utils.model_context import ModelContext
+                from utils.model.context import ModelContext
                 from src.providers.registry import ModelProviderRegistry as _Registry
                 
                 # Avoid constructing ModelContext('auto') which triggers provider lookup error
@@ -132,7 +132,7 @@ class SimpleToolExecutionMixin:
                     tool_logger.debug(f"{self.get_name()}: No embedded history found, reconstructing conversation")
                     
                     # Get thread context
-                    from utils.conversation_memory import add_turn, build_conversation_history, get_thread
+                    from utils.conversation.memory import add_turn, build_conversation_history, get_thread
                     
                     thread_context = get_thread(continuation_id)
                     
@@ -206,7 +206,7 @@ class SimpleToolExecutionMixin:
             system_prompt = language_instruction + base_system_prompt
             
             # Estimate tokens for logging
-            from utils.token_utils import estimate_tokens
+            from utils.model.token_utils import estimate_tokens
             
             estimated_tokens = estimate_tokens(prompt)
             tool_logger.debug(f"Prompt length: {len(prompt)} characters (~{estimated_tokens:,} tokens)")

@@ -12,7 +12,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from .security_config import is_dangerous_path
+from utils.config.security import is_dangerous_path
 
 logger = logging.getLogger(__name__)
 

@@ -63,7 +63,7 @@ class ProviderHealth:
             await self.breaker.half_open_after_delay()
         finally:
             try:
-                from utils.metrics import set_circuit_state
+                from utils.infrastructure.metrics import set_circuit_state
                 set_circuit_state(self.name, self.breaker.state)
             except Exception:
                 pass
@@ -72,7 +72,7 @@ class ProviderHealth:
         if ok:
             await self.breaker.record_success()
             try:
-                from utils.metrics import set_circuit_state
+                from utils.infrastructure.metrics import set_circuit_state
                 set_circuit_state(self.name, "closed")
             except Exception:
                 pass
@@ -80,7 +80,7 @@ class ProviderHealth:
             prev_state = self.breaker.state
             await self.breaker.record_failure()
             try:
-                from utils.metrics import set_circuit_state
+                from utils.infrastructure.metrics import set_circuit_state
                 set_circuit_state(self.name, "open")
             except Exception:
                 pass

@@ -40,12 +40,12 @@ from typing import Any, Optional
 
 from config import MCP_PROMPT_SIZE_LIMIT
 from utils import check_token_limit
-from utils.conversation_memory import (
+from utils.conversation.memory import (
     ConversationTurn,
     get_conversation_file_list,
     get_thread,
 )
-from utils.file_utils import read_file_content, read_files
+from utils.file.operations import read_file_content, read_files
 
 logger = logging.getLogger(__name__)
 
@@ -504,7 +504,7 @@ class FileHandlingMixin:
             )
             try:
                 # Before calling read_files, expand directories to get individual file paths
-                from utils.file_utils import expand_paths
+                from utils.file.operations import expand_paths
 
                 expanded_files = expand_paths(files_to_embed)
                 logger.debug(
@@ -524,7 +524,7 @@ class FileHandlingMixin:
                 actually_processed_files.extend(expanded_files)
 
                 # Estimate tokens for debug logging
-                from utils.token_utils import estimate_tokens
+                from utils.model.token_utils import estimate_tokens
 
                 content_tokens = estimate_tokens(file_content)
                 logger.debug(

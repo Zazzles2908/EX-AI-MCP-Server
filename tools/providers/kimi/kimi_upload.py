@@ -97,7 +97,7 @@ class KimiUploadAndExtractTool(BaseTool):
         messages: List[Dict[str, Any]] = []
         from utils.tool_events import ToolCallEvent, ToolEventSink
         sink = ToolEventSink()
-        from utils.file_cache import FileCache
+        from utils.file.cache import FileCache
         import concurrent.futures as _fut
 
         skipped: List[str] = []
