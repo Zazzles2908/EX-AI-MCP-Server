@@ -144,7 +144,167 @@ Refactor and simplify the codebase to:
 **Prerequisites:** ✅ ALL COMPLETE
 **Next:** User defines Phase 3 scope and priorities
 
-- [ ] Extract schema generation methods:
+---
+
+## 🎯 RECOMMENDED NEXT 5 STEPS FOR PHASE 3
+
+Based on Phase 2 Cleanup findings and current codebase state, here are the recommended next steps:
+
+### Step 1: Consolidate Provider Logic (Priority: HIGH)
+**Goal:** Reduce duplicate code between Kimi and GLM providers
+
+**Why:** Both providers have similar patterns for:
+- File uploads
+- Web search integration
+- Error handling
+- Response formatting
+
+**Estimated Time:** 3-5 days
+
+**Deliverables:**
+- Shared provider base class or mixin
+- Consolidated file upload logic
+- Consolidated error handling
+- All provider tests passing
+
+---
+
+### Step 2: Simplify WebSocket Server (Priority: HIGH)
+**Goal:** Break down `src/daemon/ws_server.py` (1200 lines) into smaller modules
+
+**Why:** Current file is too large and handles multiple responsibilities:
+- Connection management
+- Tool execution
+- Session management
+- Error handling
+- Metrics recording
+
+**Estimated Time:** 5-7 days
+
+**Deliverables:**
+- Connection handler module (~200 lines)
+- Tool executor module (~300 lines)
+- Session manager module (~200 lines)
+- Error handler module (~150 lines)
+- Main server file (~350 lines)
+- All tests passing
+
+---
+
+### Step 3: Improve Error Handling Consistency (Priority: MEDIUM)
+**Goal:** Standardize error handling across all tools and providers
+
+**Why:** Current error handling is inconsistent:
+- Some tools use try/except, others don't
+- Error messages vary in format
+- Some errors are logged, others aren't
+- No centralized error tracking
+
+**Estimated Time:** 3-4 days
+
+**Deliverables:**
+- Centralized error handler utility
+- Standardized error response format
+- Consistent error logging
+- Error tracking metrics
+- All tests passing
+
+---
+
+### Step 4: Add Comprehensive Logging (Priority: MEDIUM)
+**Goal:** Improve observability with structured logging
+
+**Why:** Current logging is inconsistent:
+- Some modules log extensively, others don't
+- Log levels not consistently used
+- No structured logging (JSON)
+- Difficult to trace requests across modules
+
+**Estimated Time:** 2-3 days
+
+**Deliverables:**
+- Structured logging utility
+- Request ID tracking across modules
+- Consistent log levels
+- Log aggregation support
+- Documentation
+
+---
+
+### Step 5: Create Developer Onboarding Guide (Priority: LOW)
+**Goal:** Make it easier for new developers to understand and contribute
+
+**Why:** Current documentation is comprehensive but scattered:
+- Architecture docs in multiple places
+- No single "getting started" guide
+- No contribution guidelines
+- No code examples for common tasks
+
+**Estimated Time:** 2-3 days
+
+**Deliverables:**
+- Developer onboarding guide
+- Code examples for common tasks
+- Contribution guidelines
+- Architecture overview diagram
+- Testing guide
+
+---
+
+## 📊 PHASE 3 PRIORITY MATRIX
+
+| Task | Priority | Impact | Effort | ROI |
+|------|----------|--------|--------|-----|
+| Consolidate Provider Logic | HIGH | High | Medium | High |
+| Simplify WebSocket Server | HIGH | High | High | Medium |
+| Improve Error Handling | MEDIUM | Medium | Medium | Medium |
+| Add Comprehensive Logging | MEDIUM | Medium | Low | High |
+| Developer Onboarding Guide | LOW | Low | Low | Medium |
+
+---
+
+## 🎯 ALTERNATIVE PHASE 3 FOCUS AREAS
+
+If you prefer different priorities, here are other valuable areas:
+
+### Option A: Production Readiness
+- Security hardening
+- Performance optimization
+- Monitoring and alerting
+- Deployment automation
+- Load testing
+
+### Option B: Feature Enhancement
+- Add more workflow tools
+- Improve existing tools
+- Add new provider integrations
+- Enhance caching strategies
+- Add cost tracking
+
+### Option C: Technical Debt Reduction
+- Remove deprecated code
+- Update outdated patterns
+- Fix TODO comments
+- Improve test coverage
+- Refactor complex functions
+
+---
+
+## 📝 DECISION REQUIRED
+
+**Please choose one of the following:**
+
+1. **Proceed with recommended 5 steps** (Steps 1-5 above)
+2. **Choose Alternative Focus** (Option A, B, or C)
+3. **Define custom priorities** (Tell me what's most important to you)
+
+Once you decide, I'll create detailed task breakdowns and begin execution.
+
+---
+
+**Current Status:** ⏳ AWAITING YOUR DECISION
+**Ready to Begin:** ✅ YES (all prerequisites complete)
+**Estimated Phase 3 Duration:** 2-4 weeks (depending on scope)
   - [ ] get_input_schema()
   - [ ] get_tool_fields() (abstract)
   - [ ] get_required_fields() (abstract)
@@ -559,8 +719,4 @@ tools/simple/
 - Focus on structure, not functionality
 
 ---
-
-**STATUS: READY TO BEGIN**
-
-Next: Task 3.0 - Setup & Planning
 
