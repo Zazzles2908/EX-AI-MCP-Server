@@ -304,9 +304,11 @@ class CodeReviewTool(WorkflowTool):
 
         return "\\n".join(summary_parts)
 
-    def should_include_files_in_expert_prompt(self) -> bool:
-        """Include files in expert analysis for comprehensive code review."""
-        return True
+    # TEMPORARY: Disabled for Phase 2 testing - file inclusion causes daemon crashes with large projects
+    # TODO Phase 3: Implement proper file count/size limits before re-enabling
+    # def should_include_files_in_expert_prompt(self) -> bool:
+    #     """Include files in expert analysis for comprehensive code review."""
+    #     return True
 
     def should_embed_system_prompt(self) -> bool:
         """Embed system prompt in expert analysis for proper context."""

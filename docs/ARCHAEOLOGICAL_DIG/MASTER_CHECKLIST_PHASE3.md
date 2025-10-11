@@ -85,7 +85,45 @@ Refactor and simplify the codebase to:
 
 ---
 
-### Task 3.4: Reduce Technical Debt (TBD)
+### Task 3.4: Fix File Embedding Limits in WorkflowTools
+
+**Goal:** Implement proper file count/size limits for expert analysis file embedding
+
+**Background:**
+During Phase 2 Cleanup testing (Task 2.G.4), discovered that 4 WorkflowTools (Analyze, CodeReview, Refactor, SecAudit) hardcode file inclusion and can embed entire projects (1,742 files, 147KB), causing daemon crashes.
+
+**Temporary Fix Applied:**
+- Commented out hardcoded file inclusion in 4 tools for Phase 2 testing
+- Tools now respect `EXPERT_ANALYSIS_INCLUDE_FILES=false` env variable
+- Allows Phase 2 testing to proceed without crashes
+
+**Proper Fix Required:**
+- [ ] Implement file count limit (env: `EXPERT_ANALYSIS_MAX_FILES`)
+- [ ] Implement total content limit (env: `EXPERT_ANALYSIS_MAX_CONTENT_KB`)
+- [ ] Add smart file selection (relevance-based)
+- [ ] Respect global env variable first, then tool-specific override
+- [ ] Add logging when limits are hit
+- [ ] Test with realistic scenarios
+- [ ] Document file inclusion requirements per tool
+- [ ] Revert temporary fix from Phase 2
+
+**Files to Fix:**
+1. `tools/workflows/analyze.py:323-327`
+2. `tools/workflows/codereview.py:307-311`
+3. `tools/workflows/refactor.py:313-317`
+4. `tools/workflows/secaudit.py:456-460`
+
+**Reference Documentation:**
+- `docs/ARCHAEOLOGICAL_DIG/audit_markdown/WORKFLOW_TOOLS_FILE_INCLUSION_ANALYSIS.md`
+
+**Status:** ⏳ NOT STARTED (deferred from Phase 2)
+**Prerequisites:** ✅ Phase 2 Cleanup complete
+**Priority:** HIGH (affects production use of 4 tools)
+**Estimated Effort:** 2-4 hours
+
+---
+
+### Task 3.5: Reduce Technical Debt (TBD)
 
 **Goal:** Address technical debt backlog
 
@@ -94,7 +132,7 @@ Refactor and simplify the codebase to:
 
 ---
 
-### Task 3.5: Enhance Maintainability (TBD)
+### Task 3.6: Enhance Maintainability (TBD)
 
 **Goal:** Make codebase easier to maintain
 
