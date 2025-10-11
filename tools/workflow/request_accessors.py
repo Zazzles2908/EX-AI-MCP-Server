@@ -59,9 +59,9 @@ class RequestAccessorMixin:
     def get_request_thinking_mode(self, request) -> str:
         """Get thinking mode from request. Override for custom thinking mode handling."""
         try:
-            return request.thinking_mode if request.thinking_mode is not None else self.get_expert_thinking_mode()
+            return request.thinking_mode if request.thinking_mode is not None else self.get_expert_thinking_mode(request)
         except AttributeError:
-            return self.get_expert_thinking_mode()
+            return self.get_expert_thinking_mode(request)
     
     def get_request_use_websearch(self, request) -> bool:
         """Get use_websearch from request. Override for custom websearch handling."""
