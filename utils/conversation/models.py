@@ -70,14 +70,14 @@ class ConversationTurn(BaseModel):
     the content and metadata needed for cross-tool continuation.
 
     Attributes:
-        role: "user" (Claude) or "assistant" (Gemini/O3/etc)
+        role: "user" (from MCP client) or "assistant" (from AI model)
         content: The actual message content/response
         timestamp: ISO timestamp when this turn was created
         files: List of file paths referenced in this specific turn
         images: List of image paths referenced in this specific turn
         tool_name: Which tool generated this turn (for cross-tool tracking)
-        model_provider: Provider used (e.g., "google", "openai")
-        model_name: Specific model used (e.g., "gemini-2.5-flash", "o3-mini")
+        model_provider: Provider used (e.g., "glm", "kimi")
+        model_name: Specific model used (e.g., "glm-4.6", "kimi-k2-0905-preview")
         model_metadata: Additional model-specific metadata (e.g., thinking mode, token usage)
     """
 

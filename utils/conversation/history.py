@@ -235,12 +235,12 @@ def build_conversation_history(
 
         Previous conversation turns:
 
-        --- Turn 1 (Claude) ---
+        --- Turn 1 (User) ---
         Files used in this turn: file1.py, file2.py
 
         <turn_content>
 
-        --- Turn 2 (Gemini using analyze via google/gemini-2.5-flash) ---
+        --- Turn 2 (Assistant using analyze via glm-4.6) ---
         Files used in this turn: file3.py
 
         <turn_content>

@@ -156,13 +156,13 @@ def add_turn(
 
     Args:
         thread_id: UUID of the conversation thread
-        role: "user" (Claude) or "assistant" (Gemini/O3/etc)
+        role: "user" (from MCP client) or "assistant" (from AI model)
         content: The actual message/response content
         files: Optional list of files referenced in this turn
         images: Optional list of images referenced in this turn
         tool_name: Name of the tool adding this turn (for attribution)
-        model_provider: Provider used (e.g., "google", "openai")
-        model_name: Specific model used (e.g., "gemini-2.5-flash", "o3-mini")
+        model_provider: Provider used (e.g., "glm", "kimi")
+        model_name: Specific model used (e.g., "glm-4.6", "kimi-k2-0905-preview")
         model_metadata: Additional model info (e.g., thinking mode, token usage)
 
     Returns:
