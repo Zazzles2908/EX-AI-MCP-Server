@@ -48,6 +48,12 @@ def build_payload(
     if max_output_tokens:
         payload["max_tokens"] = int(max_output_tokens)
     
+    # CRITICAL FIX: Filter out thinking_mode parameter - GLM doesn't support it
+    # Passing unsupported parameters can cause massive token inflation (1.28M tokens!)
+    if 'thinking_mode' in kwargs:
+        thinking_mode = kwargs.pop('thinking_mode', None)
+        logger.debug(f"Filtered out unsupported thinking_mode parameter for GLM model {model_name}: {thinking_mode}")
+
     # Pass through GLM tool capabilities when requested (e.g., native web_search)
     try:
         tools = kwargs.get("tools")
@@ -57,9 +63,9 @@ def build_payload(
         if tool_choice:
             payload["tool_choice"] = tool_choice
     except Exception as e:
-        logger.warning(f"Failed to add tools/tool_choice to GLM payload (model: {model}): {e}")
+        logger.warning(f"Failed to add tools/tool_choice to GLM payload (model: {model_name}): {e}")
         # Continue - payload will be sent without tools, API may reject if tools were required
-    
+
     # Images handling placeholder
     return payload
 
