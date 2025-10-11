@@ -90,7 +90,7 @@ _providers_configured = False
 
 async def handle_list_prompts() -> list[Prompt]:
     """
-    List all available prompts for Claude Code shortcuts.
+    List all available prompts for MCP client shortcuts.
 
     This handler returns prompts that enable shortcuts like /ex:thinkdeeper.
     We automatically generate prompts from all tools (1:1 mapping) plus add
@@ -136,7 +136,7 @@ async def handle_get_prompt(name: str, arguments: dict[str, Any] = None) -> GetP
     Get prompt details and generate the actual prompt text.
 
     This handler is called when a user invokes a prompt (e.g., /ex:thinkdeeper or /ex:chat:gpt5).
-    It generates the appropriate text that Claude will then use to call the
+    It generates the appropriate text that the MCP client will then use to call the
     underlying tool.
 
     Supports structured prompt names like "chat:gpt5" where:

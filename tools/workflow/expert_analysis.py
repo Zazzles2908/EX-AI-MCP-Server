@@ -156,7 +156,35 @@ class ExpertAnalysisMixin:
         Override this to return True if your tool needs the system prompt embedded.
         """
         return False
-    
+
+    def _get_thinking_model_for_provider(self, provider) -> Optional[str]:
+        """Get a thinking-capable model for the given provider.
+
+        This method provides automatic fallback to thinking-capable models
+        when expert analysis requires thinking mode but the user-specified
+        model doesn't support it.
+
+        Args:
+            provider: The model provider instance
+
+        Returns:
+            Model name that supports thinking mode, or None if no fallback available
+        """
+        from src.providers.base import ProviderType
+
+        # Map provider types to their thinking-capable models
+        THINKING_MODELS = {
+            ProviderType.GLM: 'glm-4.6',  # Upgrade from glm-4.5-flash (glm-4.6 is flagship with 200K context)
+            ProviderType.KIMI: 'kimi-thinking-preview',  # Upgrade from kimi-k2-0905-preview
+        }
+
+        try:
+            provider_type = provider.get_provider_type()
+            return THINKING_MODELS.get(provider_type)
+        except Exception as e:
+            logger.warning(f"Failed to get thinking model for provider: {e}")
+            return None
+
     def get_expert_thinking_mode(self, request=None) -> str:
         """
         Get the thinking mode for expert analysis with hybrid fallback.
@@ -332,6 +360,26 @@ class ExpertAnalysisMixin:
             
             provider = self._model_context.provider  # type: ignore
             logger.info(f"[EXPERT_ANALYSIS_DEBUG] Provider resolved: {provider.get_provider_type().value if provider else 'None'}")
+
+            # CRITICAL: Validate model supports thinking mode, auto-upgrade if needed
+            # This prevents hangs when using models like glm-4.5-flash that don't support thinking
+            if provider and hasattr(provider, 'supports_thinking_mode'):
+                if not provider.supports_thinking_mode(model_name):
+                    thinking_model = self._get_thinking_model_for_provider(provider)
+                    if thinking_model:
+                        logger.info(f"[EXPERT_ANALYSIS] Auto-upgrading {model_name} → {thinking_model} for thinking mode support")
+                        model_name = thinking_model
+                        # Update model context with thinking-capable model
+                        from utils.model.context import ModelContext
+                        self._model_context = ModelContext(thinking_model)
+                        self._current_model_name = thinking_model
+                        # Update provider reference
+                        provider = self._model_context.provider  # type: ignore
+                        logger.info(f"[EXPERT_ANALYSIS] Model context updated to use {thinking_model}")
+                    else:
+                        logger.warning(f"[EXPERT_ANALYSIS] Model {model_name} doesn't support thinking mode and no fallback available")
+                else:
+                    logger.info(f"[EXPERT_ANALYSIS] Model {model_name} supports thinking mode ✓")
 
             # Prepare expert analysis context
             expert_context = self.prepare_expert_analysis_context(self.consolidated_findings)  # type: ignore

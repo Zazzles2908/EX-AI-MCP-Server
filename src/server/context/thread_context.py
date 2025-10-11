@@ -87,7 +87,7 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
         - Optimized file deduplication minimizes redundant content
 
     Example Usage Flow:
-        1. Claude: "Continue analyzing the security issues" + continuation_id
+        1. User: "Continue analyzing the security issues" + continuation_id
         2. reconstruct_thread_context() loads previous analyze conversation
         3. Debug tool receives full context including previous file analysis
         4. Debug tool can reference specific findings from analyze tool
@@ -111,7 +111,7 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
         except (AttributeError, TypeError) as e:
             logger.debug(f"Failed to log to mcp_activity: {e}")
 
-        # Return error asking Claude to restart conversation with full context
+        # Return error asking user to restart conversation with full context
         raise ValueError(
             f"Conversation thread '{continuation_id}' was not found or has expired. "
             f"This may happen if the conversation was created more than 3 hours ago or if the "

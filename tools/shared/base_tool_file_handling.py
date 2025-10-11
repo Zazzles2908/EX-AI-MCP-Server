@@ -293,7 +293,7 @@ class FileHandlingMixin:
         This file is treated specially as the main prompt, not as an embedded file.
 
         This mechanism allows us to work around MCP's ~25K token limit by having
-        Claude save large prompts to a file, effectively using the file transfer
+        the MCP client save large prompts to a file, effectively using the file transfer
         mechanism to bypass token constraints while preserving response capacity.
 
         Args:
