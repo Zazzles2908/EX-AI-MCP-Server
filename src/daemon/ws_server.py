@@ -44,6 +44,10 @@ _log_listener = setup_async_safe_logging(level=logging.INFO)
 # Setup logging with UTF-8 support for Windows consoles
 logger = setup_logging("ws_daemon", log_file=str(LOG_DIR / "ws_daemon.log"))
 
+# CRITICAL FIX: Load .env file before reading environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
 EXAI_WS_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
 EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8765"))
 MAX_MSG_BYTES = int(os.getenv("EXAI_WS_MAX_BYTES", str(32 * 1024 * 1024)))

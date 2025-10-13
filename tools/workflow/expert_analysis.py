@@ -505,11 +505,27 @@ class ExpertAnalysisMixin:
             # Poll until done or deadline; emit progress breadcrumbs so UI stays alive
             # CRITICAL FIX: Removed max(5.0, ...) to allow 2s heartbeat for better UX
             hb = self.get_expert_heartbeat_interval_secs(request)
+            last_progress_time = start  # Track when we last sent progress
             while True:
                 # Check completion first
                 if task.done():
                     try:
-                        model_response = task.result()
+                        # CRITICAL FIX: Call task.result() in a separate thread with timeout
+                        # task.result() can block even when task.done() is True
+                        def _get_result():
+                            return task.result()
+
+                        result_task = loop.run_in_executor(None, _get_result)
+                        model_response = await asyncio.wait_for(result_task, timeout=5.0)
+                        logger.info(f"[EXPERT_DEBUG] Successfully retrieved model_response from task, type: {type(model_response)}")
+                    except asyncio.TimeoutError:
+                        logger.error(f"CRITICAL: task.result() timed out after 5s even though task.done() was True!")
+                        result = {
+                            "error": "Expert analysis result retrieval timed out (race condition)",
+                            "status": "analysis_error",
+                            "raw_analysis": ""
+                        }
+                        break
                     except Exception as e:
                         # Provider error - attempt graceful fallback on rate limit if enabled and time remains
                         try:
@@ -549,8 +565,22 @@ class ExpertAnalysisMixin:
                                 # Wait within remaining time, emitting heartbeats
                                 while True:
                                     if fb_task.done():
-                                        model_response = fb_task.result()
-                                        break
+                                        try:
+                                            # CRITICAL FIX: Call fb_task.result() in a separate thread with timeout
+                                            def _get_fb_result():
+                                                return fb_task.result()
+
+                                            fb_result_task = loop.run_in_executor(None, _get_fb_result)
+                                            model_response = await asyncio.wait_for(fb_result_task, timeout=5.0)
+                                            break
+                                        except asyncio.TimeoutError:
+                                            logger.error(f"CRITICAL: Fallback task.result() timed out after 5s!")
+                                            result = {
+                                                "error": "Fallback expert analysis result retrieval timed out",
+                                                "status": "analysis_error",
+                                                "raw_analysis": ""
+                                            }
+                                            break
                                     now_fb = time.time()
                                     # Soft-deadline early return with partial to avoid client cancel
                                     if _soft_dl and (now_fb - start) >= _soft_dl:
@@ -584,6 +614,7 @@ class ExpertAnalysisMixin:
                                 break
                         # No fallback or still failing - re-raise to outer handler
                         raise
+                    logger.info(f"[EXPERT_DEBUG] About to break from while loop after getting model_response")
                     break
 
                 # Check if we set result during fallback
@@ -612,21 +643,24 @@ class ExpertAnalysisMixin:
                         "raw_analysis": "",
                     }
                     break
-                # CRITICAL FIX: Enhanced progress message with elapsed time, ETA, and progress percentage
-                elapsed = now - start
-                remaining = max(0, deadline - now)
-                progress_pct = min(100, int((elapsed / timeout_secs) * 100))
-                try:
-                    send_progress(
-                        f"{self.get_name()}: Waiting on expert analysis (provider={provider.get_provider_type().value}) | "
-                        f"Progress: {progress_pct}% | Elapsed: {elapsed:.1f}s | ETA: {remaining:.1f}s"
-                    )
-                except Exception:
-                    pass
-                # Sleep only up to remaining time to avoid overshooting deadline
-                await asyncio.sleep(min(hb, max(0.1, deadline - time.time())))
+                # CRITICAL FIX: Only send progress heartbeat every hb seconds to avoid spam
+                # But poll frequently (0.1s) to detect completion immediately
+                if now - last_progress_time >= hb:
+                    elapsed = now - start
+                    remaining = max(0, deadline - now)
+                    progress_pct = min(100, int((elapsed / timeout_secs) * 100))
+                    try:
+                        send_progress(
+                            f"{self.get_name()}: Waiting on expert analysis (provider={provider.get_provider_type().value}) | "
+                            f"Progress: {progress_pct}% | Elapsed: {elapsed:.1f}s | ETA: {remaining:.1f}s"
+                        )
+                    except Exception:
+                        pass
+                    last_progress_time = now
+                # Poll every 100ms to detect task completion immediately
+                await asyncio.sleep(0.1)
 
-
+            logger.info(f"[EXPERT_DEBUG] Exited while loop, about to log completion")
             expert_analysis_duration = time.time() - thinking_mode_start
             logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] ========================================")
             logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] Tool: {self.get_name()}")

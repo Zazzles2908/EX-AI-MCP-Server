@@ -49,9 +49,13 @@ def setup_logging(
     # Get or create logger
     logger = logging.getLogger(component_name)
     logger.setLevel(log_level)
-    
+
     # Clear existing handlers to avoid duplicates
     logger.handlers.clear()
+
+    # Prevent propagation to root logger to avoid duplicate messages
+    # (root logger may have its own handlers from async_logging setup)
+    logger.propagate = False
     
     # Create formatter
     formatter = logging.Formatter(

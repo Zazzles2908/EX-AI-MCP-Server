@@ -283,49 +283,6 @@ class AnalyzeTool(WorkflowTool):
 
         return "\n".join(summary_parts)
 
-    async def _call_expert_analysis(self, arguments: dict, request) -> dict:  # type: ignore[override]
-        """
-        Agentic Phase 2: localized resilient wrapper for expert analysis (flag-gated).
-        Falls back to base implementation when flags are OFF.
-        """
-        try:
-            from config import AGENTIC_ENGINE_ENABLED, RESILIENT_ERRORS_ENABLED
-        except Exception:
-            AGENTIC_ENGINE_ENABLED = False
-            RESILIENT_ERRORS_ENABLED = False
-
-        # Default path (no behavior change)
-        if not (AGENTIC_ENGINE_ENABLED and RESILIENT_ERRORS_ENABLED):
-            from tools.workflow.workflow_mixin import BaseWorkflowMixin  # type: ignore
-            return await super()._call_expert_analysis(arguments, request)
-
-        import asyncio
-
-        retries = 2
-        delay = 0.25
-        last_err: Exception | None = None
-        for attempt in range(retries + 1):
-            try:
-                return await super()._call_expert_analysis(arguments, request)
-            except Exception as e:  # noqa: PERF203
-                last_err = e
-                if attempt == retries:
-                    break
-                try:
-                    await asyncio.sleep(delay)
-                except Exception:
-                    pass
-                delay = min(delay * 2, 2.0)
-        # If all retries failed, re-raise the last error
-        assert last_err is not None
-        raise last_err
-
-    # TEMPORARY: Disabled for Phase 2 testing - file inclusion causes daemon crashes with large projects
-    # TODO Phase 3: Implement proper file count/size limits before re-enabling
-    # def should_include_files_in_expert_prompt(self) -> bool:
-    #     """Include files in expert analysis for comprehensive validation."""
-    #     return True
-
     def should_embed_system_prompt(self) -> bool:
         """Embed system prompt in expert analysis for proper context."""
         return True
