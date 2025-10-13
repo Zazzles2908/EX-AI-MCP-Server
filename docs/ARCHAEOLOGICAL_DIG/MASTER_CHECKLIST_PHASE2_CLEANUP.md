@@ -333,8 +333,29 @@ Execute findings from Phase 2 (Map Connections):
 - [x] Create comprehensive analysis document
 - [x] Implement temporary fix (disable file inclusion for testing)
 - [x] Clear cache and restart server
-- [ ] Test all 12 WorkflowTools:
-  - [x] ThinkDeep (tested during token bloat fix)
+- [x] **EXAI Code Review** all 12 WorkflowTools (using Kimi models):
+  - [x] ThinkDeep (✅ kimi-k2-0905-preview, 85.8s, ~1375 tokens)
+  - [x] Analyze (✅ kimi-k2-turbo-preview, 12.0s, ~1314 tokens)
+  - [x] Debug (✅ kimi-k2-turbo-preview, 12.8s, ~1378 tokens)
+  - [x] CodeReview (✅ kimi-k2-0711-preview, 31.8s, ~1366 tokens)
+  - [x] Consensus (✅ kimi-k2-0711-preview, 35.0s, ~1312 tokens)
+  - [x] Planner (⚠️ moonshot-v1-32k, file not received)
+  - [x] TestGen (⚠️ moonshot-v1-32k, file not received)
+  - [x] Refactor (⚠️ moonshot-v1-32k, file not received)
+  - [x] SecAudit (⚠️ moonshot-v1-32k, file not received)
+  - [ ] DocGen (❌ daemon crash)
+  - [ ] Precommit (❌ daemon crash)
+  - [ ] Tracer (❌ daemon crash)
+- [x] Create comprehensive review document (WORKFLOWTOOLS_COMPREHENSIVE_REVIEW_2025-10-12.md)
+- [x] Validate external AI review findings (100% confirmed)
+- [x] Create post-review findings document (WORKFLOWTOOLS_POST_REVIEW_FINDINGS_2025-10-12.md)
+- [x] Create mandatory fixes checklist (MANDATORY_FIXES_CHECKLIST_2025-10-12.md)
+- [ ] **BLOCKING:** Complete 3 mandatory fixes before proceeding:
+  - [ ] Fix 1: EXAI Model Capability Documentation (2-4 hours)
+  - [ ] Fix 2: Daemon Stability Investigation (4-8 hours)
+  - [ ] Fix 3: File Inclusion Strategy (6-8 hours)
+- [ ] **Functional Testing** all 12 WorkflowTools:
+  - [ ] ThinkDeep
   - [ ] Analyze
   - [ ] Debug
   - [ ] CodeReview
@@ -346,10 +367,11 @@ Execute findings from Phase 2 (Map Connections):
   - [ ] DocGen
   - [ ] Precommit
   - [ ] Tracer
-- [ ] Document test results for each tool
+- [ ] Document functional test results for each tool
 - [ ] Revert temporary file inclusion fix
 - [ ] Commit test results
-**Status:** Testing in progress (1/12 tools tested)
+**Status:** Code review 7/12 complete (58%), functional testing 0/12 (0%)
+**Blocker:** Daemon instability preventing completion
 
 #### Task 2.G.5: Cross-Provider Testing
 - [ ] Test GLM ↔ Kimi transitions

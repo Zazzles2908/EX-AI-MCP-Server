@@ -162,22 +162,22 @@ class ConversationIntegrationMixin:
                     f"model: {resolved_model_name}, provider: {provider_name}"
                 )
             else:
-                # Fallback - try to get model info from request
-                request = self.get_workflow_request_model()(**arguments)
-                model_name = self.get_request_model_name(request)
-                
+                # Fallback - try to get model info from arguments directly
+                # Don't re-validate the request as arguments may have been modified during execution
+                model_name = arguments.get("model", "unknown")
+
                 # Basic metadata without provider info
                 metadata = {
                     "tool_name": self.get_name(),
                     "model_used": model_name,
                     "provider_used": "unknown",
                 }
-                
+
                 # Preserve existing metadata and add workflow metadata
                 if "metadata" not in response_data:
                     response_data["metadata"] = {}
                 response_data["metadata"].update(metadata)
-                
+
                 logger.debug(
                     f"[WORKFLOW_METADATA] {self.get_name()}: Added fallback metadata - "
                     f"model: {model_name}, provider: unknown"
