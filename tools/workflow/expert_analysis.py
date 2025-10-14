@@ -363,11 +363,18 @@ class ExpertAnalysisMixin:
 
             # CRITICAL: Validate model supports thinking mode, auto-upgrade if needed
             # This prevents hangs when using models like glm-4.5-flash that don't support thinking
+            # ISSUE #10 FIX: Make auto-upgrade configurable via EXPERT_ANALYSIS_AUTO_UPGRADE env var
+            import os
+            auto_upgrade_enabled = os.getenv("EXPERT_ANALYSIS_AUTO_UPGRADE", "true").strip().lower() in ("true", "1", "yes")
+
             if provider and hasattr(provider, 'supports_thinking_mode'):
                 if not provider.supports_thinking_mode(model_name):
                     thinking_model = self._get_thinking_model_for_provider(provider)
-                    if thinking_model:
-                        logger.info(f"[EXPERT_ANALYSIS] Auto-upgrading {model_name} → {thinking_model} for thinking mode support")
+                    if thinking_model and auto_upgrade_enabled:
+                        logger.warning(
+                            f"[EXPERT_ANALYSIS] Auto-upgrading {model_name} → {thinking_model} for thinking mode support. "
+                            f"This may affect cost/performance. To disable, set EXPERT_ANALYSIS_AUTO_UPGRADE=false in .env"
+                        )
                         model_name = thinking_model
                         # Update model context with thinking-capable model
                         from utils.model.context import ModelContext
@@ -375,6 +382,17 @@ class ExpertAnalysisMixin:
                         self._current_model_name = thinking_model
                         # Update provider reference
                         provider = self._model_context.provider  # type: ignore
+                    elif thinking_model and not auto_upgrade_enabled:
+                        logger.warning(
+                            f"[EXPERT_ANALYSIS] Model {model_name} doesn't support thinking mode. "
+                            f"Auto-upgrade is disabled (EXPERT_ANALYSIS_AUTO_UPGRADE=false). "
+                            f"Expert analysis may not work as expected. Consider using {thinking_model} instead."
+                        )
+                    elif not thinking_model:
+                        logger.warning(
+                            f"[EXPERT_ANALYSIS] Model {model_name} doesn't support thinking mode and no fallback available. "
+                            f"Expert analysis may not work as expected."
+                        )
                         logger.info(f"[EXPERT_ANALYSIS] Model context updated to use {thinking_model}")
                     else:
                         logger.warning(f"[EXPERT_ANALYSIS] Model {model_name} doesn't support thinking mode and no fallback available")
@@ -385,17 +403,22 @@ class ExpertAnalysisMixin:
             expert_context = self.prepare_expert_analysis_context(self.consolidated_findings)  # type: ignore
             logger.info(f"[EXPERT_ANALYSIS_DEBUG] Expert context prepared ({len(expert_context)} chars)")
             
-            # Check if tool wants to include files in prompt
+            # ISSUE #9 FIX: Clarify file embedding terminology
+            # "File inclusion" means embedding FULL file contents in the prompt
+            # File paths/names are ALWAYS included in the context regardless of this setting
             if self.should_include_files_in_expert_prompt():
-                logger.info(f"[EXPERT_ANALYSIS_DEBUG] File inclusion enabled, preparing files...")
+                logger.info(f"[EXPERT_ANALYSIS_DEBUG] Full file content embedding enabled (EXPERT_ANALYSIS_INCLUDE_FILES=true)")
                 file_content = self._prepare_files_for_expert_analysis()
                 if file_content:
-                    logger.info(f"[EXPERT_ANALYSIS_DEBUG] Adding {len(file_content)} chars of file content to expert context")
+                    logger.info(f"[EXPERT_ANALYSIS_DEBUG] Embedding {len(file_content)} chars of full file content into expert context")
                     expert_context = self._add_files_to_expert_context(expert_context, file_content)
                 else:
-                    logger.info(f"[EXPERT_ANALYSIS_DEBUG] No file content to add")
+                    logger.info(f"[EXPERT_ANALYSIS_DEBUG] No file content to embed (files may be empty or filtered)")
             else:
-                logger.info(f"[EXPERT_ANALYSIS_DEBUG] File inclusion disabled (EXPERT_ANALYSIS_INCLUDE_FILES=false)")
+                logger.info(
+                    f"[EXPERT_ANALYSIS_DEBUG] Full file content embedding disabled (EXPERT_ANALYSIS_INCLUDE_FILES=false). "
+                    f"File paths/names are still included in context, but not full contents."
+                )
             
             # Get system prompt for this tool with localization support
             base_system_prompt = self.get_system_prompt()
@@ -647,12 +670,13 @@ class ExpertAnalysisMixin:
                 # But poll frequently (0.1s) to detect completion immediately
                 if now - last_progress_time >= hb:
                     elapsed = now - start
-                    remaining = max(0, deadline - now)
-                    progress_pct = min(100, int((elapsed / timeout_secs) * 100))
+                    # ISSUE #7 FIX: Remove misleading ETA calculation
+                    # Progress is event-driven, not linear, so ETA is unreliable
+                    # Just show elapsed time for transparency
                     try:
                         send_progress(
                             f"{self.get_name()}: Waiting on expert analysis (provider={provider.get_provider_type().value}) | "
-                            f"Progress: {progress_pct}% | Elapsed: {elapsed:.1f}s | ETA: {remaining:.1f}s"
+                            f"Elapsed: {elapsed:.1f}s"
                         )
                     except Exception:
                         pass

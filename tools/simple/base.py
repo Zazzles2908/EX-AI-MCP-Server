@@ -132,12 +132,45 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         """
         return {"readOnlyHint": True}
 
+    def _clean_model_artifacts(self, response: str) -> str:
+        """
+        Remove model-specific artifacts from response.
+
+        CRITICAL FIX (Bug #6): Clean up artifacts that some models add to responses:
+        - GLM-4.5v: <|begin_of_box|>, <|end_of_box|> tags
+        - GLM-4.5-flash: "AGENT'S TURN:" suffix
+        - Progress markers: === PROGRESS === sections
+
+        This cleaning was previously only in the WebSocket shim (run_ws_shim.py),
+        but needs to be in core response handling to work for all clients.
+
+        Args:
+            response: Raw response from model
+
+        Returns:
+            Cleaned response string
+        """
+        import re
+
+        # Remove GLM-4.5v box markers
+        response = re.sub(r'<\|begin_of_box\|>', '', response)
+        response = re.sub(r'<\|end_of_box\|>', '', response)
+
+        # Remove progress sections (=== PROGRESS === ... === END PROGRESS ===)
+        response = re.sub(r'=== PROGRESS ===.*?=== END PROGRESS ===\n*', '', response, flags=re.DOTALL)
+
+        # Remove "AGENT'S TURN:" suffix (GLM-4.5-flash artifact)
+        response = re.sub(r"\n*---\n*\n*AGENT'S TURN:.*", '', response, flags=re.DOTALL)
+
+        return response.strip()
+
     def format_response(self, response: str, request, model_info: Optional[dict] = None) -> str:
         """
         Format the AI response before returning to the client.
 
         This is a hook method that subclasses can override to customize
-        response formatting. The default implementation returns the response as-is.
+        response formatting. The default implementation cleans model artifacts
+        and returns the response.
 
         Args:
             response: The raw response from the AI model
@@ -147,7 +180,8 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         Returns:
             Formatted response string
         """
-        return response
+        # CRITICAL FIX (Bug #6): Clean model artifacts before returning
+        return self._clean_model_artifacts(response)
 
     def get_input_schema(self) -> dict[str, Any]:
         """
@@ -822,7 +856,21 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     return [TextContent(type="text", text=tool_output.model_dump_json())]
 
             # Process the model's response
-            if getattr(model_response, "content", None):
+            # CRITICAL: Check finish_reason BEFORE checking content to detect truncation
+            finish_reason = model_response.metadata.get("finish_reason", "unknown")
+
+            # Check for incomplete or blocked responses FIRST
+            if finish_reason in ["length", "content_filter"]:
+                logger.warning(f"Response incomplete or blocked for {self.get_name()}. Finish reason: {finish_reason}")
+                tool_output = ToolOutput(
+                    status="error",
+                    content=f"Response incomplete: {finish_reason}. "
+                           f"{'Content was truncated due to length limit.' if finish_reason == 'length' else 'Content was filtered.'} "
+                           f"Partial content: {getattr(model_response, 'content', '')[:200]}...",
+                    content_type="text",
+                    metadata={"finish_reason": finish_reason}
+                )
+            elif getattr(model_response, "content", None):
                 raw_text = model_response.content
 
                 # Create model info for conversation tracking
@@ -840,12 +888,12 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
 
             else:
                 # Handle cases where the model couldn't generate a response
-                finish_reason = model_response.metadata.get("finish_reason", "Unknown")
-                logger.warning(f"Response blocked or incomplete for {self.get_name()}. Finish reason: {finish_reason}")
+                logger.warning(f"Response blocked or no content for {self.get_name()}. Finish reason: {finish_reason}")
                 tool_output = ToolOutput(
                     status="error",
-                    content=f"Response blocked or incomplete. Finish reason: {finish_reason}",
+                    content=f"Response blocked or no content. Finish reason: {finish_reason}",
                     content_type="text",
+                    metadata={"finish_reason": finish_reason}
                 )
 
             # Return the tool output as TextContent
@@ -1075,7 +1123,7 @@ Please provide a thoughtful, comprehensive response:"""
             The effective prompt content
 
         Raises:
-            ValueError: If prompt is too large for MCP transport
+            ValueError: If prompt is empty or too large for MCP transport
         """
         # Check for prompt.txt in files
         files = self.get_request_files(request)
@@ -1090,6 +1138,17 @@ Please provide a thoughtful, comprehensive response:"""
 
         # Use prompt.txt content if available, otherwise use the prompt field
         user_content = prompt_content if prompt_content else self.get_request_prompt(request)
+
+        # CRITICAL FIX (Bug #7): Validate prompt is not empty
+        # Empty prompts waste API calls and should be rejected early
+        if not user_content or not user_content.strip():
+            from tools.models import ToolOutput
+            error_output = ToolOutput(
+                status="invalid_request",
+                error="Prompt cannot be empty. Please provide a non-empty prompt.",
+                data={}
+            )
+            raise ValueError(f"MCP_VALIDATION_ERROR:{error_output.model_dump_json()}")
 
         # Check user input size at MCP transport boundary (excluding conversation history)
         validation_content = self.get_prompt_content_for_size_validation(user_content)

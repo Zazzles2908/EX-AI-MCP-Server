@@ -13,9 +13,7 @@
         "AUGGIE_CONFIG": "C:/Project/EX-AI-MCP-Server/auggie-config.json",
         "PYTHONUNBUFFERED": "1",
         "PYTHONIOENCODING": "utf-8",
-        "LOG_LEVEL": "INFO",
-        "EXAI_WS_HOST": "127.0.0.1",
-        "EXAI_WS_PORT": "8765",
+        "LOG_LEVEL": "INFO"
         "EXAI_WS_CONNECT_TIMEOUT": "30",
         "EX_SESSION_SCOPE_STRICT": "true",
         "EX_SESSION_SCOPE_ALLOW_CROSS_SESSION": "false",

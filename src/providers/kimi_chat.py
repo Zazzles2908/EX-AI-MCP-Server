@@ -170,11 +170,38 @@ def chat_completions_create(
                 logger.warning(f"Unexpected error extracting cache token: {e}")
                 cache_saved = False
             
-            # Pull content
+            # Pull content with structure validation
             try:
-                choice0 = (raw_payload.choices if hasattr(raw_payload, "choices") else raw_payload.get("choices"))[0]
+                # Validate response structure BEFORE parsing
+                if not hasattr(raw_payload, "choices") and not (isinstance(raw_payload, dict) and "choices" in raw_payload):
+                    raise ValueError(
+                        f"Invalid Kimi API response: missing 'choices' field. "
+                        f"Response type: {type(raw_payload)}"
+                    )
+
+                choices = raw_payload.choices if hasattr(raw_payload, "choices") else raw_payload.get("choices")
+
+                if not choices or len(choices) == 0:
+                    raise ValueError(
+                        f"Invalid Kimi API response: empty 'choices' array. "
+                        f"This may indicate an API error or rate limit."
+                    )
+
+                choice0 = choices[0]
+
+                # Validate choice has message field
+                if not hasattr(choice0, "message") and not (isinstance(choice0, dict) and "message" in choice0):
+                    raise ValueError(
+                        f"Invalid Kimi API response: choice missing 'message' field. "
+                        f"Choice type: {type(choice0)}"
+                    )
+
                 msg = getattr(choice0, "message", None) or choice0.get("message", {})
                 content_text = getattr(msg, "content", None) or msg.get("content", "")
+            except ValueError as e:
+                # Re-raise validation errors - these indicate API problems
+                logger.error(f"Kimi API response validation failed (model: {model}): {e}")
+                raise
             except Exception as e:
                 logger.warning(f"Failed to extract content from Kimi response (model: {model}): {e}")
                 # Continue - empty content will be returned, may indicate API response format change
@@ -248,6 +275,24 @@ def chat_completions_create(
         # Continue - tool_calls will be None, tool use functionality may not work but response is still valid
         tool_calls_data = None
 
+    # Extract finish_reason from response (CRITICAL for detecting truncation)
+    finish_reason = "unknown"
+    try:
+        if isinstance(raw_payload, dict):
+            choices = raw_payload.get("choices", [])
+        else:
+            choices = getattr(raw_payload, "choices", [])
+
+        if choices:
+            if isinstance(choices[0], dict):
+                finish_reason = choices[0].get("finish_reason", "unknown")
+            else:
+                finish_reason = getattr(choices[0], "finish_reason", "unknown")
+    except Exception as e:
+        logger.debug(f"Failed to extract finish_reason from Kimi response (model: {model}): {e}")
+        # Continue - finish_reason will be "unknown", completeness check may not work but response is still valid
+        finish_reason = "unknown"
+
     return {
         "provider": "KIMI",
         "model": model,
@@ -256,6 +301,7 @@ def chat_completions_create(
         "usage": _usage,
         "raw": getattr(raw_payload, "model_dump", lambda: raw_payload)() if hasattr(raw_payload, "model_dump") else raw_payload,
         "metadata": {
+            "finish_reason": finish_reason,  # CRITICAL: Now extracted for completeness validation
             "cache": {
                 "attached": bool(cache_attached),
                 "saved": bool(cache_saved),

@@ -44,22 +44,28 @@ def _has_cjk(text: str) -> bool:
 def _route_auto_model(tool_name: str, requested: str | None, args: Dict[str, Any]) -> str | None:
     """
     Centralized model:auto routing policy with step-aware heuristics.
-    
+
     This function implements intelligent model selection based on:
     - Tool type (simple vs workflow)
     - Step number and continuation status
     - Depth parameter
     - Tool-specific requirements
-    
+
     Args:
         tool_name: Name of the tool being executed
         requested: Requested model name (may be "auto")
         args: Tool arguments including step_number, next_step_required, depth
-        
+
     Returns:
         Resolved model name or None to use requested
     """
     try:
+        # CRITICAL FIX (Bug #4): Respect model lock from continuation
+        # When a conversation is continued, preserve the model from previous turn
+        if args.get("_model_locked_by_continuation"):
+            logger.debug(f"[MODEL_ROUTING] Model locked by continuation - skipping auto-routing")
+            return requested  # Skip routing, use continuation model
+
         req = (requested or "").strip().lower()
         if req and req != "auto":
             return requested  # explicit model respected
@@ -241,6 +247,13 @@ def validate_and_fallback_model(model_name: str, tool_name: str, tool_obj, req_i
             suggested_model = ModelProviderRegistry.get_preferred_fallback_model(tool_category)
             # If we have a suggested model, auto-fallback instead of erroring
             if suggested_model and suggested_model != model_name:
+                # CRITICAL FIX (Bug #8): Warn user about invalid model and fallback
+                # Previously this was silent, which confused users about which model was actually used
+                logger.warning(
+                    f"[MODEL_VALIDATION] Invalid model '{model_name}' requested for tool '{tool_name}'. "
+                    f"Falling back to '{suggested_model}'. "
+                    f"Available models: {', '.join(available_models[:5])}{'...' if len(available_models) > 5 else ''}"
+                )
                 logger.info(f"[BOUNDARY] Auto-fallback: '{model_name}' -> '{suggested_model}' for tool {tool_name}")
                 return suggested_model, None
             else:

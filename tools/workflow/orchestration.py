@@ -377,8 +377,18 @@ class OrchestrationMixin:
             }
 
         # Provide a standard next_call skeleton for clients and tests expecting it.
-        # Only include continuation_id inside arguments when provided (omit when None).
+        # Use NextCallBuilder to ensure ALL required fields are included
         try:
+            from tools.workflow.next_call_builder import NextCallBuilder
+            response_data["next_call"] = NextCallBuilder.build_next_call(
+                tool_name=self.get_name(),
+                request=request,
+                continuation_id=continuation_id,
+                include_all_fields=True  # Include ALL fields to prevent validation errors
+            )
+        except Exception as e:
+            # Non-fatal; keep legacy behavior if NextCallBuilder fails
+            logger.debug(f"NextCallBuilder failed, using legacy next_call: {e}")
             next_args = {
                 "step": getattr(request, "step", None),
                 "step_number": getattr(request, "step_number", None),
@@ -388,9 +398,6 @@ class OrchestrationMixin:
             if continuation_id:
                 next_args["continuation_id"] = continuation_id
             response_data["next_call"] = {"tool": self.get_name(), "arguments": next_args}
-        except Exception:
-            # Non-fatal; keep legacy behavior if request lacks attributes
-            pass
 
         return response_data
 
@@ -423,22 +430,34 @@ class OrchestrationMixin:
         response_data["continuation_available"] = True
         if next_step is not None:
             response_data["next_step_number"] = next_step
-        # Include a minimal next_call skeleton clients can use directly
+        # Include a complete next_call with ALL required fields using NextCallBuilder
         try:
             cont_id = self.get_request_continuation_id(request)
         except Exception:
             cont_id = None
-        response_data["next_call"] = {
-            "tool": self.get_name(),
-            "arguments": {
-                "step": f"Continue with step {next_step} as per required actions.",
-                "step_number": next_step or (request.step_number + 1),
-                "total_steps": request.total_steps,
-                "next_step_required": next_step is not None and next_step < (getattr(request, 'total_steps', 2) or 2),
-                "findings": "Summarize new insights and evidence from the required actions.",
-                **({"continuation_id": cont_id} if cont_id else {}),
-            },
-        }
+
+        try:
+            from tools.workflow.next_call_builder import NextCallBuilder
+            response_data["next_call"] = NextCallBuilder.build_pause_next_call(
+                tool_name=self.get_name(),
+                request=request,
+                next_step_number=next_step or (request.step_number + 1),
+                continuation_id=cont_id
+            )
+        except Exception as e:
+            # Fallback to legacy behavior if NextCallBuilder fails
+            logger.debug(f"NextCallBuilder.build_pause_next_call failed, using legacy: {e}")
+            response_data["next_call"] = {
+                "tool": self.get_name(),
+                "arguments": {
+                    "step": f"Continue with step {next_step} as per required actions.",
+                    "step_number": next_step or (request.step_number + 1),
+                    "total_steps": request.total_steps,
+                    "next_step_required": next_step is not None and next_step < (getattr(request, 'total_steps', 2) or 2),
+                    "findings": "Summarize new insights and evidence from the required actions.",
+                    **({"continuation_id": cont_id} if cont_id else {}),
+                },
+            }
 
         return response_data
 

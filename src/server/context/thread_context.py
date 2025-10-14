@@ -191,7 +191,10 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
         for turn in reversed(context.turns):
             if turn.role == "assistant" and turn.model_name:
                 arguments["model"] = turn.model_name
-                logger.debug(f"[CONVERSATION_DEBUG] Using model from previous turn: {turn.model_name}")
+                # CRITICAL FIX (Bug #4): Lock model to prevent routing override
+                # This ensures the model stays consistent across conversation turns
+                arguments["_model_locked_by_continuation"] = True
+                logger.debug(f"[CONVERSATION_DEBUG] Using model from previous turn: {turn.model_name} (locked)")
                 break
 
     # Ensure providers configured for token allocation/capabilities during reconstruction

@@ -14,7 +14,7 @@
 ```env
 # Required
 GLM_API_KEY=your_api_key_here
-GLM_BASE_URL=https://api.z.ai/v1
+GLM_BASE_URL=https://api.z.ai/api/paas/v4
 
 # Optional
 GLM_STREAM_ENABLED=true
@@ -40,39 +40,47 @@ GLM_MAX_TOKENS=65536
 - `glm-4.5-airx` - Air extended
 - `glm-4.5-flash` - Fast, cost-effective (default manager)
 
-**GLM-4.5V Series (Vision):**
+**GLM-4.6V Series (Vision):**
+- `glm-4.6-v` - Vision model with multimodal support (images, videos)
+  - **Context:** 128K tokens
+  - **Features:** Vision (image_url, video_url), function calling
+  - **Use Case:** Image/video analysis
+
+**GLM-4.5V Series (Vision - Legacy):**
 - `glm-4.5v` - Vision model with multimodal support
 - `glm-4.5v-plus` - Enhanced vision capabilities
 
 **Legacy:**
 - `glm-4-32b-0414-128k` - 32B parameter model
 
-### SDK Integration (zai-sdk v0.0.4)
+### API Integration
 
-**Installation:**
-```bash
-pip install zai-sdk>=0.0.4
-```
+**Note:** EX-AI-MCP-Server uses direct HTTP requests, NOT zai-sdk
 
-**Basic Usage:**
+**Direct HTTP (Recommended):**
 ```python
-from zai import ZAI
+import requests
 
-client = ZAI(
-    api_key="your_api_key",
-    base_url="https://api.z.ai/v1"
-)
+url = "https://api.z.ai/api/paas/v4/chat/completions"
 
-response = client.chat.completions.create(
-    model="glm-4.6",
-    messages=[
+payload = {
+    "model": "glm-4.6",
+    "messages": [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "Hello!"}
     ],
-    temperature=0.6,
-    max_tokens=65536,
-    stream=False
-)
+    "temperature": 0.6,
+    "max_tokens": 65536,
+    "stream": False
+}
+
+headers = {
+    "Authorization": "Bearer <GLM_API_KEY>",
+    "Content-Type": "application/json"
+}
+
+response = requests.post(url, json=payload, headers=headers)
+print(response.json())
 ```
 
 **Streaming:**

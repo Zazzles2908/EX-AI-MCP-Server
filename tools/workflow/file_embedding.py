@@ -122,6 +122,14 @@ class FileEmbeddingMixin:
         from utils.file.operations import expand_paths, read_files
         import os
 
+        # ISSUE #8 FIX: Add max file count limit to prevent bloat
+        # Get max file count from env (default 20 files)
+        try:
+            max_file_count = int(os.getenv("EXPERT_ANALYSIS_MAX_FILE_COUNT", "20"))
+        except ValueError:
+            logger.warning("Invalid EXPERT_ANALYSIS_MAX_FILE_COUNT, defaulting to 20 files")
+            max_file_count = 20
+
         # Get max file size from env (default 10KB)
         try:
             max_file_size_kb = int(os.getenv("EXPERT_ANALYSIS_MAX_FILE_SIZE_KB", "10"))
@@ -129,10 +137,15 @@ class FileEmbeddingMixin:
             logger.warning("Invalid EXPERT_ANALYSIS_MAX_FILE_SIZE_KB, defaulting to 10KB")
             max_file_size_kb = 10
 
-        # Filter out files that are too large
+        # Filter out files that are too large and enforce file count limit
         filtered_files = []
         skipped_files = []
         for file_path in files:
+            # ISSUE #8 FIX: Stop if we've reached max file count
+            if len(filtered_files) >= max_file_count:
+                skipped_files.append((file_path, "count_limit"))
+                continue
+
             try:
                 if os.path.isfile(file_path):
                     file_size_kb = os.path.getsize(file_path) / 1024
@@ -151,10 +164,21 @@ class FileEmbeddingMixin:
                 filtered_files.append(file_path)  # Include it anyway, let read_files handle errors
 
         if skipped_files:
-            logger.info(
-                f"[WORKFLOW_FILES] {self.get_name()}: Skipped {len(skipped_files)} large files "
-                f"(>{max_file_size_kb}KB): {[f[0] for f in skipped_files]}"
-            )
+            size_skipped = [f for f in skipped_files if f[1] != "count_limit"]
+            count_skipped = [f for f in skipped_files if f[1] == "count_limit"]
+
+            if size_skipped:
+                logger.info(
+                    f"[WORKFLOW_FILES] {self.get_name()}: Skipped {len(size_skipped)} large files "
+                    f"(>{max_file_size_kb}KB): {[f[0] for f in size_skipped]}"
+                )
+
+            if count_skipped:
+                logger.warning(
+                    f"[WORKFLOW_FILES] {self.get_name()}: Skipped {len(count_skipped)} files due to max count limit "
+                    f"({max_file_count} files). Total files requested: {len(files)}. "
+                    f"Increase EXPERT_ANALYSIS_MAX_FILE_COUNT if needed."
+                )
 
         # Get token budget for files
         current_model_context = self.get_current_model_context()

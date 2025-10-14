@@ -234,19 +234,23 @@ class ConversationIntegrationMixin:
             # Call expert analysis with timeout protection
             print(f"[DEBUG_EXPERT] About to await _call_expert_analysis...")
             import asyncio
+            import os
+            # Make timeout configurable via environment variable
+            timeout_secs = float(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", "180"))
             try:
                 expert_analysis = await asyncio.wait_for(
                     self._call_expert_analysis(arguments, request),
-                    timeout=180.0  # 3 minute absolute timeout
+                    timeout=timeout_secs
                 )
                 print(f"[DEBUG_EXPERT] _call_expert_analysis completed successfully")
             except asyncio.TimeoutError:
-                print(f"[DEBUG_EXPERT] CRITICAL: _call_expert_analysis timed out after 180s!")
-                logger.error(f"Expert analysis timed out after 180s for {self.get_name()}")
+                print(f"[DEBUG_EXPERT] CRITICAL: _call_expert_analysis timed out after {timeout_secs}s!")
+                logger.error(f"Expert analysis timed out after {timeout_secs}s for {self.get_name()}")
                 expert_analysis = {
-                    "error": "Expert analysis timed out after 180 seconds",
+                    "error": f"Expert analysis timed out after {timeout_secs} seconds",
                     "status": "analysis_timeout",
-                    "raw_analysis": ""
+                    "raw_analysis": "",
+                    "timeout_duration": f"{timeout_secs}s"
                 }
             except Exception as e:
                 print(f"[DEBUG_EXPERT] CRITICAL: _call_expert_analysis raised exception: {e}")
@@ -303,11 +307,14 @@ class ConversationIntegrationMixin:
                     response_data["next_steps"] = expert_analysis.get(
                         "next_steps", "Continue based on expert analysis."
                     )
-            elif isinstance(expert_analysis, dict) and expert_analysis.get("status") == "analysis_error":
-                # Expert analysis failed - promote error status
+            elif isinstance(expert_analysis, dict) and expert_analysis.get("status") in ["analysis_error", "analysis_timeout"]:
+                # Expert analysis failed or timed out - promote error status
+                # BUG FIX: analysis_timeout was falling through to success path
                 response_data["status"] = "error"
                 response_data["content"] = expert_analysis.get("error", "Expert analysis failed")
                 response_data["content_type"] = "text"
+                if expert_analysis.get("status") == "analysis_timeout":
+                    response_data["timeout_duration"] = "180s"
                 del response_data["expert_analysis"]
             else:
                 # Expert analysis was successfully executed - include expert guidance
