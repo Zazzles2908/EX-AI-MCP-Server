@@ -297,6 +297,33 @@ class ModelProvider(ABC):
             constraint_desc = capabilities.temperature_constraint.get_description()
             raise ValueError(f"Temperature {temperature} is invalid for model {model_name}. {constraint_desc}")
 
+        # Validate thinking_mode parameter (extended thinking)
+        if "thinking_mode" in kwargs or "thinking" in kwargs:
+            if not capabilities.supports_extended_thinking:
+                raise ValueError(
+                    f"Model {model_name} does not support thinking_mode/thinking parameter. "
+                    f"Only thinking models (kimi-thinking-preview, glm-4.6 with thinking enabled) support this. "
+                    f"Use a different model or remove the thinking_mode parameter."
+                )
+
+        # Validate tools parameter (function calling)
+        if "tools" in kwargs and kwargs["tools"]:
+            if not capabilities.supports_function_calling:
+                raise ValueError(
+                    f"Model {model_name} does not support function calling. "
+                    f"Cannot use tools parameter. Use a model that supports function calling "
+                    f"(e.g., kimi-k2-0905-preview, glm-4.6, glm-4.5-flash)."
+                )
+
+        # Validate images parameter (vision)
+        if "images" in kwargs and kwargs["images"]:
+            if not capabilities.supports_images:
+                raise ValueError(
+                    f"Model {model_name} does not support image inputs. "
+                    f"Cannot use images parameter. Use a vision-capable model "
+                    f"(e.g., kimi-k2-0905-preview, glm-4.6, moonshot-v1-8k-vision-preview)."
+                )
+
     @abstractmethod
     def supports_thinking_mode(self, model_name: str) -> bool:
         """Check if the model supports extended thinking mode."""

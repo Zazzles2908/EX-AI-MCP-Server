@@ -48,20 +48,36 @@ def build_payload(
     if max_output_tokens:
         payload["max_tokens"] = int(max_output_tokens)
     
-    # CRITICAL FIX: Filter out thinking_mode parameter - GLM doesn't support it
-    # Passing unsupported parameters can cause massive token inflation (1.28M tokens!)
+    # GLM Thinking Mode Support (glm-4.6 and later)
+    # API Format: "thinking": {"type": "enabled"}
+    # Source: https://docs.z.ai/api-reference/llm/chat-completion
     if 'thinking_mode' in kwargs:
         thinking_mode = kwargs.pop('thinking_mode', None)
-        logger.debug(f"Filtered out unsupported thinking_mode parameter for GLM model {model_name}: {thinking_mode}")
+        # Check if model supports thinking (glm-4.6 and later)
+        from .glm_config import get_capabilities
+        caps = get_capabilities(model_name)
+        if caps.supports_extended_thinking:
+            # GLM uses "thinking": {"type": "enabled"} format
+            payload["thinking"] = {"type": "enabled"}
+            logger.debug(f"Enabled thinking mode for GLM model {model_name}")
+        else:
+            logger.debug(f"Filtered out thinking_mode parameter for GLM model {model_name} (not supported): {thinking_mode}")
 
     # Pass through GLM tool capabilities when requested (e.g., native web_search)
     try:
         tools = kwargs.get("tools")
         if tools:
             payload["tools"] = tools
-        tool_choice = kwargs.get("tool_choice")
-        if tool_choice:
-            payload["tool_choice"] = tool_choice
+
+            # CRITICAL FIX (Bug #3): glm-4.6 requires explicit tool_choice="auto"
+            # Without this, glm-4.6 returns raw JSON tool calls as text instead of executing them
+            # Other GLM models work without explicit tool_choice, but glm-4.6 needs it
+            tool_choice = kwargs.get("tool_choice")
+            if not tool_choice and model_name == "glm-4.6":
+                payload["tool_choice"] = "auto"
+                logger.debug(f"GLM-4.6: Auto-setting tool_choice='auto' for function calling (Bug #3 fix)")
+            elif tool_choice:
+                payload["tool_choice"] = tool_choice
     except Exception as e:
         logger.warning(f"Failed to add tools/tool_choice to GLM payload (model: {model_name}): {e}")
         # Continue - payload will be sent without tools, API may reject if tools were required

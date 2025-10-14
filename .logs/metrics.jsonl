@@ -1931,3 +1931,5 @@
 {"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "9ce456b2ed9d74bc0979a5f6a29b966964e5f5dd27b4ccfec9db4ffb79602f85", "t": 1760164023.7088048}
 {"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "ff50b980bf2d0f7b9e6968cb605ab46bf8e7baa9b931b23e7771387c602afcb1", "t": 1760164023.7091098}
 {"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "76b5278fc3033095aba12772981b510331757676f7c7bdeabe1932fd0e3c9ce1", "t": 1760164024.083239}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1521, "output_tokens": 165, "t": 1760398985.7564125}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1521, "output_tokens": 213, "t": 1760416547.2372942}

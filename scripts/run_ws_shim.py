@@ -37,6 +37,14 @@ EXAI_WS_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
 EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8765"))
 EXAI_WS_TOKEN = os.getenv("EXAI_WS_TOKEN", "")
 SESSION_ID = os.getenv("EXAI_SESSION_ID", str(uuid.uuid4()))
+
+# CRITICAL: Validate auth token configuration
+if EXAI_WS_TOKEN:
+    logger.debug(f"[AUTH] Using auth token from .env (first 10 chars): {EXAI_WS_TOKEN[:10]}...")
+else:
+    logger.warning("[AUTH] No auth token configured (EXAI_WS_TOKEN is empty). "
+                   "If daemon requires auth, connections will fail. "
+                   "Set EXAI_WS_TOKEN in .env file to match daemon's token.")
 MAX_MSG_BYTES = int(os.getenv("EXAI_WS_MAX_BYTES", str(32 * 1024 * 1024)))
 PING_INTERVAL = int(os.getenv("EXAI_WS_PING_INTERVAL", "45"))
 PING_TIMEOUT = int(os.getenv("EXAI_WS_PING_TIMEOUT", "30"))

@@ -105,7 +105,18 @@ class _TokenManager:
             return True
 
 
-_auth_token_manager = _TokenManager(os.getenv("EXAI_WS_TOKEN", ""))
+# Initialize auth token manager with validation
+_configured_token = os.getenv("EXAI_WS_TOKEN", "")
+_auth_token_manager = _TokenManager(_configured_token)
+
+# CRITICAL: Log auth configuration status (for debugging auth issues)
+if _configured_token:
+    logger.info(f"[AUTH] Authentication enabled (token first 10 chars): {_configured_token[:10]}...")
+else:
+    logger.warning("[AUTH] Authentication DISABLED (EXAI_WS_TOKEN is empty). "
+                   "All connections will be accepted without auth validation. "
+                   "Set EXAI_WS_TOKEN in .env file to enable authentication.")
+
 PING_INTERVAL = int(os.getenv("EXAI_WS_PING_INTERVAL", "45"))  # wider interval to reduce false timeouts
 PING_TIMEOUT = int(os.getenv("EXAI_WS_PING_TIMEOUT", "30"))    # allow slower systems to respond to pings
 # WS-level hard ceiling for a single tool invocation; keep small to avoid client-perceived hangs
@@ -402,14 +413,8 @@ def _validate_message(msg: Dict[str, Any]) -> tuple[bool, Optional[str]]:
 async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dict[str, Any]) -> None:
     op = msg.get("op")
     if op == "list_tools":
-        # CRITICAL: Ensure providers are configured AND provider tools are registered
-        # This must happen on first list_tools call to populate the full tool list
-        try:
-            _ensure_providers_configured()  # Step 1: Configure providers (idempotent)
-            register_provider_specific_tools()  # Step 2: Register provider tools (idempotent)
-        except Exception as e:
-            logger.error(f"Failed to register provider-specific tools for list_tools: {e}", exc_info=True)
-            # Continue - core tools still available even if provider tools fail
+        # NOTE: Providers are configured at daemon startup (see main_async())
+        # No need to call _ensure_providers_configured() here - it's already done
         # Build a minimal tool descriptor set
         tools = []
         for name, tool in SERVER_TOOLS.items():
@@ -446,13 +451,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
             logger.info(f"Arguments: <unable to serialize>")
         logger.info(f"=== PROCESSING ===")
 
-        try:
-            _ensure_providers_configured()
-            # Ensure provider-specific tools are registered prior to lookup
-            register_provider_specific_tools()
-        except Exception as e:
-            logger.error(f"Failed to register provider-specific tools for call_tool: {e}", exc_info=True)
-            # Continue - core tools still available even if provider tools fail
+        # NOTE: Providers are configured at daemon startup (see main_async())
+        # No need to call _ensure_providers_configured() here - it's already done
+        # This prevents deadlock when called in async context
         tool = SERVER_TOOLS.get(name)
         if not tool:
             await _safe_send(ws, {
@@ -1045,7 +1046,11 @@ async def _serve_connection(ws: WebSocketServerProtocol) -> None:
     token = hello.get("token", "")
     current_auth_token = await _auth_token_manager.get()
     if current_auth_token and token != current_auth_token:
-        logger.warning(f"Client sent invalid auth token")
+        # Enhanced logging for auth debugging (show first 10 chars only for security)
+        expected_preview = current_auth_token[:10] + "..." if len(current_auth_token) > 10 else current_auth_token
+        received_preview = token[:10] + "..." if len(token) > 10 else (token if token else "<empty>")
+        logger.warning(f"[AUTH] Client sent invalid auth token. "
+                       f"Expected: {expected_preview}, Received: {received_preview}")
         try:
             await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "unauthorized"})
             try:
@@ -1184,6 +1189,17 @@ async def main_async() -> None:
             return
 
     STARTED_AT = time.time()
+
+    # CRITICAL FIX: Configure providers and register tools at startup (not per-request)
+    # This prevents deadlock when _ensure_providers_configured() is called in async context
+    logger.info("Configuring providers and registering tools at daemon startup...")
+    try:
+        _ensure_providers_configured()
+        register_provider_specific_tools()
+        logger.info(f"Providers configured successfully. Total tools available: {len(SERVER_TOOLS)}")
+    except Exception as e:
+        logger.error(f"Failed to configure providers at startup: {e}", exc_info=True)
+        logger.warning("Daemon will start but provider-specific tools may not be available")
 
     logger.info(f"Starting WS daemon on ws://{EXAI_WS_HOST}:{EXAI_WS_PORT}")
     try:
