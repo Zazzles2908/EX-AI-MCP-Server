@@ -304,10 +304,66 @@ After implementing these fixes:
 
 ---
 
-**Document Status:** ✅ QA COMPLETE - 3 CRITICAL ISSUES FIXED, 3 ENHANCEMENT ISSUES IDENTIFIED
+---
+
+## 🔄 **CONTINUED QA SESSION - 2025-10-16 (SECOND PASS)**
+
+**Continuation:** Same conversation ID `debb44af-15b9-456d-9b88-6a2519f81427`
+**Model Used:** GLM-4.6 with web search enabled
+**Focus Areas:** Tool integration, error handling, configuration, logging, performance, security
+
+### **EXAI GLM-4.6 Findings (12 New Issues Reported)**
+
+EXAI GLM-4.6 conducted a comprehensive architectural review and reported 12 new findings. However, **code validation revealed significant hallucinations**:
+
+**❌ EXAI HALLUCINATIONS (Invalid Findings):**
+1. **Finding #6: TimeoutConfig Validation Missing** - **FALSE**
+   - EXAI claimed: "Configuration values loaded but not validated"
+   - **Reality**: `config.py` lines 317-366 contain comprehensive `validate_hierarchy()` method
+   - Validates timeout hierarchy, ratios, and relationships
+   - Runs automatically on module import (line 408)
+
+2. **Finding #1: Tool Registration Inconsistency** - **MISLEADING**
+   - EXAI claimed: "Inconsistent registration patterns (manual vs decorators)"
+   - **Reality**: `tools/registry.py` uses consistent TOOL_MAP dictionary pattern
+   - All tools registered via centralized dictionary (lines 17-48)
+   - No decorator-based registration found
+
+3. **Hallucinated File Paths** - **CRITICAL ISSUE**
+   - EXAI used paths like `c:\\Project\\exai-mcp-daemon\\src\\tools\\registry.py`
+   - **Reality**: Actual path is `tools/registry.py` (no `exai-mcp-daemon` directory)
+   - EXAI invented line numbers that don't exist in actual files
+
+**✅ POTENTIALLY VALID FINDINGS (Require Further Investigation):**
+1. **Finding #5: Configuration Validation Incomplete** (HIGH)
+   - While TimeoutConfig HAS validation, other config values may not
+   - Need to check: API keys, URLs, feature flags, etc.
+
+2. **Finding #7: Structured Logging Inconsistent** (MEDIUM)
+   - Mixed logging approaches across codebase
+   - Some use structured JSON, others use plain text
+
+3. **Finding #9: Synchronous Operations in Async Context** (HIGH)
+   - AsyncGLM uses `asyncio.to_thread()` to wrap sync SDK
+   - May block event loop during operations
+
+4. **Finding #11: Input Sanitization Incomplete** (HIGH)
+   - User inputs may not be thoroughly sanitized
+   - Potential injection risks
+
+**🎓 LESSON LEARNED:**
+**ALWAYS VALIDATE EXAI FINDINGS AGAINST ACTUAL CODE!**
+- EXAI can hallucinate file paths, line numbers, and code patterns
+- EXAI may report issues that were already fixed
+- EXAI may misunderstand architectural patterns
+- **Code validation is MANDATORY before creating issues**
+
+---
+
+**Document Status:** ✅ QA COMPLETE - 3 CRITICAL ISSUES FIXED, 3 ENHANCEMENT ISSUES IDENTIFIED, 12 NEW FINDINGS REQUIRE VALIDATION
 **Created:** 2025-10-16
-**Updated:** 2025-10-16 (Added Supabase tracking and validation notes)
+**Updated:** 2025-10-16 (Added second QA pass with EXAI validation notes)
 **EXAI Conversation:** `debb44af-15b9-456d-9b88-6a2519f81427`
 **Supabase Database:** Personal AI (mxaazuhlqewmkweewyaz)
-**Next Update:** After implementing open issues
+**Next Update:** After validating potentially valid findings and implementing fixes
 
