@@ -11,8 +11,12 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from src.bootstrap.logging_setup import get_logger
 from tools.simple.base import SimpleTool
 from tools.shared.base_models import ToolRequest
+
+# Initialize logger for this module
+logger = get_logger(__name__)
 
 
 class ActivityRequest(ToolRequest):

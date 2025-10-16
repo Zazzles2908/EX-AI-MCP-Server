@@ -6,6 +6,7 @@ brainstorming, problem-solving, and collaborative thinking. It supports file con
 images, and conversation continuation for seamless multi-turn interactions.
 """
 
+import logging
 from typing import TYPE_CHECKING, Any, Optional
 
 from pydantic import Field
@@ -18,6 +19,8 @@ from systemprompts import CHAT_PROMPT
 from tools.shared.base_models import ToolRequest
 
 from .simple.base import SimpleTool
+
+logger = logging.getLogger(__name__)
 
 # Field descriptions matching the original Chat tool exactly
 CHAT_FIELD_DESCRIPTIONS = {
@@ -216,8 +219,8 @@ class ChatTool(SimpleTool):
                 # Record the user turn immediately
                 from src.conversation.history_store import get_history_store
                 get_history_store().record_turn(request.continuation_id, "user", request.prompt)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[chat:context] Failed to assemble conversation context: {e}")
 
         # Phase 5: propagate stream flag by temporarily setting GLM_STREAM_ENABLED for duration of call
         try:
@@ -225,7 +228,8 @@ class ChatTool(SimpleTool):
             self._prev_stream_env = _os.getenv("GLM_STREAM_ENABLED", None)
             if getattr(request, "stream", None) is not None:
                 _os.environ["GLM_STREAM_ENABLED"] = "true" if bool(request.stream) else "false"
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[chat:stream] Failed to set stream flag: {e}")
             self._prev_stream_env = None
 
         base_prompt = self.prepare_chat_style_prompt(request)
@@ -257,10 +261,10 @@ class ChatTool(SimpleTool):
                             get_cache_store().record(request.continuation_id, {
                                 k: cache.get(k) for k in ("session_id", "call_key", "token") if cache.get(k)
                             })
-                except Exception:
-                    pass
-        except Exception:
-            pass
+                except Exception as e:
+                    logger.warning(f"[chat:cache] Failed to record cache tokens: {e}")
+        except Exception as e:
+            logger.warning(f"[chat:response] Failed to persist assistant turn: {e}")
         finally:
             # Restore GLM_STREAM_ENABLED after call
             try:
@@ -271,8 +275,8 @@ class ChatTool(SimpleTool):
                         _os.environ.pop("GLM_STREAM_ENABLED", None)
                     else:
                         _os.environ["GLM_STREAM_ENABLED"] = str(prev)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"[chat:cleanup] Failed to restore stream env: {e}")
 
         # Only append "AGENT'S TURN" message for multi-turn conversations
         # For standalone calls (especially with web search), return clean response

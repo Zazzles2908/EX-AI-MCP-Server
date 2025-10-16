@@ -45,8 +45,20 @@ def build_payload(
     
     if temperature is not None:
         payload["temperature"] = temperature
+
+    # Max tokens handling - respects ENFORCE_MAX_TOKENS configuration
+    # If max_output_tokens is explicitly provided, always use it
+    # If not provided and ENFORCE_MAX_TOKENS=true, use GLM_MAX_OUTPUT_TOKENS default
+    # If not provided and ENFORCE_MAX_TOKENS=false, don't set max_tokens (let model decide)
+    from config import GLM_MAX_OUTPUT_TOKENS, ENFORCE_MAX_TOKENS
     if max_output_tokens:
+        # Explicitly provided - always use it
         payload["max_tokens"] = int(max_output_tokens)
+    elif ENFORCE_MAX_TOKENS and GLM_MAX_OUTPUT_TOKENS > 0:
+        # Not provided, but enforcement is enabled - use default
+        payload["max_tokens"] = int(GLM_MAX_OUTPUT_TOKENS)
+        logger.debug(f"Using default max_tokens={GLM_MAX_OUTPUT_TOKENS} for GLM (ENFORCE_MAX_TOKENS=true)")
+    # else: Don't set max_tokens, let the model use its default
     
     # GLM Thinking Mode Support (glm-4.6 and later)
     # API Format: "thinking": {"type": "enabled"}
@@ -54,14 +66,18 @@ def build_payload(
     if 'thinking_mode' in kwargs:
         thinking_mode = kwargs.pop('thinking_mode', None)
         # Check if model supports thinking (glm-4.6 and later)
-        from .glm_config import get_capabilities
-        caps = get_capabilities(model_name)
+        from .glm_config import get_capabilities, SUPPORTED_MODELS, resolve_model_name_for_glm
+        caps = get_capabilities(model_name, SUPPORTED_MODELS, resolve_model_name_for_glm)
         if caps.supports_extended_thinking:
             # GLM uses "thinking": {"type": "enabled"} format
             payload["thinking"] = {"type": "enabled"}
             logger.debug(f"Enabled thinking mode for GLM model {model_name}")
         else:
-            logger.debug(f"Filtered out thinking_mode parameter for GLM model {model_name} (not supported): {thinking_mode}")
+            logger.warning(
+                f"⚠️ Model {model_name} doesn't support thinking_mode - parameter ignored. "
+                f"Use glm-4.6, glm-4.5, or glm-4.5-air for thinking mode support. "
+                f"Requested mode: {thinking_mode}"
+            )
 
     # Pass through GLM tool capabilities when requested (e.g., native web_search)
     try:
@@ -78,6 +94,16 @@ def build_payload(
                 logger.debug(f"GLM-4.6: Auto-setting tool_choice='auto' for function calling (Bug #3 fix)")
             elif tool_choice:
                 payload["tool_choice"] = tool_choice
+
+            # CRITICAL FIX (2025-10-15): GLM-4.6 requires tool_stream=True for streaming tool calls
+            # According to Z.ai documentation: https://docs.z.ai/guides/tools/stream-tool
+            # When stream=True AND tools are present, must set tool_stream=True
+            if payload.get("stream"):
+                import os as _os
+                tool_stream_enabled = _os.getenv("GLM_TOOL_STREAM_ENABLED", "true").strip().lower() == "true"
+                if tool_stream_enabled:
+                    payload["tool_stream"] = True
+                    logger.debug(f"GLM-4.6: Enabled tool_stream=True for streaming tool calls")
     except Exception as e:
         logger.warning(f"Failed to add tools/tool_choice to GLM payload (model: {model_name}): {e}")
         # Continue - payload will be sent without tools, API may reject if tools were required
@@ -167,8 +193,23 @@ def generate_content(
                 actual_model = None
                 response_id = None
                 created_ts = None
+
+                # CRITICAL FIX (2025-10-15): Add streaming timeout to prevent 6+ hour hangs
+                # Get timeout from env (default 5 minutes for GLM)
+                import time
+                stream_timeout = int(os.getenv("GLM_STREAM_TIMEOUT", "300"))  # 5 minutes default
+                stream_start = time.time()
+
                 try:
                     for event in resp:
+                        # Check if streaming has exceeded timeout
+                        elapsed = time.time() - stream_start
+                        if elapsed > stream_timeout:
+                            raise TimeoutError(
+                                f"GLM streaming exceeded timeout of {stream_timeout}s (elapsed: {int(elapsed)}s). "
+                                "This prevents indefinite hangs. Increase GLM_STREAM_TIMEOUT if needed."
+                            )
+
                         try:
                             # Support both delta and message content shapes
                             choice = getattr(event, "choices", [None])[0]
@@ -189,6 +230,9 @@ def generate_content(
                             logger.debug(f"Failed to parse GLM streaming event metadata: {e}")
                             # Continue - skip this event, next event may have valid data
                             continue
+                except TimeoutError as timeout_err:
+                    logger.error(f"GLM streaming timeout: {timeout_err}")
+                    raise RuntimeError(f"GLM SDK streaming timeout: {timeout_err}") from timeout_err
                 except Exception as stream_err:
                     raise RuntimeError(f"GLM SDK streaming failed: {stream_err}") from stream_err
                 

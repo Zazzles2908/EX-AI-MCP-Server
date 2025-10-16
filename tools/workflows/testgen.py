@@ -115,7 +115,7 @@ class TestGenRequest(WorkflowRequest):
     relevant_context: list[str] = Field(
         default_factory=list, description=TESTGEN_WORKFLOW_FIELD_DESCRIPTIONS["relevant_context"]
     )
-    confidence: Optional[str] = Field("low", description=TESTGEN_WORKFLOW_FIELD_DESCRIPTIONS["confidence"])
+    # confidence field inherited from WorkflowRequest with correct Literal type validation
 
     # Optional backtracking field
     backtrack_from_step: Optional[int] = Field(
@@ -127,7 +127,7 @@ class TestGenRequest(WorkflowRequest):
 
     # Override inherited fields to exclude them from schema (except model which needs to be available)
     temperature: Optional[float] = Field(default=None, exclude=True)
-    thinking_mode: Optional[str] = Field(default=None, exclude=True)
+    # thinking_mode field inherited from ToolRequest with correct Literal type validation
     use_websearch: Optional[bool] = Field(default=None, exclude=True)
 
     @model_validator(mode="after")

@@ -39,7 +39,7 @@ class SecauditRequest(WorkflowRequest):
     issues_found: list[dict] = Field(
         default_factory=list, description=SECAUDIT_WORKFLOW_FIELD_DESCRIPTIONS["issues_found"]
     )
-    confidence: Optional[str] = Field("low", description=SECAUDIT_WORKFLOW_FIELD_DESCRIPTIONS["confidence"])
+    # confidence field inherited from WorkflowRequest with correct Literal type validation
 
     # Optional backtracking field
     backtrack_from_step: Optional[int] = Field(

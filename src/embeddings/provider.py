@@ -81,29 +81,36 @@ class KimiEmbeddingsProvider(EmbeddingsProvider):
 
 
 class GLMEmbeddingsProvider(EmbeddingsProvider):
-    """GLM Embeddings Provider using ZAI SDK
+    """GLM Embeddings Provider using ZhipuAI SDK
 
-    Last Updated: 2025-10-09 (Phase 5 Implementation - Fixed with ZAI SDK)
+    Last Updated: 2025-10-14 (Docker Migration - Switched to zhipuai SDK)
 
     Supports:
     - embedding-2 model (1024 dimensions, recommended)
     - embedding-3 model (8192 dimensions)
 
-    CRITICAL DISCOVERY:
-    - Uses ZAI SDK (zai-sdk>=0.0.4) instead of zhipuai SDK
-    - Works with z.ai proxy endpoint: https://api.z.ai/api/paas/v4
-    - The zhipuai SDK doesn't work with z.ai proxy for embeddings
-    - The zai SDK is specifically designed for z.ai endpoints
+    CRITICAL HISTORY - SDK MIGRATION:
+    - Phase 5 (2025-10-09): Used zai-sdk because zhipuai SDK didn't work with z.ai proxy
+    - 2025-10-14: Removed zai-sdk due to pyjwt version conflict with other dependencies
+    - Current: Using zhipuai SDK (same as GLM chat provider)
 
-    API Endpoint: https://api.z.ai/api/paas/v4
+    ⚠️ IMPORTANT: If embeddings fail with zhipuai SDK + z.ai proxy:
+    - Option 1: Switch to official endpoint (slower but guaranteed to work):
+      GLM_EMBEDDINGS_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+    - Option 2: Reinstall zai-sdk and resolve pyjwt conflict:
+      pip install zai-sdk>=0.0.4
+    - Option 3: Use Kimi embeddings instead:
+      EMBEDDINGS_PROVIDER=kimi
+
+    API Endpoint: https://api.z.ai/api/paas/v4 (z.ai proxy - 3x faster)
+    Fallback Endpoint: https://open.bigmodel.cn/api/paas/v4 (official - slower but stable)
     Documentation: https://open.bigmodel.cn/dev/api#text_embedding (docs site, not API endpoint)
     """
     def __init__(self, model: Optional[str] = None) -> None:
         self.model = model or os.getenv("GLM_EMBED_MODEL", "embedding-2")
         self.api_key = os.getenv("GLM_API_KEY")
 
-        # Use z.ai endpoint with ZAI SDK (not zhipuai SDK)
-        # The zai SDK is designed to work with the z.ai proxy
+        # Use z.ai endpoint with zhipuai SDK (same as chat provider)
         self.base_url = os.getenv("GLM_EMBEDDINGS_BASE_URL", "https://api.z.ai/api/paas/v4")
 
         if not self.api_key:
@@ -113,20 +120,20 @@ class GLMEmbeddingsProvider(EmbeddingsProvider):
             )
 
         logger.info(f"Initializing GLMEmbeddingsProvider with model: {self.model}")
-        logger.info(f"Using ZAI SDK with endpoint: {self.base_url}")
+        logger.info(f"Using zhipuai SDK with endpoint: {self.base_url}")
 
-        # Initialize ZAI SDK client (not zhipuai SDK)
+        # Initialize zhipuai SDK client (same as GLM chat provider)
         try:
-            from zai import ZaiClient
-            self.client = ZaiClient(
+            from zhipuai import ZhipuAI
+            self.client = ZhipuAI(
                 api_key=self.api_key,
                 base_url=self.base_url
             )
-            logger.info(f"GLM embeddings client initialized successfully with ZAI SDK")
+            logger.info(f"GLM embeddings client initialized successfully with zhipuai SDK")
         except ImportError as e:
-            logger.error(f"Failed to import zai SDK: {e}")
+            logger.error(f"Failed to import zhipuai SDK: {e}")
             raise RuntimeError(
-                "zai SDK not installed. Install with: pip install zai-sdk>=0.0.4"
+                "zhipuai SDK not installed. Install with: pip install zhipuai>=2.1.0"
             ) from e
         except Exception as e:
             logger.error(f"Failed to initialize GLM embeddings client: {e}")

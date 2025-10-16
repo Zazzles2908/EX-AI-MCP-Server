@@ -202,6 +202,35 @@ def _calculate_mcp_prompt_limit() -> int:
 
 MCP_PROMPT_SIZE_LIMIT: int = _calculate_mcp_prompt_limit()
 
+# Model Output Token Limits
+# Controls maximum response length from AI models
+#
+# IMPORTANT CONFIGURATION NOTES:
+# 1. These values are DEFAULT maximums used when max_output_tokens is not explicitly provided
+# 2. Setting these too high may waste tokens; too low may cause truncation
+# 3. Official model limits (as of 2025-10-14):
+#    - Kimi K2 models: 16384 tokens (official Moonshot AI limit)
+#    - GLM models: 8192 tokens (official ZhipuAI limit)
+# 4. Set to 0 or empty string to disable automatic max_tokens (let model use its default)
+#
+# USAGE:
+# - When a tool/provider doesn't specify max_output_tokens, these defaults are used
+# - When a tool/provider DOES specify max_output_tokens, that value takes precedence
+# - To disable automatic max_tokens enforcement, set: DEFAULT_MAX_OUTPUT_TOKENS=0
+#
+# TROUBLESHOOTING:
+# - If responses are truncated: Check if max_output_tokens is being set too low
+# - If API errors occur: Some models may not support max_tokens parameter
+# - If costs are high: Consider lowering these values for routine tasks
+DEFAULT_MAX_OUTPUT_TOKENS: int = int(os.getenv("DEFAULT_MAX_OUTPUT_TOKENS", "8192"))
+KIMI_MAX_OUTPUT_TOKENS: int = int(os.getenv("KIMI_MAX_OUTPUT_TOKENS", "16384"))
+GLM_MAX_OUTPUT_TOKENS: int = int(os.getenv("GLM_MAX_OUTPUT_TOKENS", "8192"))
+
+# Whether to enforce max_tokens even when not explicitly requested
+# Set to False to only use max_tokens when explicitly provided by the caller
+# Set to True to always enforce max_tokens using the defaults above
+ENFORCE_MAX_TOKENS: bool = _parse_bool_env("ENFORCE_MAX_TOKENS", "true")
+
 # Language/Locale Configuration
 # LOCALE: Language/locale specification for AI responses
 # When set, all AI tools will respond in the specified language while
@@ -238,17 +267,21 @@ from utils.config.helpers import get_auggie_config_path
 
 
 class TimeoutConfig:
-    """Centralized timeout configuration with coordinated hierarchy."""
+    """Centralized timeout configuration with coordinated hierarchy.
+
+    TRACK 2 FIX (2025-10-16): Updated defaults to 30s for MCP tools to prevent indefinite hangs.
+    Previous defaults (90-150s) were too high and caused poor user experience.
+    """
 
     # Tool-level timeouts (primary)
-    SIMPLE_TOOL_TIMEOUT_SECS = int(os.getenv("SIMPLE_TOOL_TIMEOUT_SECS", "60"))
-    WORKFLOW_TOOL_TIMEOUT_SECS = int(os.getenv("WORKFLOW_TOOL_TIMEOUT_SECS", "120"))
-    EXPERT_ANALYSIS_TIMEOUT_SECS = int(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", "90"))
+    SIMPLE_TOOL_TIMEOUT_SECS = int(os.getenv("SIMPLE_TOOL_TIMEOUT_SECS", "30"))
+    WORKFLOW_TOOL_TIMEOUT_SECS = int(os.getenv("WORKFLOW_TOOL_TIMEOUT_SECS", "45"))
+    EXPERT_ANALYSIS_TIMEOUT_SECS = int(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", "60"))
 
     # Provider timeouts
-    GLM_TIMEOUT_SECS = int(os.getenv("GLM_TIMEOUT_SECS", "90"))
-    KIMI_TIMEOUT_SECS = int(os.getenv("KIMI_TIMEOUT_SECS", "120"))
-    KIMI_WEB_SEARCH_TIMEOUT_SECS = int(os.getenv("KIMI_WEB_SEARCH_TIMEOUT_SECS", "150"))
+    GLM_TIMEOUT_SECS = int(os.getenv("GLM_TIMEOUT_SECS", "30"))
+    KIMI_TIMEOUT_SECS = int(os.getenv("KIMI_TIMEOUT_SECS", "30"))
+    KIMI_WEB_SEARCH_TIMEOUT_SECS = int(os.getenv("KIMI_WEB_SEARCH_TIMEOUT_SECS", "30"))
 
     @classmethod
     def get_daemon_timeout(cls) -> int:

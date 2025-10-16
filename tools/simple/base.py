@@ -708,6 +708,64 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 )
                 return [TextContent(type="text", text=tool_output.model_dump_json())]
 
+            # HYBRID PATTERN: DISABLED (2025-10-15)
+            # GLM-4.6 with tool_stream=True now uses web search natively and correctly
+            # The fallback was triggering unnecessarily because GLM embeds search results
+            # without specific markers like "[Web Search Results]"
+            #
+            # DECISION: Trust GLM's native web search implementation
+            # If GLM doesn't search when it should, that's a prompt/model issue, not a code issue
+            #
+            # Original logic kept below for reference but commented out:
+            """
+            use_websearch = self.get_request_use_websearch(request)
+            if use_websearch and self.get_name() == "chat":
+                # Check if response contains web search results
+                response_content = getattr(model_response, "content", "")
+                has_search_results = (
+                    "[Web Search Results]" in response_content or
+                    "search_result" in response_content.lower() or
+                    "web search" in response_content.lower()
+                )
+                if not has_search_results:
+                    logger.info("Web search requested but not found in response - executing fallback search")
+                    send_progress(ProgressMessages.executing_tool("web_search"))
+
+                    try:
+                        # Import GLM web search tool
+                        from tools.providers.glm.glm_web_search import GLMWebSearchTool
+
+                        # Extract search query from user prompt
+                        user_prompt = self.get_request_prompt(request)
+                        search_query = user_prompt[:200]  # Use first 200 chars as query
+
+                        # Execute web search
+                        web_search_tool = GLMWebSearchTool()
+                        search_results = await web_search_tool.execute({
+                            "search_query": search_query,
+                            "count": 10,
+                            "search_recency_filter": "oneWeek"
+                        })
+
+                        # Extract search results from TextContent
+                        if search_results and len(search_results) > 0:
+                            import json as _json
+                            search_data = _json.loads(search_results[0].text)
+
+                            # Append search results to response
+                            search_results_text = f"\n\n=== WEB SEARCH RESULTS ===\n{_json.dumps(search_data, indent=2, ensure_ascii=False)}\n"
+
+                            # Update model response content
+                            if hasattr(model_response, 'content'):
+                                model_response.content = response_content + search_results_text
+                                logger.info("Successfully appended fallback web search results to response")
+                                send_progress(ProgressMessages.tool_complete("web_search"))
+
+                    except Exception as e:
+                        logger.warning(f"Fallback web search failed: {e}")
+                        # Continue without search results - don't fail the entire request
+            """
+
             # Check if model requested tool calls (web_search, etc.)
             # Tool_calls are stored in the raw response within metadata
             tool_calls_list = None
@@ -1218,12 +1276,12 @@ Please provide a thoughtful, comprehensive response:"""
                 pass
 
             for file_path in files:
-                # 1) Absolute path requirement
+                # 1) Absolute path requirement (Windows: C:\..., Linux/Mac: /...)
                 if not os.path.isabs(file_path):
                     return (
                         f"Error: All file paths must be FULL absolute paths to real files / folders - DO NOT SHORTEN. "
                         f"Received relative path: {file_path}\n"
-                        f"Please provide the full absolute path starting with '/' (must be FULL absolute paths to real files / folders - DO NOT SHORTEN)"
+                        f"Please provide the full absolute path (Windows: C:\\..., Linux/Mac: /...)"
                     )
 
                 # 2) Secure resolution + containment check within allowed roots

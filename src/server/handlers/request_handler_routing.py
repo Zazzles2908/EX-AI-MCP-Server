@@ -97,10 +97,10 @@ def suggest_tool_name(name: str, tool_map: Dict[str, Any], env_true_func) -> Opt
                         type="text",
                         text=f"Unknown tool: {name}. Did you mean: {suggestion}? {desc}"
                     )
-            except Exception:
-                pass
-    except Exception:
-        pass
+            except Exception as e:
+                logger.debug(f"Failed to generate tool suggestion for '{name}': {e}")
+    except Exception as e:
+        logger.debug(f"Tool suggestion lookup failed for '{name}': {e}")
     
     return None
 

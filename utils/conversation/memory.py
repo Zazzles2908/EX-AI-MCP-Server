@@ -149,5 +149,130 @@ __all__ = [
     "build_conversation_history",
     # Storage
     "get_storage",
+    # Class-based interface for storage factory
+    "InMemoryConversation",
 ]
+
+
+# ================================================================================
+# Class-based Interface for Storage Factory
+# ================================================================================
+
+
+class InMemoryConversation:
+    """
+    Class-based wrapper for in-memory conversation storage.
+
+    This class provides a unified interface for the storage factory pattern,
+    using DIRECT Redis storage access to avoid circular dependencies.
+
+    CRITICAL: This class MUST NOT call functions from threads.py to avoid
+    infinite loops when used with the storage factory pattern.
+
+    The storage factory calls this class, which would call threads.py,
+    which would call the storage factory again → infinite loop!
+
+    Instead, this class uses direct Redis storage access via get_storage().
+    """
+
+    def __init__(self):
+        """Initialize in-memory conversation storage"""
+        # Get direct access to Redis storage backend
+        self.storage = get_storage()
+
+    def get_thread(self, continuation_id: str):
+        """
+        Get thread context by continuation ID using DIRECT Redis storage.
+
+        CRITICAL: Does NOT call threads.py to avoid circular dependency!
+
+        Args:
+            continuation_id: Unique conversation identifier
+
+        Returns:
+            ThreadContext or None
+        """
+        # Use direct Redis storage access (not threads.py!)
+        thread_data = self.storage.get(continuation_id)
+        if not thread_data:
+            return None
+
+        # Convert to ThreadContext
+        return ThreadContext(**thread_data)
+
+    def add_turn(
+        self,
+        continuation_id: str,
+        role: str,
+        content: str,
+        files=None,
+        images=None,
+        metadata=None,
+        tool_name=None
+    ) -> bool:
+        """
+        Add a turn to the conversation using DIRECT Redis storage.
+
+        CRITICAL: Does NOT call threads.py to avoid circular dependency!
+
+        Args:
+            continuation_id: Unique conversation identifier
+            role: Message role (user, assistant, system)
+            content: Message content
+            files: Optional list of file paths
+            images: Optional list of image paths
+            metadata: Optional metadata dict
+            tool_name: Optional tool name
+
+        Returns:
+            True if successful, False otherwise
+        """
+        from datetime import datetime, timezone
+
+        # Get thread using direct storage (not threads.py!)
+        thread_data = self.storage.get(continuation_id)
+        if not thread_data:
+            return False
+
+        context = ThreadContext(**thread_data)
+
+        # Check turn limit
+        if len(context.turns) >= MAX_CONVERSATION_TURNS:
+            return False
+
+        # Create new turn
+        turn = ConversationTurn(
+            role=role,
+            content=content,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            files=files,
+            images=images,
+            tool_name=tool_name,
+            model_metadata=metadata,
+        )
+
+        context.turns.append(turn)
+        context.last_updated_at = datetime.now(timezone.utc).isoformat()
+
+        # Save back to Redis using direct storage
+        key = f"thread:{continuation_id}"
+        self.storage.setex(key, CONVERSATION_TIMEOUT_SECONDS, context.model_dump_json())
+        return True
+
+    def build_conversation_history(
+        self,
+        continuation_id: str,
+        model_context=None
+    ):
+        """
+        Build conversation history string
+
+        Args:
+            continuation_id: Unique conversation identifier
+            model_context: Optional model context for token counting
+
+        Returns:
+            Tuple of (history_string, token_count)
+        """
+        return build_conversation_history(continuation_id, model_context)
 

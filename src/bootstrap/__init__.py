@@ -7,7 +7,7 @@ singleton initialization for providers and tools.
 """
 
 from .env_loader import load_env, get_repo_root
-from .logging_setup import setup_logging
+from .logging_setup import setup_logging, configure_websockets_logging
 from .singletons import (
     ensure_providers_configured,
     ensure_tools_built,
@@ -23,6 +23,7 @@ __all__ = [
     "load_env",
     "get_repo_root",
     "setup_logging",
+    "configure_websockets_logging",
     "ensure_providers_configured",
     "ensure_tools_built",
     "ensure_provider_tools_registered",

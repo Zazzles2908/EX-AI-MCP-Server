@@ -30,7 +30,8 @@ def load_monitoring_config() -> Dict[str, float]:
         hb_every_s = float(os.getenv("EX_HEARTBEAT_SECONDS", "10"))
         warn_after_s = float(os.getenv("EX_WATCHDOG_WARN_SECONDS", "30"))
         err_after_s = float(os.getenv("EX_WATCHDOG_ERROR_SECONDS", "90"))
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Failed to parse monitoring configuration, using defaults: {e}")
         tool_timeout_s, hb_every_s, warn_after_s, err_after_s = 120.0, 10.0, 30.0, 90.0
     
     return {
@@ -100,11 +101,12 @@ async def execute_with_monitor(
                     last_warned = True
                 else:
                     mcp_logger.info(f"[PROGRESS] tool={name} req_id={req_id} elapsed={elapsed:.1f}s — heartbeat")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Heartbeat logging failed: {e}")
             try:
                 await asyncio.sleep(hb_every_s)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Heartbeat sleep interrupted: {e}")
                 break
     
     hb_task = asyncio.create_task(_heartbeat())
@@ -117,8 +119,8 @@ async def execute_with_monitor(
             if ex_mirror and evt and sink:
                 evt.end(ok=True)
                 sink.record(evt)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to record success event: {e}")
         
         return result
     
@@ -126,26 +128,26 @@ async def execute_with_monitor(
         # Propagate cancellation (e.g., client disconnect) but record structured end
         try:
             mcp_logger.info(f"TOOL_CANCELLED: {name} req_id={req_id}")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to log cancellation: {e}")
         try:
             main_task.cancel()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to cancel main task: {e}")
         try:
             if ex_mirror and evt and sink:
                 evt.end(ok=False, error="cancelled")
                 sink.record(evt)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to record cancellation event: {e}")
         raise
     
     finally:
         _stop = True
         try:
             hb_task.cancel()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to cancel heartbeat task: {e}")
 
 
 # Export public API

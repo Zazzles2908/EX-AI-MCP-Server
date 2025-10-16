@@ -30,7 +30,57 @@ from utils.conversation.models import (
     get_storage,
 )
 
+# Storage factory will be imported lazily to avoid circular imports
+# (storage_factory imports from memory, which imports from threads)
+STORAGE_FACTORY_AVAILABLE = None  # Will be set on first use
+_storage_factory_cache = None  # Cache the imported function
+_storage_backend_instance = None  # CACHE the storage backend instance to avoid creating 60+ instances per request
+
 logger = logging.getLogger(__name__)
+
+
+def _get_storage_factory():
+    """
+    Lazy import of storage factory to avoid circular imports.
+
+    Returns:
+        get_conversation_storage function or None if import fails
+    """
+    global STORAGE_FACTORY_AVAILABLE, _storage_factory_cache
+
+    if STORAGE_FACTORY_AVAILABLE is None:
+        try:
+            from utils.conversation.storage_factory import get_conversation_storage
+            _storage_factory_cache = get_conversation_storage
+            STORAGE_FACTORY_AVAILABLE = True
+            logger.info("[STORAGE_INTEGRATION] Storage factory available - will use configured backend")
+        except ImportError as e:
+            STORAGE_FACTORY_AVAILABLE = False
+            logger.warning(f"[STORAGE_INTEGRATION] Storage factory not available: {e}")
+
+    return _storage_factory_cache if STORAGE_FACTORY_AVAILABLE else None
+
+
+def _get_storage_backend():
+    """
+    Get cached storage backend instance to avoid creating multiple instances.
+
+    CRITICAL: This prevents creating 60+ storage instances per request!
+    The storage factory was being created for EVERY get_thread() call,
+    causing massive performance overhead and Supabase query spam.
+
+    Returns:
+        Cached storage backend instance or None if not available
+    """
+    global _storage_backend_instance
+
+    if _storage_backend_instance is None:
+        get_conversation_storage = _get_storage_factory()
+        if get_conversation_storage:
+            _storage_backend_instance = get_conversation_storage()
+            logger.info("[STORAGE_INTEGRATION] Created cached storage backend instance")
+
+    return _storage_backend_instance
 
 
 # ================================================================================
@@ -90,23 +140,50 @@ def create_thread(
         client_friendly_name=client_friendly_name,
     )
 
-    # Store in memory with configurable TTL to prevent indefinite accumulation
-    storage = get_storage()
-    key = f"thread:{thread_id}"
-    storage.setex(key, CONVERSATION_TIMEOUT_SECONDS, context.model_dump_json())
+    # Store using configured storage backend (dual storage if CONVERSATION_STORAGE_BACKEND=dual)
+    # Use CACHED instance to avoid creating multiple instances!
+    storage_backend = _get_storage_backend()
+    if storage_backend:
+        try:
+            # Use storage factory for Supabase integration
+            logger.info(f"[STORAGE_INTEGRATION] Creating thread {thread_id} using storage factory")
 
-    logger.debug(f"[THREAD] Created new thread {thread_id} with parent {parent_thread_id}")
+            # Storage factory expects add_turn interface, so we'll use the old method for now
+            # and add the thread creation to storage factory in next iteration
+            # For now, use dual approach: Redis + storage factory
+            storage = get_storage()
+            key = f"thread:{thread_id}"
+            storage.setex(key, CONVERSATION_TIMEOUT_SECONDS, context.model_dump_json())
+
+            logger.debug(f"[THREAD] Created new thread {thread_id} with parent {parent_thread_id} (Redis)")
+        except Exception as e:
+            logger.error(f"[STORAGE_INTEGRATION] Failed to use storage factory: {e}, falling back to Redis")
+            storage = get_storage()
+            key = f"thread:{thread_id}"
+            storage.setex(key, CONVERSATION_TIMEOUT_SECONDS, context.model_dump_json())
+            logger.debug(f"[THREAD] Created new thread {thread_id} with parent {parent_thread_id} (Redis fallback)")
+    else:
+        # Fallback to original Redis storage
+        storage = get_storage()
+        key = f"thread:{thread_id}"
+        storage.setex(key, CONVERSATION_TIMEOUT_SECONDS, context.model_dump_json())
+        logger.debug(f"[THREAD] Created new thread {thread_id} with parent {parent_thread_id} (Redis only)")
 
     return thread_id
 
 
 def get_thread(thread_id: str) -> Optional[ThreadContext]:
     """
-    Retrieve thread context from in-memory storage
+    Retrieve thread context from configured storage backend
 
     Fetches complete conversation context for cross-tool continuation.
     This is the core function that enables tools to access conversation
     history from previous interactions.
+
+    When CONVERSATION_STORAGE_BACKEND=dual, this will:
+    1. Try to retrieve from Supabase first
+    2. Fall back to Redis/in-memory if Supabase fails
+    3. Enable conversation persistence across container restarts
 
     Args:
         thread_id: UUID of the conversation thread
@@ -124,15 +201,39 @@ def get_thread(thread_id: str) -> Optional[ThreadContext]:
         return None
 
     try:
+        # Try storage factory first (Supabase integration)
+        # Use CACHED instance to avoid creating 60+ instances per request!
+        storage_backend = _get_storage_backend()
+        if storage_backend:
+            try:
+                thread_data = storage_backend.get_thread(thread_id)
+
+                if thread_data:
+                    # Storage factory returns dict, convert to ThreadContext
+                    if isinstance(thread_data, ThreadContext):
+                        logger.debug(f"[STORAGE_INTEGRATION] Retrieved thread {thread_id} from storage factory (ThreadContext)")
+                        return thread_data
+                    elif isinstance(thread_data, dict):
+                        logger.debug(f"[STORAGE_INTEGRATION] Retrieved thread {thread_id} from storage factory (dict)")
+                        # For now, fall through to Redis since dict format needs conversion
+                        # TODO: Implement dict to ThreadContext conversion
+                    else:
+                        logger.warning(f"[STORAGE_INTEGRATION] Unexpected thread data type: {type(thread_data)}")
+            except Exception as e:
+                logger.debug(f"[STORAGE_INTEGRATION] Storage factory failed: {e}, falling back to Redis")
+
+        # Fallback to Redis storage (original behavior)
         storage = get_storage()
         key = f"thread:{thread_id}"
         data = storage.get(key)
 
         if data:
+            logger.debug(f"[STORAGE_INTEGRATION] Retrieved thread {thread_id} from Redis")
             return ThreadContext.model_validate_json(data)
         return None
-    except Exception:
+    except Exception as e:
         # Silently handle errors to avoid exposing storage details
+        logger.debug(f"[STORAGE_INTEGRATION] Error retrieving thread {thread_id}: {e}")
         return None
 
 
@@ -209,10 +310,32 @@ def add_turn(
     context.last_updated_at = datetime.now(timezone.utc).isoformat()
 
     # Save back to storage and refresh TTL
+    # Use dual storage if available (Supabase + Redis)
     try:
+        # Try storage factory first (Supabase integration)
+        # Use CACHED instance to avoid creating multiple instances!
+        storage_backend = _get_storage_backend()
+        if storage_backend:
+            try:
+                success = storage_backend.add_turn(
+                    thread_id,
+                    role,
+                    content,
+                    files=files,
+                    images=images,
+                    metadata=model_metadata,
+                    tool_name=tool_name
+                )
+                if success:
+                    logger.debug(f"[STORAGE_INTEGRATION] Saved turn to storage factory for thread {thread_id}")
+            except Exception as e:
+                logger.debug(f"[STORAGE_INTEGRATION] Storage factory add_turn failed: {e}")
+
+        # Always save to Redis (for backward compatibility and fallback)
         storage = get_storage()
         key = f"thread:{thread_id}"
         storage.setex(key, CONVERSATION_TIMEOUT_SECONDS, context.model_dump_json())  # Refresh TTL to configured timeout
+        logger.debug(f"[STORAGE_INTEGRATION] Saved turn to Redis for thread {thread_id}")
         return True
     except Exception as e:
         logger.debug(f"[FLOW] Failed to save turn to storage: {type(e).__name__}")

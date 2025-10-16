@@ -10,13 +10,12 @@ Key Features:
 - Cross-tool context transfer
 - Clean content extraction for conversation history
 - Workflow metadata tracking
+- Storage backend abstraction (memory/supabase/dual)
 """
 
 import json
 import logging
 from typing import Any, Optional
-
-from utils.conversation.memory import add_turn
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +26,8 @@ class ConversationIntegrationMixin:
 
     This class handles conversation threading, turn storage, and metadata
     management for multi-step workflows with continuation support.
+
+    Updated to use storage factory pattern for Supabase integration.
     """
 
     # CRITICAL FIX: Removed stub _call_expert_analysis() method that was shadowing
@@ -38,16 +39,21 @@ class ConversationIntegrationMixin:
     # ================================================================================
     # Conversation Turn Storage
     # ================================================================================
-    
+
     def store_conversation_turn(self, continuation_id: str, response_data: dict, request):
         """
-        Store the conversation turn. Tools can override for custom memory storage.
+        Store the conversation turn using storage factory pattern.
+        Tools can override for custom memory storage.
         """
         # CRITICAL: Extract clean content for conversation history (exclude internal workflow metadata)
         clean_content = self._extract_clean_workflow_content_for_history(response_data)
-        
-        add_turn(
-            thread_id=continuation_id,
+
+        # Use storage factory instead of direct memory import
+        from utils.conversation.storage_factory import get_conversation_storage
+
+        storage = get_conversation_storage()
+        storage.add_turn(
+            continuation_id=continuation_id,
             role="assistant",
             content=clean_content,  # Use cleaned content instead of full response_data
             tool_name=self.get_name(),

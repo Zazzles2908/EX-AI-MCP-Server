@@ -11,14 +11,8 @@
         "PYTHONUNBUFFERED": "1",
         "PYTHONIOENCODING": "utf-8",
         "LOG_LEVEL": "INFO",
-        "EX_SESSION_SCOPE_STRICT": "true",
-        "EX_SESSION_SCOPE_ALLOW_CROSS_SESSION": "false",
-        "SIMPLE_TOOL_TIMEOUT_SECS": "60",
-        "WORKFLOW_TOOL_TIMEOUT_SECS": "120",
-        "EXPERT_ANALYSIS_TIMEOUT_SECS": "90",
-        "GLM_TIMEOUT_SECS": "90",
-        "KIMI_TIMEOUT_SECS": "120",
-        "KIMI_WEB_SEARCH_TIMEOUT_SECS": "150"
+        "EXAI_WS_HOST": "127.0.0.1",
+        "EXAI_WS_PORT": "8079"
       }
     }
   }

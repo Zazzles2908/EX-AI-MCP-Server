@@ -36,7 +36,8 @@ class RefactorRequest(WorkflowRequest):
     issues_found: list[dict] = Field(
         default_factory=list, description=REFACTOR_FIELD_DESCRIPTIONS["issues_found"]
     )
-    confidence: Optional[str] = Field("incomplete", description=REFACTOR_FIELD_DESCRIPTIONS["confidence"])
+    # confidence field inherited from WorkflowRequest with correct Literal type validation
+    # Note: refactor uses "incomplete" as default, but base class uses "low" - this may need adjustment
 
     # Optional backtracking field
     backtrack_from_step: Optional[int] = Field(
@@ -57,7 +58,7 @@ class RefactorRequest(WorkflowRequest):
 
     # Override inherited fields to exclude them from schema (except model which needs to be available)
     temperature: Optional[float] = Field(default=None, exclude=True)
-    thinking_mode: Optional[str] = Field(default=None, exclude=True)
+    # thinking_mode field inherited from ToolRequest with correct Literal type validation
     use_websearch: Optional[bool] = Field(default=None, exclude=True)
 
 

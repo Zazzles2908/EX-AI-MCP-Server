@@ -48,9 +48,23 @@ def stream_openai_chat_events(
 
     # Track if we're in thinking mode
     in_thinking = False
-    
+
+    # CRITICAL FIX (2025-10-15): Add streaming timeout to prevent 6+ hour hangs
+    # Get timeout from env (default 10 minutes for Kimi - can be slower than GLM)
+    import time
+    stream_timeout = int(os.getenv("KIMI_STREAM_TIMEOUT", "600"))  # 10 minutes default
+    stream_start = time.time()
+
     try:
         for evt in client.chat.completions.create(stream=True, **create_kwargs):
+            # Check if streaming has exceeded timeout
+            elapsed = time.time() - stream_start
+            if elapsed > stream_timeout:
+                raise TimeoutError(
+                    f"Kimi streaming exceeded timeout of {stream_timeout}s (elapsed: {int(elapsed)}s). "
+                    "This prevents indefinite hangs. Increase KIMI_STREAM_TIMEOUT if needed."
+                )
+
             raw_items.append(evt)
             try:
                 ch = getattr(evt, "choices", None) or []
@@ -69,7 +83,7 @@ def stream_openai_chat_events(
                                 # Optionally call on_delta for reasoning too
                                 if on_delta:
                                     on_delta(str(reasoning_piece))
-                        
+
                         # Extract regular content
                         piece = getattr(delta, "content", None)
                         if piece:
@@ -84,6 +98,9 @@ def stream_openai_chat_events(
                 # Continue on best-effort parsing
                 logger.debug(f"Failed to parse streaming chunk: {e}")
                 pass
+    except TimeoutError as timeout_err:
+        logger.error(f"Kimi streaming timeout: {timeout_err}")
+        raise RuntimeError(f"Kimi streaming timeout: {timeout_err}") from timeout_err
     except Exception as e:
         logger.error(f"Streaming error: {e}")
         raise

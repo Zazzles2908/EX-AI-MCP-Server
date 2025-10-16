@@ -89,10 +89,10 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
 
 def get_all_model_aliases(supported_models: dict[str, ModelCapabilities]) -> dict[str, list[str]]:
     """Get all model aliases from supported models.
-    
+
     Args:
         supported_models: Dictionary of supported model configurations
-        
+
     Returns:
         Dictionary mapping model names to their aliases
     """
@@ -101,6 +101,40 @@ def get_all_model_aliases(supported_models: dict[str, ModelCapabilities]) -> dic
         if caps.aliases:
             result[name] = caps.aliases
     return result
+
+
+def resolve_model_name_for_glm(model_name: str) -> str:
+    """Resolve model shorthand to full name for GLM models.
+
+    This is a standalone function that can be passed to get_capabilities()
+    without requiring a GLMProvider instance.
+
+    Args:
+        model_name: Model name that may be an alias
+
+    Returns:
+        Resolved model name
+    """
+    # First check if it's already a base model name (case-sensitive exact match)
+    if model_name in SUPPORTED_MODELS:
+        return model_name
+
+    # Check case-insensitively for both base models and aliases
+    model_name_lower = model_name.lower()
+
+    # Check base model names case-insensitively
+    for base_model in SUPPORTED_MODELS:
+        if base_model.lower() == model_name_lower:
+            return base_model
+
+    # Check aliases
+    all_aliases = get_all_model_aliases(SUPPORTED_MODELS)
+    for base_model, aliases in all_aliases.items():
+        if any(alias.lower() == model_name_lower for alias in aliases):
+            return base_model
+
+    # If not found, return as-is
+    return model_name
 
 
 def get_capabilities(

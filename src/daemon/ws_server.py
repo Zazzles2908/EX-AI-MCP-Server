@@ -29,7 +29,7 @@ _bootstrap_path = Path(__file__).resolve().parents[2]
 if str(_bootstrap_path) not in sys.path:
     sys.path.insert(0, str(_bootstrap_path))
 
-from src.bootstrap import setup_logging, get_repo_root
+from src.bootstrap import setup_logging, get_repo_root, configure_websockets_logging
 from src.core.config import get_config
 from src.core.message_bus_client import MessageBusClient
 
@@ -44,12 +44,14 @@ _log_listener = setup_async_safe_logging(level=logging.INFO)
 # Setup logging with UTF-8 support for Windows consoles
 logger = setup_logging("ws_daemon", log_file=str(LOG_DIR / "ws_daemon.log"))
 
-# CRITICAL FIX: Load .env file before reading environment variables
-from dotenv import load_dotenv
-load_dotenv()
+# Suppress websockets library handshake noise (port scanners, health checks)
+configure_websockets_logging()
+
+# NOTE: Environment is already loaded by bootstrap.load_env() in run_ws_daemon.py
+# No need to load .env again here - it's already loaded before this module is imported
 
 EXAI_WS_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
-EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8765"))
+EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8079"))  # CRITICAL FIX: Changed default from 8765 to 8079
 MAX_MSG_BYTES = int(os.getenv("EXAI_WS_MAX_BYTES", str(32 * 1024 * 1024)))
 
 # Initialize message bus client (lazy initialization, won't crash if config invalid)
@@ -1001,10 +1003,20 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
 
 
 async def _serve_connection(ws: WebSocketServerProtocol) -> None:
+    # Log connection source for debugging
+    try:
+        client_ip, client_port = ws.remote_address if hasattr(ws, 'remote_address') else ("unknown", 0)
+        logger.info(f"[WS_CONNECTION] New connection from {client_ip}:{client_port}")
+    except Exception as e:
+        logger.debug(f"[WS_CONNECTION] Could not get remote address: {e}")
+        client_ip, client_port = "unknown", 0
+
     # Expect hello first with timeout, handle abrupt client disconnects gracefully
     hello_raw = await _safe_recv(ws, timeout=HELLO_TIMEOUT)
     if not hello_raw:
         # Client connected but did not send hello or disconnected; close quietly
+        # This is common for health checks, port scanners, or misconfigured clients
+        logger.debug(f"[WS_CONNECTION] No hello received from {client_ip}:{client_port} (likely health check or scanner)")
         try:
             await ws.close(code=4002, reason="hello timeout or disconnect")
         except Exception as e:
@@ -1116,39 +1128,69 @@ async def _serve_connection(ws: WebSocketServerProtocol) -> None:
 
 
 async def _health_writer(stop_event: asyncio.Event) -> None:
+    """
+    Health writer task that updates health file every 10 seconds.
+
+    CRITICAL FIX (P0): Added timeout to prevent indefinite blocking on session list.
+    If session manager lock is held for >2s, use empty list to keep health file fresh.
+    """
+    last_successful_write = time.time()
+
     while not stop_event.is_set():
         try:
-            sess_ids = await _sessions.list_ids()
-        except Exception as e:
-            logger.debug(f"Failed to list session IDs for health writer: {e}")
-            # Continue with empty list - health file will show 0 sessions
-            sess_ids = []
+            # CRITICAL FIX: Add timeout to prevent indefinite blocking on session lock
+            # If lock is held for >2s, fall back to empty list to keep health file updating
+            try:
+                sess_ids = await asyncio.wait_for(_sessions.list_ids(), timeout=2.0)
+            except asyncio.TimeoutError:
+                logger.warning("Health writer timeout getting session IDs (lock held >2s), using empty list")
+                sess_ids = []
+            except Exception as e:
+                logger.debug(f"Failed to list session IDs for health writer: {e}")
+                # Continue with empty list - health file will show 0 sessions
+                sess_ids = []
 
-        # Approximate inflight via semaphore value
-        try:
-            inflight_global = GLOBAL_MAX_INFLIGHT - _global_sem._value  # type: ignore[attr-defined]
+            # Approximate inflight via semaphore value
+            try:
+                inflight_global = GLOBAL_MAX_INFLIGHT - _global_sem._value  # type: ignore[attr-defined]
+            except Exception as e:
+                logger.debug(f"Failed to get global semaphore value for health writer: {e}")
+                # Continue with None - health file will show null for inflight
+                inflight_global = None
+
+            uptime_seconds = int(time.time() - STARTED_AT) if STARTED_AT else 0
+            snapshot = {
+                "t": time.time(),
+                "pid": os.getpid(),
+                "host": EXAI_WS_HOST,
+                "port": EXAI_WS_PORT,
+                "started_at": STARTED_AT,
+                "uptime_human": str(timedelta(seconds=uptime_seconds)),
+                "sessions": len(sess_ids),
+                "global_capacity": GLOBAL_MAX_INFLIGHT,
+                "global_inflight": inflight_global,
+                "tool_count": len(SERVER_TOOLS),  # Mission 4: Detect tool list divergence
+            }
+
+            try:
+                _health_path.write_text(json.dumps(snapshot, sort_keys=True, indent=2), encoding="utf-8")
+                last_successful_write = time.time()
+            except Exception as e:
+                logger.warning(f"Failed to write health file: {e}")
+                # Continue - health file write failure is not critical
+
+            # CRITICAL FIX: Monitor health writer staleness
+            time_since_write = time.time() - last_successful_write
+            if time_since_write > 30:
+                logger.critical(
+                    f"Health writer failed for {int(time_since_write)}s - daemon may be stuck. "
+                    "This indicates a serious issue with the event loop or blocking operations."
+                )
+
         except Exception as e:
-            logger.debug(f"Failed to get global semaphore value for health writer: {e}")
-            # Continue with None - health file will show null for inflight
-            inflight_global = None
-        uptime_seconds = int(time.time() - STARTED_AT) if STARTED_AT else 0
-        snapshot = {
-            "t": time.time(),
-            "pid": os.getpid(),
-            "host": EXAI_WS_HOST,
-            "port": EXAI_WS_PORT,
-            "started_at": STARTED_AT,
-            "uptime_human": str(timedelta(seconds=uptime_seconds)),
-            "sessions": len(sess_ids),
-            "global_capacity": GLOBAL_MAX_INFLIGHT,
-            "global_inflight": inflight_global,
-            "tool_count": len(SERVER_TOOLS),  # Mission 4: Detect tool list divergence
-        }
-        try:
-            _health_path.write_text(json.dumps(snapshot, sort_keys=True, indent=2), encoding="utf-8")
-        except Exception as e:
-            logger.warning(f"Failed to write health file: {e}")
-            # Continue - health file write failure is not critical
+            logger.error(f"Health writer error: {e}", exc_info=True)
+            # Continue running even on errors to keep health file updating
+
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=10.0)
         except asyncio.TimeoutError:
@@ -1201,10 +1243,37 @@ async def main_async() -> None:
         logger.error(f"Failed to configure providers at startup: {e}", exc_info=True)
         logger.warning("Daemon will start but provider-specific tools may not be available")
 
+    # Wrapper to handle post-handshake protocol errors gracefully
+    async def _connection_wrapper(ws: WebSocketServerProtocol) -> None:
+        """
+        Wrapper that catches POST-HANDSHAKE protocol errors.
+        Handshake errors are suppressed via configure_websockets_logging() in bootstrap.
+        This wrapper handles errors that occur AFTER successful WebSocket upgrade.
+        """
+        try:
+            await _serve_connection(ws)
+        except websockets.exceptions.InvalidMessage as e:
+            # Post-handshake protocol violation (invalid WebSocket frames)
+            try:
+                client_ip, client_port = ws.remote_address if hasattr(ws, 'remote_address') else ("unknown", 0)
+                logger.debug(f"[WS_PROTOCOL] Invalid WebSocket frame from {client_ip}:{client_port}: {e}")
+            except Exception:
+                logger.debug(f"[WS_PROTOCOL] Invalid WebSocket frame: {e}")
+        except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError) as e:
+            # Client disconnected unexpectedly
+            logger.debug(f"[WS_DISCONNECT] Client disconnected: {type(e).__name__}")
+        except Exception as e:
+            # Unexpected error - log at warning level
+            try:
+                client_ip, client_port = ws.remote_address if hasattr(ws, 'remote_address') else ("unknown", 0)
+                logger.warning(f"[WS_ERROR] Unexpected error handling connection from {client_ip}:{client_port}: {e}")
+            except Exception:
+                logger.warning(f"[WS_ERROR] Unexpected error handling connection: {e}")
+
     logger.info(f"Starting WS daemon on ws://{EXAI_WS_HOST}:{EXAI_WS_PORT}")
     try:
         async with websockets.serve(
-            _serve_connection,
+            _connection_wrapper,  # Handles post-handshake protocol errors
             EXAI_WS_HOST,
             EXAI_WS_PORT,
             max_size=MAX_MSG_BYTES,

@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 from .base import ModelProvider, ModelCapabilities, ModelResponse, ProviderType
 from .openai_compatible import OpenAICompatibleProvider
+from config import TimeoutConfig
 
 # Import from new modules
 from . import kimi_config
@@ -42,12 +43,12 @@ class KimiModelProvider(OpenAICompatibleProvider):
                 kwargs["write_timeout"] = float(wt)
             if pt:
                 kwargs["pool_timeout"] = float(pt)
-            # Provide a Kimi-specific sane default if nothing configured
+            # TRACK 2 FIX: Use centralized TimeoutConfig instead of hardcoded 300s default
             if "read_timeout" not in kwargs and not rt:
-                # Default to 300s to avoid multi-minute hangs on web-enabled prompts
-                kwargs["read_timeout"] = float(os.getenv("KIMI_DEFAULT_READ_TIMEOUT_SECS", "300"))
-        except Exception:
-            pass
+                kwargs["read_timeout"] = TimeoutConfig.KIMI_TIMEOUT_SECS
+                logger.info(f"Kimi provider using centralized timeout: {TimeoutConfig.KIMI_TIMEOUT_SECS}s")
+        except Exception as e:
+            logger.warning(f"Failed to parse Kimi timeout configuration from environment: {e}", exc_info=True)
         super().__init__(api_key, base_url=self.base_url, **kwargs)
 
     def get_provider_type(self) -> ProviderType:
