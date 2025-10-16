@@ -172,8 +172,8 @@ def resolve_auto_model_legacy(args: Dict[str, Any], tool_obj, os_module=os) -> s
                         chosen = os.getenv("KIMI_SPEED_MODEL", "kimi-k2-turbo-preview")
                         reason = "intelligent_speed_kimi"
                 # If still not chosen, fall through to legacy logic below
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Intelligent routing failed, falling back to legacy logic: {e}")
     
     # 1) Locale or content indicates CJK → prefer Kimi
     if not chosen and (locale.startswith("zh") or _has_cjk(prompt)) and has_kimi:

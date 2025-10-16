@@ -1,11 +1,18 @@
 ---
 type: "agent_requested"
-description: "Example description"
+description: "EXAI-MCP Docker Architecture and Usage Guidelines"
 ---
 
 # Augment Code: Rules and User Guidelines for EXAI‑MCP Usage (Default at Every Prompt)
 
 These guidelines standardize how Augment Code interacts with EXAI‑MCP. They are concise, adoption‑ready, and align with our routing, logging, and safety practices.
+
+## 🐳 CRITICAL: EXAI Architecture (Docker-based)
+- **EXAI runs in a Docker container**, NOT as a direct terminal command
+- **Access via WebSocket daemon** at `ws://127.0.0.1:8079`
+- **MCP Configuration**: Uses `Daemon/mcp-config.augmentcode.json` with stdio transport to `scripts/run_ws_shim.py`
+- **Restart command**: `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\ws_start.ps1 -Restart`
+- **Never use direct Python execution** - always go through the WebSocket shim
 
 ## 1) Always use EXAI‑MCP by default
 - All prompts should go through EXAI‑MCP tools unless explicitly requested otherwise.
@@ -22,9 +29,16 @@ Always include the following for workflow tools:
 
 Continuation handling:
 - Persist and pass `continuation_id` across calls. The client wrapper auto‑propagates it, but tools should preserve it when present.
+- **CRITICAL**: Continue conversation IDs for context preservation (e.g., `debb44af-15b9-456d-9b88-6a2519f81427`)
 
-## 3) Routing hints and cues
-- `model: auto` is recommended; the router will decide based on context.
+## 3) Model Selection and Routing
+**Default Model Preferences:**
+- **GLM-4.6**: Default for important calls, web search, and comprehensive analysis
+- **GLM-4.5-flash**: For simple, quick operations and routine tasks
+- **Kimi K2 (kimi-k2-0905-preview)**: For deep reasoning, long-context, and quality analysis
+- **Auto routing**: Use `model: auto` to let the router decide based on context
+
+**Routing hints and cues:**
 - `estimated_tokens`: provide when large (the client wrapper injects an estimate). Thresholds:
   - `> 48k` → prefer Kimi/Moonshot (long‑context)
   - `> 128k` → strongly prefer Kimi/Moonshot
@@ -53,19 +67,12 @@ Continuation handling:
 - Use parallel tool calls for independent reads (view, codebase retrieval, web search).
 - Sequence dependent or conflicting edits (same file/region changes).
 
-## 9) Routing decision summary
-- Web/time cue present → GLM browsing path
-- `estimated_tokens > 128k` → strongly prefer Kimi/Moonshot
-- `estimated_tokens > 48k` → prefer Kimi/Moonshot
-- Vision cue → prefer GLM
-- Else default → GLM `glm‑4.5‑flash`
-
-## 10) Escalation policy
+## 09) Escalation policy
 - If output truncates or context overflows: raise `estimated_tokens`, re‑run with long‑context preference.
 - If information requires live sources: set `use_websearch: true` and include URLs/time cues.
 - For high‑risk changes: enable expert second‑pass and include evidence for decisions.
 
-## 11) Authoring guidance for commits/PRs
+## 10) Authoring guidance for commits/PRs
 - Commit format: `<type>: <scope> <summary>`; keep subject concise; use body for details.
 
 

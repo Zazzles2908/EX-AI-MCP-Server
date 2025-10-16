@@ -36,7 +36,7 @@ class CodeReviewRequest(WorkflowRequest):
     issues_found: list[dict] = Field(
         default_factory=list, description=CODEREVIEW_WORKFLOW_FIELD_DESCRIPTIONS["issues_found"]
     )
-    confidence: Optional[str] = Field("low", description=CODEREVIEW_WORKFLOW_FIELD_DESCRIPTIONS["confidence"])
+    # confidence field inherited from WorkflowRequest with correct Literal type validation
 
     # Optional backtracking field
     backtrack_from_step: Optional[int] = Field(
@@ -58,7 +58,7 @@ class CodeReviewRequest(WorkflowRequest):
 
     # Override inherited fields to exclude them from schema (except model which needs to be available)
     temperature: Optional[float] = Field(default=None, exclude=True)
-    thinking_mode: Optional[str] = Field(default=None, exclude=True)
+    # thinking_mode field inherited from ToolRequest with correct Literal type validation
     use_websearch: Optional[bool] = Field(default=None, exclude=True)
 
     @model_validator(mode="after")

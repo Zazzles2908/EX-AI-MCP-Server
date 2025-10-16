@@ -1,9 +1,30 @@
 ---
 type: "agent_requested"
-description: "Example description"
+description: "EXAI-MCP Layered Architecture and Docker Deployment"
 ---
 
 # IDE Augmentation Guidelines: Layered Architecture Organization
+
+## 🐳 EXAI-MCP Architecture Overview
+
+**Deployment Model:**
+- EXAI runs in a **Docker container** (not direct terminal execution)
+- Access via **WebSocket daemon** at `ws://127.0.0.1:8079`
+- MCP integration through **stdio transport** to `scripts/run_ws_shim.py`
+- Configuration: `Daemon/mcp-config.augmentcode.json`
+
+**Key Components:**
+1. **Docker Container**: Isolated EXAI environment with all dependencies
+2. **WebSocket Shim**: `scripts/run_ws_shim.py` - bridges MCP stdio ↔ WebSocket
+3. **MCP Server**: Augment Code connects via stdio to shim
+4. **EXAI Daemon**: Runs inside Docker, handles tool execution
+5. **Supabase Integration**: Persistent storage for conversations, issues, files
+
+**Restart Workflow:**
+```powershell
+# Restart EXAI daemon after code changes
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\ws_start.ps1 -Restart
+```
 
 ## Core Principle: Unidirectional Dependency Flow
 

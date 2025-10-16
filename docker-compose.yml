@@ -1,0 +1,147 @@
+services:
+  exai-daemon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: exai-mcp-daemon
+    image: exai-mcp-server:latest
+
+    # Port mapping: host:container
+    ports:
+      - "8079:8079"
+
+    # Environment variables (override .env.docker)
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONIOENCODING=utf-8
+
+    # Mount .env.docker as .env in container
+    env_file:
+      - .env.docker
+
+    # Volume mounts for logs (optional - for debugging)
+    volumes:
+      - ./logs:/app/logs
+
+    # Depends on Redis for conversation storage
+    depends_on:
+      - redis
+
+    # Restart policy
+    restart: unless-stopped
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s = socket.socket(); s.settimeout(2); s.connect(('127.0.0.1', 8079)); s.close(); exit(0)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    
+    # Resource limits (optional - adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # CRITICAL FIX (P0): File descriptor limits to prevent resource exhaustion
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 8192
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis service for conversation persistence
+  redis:
+    image: redis:7-alpine
+    container_name: exai-redis
+
+    # Use custom redis.conf for persistence configuration
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+    # Port mapping (exposed for debugging/monitoring)
+    ports:
+      - "6379:6379"
+
+    # Volume mounts for persistence and configuration
+    volumes:
+      - redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+    # Resource limits (4GB memory as configured in redis.conf)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 4G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Commander for monitoring and management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: exai-redis-commander
+
+    # Environment configuration
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+
+    # Port mapping for web interface
+    ports:
+      - "8081:8081"
+
+    # Depends on Redis
+    depends_on:
+      - redis
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+# Named volumes for persistence
+volumes:
+  redis-data:
+    driver: local
+    name: exai-redis-data
+
+# Networks (optional - for future LAN deployment)
+networks:
+  default:
+    name: exai-network
+    driver: bridge
+

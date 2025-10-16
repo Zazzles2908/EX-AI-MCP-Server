@@ -184,8 +184,30 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
     # Create model context early to use for history building
     from utils.model.context import ModelContext
 
-    # Check if we should use the model from the previous conversation turn
+    # CRITICAL FIX (P1): Model consistency validation to detect model switching
+    # This prevents safety-critical calculation variance (e.g., 8x variance in K2 models)
     model_from_args = arguments.get("model")
+    if context.turns and model_from_args:
+        # Check if model is switching from previous turn
+        last_turn = next((turn for turn in reversed(context.turns)
+                         if turn.role == "assistant" and turn.model_name), None)
+
+        if last_turn and last_turn.model_name != model_from_args:
+            logger.warning(
+                f"[MODEL_SWITCH] Model changed from {last_turn.model_name} to {model_from_args} "
+                f"during continuation {continuation_id}. This may cause inconsistent results."
+            )
+
+            # Extra warning for K2 model variants (known to have calculation variance)
+            k2_models = ["kimi-k2-0905", "kimi-k2-0711", "kimi-k2-turbo"]
+            if any(k2 in last_turn.model_name for k2 in k2_models) and any(k2 in model_from_args for k2 in k2_models):
+                logger.error(
+                    f"[SAFETY_RISK] K2 model variant switched during conversation! "
+                    f"This can cause 8x variance in safety calculations. "
+                    f"Previous: {last_turn.model_name}, Current: {model_from_args}"
+                )
+
+    # Check if we should use the model from the previous conversation turn
     if not model_from_args and context.turns:
         # Find the last assistant turn to get the model used
         for turn in reversed(context.turns):

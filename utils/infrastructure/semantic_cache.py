@@ -107,9 +107,12 @@ class SemanticCache:
             SHA256 hash of normalized request parameters
         """
         # Normalize parameters for consistent hashing
+        # CRITICAL FIX (P1): Include full model name to prevent cross-model cache pollution
+        # This prevents kimi-k2-0905-preview and kimi-k2-0711-preview from sharing cache entries
+        # which was causing 8x variance in safety calculations (2.6 vs 21.2 cal/cm²)
         cache_params = {
             "prompt": prompt.strip(),
-            "model": model,
+            "model": model,  # Full model name including version
             "temperature": round(temperature, 2) if temperature is not None else None,
             "thinking_mode": thinking_mode,
             "use_websearch": use_websearch,

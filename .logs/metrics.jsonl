@@ -1933,3 +1933,6 @@
 {"event": "file_cache", "action": "hit", "provider": "kimi", "sha": "76b5278fc3033095aba12772981b510331757676f7c7bdeabe1932fd0e3c9ce1", "t": 1760164024.083239}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1521, "output_tokens": 165, "t": 1760398985.7564125}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1521, "output_tokens": 213, "t": 1760416547.2372942}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1370, "output_tokens": 5, "t": 1760429610.396497}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1528, "output_tokens": 161, "t": 1760433710.3153517}
+{"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 19910, "output_tokens": 1024, "t": 1760434491.4907937}

@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 from .base import ModelProvider, ModelCapabilities, ModelResponse, ProviderType
 from utils.http_client import HttpClient
+from config import TimeoutConfig
 
 # Import from new modules
 from . import glm_config
@@ -33,10 +34,16 @@ class GLMModelProvider(ModelProvider):
             from zhipuai import ZhipuAI  # type: ignore
             self._use_sdk = True
             # CRITICAL FIX: Pass base_url to SDK to use z.ai proxy instead of bigmodel.cn
-            self._sdk_client = ZhipuAI(api_key=self.api_key, base_url=self.base_url)
-            logger.info(f"GLM provider using SDK with base_url={self.base_url}")
+            # TRACK 2 FIX: Add timeout and retry configuration from TimeoutConfig
+            self._sdk_client = ZhipuAI(
+                api_key=self.api_key,
+                base_url=self.base_url,
+                timeout=TimeoutConfig.GLM_TIMEOUT_SECS,  # Use centralized timeout config
+                max_retries=3,  # Retry logic with exponential backoff
+            )
+            logger.info(f"GLM provider using SDK with base_url={self.base_url}, timeout={TimeoutConfig.GLM_TIMEOUT_SECS}s, max_retries=3")
         except Exception as e:
-            logger.warning("zhipuai SDK unavailable or failed to init; falling back to HTTP client: %s", e)
+            logger.warning("zhipuai SDK unavailable or failed to init; falling back to HTTP client: %s", e, exc_info=True)
             self._use_sdk = False
 
     def get_provider_type(self) -> ProviderType:

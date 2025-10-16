@@ -34,13 +34,24 @@ def run_web_search_backend(query: str) -> dict:
         Dictionary with search results from GLM web search
     """
     try:
-        # Get GLM API configuration
+        # CRITICAL FIX (P2.1): Enhanced API key validation and logging for Docker debugging
         api_key = os.getenv("GLM_API_KEY", "").strip()
         if not api_key:
-            raise RuntimeError("GLM_API_KEY not set - required for web search")
+            error_msg = (
+                "GLM_API_KEY not found in environment variables. "
+                "This is required for web search functionality. "
+                "In Docker, verify .env.docker is properly mounted and contains GLM_API_KEY."
+            )
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+
+        # Log API key presence (first 8 chars only for security)
+        logger.debug(f"GLM_API_KEY found: {api_key[:8]}... (length: {len(api_key)})")
 
         base_url = os.getenv("GLM_BASE_URL", "https://api.z.ai/api/paas/v4").strip()
         web_search_url = f"{base_url}/web_search"
+
+        logger.info(f"Initiating GLM web search for query: '{query}' using endpoint: {web_search_url}")
 
         # Prepare request payload
         # Documentation: https://docs.z.ai/api-reference/tools/web-search
@@ -50,6 +61,8 @@ def run_web_search_backend(query: str) -> dict:
             "search_engine": os.getenv("GLM_WEBSEARCH_ENGINE", "search-prime"),  # search-prime or search-pro
             "search_recency_filter": os.getenv("GLM_WEBSEARCH_RECENCY", "all"),  # oneDay, oneWeek, oneMonth, oneYear, all
         }
+
+        logger.debug(f"Web search payload: {json.dumps(payload, indent=2)}")
 
         # Optional parameters
         domain_filter = os.getenv("GLM_WEBSEARCH_DOMAIN_FILTER", "").strip()
@@ -80,18 +93,34 @@ def run_web_search_backend(query: str) -> dict:
             result["engine"] = "glm_native"
             result["query"] = query
 
-            logger.info(f"GLM native web search completed successfully for query: {query}")
+            # CRITICAL FIX (P2.1): Enhanced success logging
+            result_count = len(result.get("results", []))
+            logger.info(
+                f"GLM native web search completed successfully for query: '{query}' "
+                f"(returned {result_count} results)"
+            )
             return result
 
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", errors="ignore") if hasattr(e, "read") else ""
-        error_msg = f"GLM web search HTTP {e.code}: {body}"
-        logger.error(error_msg)
+        # CRITICAL FIX (P2.1): Enhanced error logging for Docker debugging
+        error_msg = (
+            f"GLM web search HTTP {e.code} error for query '{query}': {body}\n"
+            f"Endpoint: {web_search_url}\n"
+            f"This may indicate: API key invalid, rate limiting, or network restrictions in Docker."
+        )
+        logger.error(error_msg, exc_info=True)
         return {"engine": "glm_native", "query": query, "error": error_msg, "results": []}
 
     except urllib.error.URLError as e:
-        error_msg = f"GLM web search network error: {e}"
-        logger.error(error_msg)
+        # CRITICAL FIX (P2.1): Enhanced network error logging
+        error_msg = (
+            f"GLM web search network error for query '{query}': {e}\n"
+            f"Endpoint: {web_search_url}\n"
+            f"This may indicate: Docker container lacks internet access, DNS resolution failure, "
+            f"or firewall blocking outbound connections."
+        )
+        logger.error(error_msg, exc_info=True)
         return {"engine": "glm_native", "query": query, "error": error_msg, "results": []}
 
     except Exception as e:

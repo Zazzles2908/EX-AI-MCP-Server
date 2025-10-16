@@ -82,8 +82,14 @@ class KimiUploadAndExtractTool(BaseTool):
         # Limits
         from pathlib import Path as _P
         max_count = int(os.getenv("KIMI_FILES_MAX_COUNT", "0") or 0)  # 0=no cap
-        max_mb_env = os.getenv("KIMI_FILES_MAX_SIZE_MB", "").strip()
-        max_mb = float(max_mb_env) if max_mb_env else 0.0
+        max_mb_env = os.getenv("KIMI_FILES_MAX_SIZE_MB", "").split('#')[0].strip()  # Strip inline comments from .env
+        try:
+            max_mb = float(max_mb_env) if max_mb_env else 0.0
+        except ValueError:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Invalid KIMI_FILES_MAX_SIZE_MB value: '{max_mb_env}'. Using 0.0 (no limit).")
+            max_mb = 0.0
         max_bytes = int(max_mb * 1024 * 1024) if max_mb > 0 else 0
         oversize_behavior = os.getenv("KIMI_FILES_BEHAVIOR_ON_OVERSIZE", "skip").strip().lower()  # skip|fail
         upload_timeout = float(os.getenv("KIMI_FILES_UPLOAD_TIMEOUT_SECS", "90"))

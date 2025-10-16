@@ -1,0 +1,26 @@
+{
+  "name": "EXAI MCP Server",
+  "version": "2.0.0",
+  "description": "Extended AI MCP Server with multi-provider support",
+  "providers": [
+    "kimi",
+    "glm"
+  ],
+  "features": {
+    "file_upload": true,
+    "web_search": true,
+    "multi_model": true,
+    "workflow_tools": true
+  },
+  "timeouts": {
+    "simple_tools": 60,
+    "workflow_tools": 300,
+    "provider_tools": 120
+  },
+  "testing": {
+    "enabled": true,
+    "test_files_created": true,
+    "validation_mode": "comprehensive"
+  }
+}
+
