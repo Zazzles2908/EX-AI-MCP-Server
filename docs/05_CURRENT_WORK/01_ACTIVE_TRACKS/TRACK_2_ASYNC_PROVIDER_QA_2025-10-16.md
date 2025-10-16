@@ -360,10 +360,77 @@ EXAI GLM-4.6 conducted a comprehensive architectural review and reported 12 new 
 
 ---
 
-**Document Status:** ✅ QA COMPLETE - 3 CRITICAL ISSUES FIXED, 3 ENHANCEMENT ISSUES IDENTIFIED, 12 NEW FINDINGS REQUIRE VALIDATION
+## 🔬 **VALIDATION OF EXAI FINDINGS - 2025-10-16**
+
+### **Finding #1: Configuration Validation (HIGH) - ✅ PARTIALLY VALID**
+
+**EXAI Claim:** "Configuration values loaded but not comprehensively validated"
+
+**Validation Results:**
+
+**✅ WHAT IS VALIDATED:**
+1. **API Keys** - Comprehensive validation:
+   - `src/server/providers/provider_detection.py` lines 15-32: `_check_api_key()` validates presence and rejects placeholders
+   - Checks for placeholder values: "your_kimi_api_key_here", "your_glm_api_key_here"
+   - Supports vendor aliases (KIMI_API_KEY/MOONSHOT_API_KEY)
+   - Validates at least one provider exists (provider_config.py lines 42-49)
+
+2. **URLs** - Partial validation:
+   - `src/providers/openai_compatible.py` lines 183-200: Validates URL format for custom providers
+   - Checks scheme (http/https only), hostname presence, port range (1-65535)
+   - **BUT**: Native provider URLs (GLM, Kimi) are NOT validated
+
+3. **Supabase Configuration** - Comprehensive validation:
+   - `src/core/config.py` lines 63-87: Validates Supabase URL/key when message bus enabled
+   - Checks URL format (must start with http:// or https://)
+   - Requires both URL and key when enabled
+
+4. **Timeout Configuration** - Comprehensive validation:
+   - `config.py` lines 317-366: `TimeoutConfig.validate_hierarchy()` validates timeout relationships
+   - Checks hierarchy: tool < daemon < shim < client
+   - Validates buffer ratios (daemon 1.5x, shim 2.0x, client 2.5x)
+   - Runs automatically on module import (line 408)
+
+**❌ WHAT IS NOT VALIDATED:**
+1. **Feature Flags** - No validation:
+   - Boolean flags parsed with `_parse_bool_env()` (config.py line 15-26)
+   - No validation of values beyond string comparison
+   - Invalid values silently default to false
+
+2. **Native Provider URLs** - No validation:
+   - GLM base URL defaults to `https://api.z.ai/api/paas/v4`
+   - Kimi base URL defaults to `https://api.moonshot.cn/v1`
+   - No format or reachability checks
+
+3. **Numeric Configuration** - Minimal validation:
+   - `MAX_RETRIES`, `REQUEST_TIMEOUT` parsed with `int()` (config.py lines 106-107)
+   - No range validation (could be negative or unreasonably large)
+
+4. **LOCALE Configuration** - Basic validation only:
+   - `utils/config/bootstrap.py` lines 47-49: Truncates to 16 chars
+   - No format validation (should be ISO locale format)
+
+5. **CUSTOM_API_URL** - Length check only:
+   - `utils/config/bootstrap.py` lines 52-54: Truncates to 2048 chars
+   - No URL format validation
+
+**SEVERITY:** MEDIUM (downgraded from HIGH)
+- Critical configs (API keys, timeouts, Supabase) ARE validated
+- Missing validation is for less critical configs (feature flags, numeric ranges)
+- No evidence of production issues from missing validation
+
+**RECOMMENDATION:**
+1. Add range validation for numeric configs (MAX_RETRIES, REQUEST_TIMEOUT)
+2. Add format validation for LOCALE (ISO locale format)
+3. Add URL format validation for native provider base URLs
+4. Add enum validation for feature flags (reject invalid values)
+
+---
+
+**Document Status:** ✅ QA COMPLETE - 3 CRITICAL ISSUES FIXED, 3 ENHANCEMENT ISSUES IDENTIFIED, 1 FINDING VALIDATED (MEDIUM)
 **Created:** 2025-10-16
-**Updated:** 2025-10-16 (Added second QA pass with EXAI validation notes)
-**EXAI Conversation:** `debb44af-15b9-456d-9b88-6a2519f81427`
+**Updated:** 2025-10-16 (Added validation of configuration finding)
+**EXAI Conversation:** `debb44af-15b9-456d-9b88-6a2519f81427` (first pass), `af18e2f6-6c96-4c12-a490-05181edc2733` (validation)
 **Supabase Database:** Personal AI (mxaazuhlqewmkweewyaz)
-**Next Update:** After validating potentially valid findings and implementing fixes
+**Next Update:** After validating remaining findings
 
