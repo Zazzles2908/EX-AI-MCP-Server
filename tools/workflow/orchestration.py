@@ -188,11 +188,17 @@ class OrchestrationMixin:
                 response_data = await self.handle_work_completion(response_data, request, arguments)
             else:
                 # AUTO-EXECUTION: Continue internally instead of forcing pause
+                logger.info(f"[AUTO-EXEC] {self.get_name()}: Starting auto-execution for step {request.step_number}")
                 try:
                     send_progress(f"{self.get_name()}: Auto-executing next step...")
                 except Exception:
                     pass
-                response_data = await self._auto_execute_next_step(response_data, request, arguments)
+                try:
+                    response_data = await self._auto_execute_next_step(response_data, request, arguments)
+                    logger.info(f"[AUTO-EXEC] {self.get_name()}: Auto-execution completed, status={response_data.get('status')}")
+                except Exception as auto_exec_error:
+                    logger.error(f"[AUTO-EXEC] {self.get_name()}: Auto-execution failed: {auto_exec_error}", exc_info=True)
+                    raise
             
             # Allow tools to customize the final response
             response_data = self.customize_workflow_response(response_data, request)
