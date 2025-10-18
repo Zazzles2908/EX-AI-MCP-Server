@@ -1197,148 +1197,147 @@ async def _serve_connection(ws: WebSocketServerProtocol) -> None:
         )
         get_monitor().increment_active_connections("websocket")
 
-    # Expect hello first with timeout, handle abrupt client disconnects gracefully
-    hello_raw = await _safe_recv(ws, timeout=HELLO_TIMEOUT)
-    if not hello_raw:
-        # Client connected but did not send hello or disconnected; close quietly
-        # This is common for health checks, port scanners, or misconfigured clients
-        logger.debug(f"[WS_CONNECTION] No hello received from {client_ip}:{client_port} (likely health check or scanner)")
-        try:
-            await ws.close(code=4002, reason="hello timeout or disconnect")
-        except Exception as e:
-            logger.debug(f"Failed to close connection after hello timeout: {e}")
-            # Continue - connection may already be closed
-        return
-
-
-    try:
-        hello = json.loads(hello_raw)
-    except Exception as e:
-        logger.warning(f"Failed to parse hello message: {e}")
-        try:
-            await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "invalid_hello"})
+        # Expect hello first with timeout, handle abrupt client disconnects gracefully
+        hello_raw = await _safe_recv(ws, timeout=HELLO_TIMEOUT)
+        if not hello_raw:
+            # Client connected but did not send hello or disconnected; close quietly
+            # This is common for health checks, port scanners, or misconfigured clients
+            logger.debug(f"[WS_CONNECTION] No hello received from {client_ip}:{client_port} (likely health check or scanner)")
             try:
-                await ws.close(code=4000, reason="invalid hello")
-            except Exception as e2:
-                logger.debug(f"Failed to close connection after invalid hello: {e2}")
-                # Continue - connection may already be closed
-        except Exception as e2:
-            logger.debug(f"Failed to send hello_ack error: {e2}")
-            # Continue - connection may already be closed
-        return
-
-    if hello.get("op") != "hello":
-        logger.warning(f"Client sent message without hello op: {hello.get('op')}")
-        try:
-            await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "missing_hello"})
-            try:
-                await ws.close(code=4001, reason="missing hello")
+                await ws.close(code=4002, reason="hello timeout or disconnect")
             except Exception as e:
-                logger.debug(f"Failed to close connection after missing hello: {e}")
+                logger.debug(f"Failed to close connection after hello timeout: {e}")
                 # Continue - connection may already be closed
-        except Exception as e:
-            logger.debug(f"Failed to send missing_hello error: {e}")
-            # Continue - connection may already be closed
-        return
-
-    token = hello.get("token", "")
-    current_auth_token = await _auth_token_manager.get()
-    if current_auth_token and token != current_auth_token:
-        # Enhanced logging for auth debugging (show first 10 chars only for security)
-        expected_preview = current_auth_token[:10] + "..." if len(current_auth_token) > 10 else current_auth_token
-        received_preview = token[:10] + "..." if len(token) > 10 else (token if token else "<empty>")
-        logger.warning(f"[AUTH] Client sent invalid auth token. "
-                       f"Expected: {expected_preview}, Received: {received_preview}")
-        try:
-            await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "unauthorized"})
-            try:
-                await ws.close(code=4003, reason="unauthorized")
-            except Exception as e:
-                logger.debug(f"Failed to close connection after unauthorized: {e}")
-                # Continue - connection may already be closed
-        except Exception as e:
-            logger.debug(f"Failed to send unauthorized error: {e}")
-            # Continue - connection may already be closed
-        return
-
-    # Always assign a fresh daemon-side session id for isolation
-    session_id = str(uuid.uuid4())
-    sess = await _sessions.ensure(session_id)
-    try:
-        ok = await _safe_send(ws, {"op": "hello_ack", "ok": True, "session_id": sess.session_id})
-        if not ok:
             return
-    except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError):
-        # Client closed during hello ack; just return
-        return
 
-    try:
-        async for raw in ws:
+        try:
+            hello = json.loads(hello_raw)
+        except Exception as e:
+            logger.warning(f"Failed to parse hello message: {e}")
             try:
-                msg = json.loads(raw)
-            except Exception as e:
-                logger.warning(f"Failed to parse JSON message from client (session: {sess.session_id}): {e}")
-                # Try to inform client; ignore if already closed
+                await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "invalid_hello"})
                 try:
-                    await _safe_send(ws, {"op": "error", "message": "invalid_json"})
+                    await ws.close(code=4000, reason="invalid hello")
                 except Exception as e2:
-                    logger.debug(f"Failed to send invalid_json error: {e2}")
+                    logger.debug(f"Failed to close connection after invalid hello: {e2}")
                     # Continue - connection may already be closed
-                continue
+            except Exception as e2:
+                logger.debug(f"Failed to send hello_ack error: {e2}")
+                # Continue - connection may already be closed
+            return
 
-            # Validate message structure before processing
-            is_valid, error_msg = _validate_message(msg)
-            if not is_valid:
-                logger.warning(f"Invalid message structure from client (session: {sess.session_id}): {error_msg}")
-                try:
-                    await _safe_send(ws, {"op": "error", "message": f"invalid_message: {error_msg}"})
-                except Exception as e:
-                    logger.debug(f"Failed to send invalid_message error: {e}")
-                    # Continue - connection may already be closed
-                continue
-
-            # PHASE 1 (2025-10-18): Enforce rate limiting
-            rate_limiter = get_rate_limiter()
-            allowed, rejection_reason = rate_limiter.is_allowed(
-                ip=client_ip,
-                user_id=sess.session_id,
-                tokens=1
-            )
-
-            if not allowed:
-                logger.warning(
-                    f"[WS_RATE_LIMIT] Message rejected from {client_ip} (session: {sess.session_id}) - {rejection_reason}"
-                )
-                # PHASE 3: Monitor rate limit rejections
-                record_websocket_event(
-                    direction="rate_limit",
-                    function_name="_serve_connection",
-                    data_size=len(raw.encode('utf-8')) if isinstance(raw, str) else len(raw),
-                    metadata={
-                        "client_ip": client_ip,
-                        "session_id": sess.session_id,
-                        "reason": rejection_reason,
-                        "timestamp": log_timestamp()
-                    }
-                )
-                try:
-                    await _safe_send(ws, {
-                        "op": "error",
-                        "message": f"rate_limit_exceeded: {rejection_reason}"
-                    })
-                except Exception as e:
-                    logger.debug(f"Failed to send rate_limit error: {e}")
-                    # Continue - connection may already be closed
-                continue
-
+        if hello.get("op") != "hello":
+            logger.warning(f"Client sent message without hello op: {hello.get('op')}")
             try:
-                await _handle_message(ws, sess.session_id, msg)
-            except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError):
-                # Client disconnected mid-processing; exit loop
-                break
-    except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError):
-        # Iterator may raise on abrupt close; treat as normal disconnect
-        pass
+                await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "missing_hello"})
+                try:
+                    await ws.close(code=4001, reason="missing hello")
+                except Exception as e:
+                    logger.debug(f"Failed to close connection after missing hello: {e}")
+                    # Continue - connection may already be closed
+            except Exception as e:
+                logger.debug(f"Failed to send missing_hello error: {e}")
+                # Continue - connection may already be closed
+            return
+
+        token = hello.get("token", "")
+        current_auth_token = await _auth_token_manager.get()
+        if current_auth_token and token != current_auth_token:
+            # Enhanced logging for auth debugging (show first 10 chars only for security)
+            expected_preview = current_auth_token[:10] + "..." if len(current_auth_token) > 10 else current_auth_token
+            received_preview = token[:10] + "..." if len(token) > 10 else (token if token else "<empty>")
+            logger.warning(f"[AUTH] Client sent invalid auth token. "
+                           f"Expected: {expected_preview}, Received: {received_preview}")
+            try:
+                await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "unauthorized"})
+                try:
+                    await ws.close(code=4003, reason="unauthorized")
+                except Exception as e:
+                    logger.debug(f"Failed to close connection after unauthorized: {e}")
+                    # Continue - connection may already be closed
+            except Exception as e:
+                logger.debug(f"Failed to send unauthorized error: {e}")
+                # Continue - connection may already be closed
+            return
+
+        # Always assign a fresh daemon-side session id for isolation
+        session_id = str(uuid.uuid4())
+        sess = await _sessions.ensure(session_id)
+        try:
+            ok = await _safe_send(ws, {"op": "hello_ack", "ok": True, "session_id": sess.session_id})
+            if not ok:
+                return
+        except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError):
+            # Client closed during hello ack; just return
+            return
+
+        try:
+            async for raw in ws:
+                try:
+                    msg = json.loads(raw)
+                except Exception as e:
+                    logger.warning(f"Failed to parse JSON message from client (session: {sess.session_id}): {e}")
+                    # Try to inform client; ignore if already closed
+                    try:
+                        await _safe_send(ws, {"op": "error", "message": "invalid_json"})
+                    except Exception as e2:
+                        logger.debug(f"Failed to send invalid_json error: {e2}")
+                        # Continue - connection may already be closed
+                    continue
+
+                # Validate message structure before processing
+                is_valid, error_msg = _validate_message(msg)
+                if not is_valid:
+                    logger.warning(f"Invalid message structure from client (session: {sess.session_id}): {error_msg}")
+                    try:
+                        await _safe_send(ws, {"op": "error", "message": f"invalid_message: {error_msg}"})
+                    except Exception as e:
+                        logger.debug(f"Failed to send invalid_message error: {e}")
+                        # Continue - connection may already be closed
+                    continue
+
+                # PHASE 1 (2025-10-18): Enforce rate limiting
+                rate_limiter = get_rate_limiter()
+                allowed, rejection_reason = rate_limiter.is_allowed(
+                    ip=client_ip,
+                    user_id=sess.session_id,
+                    tokens=1
+                )
+
+                if not allowed:
+                    logger.warning(
+                        f"[WS_RATE_LIMIT] Message rejected from {client_ip} (session: {sess.session_id}) - {rejection_reason}"
+                    )
+                    # PHASE 3: Monitor rate limit rejections
+                    record_websocket_event(
+                        direction="rate_limit",
+                        function_name="_serve_connection",
+                        data_size=len(raw.encode('utf-8')) if isinstance(raw, str) else len(raw),
+                        metadata={
+                            "client_ip": client_ip,
+                            "session_id": sess.session_id,
+                            "reason": rejection_reason,
+                            "timestamp": log_timestamp()
+                        }
+                    )
+                    try:
+                        await _safe_send(ws, {
+                            "op": "error",
+                            "message": f"rate_limit_exceeded: {rejection_reason}"
+                        })
+                    except Exception as e:
+                        logger.debug(f"Failed to send rate_limit error: {e}")
+                        # Continue - connection may already be closed
+                    continue
+
+                try:
+                    await _handle_message(ws, sess.session_id, msg)
+                except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError):
+                    # Client disconnected mid-processing; exit loop
+                    break
+        except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError):
+            # Iterator may raise on abrupt close; treat as normal disconnect
+            pass
     finally:
         # PHASE 1 (2025-10-18): Unregister connection from connection manager
         try:
