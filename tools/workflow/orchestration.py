@@ -187,8 +187,12 @@ class OrchestrationMixin:
                     pass
                 response_data = await self.handle_work_completion(response_data, request, arguments)
             else:
-                # Force the AI assistant to work before calling tool again
-                response_data = self.handle_work_continuation(response_data, request)
+                # AUTO-EXECUTION: Continue internally instead of forcing pause
+                try:
+                    send_progress(f"{self.get_name()}: Auto-executing next step...")
+                except Exception:
+                    pass
+                response_data = await self._auto_execute_next_step(response_data, request, arguments)
             
             # Allow tools to customize the final response
             response_data = self.customize_workflow_response(response_data, request)
@@ -397,6 +401,128 @@ class OrchestrationMixin:
     # ================================================================================
     # Work Continuation and Completion
     # ================================================================================
+
+    async def _auto_execute_next_step(self, response_data: dict, request, arguments: dict):
+        """
+        Auto-execute the next step internally without forcing a pause.
+        This replaces the forced pause mechanism with seamless auto-execution.
+        """
+        MAX_AUTO_STEPS = 10  # Reasonable limit to prevent runaway execution
+
+        # Check if we've exceeded max steps
+        if request.step_number >= MAX_AUTO_STEPS:
+            logger.info(f"{self.get_name()}: Reached max auto-steps ({MAX_AUTO_STEPS}), completing workflow")
+            request.next_step_required = False
+            return await self.handle_work_completion(response_data, request, arguments)
+
+        # Read relevant files internally
+        file_contents = await self._read_relevant_files(request)
+
+        # Generate next step instructions based on required actions
+        required_actions = self.get_required_actions(
+            request.step_number, self.get_request_confidence(request), request.findings, request.total_steps
+        )
+        next_instructions = f"Continue investigation: {', '.join(required_actions)}"
+
+        # Create next request data
+        next_step_number = request.step_number + 1
+        next_request_data = arguments.copy()
+        next_request_data.update({
+            "step_number": next_step_number,
+            "step": next_instructions,
+            "findings": self._consolidate_current_findings(),
+            "embedded_file_contents": file_contents,
+            "continuation_id": response_data.get("continuation_id")
+        })
+
+        # Create next request object
+        try:
+            next_request = self.get_workflow_request_model()(**next_request_data)
+        except Exception as e:
+            logger.error(f"{self.get_name()}: Failed to create next request: {e}")
+            # Fall back to completion on error
+            request.next_step_required = False
+            return await self.handle_work_completion(response_data, request, arguments)
+
+        # Process next step
+        step_data = self.prepare_step_data(next_request)
+        self.work_history.append(step_data)
+        self._update_consolidated_findings(step_data)
+
+        # Check if we should continue or complete
+        if self._should_continue_execution(next_request):
+            # Recursively continue auto-execution
+            logger.info(f"{self.get_name()}: Continuing auto-execution (step {next_step_number})")
+            response_data["status"] = f"{self.get_name()}_auto_executing"
+            response_data["auto_execution_step"] = next_step_number
+            return await self._auto_execute_next_step(response_data, next_request, next_request_data)
+        else:
+            # Complete the workflow
+            logger.info(f"{self.get_name()}: Auto-execution complete, finalizing")
+            next_request.next_step_required = False
+            return await self.handle_work_completion(response_data, next_request, next_request_data)
+
+    async def _read_relevant_files(self, request) -> dict:
+        """Read all relevant files internally and return their contents."""
+        file_contents = {}
+        relevant_files = self.get_request_relevant_files(request) or []
+
+        for file_path in relevant_files:
+            try:
+                content = await self._read_file_content(file_path)
+                file_contents[file_path] = content
+                logger.debug(f"{self.get_name()}: Read file {file_path} ({len(content)} chars)")
+            except Exception as e:
+                logger.warning(f"{self.get_name()}: Failed to read {file_path}: {e}")
+                file_contents[file_path] = f"Error reading file: {str(e)}"
+
+        return file_contents
+
+    async def _read_file_content(self, file_path: str) -> str:
+        """Read a single file with proper encoding handling."""
+        from pathlib import Path
+        try:
+            return Path(file_path).read_text(encoding='utf-8')
+        except UnicodeDecodeError:
+            # Try with different encoding
+            try:
+                return Path(file_path).read_text(encoding='latin-1')
+            except Exception as e:
+                raise Exception(f"Failed to read file with any encoding: {e}")
+        except Exception as e:
+            raise Exception(f"Failed to read file: {e}")
+
+    def _consolidate_current_findings(self) -> str:
+        """Consolidate all findings from work history into a summary."""
+        if not hasattr(self, 'work_history') or not self.work_history:
+            return ""
+
+        findings_parts = []
+        for step in self.work_history:
+            if step.get("findings"):
+                findings_parts.append(f"Step {step.get('step_number', '?')}: {step['findings']}")
+
+        return " | ".join(findings_parts) if findings_parts else ""
+
+    def _should_continue_execution(self, request) -> bool:
+        """Determine if auto-execution should continue."""
+        # Check confidence level
+        confidence = self.get_request_confidence(request)
+        if confidence in ["certain", "very_high", "almost_certain"]:
+            logger.info(f"{self.get_name()}: High confidence ({confidence}), stopping auto-execution")
+            return False
+
+        # Check information sufficiency
+        try:
+            assessment = self.assess_information_sufficiency(request)
+            if assessment.get("sufficient"):
+                logger.info(f"{self.get_name()}: Information sufficient, stopping auto-execution")
+                return False
+        except Exception as e:
+            logger.debug(f"{self.get_name()}: Could not assess sufficiency: {e}")
+
+        # Continue execution
+        return True
 
     def handle_work_continuation(self, response_data: dict, request) -> dict:
         """
