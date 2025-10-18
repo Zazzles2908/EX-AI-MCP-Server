@@ -44,8 +44,10 @@ COPY src/ ./src/
 COPY tools/ ./tools/
 COPY utils/ ./utils/
 COPY systemprompts/ ./systemprompts/
+COPY streaming/ ./streaming/
 COPY scripts/ws/ ./scripts/ws/
 COPY scripts/health_check.py ./scripts/
+COPY static/ ./static/
 COPY server.py ./
 COPY config.py ./
 COPY .env.docker .env

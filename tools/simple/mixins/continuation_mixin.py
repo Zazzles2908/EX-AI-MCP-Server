@@ -57,10 +57,14 @@ class ContinuationMixin:
         logger.debug(f"{self.get_name()}: No embedded history found, reconstructing conversation")
 
         try:
-            # Use storage factory instead of direct memory import
-            from utils.conversation.storage_factory import get_conversation_storage
+            # CRITICAL FIX: Use cached storage backend to avoid creating 60+ instances
+            from utils.conversation.threads import _get_storage_backend
 
-            storage = get_conversation_storage()
+            storage = _get_storage_backend()
+            if not storage:
+                logger.warning(f"{self.get_name()}: Storage backend not available")
+                return prompt_field_value, False
+
             thread_context = storage.get_thread(continuation_id)
 
             if thread_context:
@@ -138,12 +142,15 @@ class ContinuationMixin:
         continuation_id = self.get_request_continuation_id(request)
 
         try:
-            # Use storage factory instead of direct memory import
-            from utils.conversation.storage_factory import get_conversation_storage
+            # CRITICAL FIX: Use cached storage backend to avoid creating 60+ instances
+            from utils.conversation.threads import _get_storage_backend
             from utils.client_info import get_current_session_fingerprint, get_cached_client_info, format_client_info
             from utils.conversation.memory import MAX_CONVERSATION_TURNS, create_thread
 
-            storage = get_conversation_storage()
+            storage = _get_storage_backend()
+            if not storage:
+                logger.warning(f"{self.get_name()}: Storage backend not available for continuation offer")
+                return None
 
             if continuation_id:
                 # Existing conversation
@@ -281,10 +288,13 @@ class ContinuationMixin:
             return
 
         try:
-            # Use storage factory instead of direct memory import
-            from utils.conversation.storage_factory import get_conversation_storage
+            # CRITICAL FIX: Use cached storage backend to avoid creating 60+ instances
+            from utils.conversation.threads import _get_storage_backend
 
-            storage = get_conversation_storage()
+            storage = _get_storage_backend()
+            if not storage:
+                logger.warning(f"{self.get_name()}: Storage backend not available for turn storage")
+                return
 
             # Extract model metadata for conversation tracking
             model_provider = None

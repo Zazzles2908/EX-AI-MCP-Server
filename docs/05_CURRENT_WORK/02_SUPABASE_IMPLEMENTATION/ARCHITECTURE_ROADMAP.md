@@ -1,9 +1,11 @@
 # SUPABASE ARCHITECTURE ROADMAP FOR EXAI MCP SERVER
 
-**Date:** 2025-10-16 (Updated)
+**Date:** 2025-10-16 (Updated with New Designs)
 **Original Research:** `05660144-c47c-4b0b-b2b0-83012e53dd46`
 **Redis Integration:** `debb44af-15b9-456d-9b88-6a2519f81427`
-**Status:** ✅ Phase 1 Complete - Dual Storage Operational
+**Performance Tracking:** `0a6d1ef3-1311-4bfd-8230-57cb8e1d09ff`
+**Unified File Handling:** `a0bdb843-a6e8-46b8-962b-0ad5deca73ba`
+**Status:** ✅ Phase 1 Complete + New Architectural Designs Ready
 
 ---
 
@@ -16,13 +18,17 @@ This document outlines the comprehensive Supabase integration strategy for EXAI 
 - ✅ **Redis Persistence:** 24-hour TTL with AOF+RDB persistence
 - ✅ **Supabase Database:** Conversations table with permanent storage
 - ✅ **Docker Integration:** All containers on exai-network with health checks
-- ⏳ **Next Priority:** Track 2 (Scale) - Fix workflow tool timeouts
+- ✅ **QA Validation:** 4 EXAI findings validated (2 valid, 2 not bugs)
+- ✅ **Performance Tracking Design:** Complete Supabase schema with time-series aggregation
+- ✅ **Unified File Handling Design:** Comprehensive Docker-compatible architecture
+- ⏳ **Next Priority:** Implement new designs (Performance Tracking + File Handling)
 
 **Key Findings:**
 - **Free Tier:** Sufficient for current development (500MB DB, 1GB bandwidth)
 - **Pro Tier ($25/mo):** Required for Phase 2+ (Edge Functions, pgvector, PITR)
 - **Critical Features:** Edge Functions, Realtime, pgvector, RLS, Connection Pooling
 - **Docker Integration:** ✅ Implemented with Redis, health checks, connection pooling ready
+- **New Designs:** Performance tracking and unified file handling architectures complete
 
 ---
 
@@ -352,6 +358,166 @@ def check_supabase_health():
 if __name__ == "__main__":
     sys.exit(0 if check_supabase_health() else 1)
 ```
+
+---
+
+## 🎨 NEW ARCHITECTURAL DESIGNS (2025-10-16)
+
+### 1. PERFORMANCE TRACKING SYSTEM ✅ DESIGNED
+
+**Conversation ID:** `0a6d1ef3-1311-4bfd-8230-57cb8e1d09ff`
+**Model:** GLM-4.6 with web search (53.4s response time)
+**Documentation:** `PERFORMANCE_TRACKING_DESIGN_2025-10-16.md`
+
+**Purpose:** Track model response times and performance metrics across all providers
+
+**Key Features:**
+- **Time-series tables:** Raw data, hourly aggregates, daily aggregates
+- **Statistical aggregation:** avg, p50, p95, p99 instead of storing every call
+- **Smart parameter hashing:** Only performance-affecting params (model, temperature, etc.)
+- **Retention policy:** 7d raw, 90d hourly, 2y daily (automatic cleanup)
+- **Automated aggregation:** PostgreSQL functions for hourly/daily rollups
+- **Query interface:** Performance trends, model comparisons, bottleneck identification
+
+**Supabase Schema:**
+```sql
+-- Raw performance data (7-day retention)
+CREATE TABLE performance_metrics (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  tool_name TEXT NOT NULL,
+  model_name TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  duration_ms INTEGER NOT NULL,
+  token_count INTEGER,
+  param_hash TEXT NOT NULL,  -- Hash of performance-affecting params
+  conversation_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Hourly aggregates (90-day retention)
+CREATE TABLE performance_hourly (
+  hour TIMESTAMPTZ NOT NULL,
+  tool_name TEXT NOT NULL,
+  model_name TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  param_hash TEXT NOT NULL,
+  call_count INTEGER NOT NULL,
+  avg_duration_ms NUMERIC(10,2),
+  p50_duration_ms INTEGER,
+  p95_duration_ms INTEGER,
+  p99_duration_ms INTEGER,
+  total_tokens BIGINT,
+  PRIMARY KEY (hour, tool_name, model_name, provider, param_hash)
+);
+
+-- Daily aggregates (2-year retention)
+CREATE TABLE performance_daily (
+  day DATE NOT NULL,
+  tool_name TEXT NOT NULL,
+  model_name TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  param_hash TEXT NOT NULL,
+  call_count INTEGER NOT NULL,
+  avg_duration_ms NUMERIC(10,2),
+  p50_duration_ms INTEGER,
+  p95_duration_ms INTEGER,
+  p99_duration_ms INTEGER,
+  total_tokens BIGINT,
+  PRIMARY KEY (day, tool_name, model_name, provider, param_hash)
+);
+```
+
+**Implementation Status:** ⏳ Design complete, ready for Phase 2 implementation
+
+---
+
+### 2. UNIFIED FILE HANDLING ARCHITECTURE ✅ DESIGNED
+
+**Conversation ID:** `a0bdb843-a6e8-46b8-962b-0ad5deca73ba`
+**Model:** GLM-4.6 with web search (38.8s response time)
+**Documentation:** `UNIFIED_FILE_HANDLING_ARCHITECTURE_2025-10-16.md`
+
+**Purpose:** Unified file handling for Docker-based EXAI with multiple storage backends
+
+**Problem Statement:**
+- EXAI runs in Docker container and can't access local files directly
+- Multiple file handling systems (Moonshot, GLM, Supabase) with no unified strategy
+- EXAI tools expect file paths but container has no access to host filesystem
+
+**Solution Architecture:**
+
+**Storage Strategy:**
+1. **Supabase Storage (Primary):** Permanent storage for all files
+2. **Provider-specific uploads (On-demand):** Moonshot/GLM file IDs when needed
+3. **Local volume mount (Cache):** `./files:/app/files` for fast access
+4. **Three-tier fallback:** Supabase → Local → In-memory
+
+**Unified API:**
+```python
+class UnifiedFileHandler:
+    async def upload_file(self, file_path: str, content: bytes) -> FileMetadata:
+        """Upload file to Supabase and optionally to providers"""
+        # 1. Upload to Supabase Storage (primary)
+        supabase_url = await self.supabase.upload(file_path, content)
+
+        # 2. Cache locally in volume mount
+        local_path = await self.cache_locally(file_path, content)
+
+        # 3. Store metadata in database
+        metadata = await self.store_metadata(file_path, supabase_url, local_path)
+
+        return metadata
+
+    async def get_provider_file_id(self, file_path: str, provider: str) -> str:
+        """Get provider-specific file ID (upload on-demand)"""
+        # Check cache first
+        if cached_id := await self.get_cached_provider_id(file_path, provider):
+            return cached_id
+
+        # Upload to provider and cache ID
+        if provider == "moonshot":
+            file_id = await self.moonshot.upload(file_path)
+        elif provider == "glm":
+            file_id = await self.glm.upload(file_path)
+
+        await self.cache_provider_id(file_path, provider, file_id)
+        return file_id
+```
+
+**Docker Volume Strategy:**
+```yaml
+# docker-compose.yml
+services:
+  exai-mcp-daemon:
+    volumes:
+      - ./logs:/app/logs
+      - ./files:/app/files  # NEW: File cache volume
+```
+
+**Supabase Metadata Schema:**
+```sql
+CREATE TABLE file_metadata (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  file_path TEXT NOT NULL,
+  supabase_url TEXT NOT NULL,
+  local_path TEXT,
+  moonshot_file_id TEXT,
+  glm_file_id TEXT,
+  file_size BIGINT,
+  mime_type TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Implementation Plan:** 4-week phased rollout
+- **Week 1:** Core infrastructure (UnifiedFileHandler, Supabase integration)
+- **Week 2:** Provider integration (Moonshot, GLM)
+- **Week 3:** Tool integration (EXAI tools)
+- **Week 4:** Testing & migration
+
+**Implementation Status:** ⏳ Design complete, ready for Phase 2 implementation
 
 ---
 

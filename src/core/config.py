@@ -1,9 +1,6 @@
 """
-Configuration module for the MCP server with Supabase message bus integration.
+Configuration module for the MCP server.
 Supports environment-specific configurations with validation and sensible defaults.
-
-Phase 2A: Minimal configuration for message bus foundation
-Phase 2B/2C: Will be extended with additional configuration values
 """
 
 import os
@@ -18,20 +15,13 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Config:
     """
-    Configuration class for MCP server with Supabase message bus integration.
-    
+    Configuration class for MCP server.
+
     Uses dataclasses for simplicity (no external dependencies like pydantic).
     Implements singleton pattern through module-level instance.
     Validates on initialization (fail-fast approach).
     """
-    
-    # Message Bus Configuration
-    message_bus_enabled: bool = field(default=False)
-    message_bus_ttl_hours: int = field(default=48)
-    message_bus_max_payload_mb: int = field(default=100)
-    message_bus_compression: str = field(default="gzip")
-    message_bus_checksum_enabled: bool = field(default=True)
-    
+
     # Supabase Configuration
     supabase_url: Optional[str] = field(default=None)
     supabase_key: Optional[str] = field(default=None)
@@ -63,29 +53,16 @@ class Config:
     def _validate(self):
         """
         Validate configuration values.
-        
+
         Raises:
             ValueError: If configuration is invalid.
         """
-        # Validate message bus configuration
-        if self.message_bus_enabled:
-            if not self.supabase_url:
-                raise ValueError(
-                    "SUPABASE_URL is required when MESSAGE_BUS_ENABLED is true. "
-                    "Please set SUPABASE_URL in your .env file."
-                )
-            if not self.supabase_key:
-                raise ValueError(
-                    "SUPABASE_KEY is required when MESSAGE_BUS_ENABLED is true. "
-                    "Please set SUPABASE_KEY in your .env file."
-                )
-            
-            # Validate Supabase URL format
-            if not self.supabase_url.startswith(("http://", "https://")):
-                raise ValueError(
-                    f"SUPABASE_URL must start with http:// or https://, got: {self.supabase_url}"
-                )
-        
+        # Validate Supabase URL format
+        if not self.supabase_url.startswith(("http://", "https://")):
+            raise ValueError(
+                f"SUPABASE_URL must start with http:// or https://, got: {self.supabase_url}"
+            )
+
         # Validate timeout hierarchy
         if self.tool_timeout_secs >= self.daemon_timeout_secs:
             logger.warning(
@@ -94,22 +71,11 @@ class Config:
             )
         
         # Validate positive values
-        if self.message_bus_ttl_hours <= 0:
-            raise ValueError(f"MESSAGE_BUS_TTL_HOURS must be positive, got: {self.message_bus_ttl_hours}")
-        
         if self.ws_max_msg_bytes <= 0:
             raise ValueError(f"WS_MAX_MSG_BYTES must be positive, got: {self.ws_max_msg_bytes}")
         
         if self.exai_ws_port <= 0 or self.exai_ws_port > 65535:
             raise ValueError(f"EXAI_WS_PORT must be between 1 and 65535, got: {self.exai_ws_port}")
-        
-        # Validate compression type
-        valid_compression = ("none", "gzip", "zstd")
-        if self.message_bus_compression.lower() not in valid_compression:
-            raise ValueError(
-                f"MESSAGE_BUS_COMPRESSION must be one of {valid_compression}, "
-                f"got: {self.message_bus_compression}"
-            )
     
     @property
     def is_development(self) -> bool:
@@ -165,13 +131,6 @@ def _load_from_env() -> Config:
     
     try:
         config = Config(
-            # Message Bus
-            message_bus_enabled=get_bool("MESSAGE_BUS_ENABLED", False),
-            message_bus_ttl_hours=get_int("MESSAGE_BUS_TTL_HOURS", 48),
-            message_bus_max_payload_mb=get_int("MESSAGE_BUS_MAX_PAYLOAD_MB", 100),
-            message_bus_compression=get_str("MESSAGE_BUS_COMPRESSION", "gzip"),
-            message_bus_checksum_enabled=get_bool("MESSAGE_BUS_CHECKSUM_ENABLED", True),
-            
             # Supabase
             supabase_url=get_optional_str("SUPABASE_URL"),
             supabase_key=get_optional_str("SUPABASE_KEY"),
@@ -199,7 +158,6 @@ def _load_from_env() -> Config:
         
         logger.info("Configuration loaded successfully")
         logger.debug(f"Environment: {config.environment}")
-        logger.debug(f"Message Bus Enabled: {config.message_bus_enabled}")
         logger.debug(f"WebSocket: {config.exai_ws_host}:{config.exai_ws_port}")
         
         return config
@@ -232,7 +190,7 @@ def get_config() -> Config:
             _config_instance = _load_from_env()
         except ValueError as e:
             logger.error(f"Configuration validation failed: {e}")
-            logger.warning("Using safe defaults - message bus will be disabled")
+            logger.warning("Using safe defaults")
             # Return safe defaults instead of crashing
             _config_instance = Config()
     return _config_instance

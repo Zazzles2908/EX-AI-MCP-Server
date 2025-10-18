@@ -10,6 +10,7 @@ import logging
 from typing import List, Optional, Dict
 from pathlib import Path
 from .supabase_client import get_storage_manager
+from utils.file.cross_platform import get_path_handler
 
 logger = logging.getLogger(__name__)
 
@@ -17,18 +18,20 @@ logger = logging.getLogger(__name__)
 class FileHandler:
     """
     Handles file operations for EXAI tools with Supabase Storage.
-    
+
     Features:
     - Immediate file upload to Supabase
     - Local path fallback
     - File metadata tracking
     - Context-based organization
+    - Cross-platform path normalization (Windows/Linux)
     """
-    
+
     def __init__(self):
-        """Initialize file handler with storage manager"""
+        """Initialize file handler with storage manager and path handler"""
         self.storage = get_storage_manager()
         self.upload_immediately = os.getenv("UPLOAD_FILES_IMMEDIATELY", "true").lower() == "true"
+        self.path_handler = get_path_handler()  # Cross-platform path normalization
     
     def process_files(
         self,
@@ -38,41 +41,82 @@ class FileHandler:
     ) -> List[Dict[str, str]]:
         """
         Process files and return storage information
-        
+
         Args:
-            file_paths: List of absolute file paths
+            file_paths: List of absolute file paths (Windows or Linux format)
             context_id: Context identifier (continuation_id or tool name)
             upload_immediately: Override default upload behavior
-        
+
         Returns:
-            List of dicts with 'original_path', 'storage_path', 'file_id'
+            List of dicts with 'original_path', 'normalized_path', 'storage_path', 'file_id', 'error'
         """
         if upload_immediately is None:
             upload_immediately = self.upload_immediately
-        
+
         processed_files = []
-        
+
         for file_path in file_paths:
-            if not os.path.exists(file_path):
-                logger.warning(f"File not found: {file_path}")
+            # CRITICAL FIX (2025-10-17): Normalize path for current environment (Windows -> Linux in Docker)
+            normalized_path, was_converted, error_message = self.path_handler.normalize_path(file_path)
+
+            if error_message:
+                logger.error(f"Path normalization failed for {file_path}: {error_message}")
+                processed_files.append({
+                    'original_path': file_path,
+                    'normalized_path': None,
+                    'storage_path': None,
+                    'file_id': None,
+                    'error': error_message
+                })
                 continue
-            
+
+            # Log path conversion for debugging
+            if was_converted:
+                logger.info(f"Path converted: {file_path} -> {normalized_path}")
+
+            # Check if file exists using normalized path
+            if not os.path.exists(normalized_path):
+                logger.warning(f"File not found after normalization: {normalized_path} (original: {file_path})")
+                processed_files.append({
+                    'original_path': file_path,
+                    'normalized_path': normalized_path,
+                    'storage_path': None,
+                    'file_id': None,
+                    'error': 'File not found after path normalization'
+                })
+                continue
+
+            # CRITICAL FIX (2025-10-17): Filter out directories to prevent upload errors
+            # Only process actual files, not directories
+            if not os.path.isfile(normalized_path):
+                logger.warning(f"Skipping non-file path: {normalized_path} (original: {file_path})")
+                processed_files.append({
+                    'original_path': file_path,
+                    'normalized_path': normalized_path,
+                    'storage_path': None,
+                    'file_id': None,
+                    'error': 'Path is not a file (directory or special file)'
+                })
+                continue
+
             file_info = {
                 'original_path': file_path,
+                'normalized_path': normalized_path,  # Track normalized path
                 'storage_path': None,
                 'file_id': None
             }
             
             if upload_immediately and self.storage.enabled:
-                # Upload to Supabase storage
+                # Upload to Supabase storage using normalized path
                 try:
-                    with open(file_path, 'rb') as f:
+                    # Use normalized_path for file operations
+                    with open(normalized_path, 'rb') as f:
                         file_data = f.read()
-                    
-                    # Generate storage path
-                    file_name = os.path.basename(file_path)
+
+                    # Generate storage path using original filename
+                    file_name = os.path.basename(file_path)  # Use original path for filename
                     storage_path = f"contexts/{context_id}/{file_name}"
-                    
+
                     # Upload file
                     file_id = self.storage.upload_file(
                         file_path=storage_path,
@@ -80,16 +124,18 @@ class FileHandler:
                         original_name=file_name,
                         file_type="user_upload"
                     )
-                    
+
                     if file_id:
                         file_info['storage_path'] = storage_path
                         file_info['file_id'] = file_id
                         logger.info(f"Uploaded file: {file_name} -> {file_id}")
                     else:
                         logger.warning(f"Failed to upload file: {file_name}")
-                
+                        file_info['error'] = 'Upload failed'
+
                 except Exception as e:
-                    logger.error(f"Error uploading file {file_path}: {e}")
+                    logger.error(f"Error uploading file {normalized_path}: {e}")
+                    file_info['error'] = str(e)
             
             processed_files.append(file_info)
         

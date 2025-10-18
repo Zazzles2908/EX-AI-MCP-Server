@@ -7,21 +7,28 @@ services:
     image: exai-mcp-server:latest
 
     # Port mapping: host:container
+    # PHASE 3 (2025-10-18): Added monitoring, health check, and metrics ports
     ports:
-      - "8079:8079"
+      - "8079:8079"  # WebSocket Daemon (MCP protocol)
+      - "8080:8080"  # Monitoring Dashboard (WebSocket + HTTP)
+      - "8082:8082"  # Health Check Endpoint (HTTP) - Changed from 8081 to avoid conflict with Redis Commander
+      - "8000:8000"  # Prometheus Metrics (HTTP)
 
     # Environment variables (override .env.docker)
+    # TIMEZONE FIX (2025-10-18): Add consistent timezone for log correlation
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONIOENCODING=utf-8
+      - TZ=Australia/Melbourne
 
     # Mount .env.docker as .env in container
     env_file:
       - .env.docker
 
-    # Volume mounts for logs (optional - for debugging)
+    # Volume mounts for logs and documentation
     volumes:
       - ./logs:/app/logs
+      - ./docs:/app/docs  # Mount docs directory for file upload tools
 
     # Depends on Redis for conversation storage
     depends_on:
@@ -66,8 +73,18 @@ services:
     image: redis:7-alpine
     container_name: exai-redis
 
-    # Use custom redis.conf for persistence configuration
-    command: redis-server /usr/local/etc/redis/redis.conf
+    # P0-9 Security Fix: Enable Redis authentication
+    # Use custom redis.conf for persistence configuration + password from environment
+    # Note: Using shell form to allow environment variable expansion
+    command: sh -c "redis-server /usr/local/etc/redis/redis.conf --requirepass $$REDIS_PASSWORD"
+
+    # Environment variables
+    # TIMEZONE FIX (2025-10-18): Add consistent timezone for log correlation
+    env_file:
+      - .env.docker
+
+    environment:
+      - TZ=Australia/Melbourne
 
     # Port mapping (exposed for debugging/monitoring)
     ports:
@@ -81,9 +98,9 @@ services:
     # Restart policy
     restart: unless-stopped
 
-    # Health check
+    # Health check (P0-9: Updated to use authentication)
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "sh", "-c", "redis-cli -a $$REDIS_PASSWORD ping"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -110,21 +127,21 @@ services:
   redis-commander:
     image: rediscommander/redis-commander:latest
     container_name: exai-redis-commander
+    restart: unless-stopped
 
-    # Environment configuration
-    environment:
-      - REDIS_HOSTS=local:redis:6379
-
-    # Port mapping for web interface
     ports:
       - "8081:8081"
 
-    # Depends on Redis
+    # CRITICAL FIX (2025-10-18): Simplified configuration using only environment variables
+    # Note: localhost:6379 connection attempts are a known Redis Commander behavior but don't prevent functionality
+    environment:
+      - REDIS_HOSTS=local:exai-redis:6379:0:${REDIS_PASSWORD}
+      - HTTP_USER=${REDIS_COMMANDER_USER:-admin}
+      - HTTP_PASSWORD=${REDIS_COMMANDER_PASSWORD:-admin}
+      - TZ=Australia/Melbourne
+
     depends_on:
       - redis
-
-    # Restart policy
-    restart: unless-stopped
 
     # Logging configuration
     logging:

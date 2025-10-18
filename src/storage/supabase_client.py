@@ -11,25 +11,103 @@ from datetime import datetime
 from functools import wraps
 from supabase import create_client, Client
 
+# PHASE 3 (2025-10-18): Import monitoring utilities
+from utils.monitoring import record_supabase_event
+from utils.timezone_helper import log_timestamp
+
+# PHASE 1 (2025-10-18): Import circuit breaker for resilience
+from src.resilience.circuit_breaker_manager import circuit_breaker_manager
+import pybreaker
+
 logger = logging.getLogger(__name__)
 
 
 def track_performance(func):
-    """Decorator to track performance of storage operations"""
+    """
+    Decorator to track performance of storage operations with circuit breaker protection
+
+    PHASE 1 (2025-10-18): Added circuit breaker protection for all Supabase operations
+    """
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         start = time.time()
-        result = func(self, *args, **kwargs)
-        duration = time.time() - start
+        error = None
+        result = None
 
-        # Log performance metrics
-        logger.debug(f"{func.__name__} completed in {duration:.3f}s")
+        # PHASE 1 (2025-10-18): Apply circuit breaker protection
+        breaker = circuit_breaker_manager.get_breaker('supabase')
 
-        # Alert on slow operations (> 500ms)
-        if duration > 0.5:
-            logger.warning(f"Slow operation: {func.__name__} took {duration:.3f}s")
+        try:
+            # Wrap Supabase call with circuit breaker
+            @breaker
+            def _call_with_breaker():
+                return func(self, *args, **kwargs)
 
-        return result
+            result = _call_with_breaker()
+            duration = time.time() - start
+
+            # Log performance metrics
+            logger.debug(f"{func.__name__} completed in {duration:.3f}s")
+
+            # Alert on slow operations (> 500ms)
+            if duration > 0.5:
+                logger.warning(f"Slow operation: {func.__name__} took {duration:.3f}s")
+
+            # PHASE 3 (2025-10-18): Monitor Supabase operations
+            # Determine operation type from function name
+            operation_type = "query" if "get" in func.__name__ or "fetch" in func.__name__ else "write"
+
+            # Estimate data size (rough approximation)
+            data_size = 0
+            if result:
+                if isinstance(result, (list, dict)):
+                    data_size = len(str(result).encode('utf-8'))
+
+            record_supabase_event(
+                direction="receive" if operation_type == "query" else "send",
+                function_name=f"SupabaseStorageManager.{func.__name__}",
+                data_size=data_size,
+                response_time_ms=duration * 1000,
+                metadata={
+                    "operation": operation_type,
+                    "slow": duration > 0.5,
+                    "timestamp": log_timestamp()
+                }
+            )
+
+            return result
+
+        except pybreaker.CircuitBreakerError:
+            # Circuit breaker is OPEN - Supabase is unavailable
+            logger.error(f"Supabase circuit breaker OPEN - cannot execute {func.__name__}")
+            duration = time.time() - start
+
+            record_supabase_event(
+                direction="error",
+                function_name=f"SupabaseStorageManager.{func.__name__}",
+                data_size=0,
+                error="Circuit breaker OPEN",
+                metadata={"timestamp": log_timestamp()}
+            )
+
+            # Graceful degradation: Return None (operation failed but service continues)
+            return None
+
+        except Exception as e:
+            error = str(e)
+            duration = time.time() - start
+
+            # PHASE 3 (2025-10-18): Monitor errors
+            record_supabase_event(
+                direction="error",
+                function_name=f"SupabaseStorageManager.{func.__name__}",
+                data_size=0,
+                error=error,
+                metadata={"timestamp": log_timestamp()}
+            )
+
+            raise
+
     return wrapper
 
 
@@ -271,7 +349,44 @@ class SupabaseStorageManager:
     # ========================================================================
     # FILE OPERATIONS
     # ========================================================================
-    
+
+    def _check_file_exists(
+        self,
+        storage_path: str,
+        original_name: str,
+        file_type: str
+    ) -> Optional[str]:
+        """
+        Check if file already exists in database by storage path and original name
+
+        Args:
+            storage_path: Storage path to check
+            original_name: Original filename
+            file_type: File type (user_upload, generated, cache)
+
+        Returns:
+            file_id if exists, None otherwise
+        """
+        try:
+            client = self.get_client()
+
+            # Query database for existing file
+            result = client.table("files").select("id").eq(
+                "storage_path", storage_path
+            ).eq("original_name", original_name).eq(
+                "file_type", file_type
+            ).execute()
+
+            if result.data and len(result.data) > 0:
+                return result.data[0]["id"]
+
+            return None
+
+        except Exception as e:
+            logger.warning(f"Failed to check file existence: {e}")
+            # Don't fail the upload if check fails
+            return None
+
     def upload_file(
         self,
         file_path: str,
@@ -281,33 +396,50 @@ class SupabaseStorageManager:
         file_type: str = "user_upload"
     ) -> Optional[str]:
         """
-        Upload a file to Supabase Storage
-        
+        Upload a file to Supabase Storage with duplicate detection
+
         Args:
             file_path: Storage path (unique identifier)
             file_data: File content as bytes
             original_name: Original filename
             mime_type: Optional MIME type
             file_type: Type (user_upload, generated, cache)
-        
+
         Returns:
             File UUID or None on error
         """
         if not self._enabled:
             return None
-        
+
         try:
             client = self.get_client()
-            
+
             # Determine bucket based on file type
             bucket = "user-files" if file_type == "user_upload" else "generated-files"
-            
+
+            # CRITICAL FIX (2025-10-17): Check for existing file first to prevent 409 Duplicate errors
+            existing_file_id = self._check_file_exists(file_path, original_name, file_type)
+            if existing_file_id:
+                logger.info(f"File already exists: {original_name} -> {existing_file_id}")
+                return existing_file_id
+
             # Upload to storage
-            storage_result = client.storage.from_(bucket).upload(
-                file_path,
-                file_data
-            )
-            
+            try:
+                storage_result = client.storage.from_(bucket).upload(
+                    file_path,
+                    file_data
+                )
+            except Exception as e:
+                # Handle race condition - file might exist from another process
+                if "Duplicate" in str(e) or "already exists" in str(e).lower() or "409" in str(e):
+                    logger.warning(f"Upload race condition detected: {original_name}")
+                    # Retry check to get the file_id
+                    existing_file_id = self._check_file_exists(file_path, original_name, file_type)
+                    if existing_file_id:
+                        logger.info(f"Found existing file after race condition: {original_name} -> {existing_file_id}")
+                        return existing_file_id
+                raise
+
             # Save metadata to database
             file_metadata = {
                 "storage_path": file_path,
@@ -316,16 +448,16 @@ class SupabaseStorageManager:
                 "size_bytes": len(file_data),
                 "file_type": file_type
             }
-            
+
             db_result = client.table("files").insert(file_metadata).execute()
-            
+
             if db_result.data:
                 file_id = db_result.data[0]["id"]
                 logger.info(f"Uploaded file: {original_name} -> {file_id}")
                 return file_id
-            
+
             return None
-            
+
         except Exception as e:
             logger.error(f"Failed to upload file {original_name}: {e}")
             return None

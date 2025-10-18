@@ -48,10 +48,14 @@ class ConversationIntegrationMixin:
         # CRITICAL: Extract clean content for conversation history (exclude internal workflow metadata)
         clean_content = self._extract_clean_workflow_content_for_history(response_data)
 
-        # Use storage factory instead of direct memory import
-        from utils.conversation.storage_factory import get_conversation_storage
+        # CRITICAL FIX: Use cached storage backend to avoid creating 60+ instances
+        from utils.conversation.threads import _get_storage_backend
 
-        storage = get_conversation_storage()
+        storage = _get_storage_backend()
+        if not storage:
+            logger.warning(f"{self.get_name()}: Storage backend not available for turn storage")
+            return
+
         storage.add_turn(
             continuation_id=continuation_id,
             role="assistant",

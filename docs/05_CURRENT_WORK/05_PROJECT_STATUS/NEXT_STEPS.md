@@ -67,11 +67,12 @@
 
 **Tools to Test:**
 
-#### Kimi Tools (4)
-1. **`kimi_upload_and_extract`** - File upload and content extraction
-2. **`kimi_chat_with_tools`** - Chat with tool calling
-3. **`kimi_multi_file_chat`** - Multi-file context chat
-4. **`kimi_intent_analysis`** - Intent classification
+#### Kimi Tools (5)
+1. **`kimi_upload_files`** - Upload files and return file IDs (stateless)
+2. **`kimi_chat_with_files`** - Chat with previously uploaded files using IDs (stateless)
+3. **`kimi_manage_files`** - File lifecycle management (list/delete/cleanup)
+4. **`kimi_chat_with_tools`** - Chat with tool calling
+5. **`kimi_intent_analysis`** - Intent classification
 
 #### GLM Tools (4)
 1. **`glm_web_search`** - Native web search
@@ -80,17 +81,20 @@
 4. **`glm_chat_with_tools`** - Chat with tools (if exists)
 
 **Testing Method:**
-- Prepare test files for upload
+- Test two-call pattern: upload files → get IDs → chat with IDs
+- Test file lifecycle management (list/delete/cleanup)
 - Test web search with various queries
 - Document response formats
-- Validate file handling
+- Validate Supabase tracking integration
 
 **Estimated Time:** 1-2 hours
 
 **Deliverables:**
 - Provider tools test report
-- File upload examples
+- Two-call pattern examples (upload → chat)
+- File lifecycle management examples
 - Web search examples
+- Supabase integration validation
 - Integration patterns
 
 ---
@@ -223,7 +227,8 @@
 
 ### Quick Win 2: Provider Tools Basics (1 hour)
 - Test `glm_web_search` with sample queries
-- Test `kimi_upload_and_extract` with sample file
+- Test `kimi_upload_files` → `kimi_chat_with_files` two-call pattern
+- Test `kimi_manage_files` for file lifecycle operations
 - Document basic provider tool usage
 
 ### Quick Win 3: Docker Health Check Fix (1 hour)
@@ -290,8 +295,10 @@
 
 ### For Provider Tools Testing
 - Test files for upload (PDF, TXT, MD)
+- File IDs from previous uploads for testing chat functionality
 - Web search queries
 - Sample prompts for chat tools
+- Supabase access for tracking verification
 
 ---
 

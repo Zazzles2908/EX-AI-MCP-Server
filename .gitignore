@@ -153,6 +153,7 @@ cython_debug/
 *.pem
 .env.local
 .env.*.local
+.env.docker
 supabase/.env.supabase
 
 # Test outputs
@@ -205,3 +206,7 @@ tool_validation_suite/**/*.log
 
 # Test scripts (will be created later)
 tool_validation_suite/tests/
+
+# Supabase MCP Configuration - DO NOT COMMIT
+# Contains project-specific Supabase credentials
+supabase/supabase_mcp/supabase_mcp_config.json

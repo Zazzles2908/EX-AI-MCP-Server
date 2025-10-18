@@ -271,15 +271,35 @@ class OrchestrationMixin:
                 v = SecureInputValidator(repo_root=str(repo_root))
 
                 # Normalize relevant_files within repo
+                # CRITICAL: Must normalize cross-platform paths BEFORE SecureInputValidator
+                # to prevent malformed paths like /app/c:\Project\...
                 try:
                     req_files = self.get_request_relevant_files(request) or []
                 except Exception:
                     req_files = []
                 if req_files:
                     normalized_files: list[str] = []
+
+                    # Step 1: Cross-platform path normalization (Windows → Linux)
+                    from utils.file.operations import get_path_handler
+                    path_handler = get_path_handler()
+
                     for f in req_files:
-                        p = v.normalize_and_check(f)
-                        normalized_files.append(str(p))
+                        # Normalize Windows paths to Linux format FIRST
+                        normalized_path, was_converted, error_message = path_handler.normalize_path(f)
+                        if error_message:
+                            # Log error but continue with other files
+                            logger.warning(f"Path normalization failed for {f}: {error_message}")
+                            continue
+
+                        # Step 2: Security validation (now with properly formatted Linux paths)
+                        try:
+                            p = v.normalize_and_check(normalized_path)
+                            normalized_files.append(str(p))
+                        except Exception as e:
+                            logger.warning(f"Security validation failed for {normalized_path}: {e}")
+                            continue
+
                     # Update request to the normalized list
                     try:
                         request.relevant_files = normalized_files
@@ -295,10 +315,22 @@ class OrchestrationMixin:
                 normalized_images: list[str] = []
                 for img in imgs:
                     if isinstance(img, str) and (img.startswith("data:") or "base64," in img):
+                        # Base64 data URLs don't need path normalization
                         normalized_images.append(img)
                     else:
-                        p = v.normalize_and_check(img)
-                        normalized_images.append(str(p))
+                        # Step 1: Cross-platform path normalization for file paths
+                        normalized_path, was_converted, error_message = path_handler.normalize_path(img)
+                        if error_message:
+                            logger.warning(f"Image path normalization failed for {img}: {error_message}")
+                            continue
+
+                        # Step 2: Security validation
+                        try:
+                            p = v.normalize_and_check(normalized_path)
+                            normalized_images.append(str(p))
+                        except Exception as e:
+                            logger.warning(f"Image security validation failed for {normalized_path}: {e}")
+                            continue
                 try:
                     request.images = normalized_images
                 except Exception:

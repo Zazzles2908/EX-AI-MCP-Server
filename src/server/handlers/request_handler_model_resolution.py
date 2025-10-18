@@ -14,6 +14,8 @@ import logging
 import os
 from typing import Any, Dict, Optional
 
+from src.router.routing_cache import get_routing_cache
+
 logger = logging.getLogger(__name__)
 
 
@@ -66,19 +68,53 @@ def _route_auto_model(tool_name: str, requested: str | None, args: Dict[str, Any
             logger.debug(f"[MODEL_ROUTING] Model locked by continuation - skipping auto-routing")
             return requested  # Skip routing, use continuation model
 
+        # CRITICAL: Kimi file operations routing MUST happen BEFORE early return
+        # These tools have model defaults in their schemas, so we need to override
+        if tool_name in {"kimi_upload_files", "kimi_chat_with_files", "kimi_manage_files"}:
+            selected_model = os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview")
+            routing_cache = get_routing_cache()
+            cache_context = {
+                "tool_name": tool_name,
+                "step_number": args.get("step_number"),
+                "next_step_required": args.get("next_step_required"),
+                "depth": str(args.get("depth") or "").strip().lower()
+            }
+            routing_cache.set_model_selection(cache_context, selected_model)
+            logger.debug(f"[ROUTING_CACHE] Cached auto-routing: {tool_name} → {selected_model}")
+            return selected_model
+
         req = (requested or "").strip().lower()
         if req and req != "auto":
             return requested  # explicit model respected
+
+        # Try cache for auto routing (3min TTL)
+        routing_cache = get_routing_cache()
+        cache_context = {
+            "tool_name": tool_name,
+            "step_number": args.get("step_number"),
+            "next_step_required": args.get("next_step_required"),
+            "depth": str(args.get("depth") or "").strip().lower()
+        }
+        cached_model = routing_cache.get_model_selection(cache_context)
+        if cached_model:
+            logger.debug(f"[ROUTING_CACHE] Auto-routing cache HIT: {tool_name} → {cached_model}")
+            return cached_model
         
         # Route Kimi-specific tools to Kimi by default
         kimi_tools = {"kimi_chat_with_tools", "kimi_upload_and_extract"}
         if tool_name in kimi_tools:
-            return os.getenv("KIMI_SPEED_MODEL", "kimi-k2-0905-preview")
+            selected_model = os.getenv("KIMI_SPEED_MODEL", "kimi-k2-0905-preview")
+            routing_cache.set_model_selection(cache_context, selected_model)
+            logger.debug(f"[ROUTING_CACHE] Cached auto-routing: {tool_name} → {selected_model}")
+            return selected_model
 
         # Simple tools use fast model (AI Manager)
         simple_tools = {"chat", "status", "provider_capabilities", "listmodels", "activity", "version"}
         if tool_name in simple_tools:
-            return os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
+            selected_model = os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
+            routing_cache.set_model_selection(cache_context, selected_model)
+            logger.debug(f"[ROUTING_CACHE] Cached auto-routing: {tool_name} → {selected_model}")
+            return selected_model
 
         # Step-aware heuristics for workflows (Option B)
         step_number = args.get("step_number")
@@ -87,30 +123,47 @@ def _route_auto_model(tool_name: str, requested: str | None, args: Dict[str, Any
 
         # thinkdeep: always deep
         if tool_name == "thinkdeep":
-            return os.getenv("KIMI_QUALITY_MODEL", "kimi-thinking-preview")
+            selected_model = os.getenv("KIMI_QUALITY_MODEL", "kimi-thinking-preview")
+            routing_cache.set_model_selection(cache_context, selected_model)
+            logger.debug(f"[ROUTING_CACHE] Cached auto-routing: {tool_name} → {selected_model}")
+            return selected_model
 
         # analyze
         if tool_name == "analyze":
             if (step_number == 1 and (next_step_required is True)):
-                return os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
-            # final step or unknown -> deep by default
-            return os.getenv("KIMI_QUALITY_MODEL", "kimi-thinking-preview")
+                selected_model = os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
+            else:
+                # final step or unknown -> deep by default
+                selected_model = os.getenv("KIMI_QUALITY_MODEL", "kimi-thinking-preview")
+            routing_cache.set_model_selection(cache_context, selected_model)
+            logger.debug(f"[ROUTING_CACHE] Cached auto-routing: {tool_name} → {selected_model}")
+            return selected_model
 
         # codereview/refactor/debug/testgen/planner
         if tool_name in {"codereview", "refactor", "debug", "testgen", "planner"}:
             if depth == "deep" or (next_step_required is False):
-                return os.getenv("KIMI_QUALITY_MODEL", "kimi-thinking-preview")
-            if step_number == 1:
-                return os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
-            # Default lean toward flash unless final/deep
-            return os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
+                selected_model = os.getenv("KIMI_QUALITY_MODEL", "kimi-thinking-preview")
+            elif step_number == 1:
+                selected_model = os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
+            else:
+                # Default lean toward flash unless final/deep
+                selected_model = os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
+            routing_cache.set_model_selection(cache_context, selected_model)
+            logger.debug(f"[ROUTING_CACHE] Cached auto-routing: {tool_name} → {selected_model}")
+            return selected_model
 
         # consensus/docgen/secaudit: deep
         if tool_name in {"consensus", "docgen", "secaudit"}:
-            return os.getenv("KIMI_QUALITY_MODEL", "kimi-thinking-preview")
+            selected_model = os.getenv("KIMI_QUALITY_MODEL", "kimi-thinking-preview")
+            routing_cache.set_model_selection(cache_context, selected_model)
+            logger.debug(f"[ROUTING_CACHE] Cached auto-routing: {tool_name} → {selected_model}")
+            return selected_model
 
         # Default: prefer GLM flash (AI Manager)
-        return os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
+        selected_model = os.getenv("GLM_SPEED_MODEL", "glm-4.5-flash")
+        routing_cache.set_model_selection(cache_context, selected_model)
+        logger.debug(f"[ROUTING_CACHE] Cached auto-routing: {tool_name} → {selected_model}")
+        return selected_model
     except Exception:
         # BUG FIX: Never return 'auto' - always return a concrete model
         # If there's an exception, fall back to the default speed model

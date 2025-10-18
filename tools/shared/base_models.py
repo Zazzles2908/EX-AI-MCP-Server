@@ -55,7 +55,11 @@ COMMON_FIELD_DESCRIPTIONS = {
         "to aid with contextual understanding. Useful for UI discussions, diagrams, "
         "visual problems, error screens, architecture mockups, and visual analysis tasks."
     ),
-    "files": ("Optional files for context (must be FULL absolute paths to real files / folders - DO NOT SHORTEN)"),
+    "files": (
+        "Optional files for context - EMBEDS CONTENT AS TEXT in prompt (not uploaded to platform). "
+        "Use for small files (<5KB). For large files or persistent reference, use kimi_upload_and_extract tool instead. "
+        "(must be FULL absolute paths to real files / folders - DO NOT SHORTEN)"
+    ),
 }
 
 # Workflow-specific field descriptions
@@ -163,7 +167,8 @@ class WorkflowRequest(BaseWorkflowRequest):
     backtrack_from_step: Optional[int] = Field(
         None, ge=1, description=WORKFLOW_FIELD_DESCRIPTIONS["backtrack_from_step"]
     )
-    use_assistant_model: Optional[bool] = Field(True, description=WORKFLOW_FIELD_DESCRIPTIONS["use_assistant_model"])
+    # CRITICAL FIX: Default to None so env var DEFAULT_USE_ASSISTANT_MODEL is respected
+    use_assistant_model: Optional[bool] = Field(None, description=WORKFLOW_FIELD_DESCRIPTIONS["use_assistant_model"])
 
     @field_validator("files_checked", "relevant_files", "relevant_context", mode="before")
     @classmethod

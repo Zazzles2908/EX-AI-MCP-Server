@@ -117,13 +117,23 @@ class AsyncModelProvider(ABC):
         
         self._closed = True
         
+        # CRITICAL FIX (2025-10-17): Handle both async and sync HTTP clients gracefully
+        # Some clients (like httpx.Client) don't have aclose(), only close()
         # Close HTTP client if it exists
         if self._http_client is not None:
             try:
-                await self._http_client.aclose()
-                logger.debug(f"Closed HTTP client for {self.get_provider_type().value} provider")
+                # Try async close first (for httpx.AsyncClient)
+                if hasattr(self._http_client, 'aclose'):
+                    await self._http_client.aclose()
+                    logger.debug(f"Closed async HTTP client for {self.get_provider_type().value} provider")
+                # Fallback to sync close (for httpx.Client)
+                elif hasattr(self._http_client, 'close'):
+                    self._http_client.close()
+                    logger.debug(f"Closed sync HTTP client for {self.get_provider_type().value} provider")
+                else:
+                    logger.debug(f"HTTP client has no close method, skipping cleanup")
             except Exception as e:
-                logger.warning(f"Error closing HTTP client: {e}")
+                logger.debug(f"HTTP client cleanup failed (non-critical): {e}")
             finally:
                 self._http_client = None
     

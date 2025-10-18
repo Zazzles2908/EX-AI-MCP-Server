@@ -3,51 +3,79 @@ Conversation Storage Factory
 
 Provides factory function to get appropriate conversation storage backend.
 Supports in-memory, Supabase, and dual storage modes with configuration.
+
+CRITICAL FIX (2025-10-16): Implemented singleton pattern to prevent lazy initialization
+on every call. Storage is now initialized ONCE at startup and reused across all calls.
 """
 
 import os
 import logging
+import threading
 from typing import Literal, Optional, Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
+# Global singleton instance and lock for thread-safe initialization
+_storage_instance = None
+_storage_lock = threading.Lock()
+
 
 def get_conversation_storage(
     backend: Optional[Literal["memory", "supabase", "dual"]] = None,
-    fallback: bool = True
+    fallback: bool = True,
+    force_new: bool = False
 ):
     """
-    Factory function to get appropriate conversation storage
+    Factory function to get appropriate conversation storage (SINGLETON PATTERN)
+
+    CRITICAL FIX (2025-10-16): This now returns a SINGLETON instance to prevent
+    lazy initialization on every call. Storage is initialized ONCE and reused.
 
     Args:
         backend: Storage backend type (memory, supabase, dual)
                 If None, reads from CONVERSATION_STORAGE_BACKEND env var
         fallback: Enable fallback to in-memory storage on errors
+        force_new: Force creation of new instance (for testing only)
 
     Returns:
-        Conversation storage instance
+        Conversation storage instance (singleton)
     """
-    if backend is None:
-        backend = os.getenv("CONVERSATION_STORAGE_BACKEND", "memory")
+    global _storage_instance
 
-    # DEBUG: Log storage backend selection
-    logger.info(f"[STORAGE_FACTORY] Creating conversation storage: backend={backend}, fallback={fallback}")
-    
-    if backend == "memory":
-        from .memory import InMemoryConversation
-        return InMemoryConversation()
-    
-    elif backend == "supabase":
-        from .supabase_memory import get_supabase_memory
-        return get_supabase_memory(fallback_to_memory=fallback)
-    
-    elif backend == "dual":
-        return DualStorageConversation(fallback=fallback)
-    
-    else:
-        logger.warning(f"Unknown backend '{backend}', defaulting to memory")
-        from .memory import InMemoryConversation
-        return InMemoryConversation()
+    # Return existing instance unless force_new is True
+    if _storage_instance is not None and not force_new:
+        return _storage_instance
+
+    # Thread-safe initialization
+    with _storage_lock:
+        # Double-check pattern
+        if _storage_instance is not None and not force_new:
+            return _storage_instance
+
+        if backend is None:
+            backend = os.getenv("CONVERSATION_STORAGE_BACKEND", "memory")
+
+        # DEBUG: Log storage backend selection
+        logger.info(f"[STORAGE_FACTORY] Creating conversation storage: backend={backend}, fallback={fallback}")
+
+        if backend == "memory":
+            from .memory import InMemoryConversation
+            _storage_instance = InMemoryConversation()
+
+        elif backend == "supabase":
+            from .supabase_memory import get_supabase_memory
+            _storage_instance = get_supabase_memory(fallback_to_memory=fallback)
+
+        elif backend == "dual":
+            _storage_instance = DualStorageConversation(fallback=fallback)
+
+        else:
+            logger.warning(f"Unknown backend '{backend}', defaulting to memory")
+            from .memory import InMemoryConversation
+            _storage_instance = InMemoryConversation()
+
+        logger.info(f"[STORAGE_FACTORY] Singleton storage instance created: {type(_storage_instance).__name__}")
+        return _storage_instance
 
 
 class DualStorageConversation:
@@ -197,7 +225,38 @@ class DualStorageConversation:
         return "", 0
 
 
+# ============================================================================
+# Startup Initialization
+# ============================================================================
+
+def initialize_conversation_storage(
+    backend: Optional[Literal["memory", "supabase", "dual"]] = None,
+    fallback: bool = True
+) -> None:
+    """
+    Initialize conversation storage at startup (EAGER INITIALIZATION)
+
+    CRITICAL FIX (2025-10-16): Call this at daemon startup to initialize
+    storage ONCE instead of lazy initialization on every call.
+
+    This prevents:
+    - 300-700ms latency on every call
+    - Multiple Supabase/Redis connections
+    - Repeated HTTP calls to Supabase
+
+    Args:
+        backend: Storage backend type (memory, supabase, dual)
+        fallback: Enable fallback to in-memory storage on errors
+    """
+    logger.info("[STORAGE_FACTORY] Initializing conversation storage at startup...")
+    storage = get_conversation_storage(backend=backend, fallback=fallback)
+    logger.info(f"[STORAGE_FACTORY] Startup initialization complete: {type(storage).__name__}")
+
+
+# ============================================================================
 # Convenience functions for backward compatibility
+# ============================================================================
+
 def get_thread(continuation_id: str) -> Optional[Dict[str, Any]]:
     """Get thread using configured storage backend"""
     storage = get_conversation_storage()
