@@ -416,7 +416,7 @@ class OrchestrationMixin:
             return await self.handle_work_completion(response_data, request, arguments)
 
         # Read relevant files internally
-        file_contents = await self._read_relevant_files(request)
+        file_contents = self._read_relevant_files(request)
 
         # Generate next step instructions based on required actions
         required_actions = self.get_required_actions(
@@ -462,14 +462,14 @@ class OrchestrationMixin:
             next_request.next_step_required = False
             return await self.handle_work_completion(response_data, next_request, next_request_data)
 
-    async def _read_relevant_files(self, request) -> dict:
+    def _read_relevant_files(self, request) -> dict:
         """Read all relevant files internally and return their contents."""
         file_contents = {}
         relevant_files = self.get_request_relevant_files(request) or []
 
         for file_path in relevant_files:
             try:
-                content = await self._read_file_content(file_path)
+                content = self._read_file_content(file_path)
                 file_contents[file_path] = content
                 logger.debug(f"{self.get_name()}: Read file {file_path} ({len(content)} chars)")
             except Exception as e:
@@ -478,7 +478,7 @@ class OrchestrationMixin:
 
         return file_contents
 
-    async def _read_file_content(self, file_path: str) -> str:
+    def _read_file_content(self, file_path: str) -> str:
         """Read a single file with proper encoding handling."""
         from pathlib import Path
         try:
