@@ -20,7 +20,7 @@ Created: 2025-10-05
 
 from .api_client import APIClient
 from .conversation_tracker import ConversationTracker
-from .file_uploader import FileUploader
+# FileUploader removed - use production code from src/providers/kimi_files.py or src/providers/glm_files.py
 from .glm_watcher import GLMWatcher
 from .performance_monitor import PerformanceMonitor
 from .prompt_counter import PromptCounter
@@ -32,7 +32,7 @@ from .test_runner import TestRunner
 __all__ = [
     "APIClient",
     "ConversationTracker",
-    "FileUploader",
+    # "FileUploader",  # Removed - use production code instead
     "GLMWatcher",
     "PerformanceMonitor",
     "PromptCounter",

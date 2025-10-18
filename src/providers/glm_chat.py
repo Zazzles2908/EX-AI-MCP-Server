@@ -3,9 +3,18 @@
 import json
 import logging
 import os
+import time
 from typing import Any, Optional
 
 from .base import ModelResponse, ProviderType
+
+# PHASE 3 (2025-10-18): Import monitoring utilities
+from utils.monitoring import record_glm_event
+from utils.timezone_helper import log_timestamp
+
+# PHASE 1 (2025-10-18): Import circuit breaker for resilience
+from src.resilience.circuit_breaker_manager import circuit_breaker_manager
+import pybreaker
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +158,15 @@ def generate_content(
     logger.debug(f"GLM generate_content called with kwargs keys: {list(kwargs.keys())}")
 
     payload = build_payload(prompt, system_prompt, model_name, temperature, max_output_tokens, **kwargs)
-    
+
+    # PHASE 3 (2025-10-18): Monitor API call start
+    start_time = time.time()
+    request_size = len(str(payload).encode('utf-8'))
+    error = None
+
+    # PHASE 1 (2025-10-18): Apply circuit breaker protection
+    breaker = circuit_breaker_manager.get_breaker('glm')
+
     try:
         stream = bool(payload.get("stream", False))
         
@@ -185,7 +202,13 @@ def generate_content(
                 sdk_kwargs["tool_choice"] = payload["tool_choice"]
 
             logger.debug(f"GLM SDK kwargs keys: {list(sdk_kwargs.keys())}")
-            resp = sdk_client.chat.completions.create(**sdk_kwargs)
+
+            # PHASE 1 (2025-10-18): Wrap SDK API call with circuit breaker
+            @breaker
+            def _glm_sdk_call():
+                return sdk_client.chat.completions.create(**sdk_kwargs)
+
+            resp = _glm_sdk_call()
             
             if stream:
                 # Aggregate streamed chunks from SDK iterator
@@ -196,7 +219,7 @@ def generate_content(
 
                 # CRITICAL FIX (2025-10-15): Add streaming timeout to prevent 6+ hour hangs
                 # Get timeout from env (default 5 minutes for GLM)
-                import time
+                # Note: time module already imported at module level (line 6)
                 stream_timeout = int(os.getenv("GLM_STREAM_TIMEOUT", "300"))  # 5 minutes default
                 stream_start = time.time()
 
@@ -370,7 +393,12 @@ def generate_content(
                     },
                 )
             else:
-                raw = http_client.post_json("/chat/completions", payload)
+                # PHASE 1 (2025-10-18): Wrap HTTP API call with circuit breaker
+                @breaker
+                def _glm_http_call():
+                    return http_client.post_json("/chat/completions", payload)
+
+                raw = _glm_http_call()
                 choice0 = (raw.get("choices") or [{}])[0]
                 message = choice0.get("message") or {}
                 text = message.get("content") or ""
@@ -414,6 +442,28 @@ def generate_content(
 
                 usage = raw.get("usage", {})
         
+        # PHASE 3 (2025-10-18): Monitor successful API call
+        response_time_ms = (time.time() - start_time) * 1000
+        response_size = len(str(text).encode('utf-8'))
+
+        # Extract token usage for monitoring
+        total_tokens = 0
+        if usage:
+            total_tokens = usage.get("total_tokens", 0)
+
+        record_glm_event(
+            direction="receive",
+            function_name="glm_chat.generate_content",
+            data_size=response_size,
+            response_time_ms=response_time_ms,
+            metadata={
+                "model": model_name,
+                "tokens": total_tokens,
+                "streamed": stream,
+                "timestamp": log_timestamp()
+            }
+        )
+
         return ModelResponse(
             content=text or "",
             usage={
@@ -431,8 +481,52 @@ def generate_content(
                 "tool_choice": payload.get("tool_choice"),
             },
         )
+    except pybreaker.CircuitBreakerError:
+        # PHASE 1 (2025-10-18): Circuit breaker is OPEN - GLM API is unavailable
+        logger.error("GLM circuit breaker OPEN - API unavailable")
+        error = "Circuit breaker OPEN - GLM API unavailable"
+
+        # Record monitoring event
+        response_time_ms = (time.time() - start_time) * 1000
+        record_glm_event(
+            direction="error",
+            function_name="glm_chat.generate_content",
+            data_size=request_size,
+            error=error,
+            metadata={
+                "model": model_name,
+                "timestamp": log_timestamp()
+            }
+        )
+
+        # Return error response (graceful degradation)
+        return ModelResponse(
+            content="",
+            usage=None,
+            model_name=model_name,
+            friendly_name="GLM",
+            provider=ProviderType.GLM,
+            metadata={
+                "error": error,
+                "circuit_breaker_open": True,
+            },
+        )
     except Exception as e:
         logger.error("GLM generate_content failed: %s", e)
+        error = str(e)
+
+        # PHASE 3 (2025-10-18): Monitor API call failure
+        response_time_ms = (time.time() - start_time) * 1000
+        record_glm_event(
+            direction="error",
+            function_name="glm_chat.generate_content",
+            data_size=request_size,
+            error=error,
+            metadata={
+                "model": model_name,
+                "timestamp": log_timestamp()
+            }
+        )
         raise
 
 

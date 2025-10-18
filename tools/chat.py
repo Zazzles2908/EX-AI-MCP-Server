@@ -34,7 +34,11 @@ CHAT_FIELD_DESCRIPTIONS = {
         "kind of response would be most helpful. The more context and detail you provide, the more "
         "valuable and targeted the response will be."
     ),
-    "files": "Optional files for context (must be FULL absolute paths to real files / folders - DO NOT SHORTEN)",
+    "files": (
+        "Optional files for context - EMBEDS CONTENT AS TEXT in prompt (not uploaded to platform). "
+        "Use for small files (<5KB). For large files or persistent reference, use kimi_upload_and_extract tool instead. "
+        "(must be FULL absolute paths to real files / folders - DO NOT SHORTEN)"
+    ),
     "images": (
         "Optional images for visual context. Useful for UI discussions, diagrams, visual problems, "
         "error screens, or architectural mockups. (must be FULL absolute paths to real files / folders - DO NOT SHORTEN - OR these can be base64 data)"
@@ -217,8 +221,11 @@ class ChatTool(SimpleTool):
                     if cache_bits:
                         preface = "[Context cache: " + ", ".join(cache_bits) + "]\n" + preface
                 # Record the user turn immediately
+                # CRITICAL FIX (2025-10-17): Use _original_user_prompt if available to avoid
+                # recording system instructions in conversation history (P0-3 fix)
                 from src.conversation.history_store import get_history_store
-                get_history_store().record_turn(request.continuation_id, "user", request.prompt)
+                user_prompt_to_record = getattr(request, "_original_user_prompt", request.prompt)
+                get_history_store().record_turn(request.continuation_id, "user", user_prompt_to_record)
         except Exception as e:
             logger.warning(f"[chat:context] Failed to assemble conversation context: {e}")
 

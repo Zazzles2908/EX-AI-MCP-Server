@@ -117,15 +117,19 @@ class AsyncGLMProvider(AsyncModelProvider):
         # Resolve model name and get effective temperature
         resolved = self._resolve_model_name(model_name, self.SUPPORTED_MODELS)
         effective_temp = self.get_effective_temperature(resolved, temperature)
-        
+
+        # CRITICAL FIX (2025-10-17): Pass http_client and use_sdk to async chat module
+        # This fixes the signature mismatch error that was causing fallback to sync provider
         # Delegate to async chat module
         return await async_glm_chat.generate_content_async(
             sdk_client=self._sdk_client,
+            http_client=self._http_client,
             prompt=prompt,
             model_name=resolved,
             system_prompt=system_prompt,
             temperature=effective_temp,
             max_output_tokens=max_output_tokens,
+            use_sdk=True,  # We always use SDK in async provider
             **kwargs
         )
     

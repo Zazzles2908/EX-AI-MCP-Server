@@ -208,6 +208,12 @@ class DebugIssueTool(WorkflowTool):
     def get_first_step_required_fields(self) -> list[str]:
         return ["relevant_files"]
 
+    def should_include_files_in_expert_prompt(self) -> bool:
+        """
+        Debug tool ALWAYS needs file contents for expert analysis.
+        Override global EXPERT_ANALYSIS_INCLUDE_FILES setting.
+        """
+        return True
 
     def get_input_schema(self) -> dict[str, Any]:
         """Generate input schema using WorkflowSchemaBuilder with debug-specific overrides."""
@@ -503,15 +509,31 @@ class DebugIssueTool(WorkflowTool):
                 v = SecureInputValidator(repo_root=str(repo_root))
 
                 # Normalize relevant_files within repo
+                # CRITICAL: Must normalize cross-platform paths BEFORE SecureInputValidator
                 try:
                     req_files = request.relevant_files or []
                 except Exception:
                     req_files = []
                 if req_files:
                     normalized_files: list[str] = []
+
+                    # Step 1: Cross-platform path normalization (Windows → Linux)
+                    from utils.file.operations import get_path_handler
+                    path_handler = get_path_handler()
+
                     for f in req_files:
-                        p = v.normalize_and_check(f)
-                        normalized_files.append(str(p))
+                        # Normalize Windows paths to Linux format FIRST
+                        normalized_path, was_converted, error_message = path_handler.normalize_path(f)
+                        if error_message:
+                            continue
+
+                        # Step 2: Security validation
+                        try:
+                            p = v.normalize_and_check(normalized_path)
+                            normalized_files.append(str(p))
+                        except Exception:
+                            continue
+
                     request.relevant_files = normalized_files
 
                 # Validate images count and normalize path-based images

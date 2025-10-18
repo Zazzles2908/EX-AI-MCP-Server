@@ -1118,7 +1118,15 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
             )
             self._actually_processed_files = processed_files
             if file_content:
-                user_content = f"{user_content}\n\n=== {file_context_title} ===\n{file_content}\n=== END CONTEXT ===="
+                # CRITICAL FIX (2025-10-17): Add explicit indicator that files are embedded (P0-5 fix)
+                # The AI needs to be explicitly told that files are provided and available for analysis
+                file_count = len(processed_files) if processed_files else "multiple"
+                file_header = (
+                    f"=== {file_context_title} (PROVIDED FOR ANALYSIS) ===\n"
+                    f"NOTE: The following {file_count} file(s) have been embedded and are available for your analysis.\n"
+                    f"You do NOT need to request these files - they are already provided below.\n\n"
+                )
+                user_content = f"{user_content}\n\n{file_header}{file_content}\n=== END CONTEXT ===="
 
         # Check token limits
         self._validate_token_limit(user_content, "Content")
@@ -1129,8 +1137,10 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         if use_websearch:
             websearch_instruction = self.get_websearch_instruction(use_websearch, self.get_websearch_guidance())
 
-        # Combine system prompt with user content
-        full_prompt = f"""{system_prompt}{websearch_instruction}
+        # FIXED 2025-10-16: Do NOT include system prompt in user message!
+        # System prompt goes in the system role, user content goes in user role
+        # This was causing 81K token bloat by duplicating the system prompt
+        full_prompt = f"""{websearch_instruction}
 
 === USER REQUEST ===
 {user_content}
@@ -1275,14 +1285,27 @@ Please provide a thoughtful, comprehensive response:"""
             except Exception:
                 pass
 
+            # Import cross-platform path handler
+            from utils.file.operations import get_path_handler
+            path_handler = get_path_handler()
+
+            # Track normalized paths to update the request
+            normalized_files = []
+
             for file_path in files:
-                # 1) Absolute path requirement (Windows: C:\..., Linux/Mac: /...)
-                if not os.path.isabs(file_path):
-                    return (
-                        f"Error: All file paths must be FULL absolute paths to real files / folders - DO NOT SHORTEN. "
-                        f"Received relative path: {file_path}\n"
-                        f"Please provide the full absolute path (Windows: C:\\..., Linux/Mac: /...)"
-                    )
+                # 1) Cross-platform path normalization (handles Windows paths on Linux)
+                normalized_path, was_converted, error_message = path_handler.normalize_path(file_path)
+
+                if error_message:
+                    return error_message
+
+                # Log conversion for debugging if enabled
+                if was_converted and os.getenv('EX_DEBUG_PATH_CONVERSION', 'false').lower() == 'true':
+                    logger.debug(f"Path converted: {file_path} -> {normalized_path}")
+
+                # Use normalized path for subsequent operations
+                file_path = normalized_path
+                normalized_files.append(normalized_path)
 
                 # 2) Secure resolution + containment check within allowed roots
                 try:
@@ -1310,6 +1333,10 @@ Please provide a thoughtful, comprehensive response:"""
                         f"Path: {file_path}\n"
                         f"Allowed roots:\n{allowed_str}"
                     )
+
+            # Update the request object with normalized paths
+            if normalized_files and hasattr(request, 'files'):
+                request.files = normalized_files
 
         return None
 

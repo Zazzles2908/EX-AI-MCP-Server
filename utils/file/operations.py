@@ -73,6 +73,11 @@ from .helpers import (
     read_file_safely,
 )
 
+from .cross_platform import (
+    CrossPlatformPathHandler,
+    get_path_handler,
+)
+
 # Re-export all public functions for backward compatibility
 __all__ = [
     # Security
@@ -100,4 +105,7 @@ __all__ = [
     "ensure_directory_exists",
     "is_text_file",
     "read_file_safely",
+    # Cross-platform
+    "CrossPlatformPathHandler",
+    "get_path_handler",
 ]

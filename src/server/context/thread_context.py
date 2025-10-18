@@ -270,6 +270,12 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
         f"[CONVERSATION_DEBUG] User input length: {len(original_prompt)} chars (~{original_prompt_tokens:,} tokens)"
     )
 
+    # CRITICAL FIX (2025-10-17): Save the CLEAN user prompt for conversation history
+    # This prevents system instructions from polluting the conversation history
+    # The enhanced prompt (with follow-up instructions) is used for the AI model,
+    # but the original prompt (without instructions) is what gets recorded in history
+    arguments["_original_user_prompt"] = original_prompt
+
     # Merge original context with new prompt and follow-up instructions
     if conversation_history:
         enhanced_prompt = (

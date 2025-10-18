@@ -129,12 +129,11 @@ class RefactorTool(WorkflowTool):
                 "items": {"type": "string"},
                 "description": REFACTOR_FIELD_DESCRIPTIONS["relevant_files"],
             },
-            "confidence": {
-                "type": "string",
-                "enum": ["exploring", "incomplete", "partial", "complete"],
-                "default": "incomplete",
-                "description": REFACTOR_FIELD_DESCRIPTIONS["confidence"],
-            },
+            # CRITICAL FIX (2025-10-17): Remove confidence field override (P0-6 fix)
+            # Confidence field is inherited from WorkflowRequest with correct enum:
+            # ["exploring", "low", "medium", "high", "very_high", "almost_certain", "certain"]
+            # The custom enum ["exploring", "incomplete", "partial", "complete"] was causing
+            # validation mismatch between schema and Pydantic model
             "backtrack_from_step": {
                 "type": "integer",
                 "minimum": 1,
@@ -191,7 +190,7 @@ class RefactorTool(WorkflowTool):
                 "Assess organization: logical grouping, file structure, naming conventions, module boundaries",
                 "Document specific refactoring opportunities with file locations and line numbers",
             ]
-        elif confidence in ["exploring", "incomplete"]:
+        elif confidence in ["exploring", "low", "medium"]:
             # Need deeper investigation
             return [
                 "Examine specific code sections you've identified as needing refactoring",
@@ -202,7 +201,7 @@ class RefactorTool(WorkflowTool):
                 "Trace dependencies and relationships between components to understand refactoring impact",
                 "Prioritize refactoring opportunities by impact and effort required",
             ]
-        elif confidence == "partial":
+        elif confidence in ["high", "very_high"]:
             # Close to completion - need final verification
             return [
                 "Verify all identified refactoring opportunities have been properly documented with locations",
@@ -226,14 +225,14 @@ class RefactorTool(WorkflowTool):
         """
         Decide when to call external model based on investigation completeness.
 
-        Don't call expert analysis if the CLI agent has certain confidence and complete refactoring - trust their judgment.
+        Don't call expert analysis if the CLI agent has certain or almost_certain confidence - trust their judgment.
         """
         # Check if user requested to skip assistant model
         if request and not self.get_request_use_assistant_model(request):
             return False
 
-        # Check if refactoring work is complete
-        if request and request.confidence == "complete":
+        # Check if refactoring work is complete with high confidence
+        if request and request.confidence in ["certain", "almost_certain"]:
             return False
 
         # Check if we have meaningful investigation data
@@ -344,15 +343,31 @@ class RefactorTool(WorkflowTool):
                 v = SecureInputValidator(repo_root=str(repo_root))
 
                 # Normalize relevant_files within repo
+                # CRITICAL: Must normalize cross-platform paths BEFORE SecureInputValidator
                 try:
                     req_files = request.relevant_files or []
                 except Exception:
                     req_files = []
                 if req_files:
                     normalized_files: list[str] = []
+
+                    # Step 1: Cross-platform path normalization (Windows → Linux)
+                    from utils.file.operations import get_path_handler
+                    path_handler = get_path_handler()
+
                     for f in req_files:
-                        p = v.normalize_and_check(f)
-                        normalized_files.append(str(p))
+                        # Normalize Windows paths to Linux format FIRST
+                        normalized_path, was_converted, error_message = path_handler.normalize_path(f)
+                        if error_message:
+                            continue
+
+                        # Step 2: Security validation
+                        try:
+                            p = v.normalize_and_check(normalized_path)
+                            normalized_files.append(str(p))
+                        except Exception:
+                            continue
+
                     request.relevant_files = normalized_files
 
                 # Validate images count and normalize path-based images
@@ -388,9 +403,9 @@ class RefactorTool(WorkflowTool):
 
     def should_skip_expert_analysis(self, request, consolidated_findings) -> bool:
         """
-        Refactor workflow skips expert analysis when the CLI agent has "complete" confidence.
+        Refactor workflow skips expert analysis when the CLI agent has "certain" or "almost_certain" confidence.
         """
-        return request.confidence == "complete" and not request.next_step_required
+        return request.confidence in ["certain", "almost_certain"] and not request.next_step_required
 
     def store_initial_issue(self, step_description: str):
         """Store initial request for expert analysis."""
@@ -413,13 +428,13 @@ class RefactorTool(WorkflowTool):
         return request.findings
 
     def get_confidence_level(self, request) -> str:
-        """Refactor tools use 'complete' for high confidence."""
-        return "complete"
+        """Refactor tools use 'certain' for high confidence."""
+        return "certain"
 
     def get_completion_message(self) -> str:
         """Refactor-specific completion message."""
         return (
-            "Refactoring analysis complete with COMPLETE confidence. You have identified all significant "
+            "Refactoring analysis complete with CERTAIN confidence. You have identified all significant "
             "refactoring opportunities and provided comprehensive analysis. MANDATORY: Present the user with "
             "the complete refactoring results organized by type and severity, and IMMEDIATELY proceed with "
             "implementing the highest priority refactoring opportunities or provide specific guidance for "
@@ -504,7 +519,7 @@ class RefactorTool(WorkflowTool):
                 f"step_number: {step_number + 1} and report specific files examined, refactoring opportunities found, "
                 f"and improvement assessments discovered."
             )
-        elif confidence in ["exploring", "incomplete"]:
+        elif confidence in ["exploring", "low", "medium"]:
             next_steps = (
                 f"STOP! Do NOT call {self.get_name()} again yet. Based on your findings, you've identified areas that need "
                 f"deeper refactoring analysis. MANDATORY ACTIONS before calling {self.get_name()} step {step_number + 1}:\\n"
@@ -512,7 +527,7 @@ class RefactorTool(WorkflowTool):
                 + f"\\n\\nOnly call {self.get_name()} again with step_number: {step_number + 1} AFTER "
                 + "completing these refactoring analysis tasks."
             )
-        elif confidence == "partial":
+        elif confidence in ["high", "very_high"]:
             next_steps = (
                 f"WAIT! Your refactoring analysis needs final verification. DO NOT call {self.get_name()} immediately. REQUIRED ACTIONS:\\n"
                 + "\\n".join(f"{i+1}. {action}" for i, action in enumerate(required_actions))

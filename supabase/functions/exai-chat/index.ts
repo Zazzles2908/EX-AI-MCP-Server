@@ -9,7 +9,7 @@ const corsHeaders = {
 // Configuration
 const EXAI_DAEMON_URL = Deno.env.get('EXAI_DAEMON_URL') || 'ws://host.docker.internal:8079';
 const EXAI_AUTH_TOKEN = Deno.env.get('EXAI_AUTH_TOKEN') || 'test-token-12345';
-const TIMEOUT_MS = parseInt(Deno.env.get('EXAI_TIMEOUT_MS') || '60000');
+const TIMEOUT_MS = parseInt(Deno.env.get('EXAI_TIMEOUT_MS') || '180000'); // Increased to 3 minutes for longer responses
 
 serve(async (req) => {
   // Handle CORS preflight

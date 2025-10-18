@@ -3,6 +3,10 @@ Supabase Conversation Memory
 
 Provides persistent conversation storage using Supabase with fallback to in-memory storage.
 Compatible with existing conversation memory interface for seamless integration.
+
+PERFORMANCE FIX (2025-10-16): Added multi-layer caching to reduce Supabase HTTP calls
+from 7 per request to 0 (cache hit) or 2 (cache miss).
+Issue: 926e2c85-98d0-4163-a0c3-7299ee05416c
 """
 
 import logging
@@ -10,6 +14,7 @@ from typing import Optional, Dict, Any, List
 from src.storage.supabase_client import get_storage_manager
 from src.storage.conversation_mapper import get_conversation_mapper
 from src.storage.file_handler import get_file_handler
+from .cache_manager import get_cache_manager
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +34,7 @@ class SupabaseConversationMemory:
     def __init__(self, fallback_to_memory: bool = True):
         """
         Initialize Supabase conversation memory
-        
+
         Args:
             fallback_to_memory: Enable fallback to in-memory storage on errors
         """
@@ -37,7 +42,10 @@ class SupabaseConversationMemory:
         self.mapper = get_conversation_mapper()
         self.file_handler = get_file_handler()
         self.fallback_to_memory = fallback_to_memory
-        
+
+        # PERFORMANCE FIX: Initialize cache manager
+        self.cache = get_cache_manager()
+
         # Import in-memory functions for fallback
         if fallback_to_memory:
             try:
@@ -51,11 +59,13 @@ class SupabaseConversationMemory:
     
     def get_thread(self, continuation_id: str) -> Optional[Dict[str, Any]]:
         """
-        Get conversation thread from Supabase
-        
+        Get conversation thread from Supabase with multi-layer caching
+
+        PERFORMANCE FIX: Check L1/L2 cache before hitting Supabase
+
         Args:
             continuation_id: Unique conversation identifier
-        
+
         Returns:
             Thread context dict or None if not found
         """
@@ -64,20 +74,45 @@ class SupabaseConversationMemory:
                 logger.debug("Supabase not enabled, using in-memory fallback")
                 return self._memory_get_thread(continuation_id)
             return None
-        
+
         try:
+            # PERFORMANCE FIX: Check cache first (L1 → L2)
+            cached_conv = self.cache.get_conversation(continuation_id)
+            cached_messages = self.cache.get_messages(continuation_id)
+
+            if cached_conv and cached_messages is not None:
+                # Cache hit - no Supabase calls needed!
+                thread = {
+                    'id': continuation_id,
+                    'conversation_id': cached_conv['id'],
+                    'messages': cached_messages,
+                    'metadata': cached_conv.get('metadata', {}),
+                    'storage': 'supabase',
+                    'created_at': cached_conv.get('created_at'),
+                    'updated_at': cached_conv.get('updated_at')
+                }
+                logger.debug(f"[CACHE HIT] Retrieved thread {continuation_id} from cache ({len(cached_messages)} messages)")
+                return thread
+
+            # Cache miss - load from Supabase (L3)
+            logger.debug(f"[CACHE MISS] Loading thread {continuation_id} from Supabase")
+
             # Get conversation from Supabase
             conv = self.storage.get_conversation_by_continuation_id(continuation_id)
-            
+
             if not conv:
                 logger.debug(f"No conversation found for {continuation_id}")
                 if self.fallback_to_memory:
                     return self._memory_get_thread(continuation_id)
                 return None
-            
+
             # Get messages
             messages = self.storage.get_conversation_messages(conv['id'])
-            
+
+            # PERFORMANCE FIX: Populate cache for next request
+            self.cache.set_conversation(continuation_id, conv)
+            self.cache.set_messages(continuation_id, messages)
+
             # Convert to thread format
             thread = {
                 'id': continuation_id,
@@ -88,10 +123,10 @@ class SupabaseConversationMemory:
                 'created_at': conv.get('created_at'),
                 'updated_at': conv.get('updated_at')
             }
-            
-            logger.debug(f"Retrieved thread {continuation_id} with {len(messages)} messages")
+
+            logger.debug(f"Retrieved thread {continuation_id} with {len(messages)} messages (cached for next request)")
             return thread
-        
+
         except Exception as e:
             logger.error(f"Error getting thread {continuation_id}: {e}")
             if self.fallback_to_memory:
@@ -178,9 +213,11 @@ class SupabaseConversationMemory:
                 content=content,
                 metadata=msg_metadata
             )
-            
+
             if msg_id:
-                logger.debug(f"Saved turn for {continuation_id}: {role} message")
+                # PERFORMANCE FIX: Invalidate cache after write
+                self.cache.invalidate(continuation_id)
+                logger.debug(f"Saved turn for {continuation_id}: {role} message (cache invalidated)")
                 return True
             else:
                 logger.error(f"Failed to save message for {continuation_id}")

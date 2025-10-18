@@ -121,10 +121,10 @@ CACHE_TTL: int = int(os.getenv("CACHE_TTL", "300"))
 # Security Settings
 VALIDATE_API_KEYS: bool = _parse_bool_env("VALIDATE_API_KEYS", "true")
 
-# Consensus Tool Defaults
-# Agentic engine removed - was experimental, disabled by default, and added unnecessary complexity
-# SECURE_INPUTS_ENFORCED kept for potential future use
-SECURE_INPUTS_ENFORCED: bool = _parse_bool_env("SECURE_INPUTS_ENFORCED", "false")
+# Input Security (CHANGED 2025-10-16: Default TRUE for security-by-default)
+# Prevents path traversal attacks and validates file paths
+# SECURE_INPUTS_ENFORCED: Validates file paths to prevent directory traversal
+SECURE_INPUTS_ENFORCED: bool = _parse_bool_env("SECURE_INPUTS_ENFORCED", "true")
 
 # Activity tool feature flags (default OFF)
 ACTIVITY_SINCE_UNTIL_ENABLED: bool = _parse_bool_env("ACTIVITY_SINCE_UNTIL_ENABLED", "false")
