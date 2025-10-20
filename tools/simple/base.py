@@ -401,17 +401,15 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     thread_context = get_thread(continuation_id)
 
                     if thread_context:
-                        # Add user's new input to conversation
-                        user_prompt = self.get_request_prompt(request)
-                        user_files = self.get_request_files(request)
-                        if user_prompt:
-                            add_turn(continuation_id, "user", user_prompt, files=user_files)
+                        # CRITICAL FIX (2025-10-19): Removed duplicate message saving
+                        # ContinuationMixin already handles saving user turns to Supabase
+                        # This was causing duplicate messages in the database
+                        # The thread_context is already updated by ContinuationMixin
 
-                            # Get updated thread context after adding the turn
-                            thread_context = get_thread(continuation_id)
-                            logger.debug(
-                                f"{self.get_name()}: Retrieved updated thread with {len(thread_context.turns)} turns"
-                            )
+                        # Just log that we're using the thread context
+                        logger.debug(
+                            f"{self.get_name()}: Using thread context with {len(thread_context.turns)} turns"
+                        )
 
                         # Build conversation history with updated thread context
                         conversation_history, conversation_tokens = build_conversation_history(
@@ -732,32 +730,34 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     send_progress(ProgressMessages.executing_tool("web_search"))
 
                     try:
-                        # Import GLM web search tool
-                        from tools.providers.glm.glm_web_search import GLMWebSearchTool
+                        # CRITICAL FIX (2025-10-19): Use internal function instead of nested tool call
+                        # This prevents client cancellation of nested tool calls
+                        # Import internal web search function
+                        from src.providers.tool_executor import perform_glm_web_search
+                        import asyncio
 
                         # Extract search query from user prompt
                         user_prompt = self.get_request_prompt(request)
                         search_query = user_prompt[:200]  # Use first 200 chars as query
 
-                        # Execute web search
-                        web_search_tool = GLMWebSearchTool()
-                        search_results = await web_search_tool.execute({
-                            "search_query": search_query,
-                            "count": 10,
-                            "search_recency_filter": "oneWeek"
-                        })
+                        # Execute web search internally (no nested tool call)
+                        logger.debug(f"Executing internal web search for query: {search_query[:50]}...")
+                        search_data = await asyncio.to_thread(
+                            perform_glm_web_search,
+                            search_query,
+                            count=10,
+                            search_recency_filter="oneWeek"
+                        )
 
-                        # Extract search results from TextContent
-                        if search_results and len(search_results) > 0:
+                        # Append search results to response
+                        if search_data:
                             import json as _json
-                            search_data = _json.loads(search_results[0].text)
-
-                            # Append search results to response
                             search_results_text = f"\n\n=== WEB SEARCH RESULTS ===\n{_json.dumps(search_data, indent=2, ensure_ascii=False)}\n"
 
                             # Update model response content
                             if hasattr(model_response, 'content'):
                                 model_response.content = response_content + search_results_text
+                                logger.info(f"Web search completed successfully, appended {len(search_data.get('results', []))} results")
                                 logger.info("Successfully appended fallback web search results to response")
                                 send_progress(ProgressMessages.tool_complete("web_search"))
 
@@ -1009,7 +1009,18 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         """
         from tools.models import ToolOutput
 
+        # CRITICAL FIX (2025-10-19): Create continuation_id BEFORE format_response()
+        # so that format_response() can save the assistant response with the correct ID
+        continuation_id = self.get_request_continuation_id(request)
+        if not continuation_id:
+            # First turn - create new continuation_id and attach to request
+            # so format_response() can use it
+            import uuid
+            continuation_id = str(uuid.uuid4())
+            request.continuation_id = continuation_id
+
         # Format the response using the hook method
+        # ChatTool's format_response() will now have access to continuation_id
         formatted_response = self.format_response(raw_text, request, model_info)
 
         # Handle conversation continuation like old base.py

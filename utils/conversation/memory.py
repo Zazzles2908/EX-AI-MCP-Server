@@ -6,6 +6,11 @@ stateless MCP (Model Context Protocol) environments. It enables multi-turn
 conversations between Claude and Gemini by storing conversation state in memory
 across independent request cycles.
 
+CONTEXT ENGINEERING (Phase 1):
+This module implements defense-in-depth history stripping to prevent recursive
+embedding of conversation history that causes token explosion (4.6M tokens bug).
+History stripping is applied at storage time before turns are persisted.
+
 CRITICAL ARCHITECTURAL REQUIREMENT:
 This conversation memory system is designed for PERSISTENT MCP SERVER PROCESSES.
 It uses in-memory storage that persists only within a single Python process.
@@ -130,6 +135,14 @@ from utils.conversation.threads import (
 )
 from utils.conversation.history import build_conversation_history
 
+# Context Engineering imports
+from utils.conversation.history_detection import HistoryDetector, DetectionMode
+from utils.conversation.token_utils import TokenCounter
+from config import CONTEXT_ENGINEERING
+import logging
+
+logger = logging.getLogger(__name__)
+
 __all__ = [
     # Models
     "ConversationTurn",
@@ -176,9 +189,21 @@ class InMemoryConversation:
     """
 
     def __init__(self):
-        """Initialize in-memory conversation storage"""
+        """Initialize in-memory conversation storage with context engineering"""
         # Get direct access to Redis storage backend
         self.storage = get_storage()
+
+        # Initialize context engineering components
+        self.config = CONTEXT_ENGINEERING
+        self.strip_history = self.config.get("strip_embedded_history", True)
+
+        # Initialize history detector with configured mode
+        detection_mode = self.config.get("detection_mode", "conservative")
+        mode = DetectionMode.AGGRESSIVE if detection_mode == "aggressive" else DetectionMode.CONSERVATIVE
+        self.history_detector = HistoryDetector(mode)
+
+        # Initialize token counter for logging
+        self.token_counter = TokenCounter()
 
     def get_thread(self, continuation_id: str):
         """
@@ -213,6 +238,9 @@ class InMemoryConversation:
         """
         Add a turn to the conversation using DIRECT Redis storage.
 
+        Implements Context Engineering Phase 1: Defense-in-depth history stripping
+        to prevent recursive embedding of conversation history.
+
         CRITICAL: Does NOT call threads.py to avoid circular dependency!
 
         Args:
@@ -240,6 +268,26 @@ class InMemoryConversation:
         if len(context.turns) >= MAX_CONVERSATION_TURNS:
             return False
 
+        # Apply context engineering: Strip embedded history BEFORE storage
+        original_content = content
+        if self.strip_history and role == "user":
+            content = self._strip_embedded_history(content)
+
+            # Log stripping if content changed
+            if content != original_content and self.config.get("log_stripping", True):
+                tokens_before = self.token_counter.count_tokens(original_content)
+                tokens_after = self.token_counter.count_tokens(content)
+                reduction = ((tokens_before - tokens_after) / tokens_before * 100) if tokens_before > 0 else 0
+                logger.info(
+                    f"History stripped from turn: {tokens_before} → {tokens_after} tokens "
+                    f"({reduction:.1f}% reduction)"
+                )
+
+            # In dry run mode, don't actually save the stripped content
+            if self.config.get("dry_run", False):
+                logger.info(f"DRY RUN: Would have stripped history from turn")
+                content = original_content  # Restore original for dry run
+
         # Create new turn
         turn = ConversationTurn(
             role=role,
@@ -258,6 +306,60 @@ class InMemoryConversation:
         key = f"thread:{continuation_id}"
         self.storage.setex(key, CONVERSATION_TIMEOUT_SECONDS, context.model_dump_json())
         return True
+
+    def _strip_embedded_history(self, content: str) -> str:
+        """
+        Strip embedded history from content using defense-in-depth approach.
+
+        This method implements Context Engineering Phase 1 to prevent recursive
+        embedding of conversation history that causes token explosion.
+
+        Args:
+            content: Content to strip history from
+
+        Returns:
+            Content with history sections removed
+        """
+        if not content:
+            return content
+
+        # Check token threshold - only strip if content exceeds minimum
+        min_threshold = self.config.get("min_token_threshold", 100)
+        token_count = self.token_counter.count_tokens(content)
+        if token_count < min_threshold:
+            return content
+
+        try:
+            # Detect history sections
+            sections = self.history_detector.extract_history_sections(content)
+            if not sections:
+                return content
+
+            # Remove history sections
+            clean_parts = []
+            last_end = 0
+
+            for start, end in sections:
+                # Add content before this history section
+                clean_parts.append(content[last_end:start])
+                last_end = end
+
+            # Add remaining content after last history section
+            clean_parts.append(content[last_end:])
+
+            clean_content = "".join(clean_parts)
+
+            # Recursively check for nested history
+            # This ensures we get all levels of embedded history
+            if self.history_detector.has_embedded_history(clean_content):
+                return self._strip_embedded_history(clean_content)
+
+            return clean_content
+
+        except Exception as e:
+            logger.error(f"History stripping failed: {e}")
+            # Return original content if stripping fails (graceful degradation)
+            return content
 
     def build_conversation_history(
         self,

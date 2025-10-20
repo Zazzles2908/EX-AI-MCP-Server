@@ -74,6 +74,24 @@ class ContinuationMixin:
                 user_images = self.get_request_images(request)
 
                 if user_prompt:
+                    # CRITICAL FIX (2025-10-19): Strip embedded conversation history before saving
+                    # to prevent exponential token growth. When Augment Code (or other AI) sends
+                    # a continuation request, it embeds the full conversation history in the prompt.
+                    # If we save this AS-IS, then on the next turn we'll load it and add history AGAIN,
+                    # causing exponential growth (Turn 1: 1K tokens, Turn 2: 2K, Turn 3: 4K, etc.)
+                    #
+                    # Extract only the NEW user input by stripping everything before "=== NEW USER INPUT ==="
+                    original_prompt = user_prompt
+                    if "=== NEW USER INPUT ===" in user_prompt:
+                        # Extract only the new input after the marker
+                        parts = user_prompt.split("=== NEW USER INPUT ===", 1)
+                        if len(parts) == 2:
+                            user_prompt = parts[1].strip()
+                            logger.info(
+                                f"{self.get_name()}: [CONTEXT_FIX] Stripped embedded history from user prompt "
+                                f"({len(original_prompt):,} → {len(user_prompt):,} chars)"
+                            )
+
                     storage.add_turn(
                         continuation_id,
                         "user",
@@ -153,9 +171,10 @@ class ContinuationMixin:
                 return None
 
             if continuation_id:
-                # Existing conversation
+                # Existing conversation (or first turn with pre-generated continuation_id)
                 thread_context = storage.get_thread(continuation_id)
                 if thread_context:
+                    # Thread exists - this is a continuation
                     # Handle different thread context formats (memory vs supabase)
                     if isinstance(thread_context, dict):
                         # Supabase format
@@ -173,7 +192,13 @@ class ContinuationMixin:
                         "remaining_turns": remaining_turns,
                         "note": f"You can continue this conversation for {remaining_turns} more exchanges.",
                     }
-            else:
+                # CRITICAL FIX (2025-10-19): Thread doesn't exist yet - this is first turn
+                # with pre-generated continuation_id from _parse_response. Treat as new conversation.
+                # Fall through to "New conversation" logic below
+
+            # New conversation - create thread and offer continuation
+            # This handles both: 1) No continuation_id provided, 2) continuation_id exists but thread doesn't
+            if True:  # Always execute this block (replaces "else:" to handle fall-through)
                 # New conversation - create thread and offer continuation
                 # Convert request to dict for initial_context
                 initial_request_dict = self.get_request_as_dict(request)
@@ -187,13 +212,19 @@ class ContinuationMixin:
                 except Exception:
                     sess_fp, friendly = None, None
 
-                # Create thread (still uses memory.create_thread for now)
-                new_thread_id = create_thread(
-                    tool_name=self.get_name(),
-                    initial_request=initial_request_dict,
-                    session_fingerprint=sess_fp,
-                    client_friendly_name=friendly,
-                )
+                # CRITICAL FIX (2025-10-19): Use pre-generated continuation_id if available
+                # (from _parse_response), otherwise create a new one
+                if continuation_id:
+                    # Use the pre-generated continuation_id
+                    new_thread_id = continuation_id
+                else:
+                    # Create thread (still uses memory.create_thread for now)
+                    new_thread_id = create_thread(
+                        tool_name=self.get_name(),
+                        initial_request=initial_request_dict,
+                        session_fingerprint=sess_fp,
+                        client_friendly_name=friendly,
+                    )
 
                 # Add the initial user turn using storage
                 user_prompt = self.get_request_prompt(request)
@@ -209,6 +240,20 @@ class ContinuationMixin:
                     images=user_images,
                     tool_name=self.get_name()
                 )
+
+                # CRITICAL FIX (2025-10-19): Save assistant response for first turn
+                # The assistant response is generated BEFORE _create_continuation_offer is called,
+                # so we need to save it here after the conversation is created in Supabase.
+                # For subsequent turns, the assistant response is saved in format_response().
+                if hasattr(request, '_assistant_response_to_save'):
+                    storage.add_turn(
+                        new_thread_id,
+                        "assistant",
+                        request._assistant_response_to_save,
+                        tool_name=self.get_name()
+                    )
+                    # Clean up the temporary attribute
+                    delattr(request, '_assistant_response_to_save')
 
                 note_client = friendly or "You"
                 return {

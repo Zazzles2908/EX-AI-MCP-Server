@@ -131,6 +131,53 @@ DISK_USAGE = Gauge(
 )
 
 # ============================================================================
+# CONCURRENCY & SEMAPHORE METRICS (Added 2025-10-19)
+# ============================================================================
+
+SEMAPHORE_LEAKS_DETECTED = Counter(
+    'mcp_semaphore_leaks_detected_total',
+    'Total semaphore leaks detected',
+    ['semaphore_type']  # type: global/provider/session
+)
+
+SEMAPHORE_RECOVERIES = Counter(
+    'mcp_semaphore_recoveries_total',
+    'Total semaphore recovery operations',
+    ['semaphore_type', 'status']  # status: success/partial/failed
+)
+
+SEMAPHORE_CURRENT_VALUE = Gauge(
+    'mcp_semaphore_current_value',
+    'Current semaphore value',
+    ['semaphore_type', 'provider']  # provider: global/kimi/glm
+)
+
+SEMAPHORE_EXPECTED_VALUE = Gauge(
+    'mcp_semaphore_expected_value',
+    'Expected semaphore value',
+    ['semaphore_type', 'provider']
+)
+
+CONCURRENT_REQUESTS = Gauge(
+    'mcp_concurrent_requests',
+    'Current number of concurrent requests',
+    ['provider']  # provider: global/kimi/glm
+)
+
+SEMAPHORE_WAIT_TIME = Histogram(
+    'mcp_semaphore_wait_seconds',
+    'Time spent waiting for semaphore acquisition',
+    ['semaphore_type'],
+    buckets=[0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0, float('inf')]
+)
+
+SEMAPHORE_ACQUISITION_FAILURES = Counter(
+    'mcp_semaphore_acquisition_failures_total',
+    'Total semaphore acquisition failures (OVER_CAPACITY)',
+    ['semaphore_type', 'provider']
+)
+
+# ============================================================================
 # ERROR METRICS
 # ============================================================================
 
@@ -220,6 +267,44 @@ def record_token_usage(provider: str, model: str, input_tokens: int, output_toke
 def record_error(component: str, error_type: str, severity: str = 'error') -> None:
     """Record an error"""
     ERROR_COUNT.labels(component=component, error_type=error_type, severity=severity).inc()
+
+
+# ============================================================================
+# SEMAPHORE METRICS HELPERS (Added 2025-10-19)
+# ============================================================================
+
+def record_semaphore_leak(semaphore_type: str, expected: int, actual: int) -> None:
+    """Record a semaphore leak detection"""
+    SEMAPHORE_LEAKS_DETECTED.labels(semaphore_type=semaphore_type).inc()
+    logger.warning(f"Semaphore leak detected: {semaphore_type} expected={expected}, actual={actual}")
+
+
+def record_semaphore_recovery(semaphore_type: str, status: str, recovered_count: int) -> None:
+    """Record a semaphore recovery operation"""
+    SEMAPHORE_RECOVERIES.labels(semaphore_type=semaphore_type, status=status).inc()
+    logger.info(f"Semaphore recovery: {semaphore_type} status={status}, recovered={recovered_count}")
+
+
+def update_semaphore_values(semaphore_type: str, provider: str, current: int, expected: int) -> None:
+    """Update current and expected semaphore values"""
+    SEMAPHORE_CURRENT_VALUE.labels(semaphore_type=semaphore_type, provider=provider).set(current)
+    SEMAPHORE_EXPECTED_VALUE.labels(semaphore_type=semaphore_type, provider=provider).set(expected)
+
+
+def record_semaphore_wait(semaphore_type: str, wait_time: float) -> None:
+    """Record time spent waiting for semaphore acquisition"""
+    SEMAPHORE_WAIT_TIME.labels(semaphore_type=semaphore_type).observe(wait_time)
+
+
+def record_semaphore_acquisition_failure(semaphore_type: str, provider: str) -> None:
+    """Record a semaphore acquisition failure (OVER_CAPACITY)"""
+    SEMAPHORE_ACQUISITION_FAILURES.labels(semaphore_type=semaphore_type, provider=provider).inc()
+    logger.warning(f"Semaphore acquisition failed: {semaphore_type} provider={provider}")
+
+
+def update_concurrent_requests(provider: str, count: int) -> None:
+    """Update current concurrent request count"""
+    CONCURRENT_REQUESTS.labels(provider=provider).set(count)
 
 
 def update_system_metrics() -> None:
