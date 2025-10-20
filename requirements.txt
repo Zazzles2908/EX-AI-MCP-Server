@@ -51,3 +51,8 @@ aiohttp>=3.9.0  # HTTP server for health checks and metrics
 # RESILIENCE DEPENDENCIES (Phase 1 Critical Fixes - 2025-10-18)
 # ============================================================================
 pybreaker>=1.0.0  # Circuit breaker pattern for external service calls
+
+# ============================================================================
+# CODE QUALITY DEPENDENCIES (2025-10-20)
+# ============================================================================
+pyflakes>=3.0.0  # Static code analysis for finding bugs and code quality issues
