@@ -44,7 +44,7 @@ HARD_TOKEN_LIMIT = 4000  # Hard limit: prune aggressively if exceeded (EXAI reco
 class SupabaseConversationMemory:
     """
     Persistent conversation memory using Supabase.
-    
+
     Features:
     - Conversation persistence
     - Message history storage
@@ -52,7 +52,7 @@ class SupabaseConversationMemory:
     - Fallback to in-memory storage
     - Compatible with existing memory interface
     """
-    
+
     def __init__(self, fallback_to_memory: bool = True):
         """
         Initialize Supabase conversation memory
@@ -71,7 +71,10 @@ class SupabaseConversationMemory:
         # BUG FIX #11 (2025-10-19): Add in-memory thread cache to eliminate redundant get_thread() calls
         # This prevents multiple get_thread() calls within the same request from hitting Supabase
         # Expected improvement: 0.905s → 0.3s (eliminates 3x redundant calls)
+        # BUG FIX #13 (2025-10-20): This is a REQUEST-SCOPED cache that MUST be cleared after each request
+        # Without clearing, it becomes a memory leak and serves stale data across requests
         self._thread_cache = {}
+        self._request_cache_enabled = True  # Can be disabled for debugging
 
         # BUG FIX #11 (Phase 1b - 2025-10-20): Use async queue instead of ThreadPoolExecutor
         # When USE_ASYNC_SUPABASE=true, writes are submitted to async queue
@@ -96,7 +99,7 @@ class SupabaseConversationMemory:
             except ImportError:
                 logger.warning("In-memory fallback not available")
                 self.fallback_to_memory = False
-    
+
     @timing_decorator("SupabaseMemory.get_thread")
     def get_thread(self, continuation_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -119,9 +122,11 @@ class SupabaseConversationMemory:
             return None
 
         try:
-            # BUG FIX #11: Check in-memory thread cache first (L0 - request-level cache)
-            if continuation_id in self._thread_cache:
-                logger.debug(f"[THREAD_CACHE HIT] Retrieved thread {continuation_id} from in-memory cache (0ms)")
+            # BUG FIX #11 & #13: Check in-memory thread cache first (L0 - request-level cache)
+            # This eliminates redundant Supabase queries WITHIN a single request
+            # Cache is cleared after each request completes (see request_handler.py)
+            if self._request_cache_enabled and continuation_id in self._thread_cache:
+                logger.info(f"[REQUEST_CACHE HIT] Thread {continuation_id} from request cache (0ms, no Supabase query)")
                 return self._thread_cache[continuation_id]
 
             # PERFORMANCE FIX: Check cache first (L1 → L2)
@@ -141,8 +146,10 @@ class SupabaseConversationMemory:
                 }
                 logger.debug(f"[CACHE HIT] Retrieved thread {continuation_id} from cache ({len(cached_messages)} messages)")
 
-                # BUG FIX #11: Store in thread cache for subsequent calls in same request
-                self._thread_cache[continuation_id] = thread
+                # BUG FIX #11 & #13: Store in request cache for subsequent calls in same request
+                if self._request_cache_enabled:
+                    self._thread_cache[continuation_id] = thread
+                    logger.debug(f"[REQUEST_CACHE STORE] Cached thread {continuation_id} for this request")
 
                 return thread
 
@@ -183,8 +190,10 @@ class SupabaseConversationMemory:
                 'updated_at': conv.get('updated_at')
             }
 
-            # BUG FIX #11: Store in thread cache for subsequent calls in same request
-            self._thread_cache[continuation_id] = thread
+            # BUG FIX #11 & #13: Store in request cache for subsequent calls in same request
+            if self._request_cache_enabled:
+                self._thread_cache[continuation_id] = thread
+                logger.info(f"[REQUEST_CACHE STORE] Cached thread {continuation_id} for this request (loaded from Supabase)")
 
             logger.debug(f"Retrieved thread {continuation_id} with {len(messages)} messages (cached for next request)")
             return thread
@@ -195,7 +204,7 @@ class SupabaseConversationMemory:
                 logger.debug("Falling back to in-memory storage")
                 return self._memory_get_thread(continuation_id)
             return None
-    
+
     def _write_message_background(
         self,
         continuation_id: str,
@@ -430,7 +439,7 @@ class SupabaseConversationMemory:
                         continuation_id, role, content, files, images, metadata, tool_name
                     )
                 return False
-        
+
         except Exception as e:
             logger.error(f"Error adding turn to {continuation_id}: {e}")
             if self.fallback_to_memory:
@@ -439,7 +448,7 @@ class SupabaseConversationMemory:
                     continuation_id, role, content, files, images, metadata, tool_name
                 )
             return False
-    
+
     def build_conversation_history(
         self,
         continuation_id: str,
@@ -601,3 +610,24 @@ async def process_conversation_update(queue_item):
     except Exception as e:
         logger.error(f"[CONV_QUEUE] Error processing conversation update: {e}", exc_info=True)
 
+
+
+    def clear_request_cache(self):
+        """
+        Clear the request-scoped thread cache.
+
+        BUG FIX #13 (2025-10-20): This MUST be called after each request completes
+        to prevent memory leaks and stale data being served across requests.
+
+        The thread cache is designed to eliminate redundant Supabase queries WITHIN
+        a single request, but it must be cleared BETWEEN requests.
+        """
+        if not self._request_cache_enabled:
+            return
+
+        cache_size = len(self._thread_cache)
+        if cache_size > 0:
+            logger.debug(f"[REQUEST_CACHE] Clearing {cache_size} cached threads")
+            self._thread_cache.clear()
+        else:
+            logger.debug("[REQUEST_CACHE] No cached threads to clear")

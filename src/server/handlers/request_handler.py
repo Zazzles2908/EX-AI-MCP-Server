@@ -164,7 +164,23 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
     result = attach_progress_and_summary(result, arguments, name, resolved_model,
                                         req_id, overall_start, 1 + steps)
     write_session_cache(arguments)
-    
+
+    # BUG FIX #13 (2025-10-20): Clear request-scoped cache after each request
+    # This prevents memory leaks and stale data from being served across requests
+    # The thread cache eliminates redundant Supabase queries WITHIN a request,
+    # but must be cleared BETWEEN requests
+    try:
+        from utils.conversation.storage_factory import get_conversation_storage
+        storage = get_conversation_storage()
+        if hasattr(storage, 'clear_request_cache'):
+            storage.clear_request_cache()
+        elif hasattr(storage, 'supabase_storage') and hasattr(storage.supabase_storage, 'clear_request_cache'):
+            # Handle DualStorageConversation wrapper
+            storage.supabase_storage.clear_request_cache()
+    except Exception as e:
+        # Don't fail the request if cache cleanup fails
+        logger.debug(f"Failed to clear request cache: {e}")
+
     logger.info(f"Tool '{name}' execution completed")
     return result
 
