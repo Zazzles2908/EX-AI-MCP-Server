@@ -130,10 +130,11 @@ class SimpleToolExecutionMixin:
                 else:
                     # No embedded history - reconstruct it (for in-process calls)
                     tool_logger.debug(f"{self.get_name()}: No embedded history found, reconstructing conversation")
-                    
+
                     # Get thread context
-                    from utils.conversation.memory import add_turn, build_conversation_history, get_thread
-                    
+                    # BUG FIX #14 (2025-10-20): Removed build_conversation_history import (deleted function)
+                    from utils.conversation.memory import add_turn, get_thread
+
                     thread_context = get_thread(continuation_id)
                     
                     if thread_context:

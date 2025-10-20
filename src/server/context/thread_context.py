@@ -93,7 +93,8 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
         4. Debug tool can reference specific findings from analyze tool
         5. Natural cross-tool collaboration without context loss
     """
-    from utils.conversation.memory import add_turn, build_conversation_history, get_thread
+    # BUG FIX #14 (2025-10-20): Removed build_conversation_history import (deleted function)
+    from utils.conversation.memory import add_turn, get_thread
 
     continuation_id = arguments["continuation_id"]
 
