@@ -170,16 +170,22 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
     # The thread cache eliminates redundant Supabase queries WITHIN a request,
     # but must be cleared BETWEEN requests
     try:
+        logger.info(f"[REQUEST_CACHE] Attempting to clear cache for request {req_id}")
         from utils.conversation.storage_factory import get_conversation_storage
         storage = get_conversation_storage()
+        logger.info(f"[REQUEST_CACHE] Got storage: {type(storage).__name__}")
         if hasattr(storage, 'clear_request_cache'):
+            logger.info(f"[REQUEST_CACHE] Calling storage.clear_request_cache()")
             storage.clear_request_cache()
         elif hasattr(storage, 'supabase_storage') and hasattr(storage.supabase_storage, 'clear_request_cache'):
             # Handle DualStorageConversation wrapper
+            logger.info(f"[REQUEST_CACHE] Calling storage.supabase_storage.clear_request_cache()")
             storage.supabase_storage.clear_request_cache()
+        else:
+            logger.warning(f"[REQUEST_CACHE] Storage {type(storage).__name__} has no clear_request_cache method!")
     except Exception as e:
         # Don't fail the request if cache cleanup fails
-        logger.debug(f"Failed to clear request cache: {e}")
+        logger.error(f"[REQUEST_CACHE] Failed to clear request cache: {e}", exc_info=True)
 
     logger.info(f"Tool '{name}' execution completed")
     return result
