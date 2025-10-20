@@ -362,20 +362,7 @@ class InMemoryConversation:
             # Return original content if stripping fails (graceful degradation)
             return content
 
-    def build_conversation_history(
-        self,
-        continuation_id: str,
-        model_context=None
-    ):
-        """
-        Build conversation history string
-
-        Args:
-            continuation_id: Unique conversation identifier
-            model_context: Optional model context for token counting
-
-        Returns:
-            Tuple of (history_string, token_count)
-        """
-        return build_conversation_history(continuation_id, model_context)
+    # BUG FIX #14 (2025-10-20): DELETED build_conversation_history
+    # Legacy text-based history building is no longer used.
+    # Modern approach: Use get_messages_array() for SDK-native message format.
 
