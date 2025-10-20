@@ -203,24 +203,14 @@ class ChatTool(SimpleTool):
             # Surface a clear validation error; callers will see this as tool error
             raise ValueError(f"[chat:security] {e}")
 
-        # Build conversation preface
-        preface = ""
+        # BUG FIX #14 (2025-10-20): Remove legacy text-based conversation building
+        # The request handler now provides conversation history via _messages parameter
+        # which is passed directly to SDK providers (Kimi/GLM) in their native format.
+        # We no longer need to build text-based "preface" - SDKs handle message arrays.
+        #
+        # Record the user turn for conversation persistence
         try:
             if request.continuation_id:
-                from src.conversation.memory_policy import assemble_context_block
-                from src.conversation.cache_store import get_cache_store
-                preface = assemble_context_block(request.continuation_id, max_turns=6)
-                # Attach cache context header if available
-                cache = get_cache_store().load(request.continuation_id)
-                if cache:
-                    cache_bits = []
-                    for k in ("session_id", "call_key", "token"):
-                        v = cache.get(k)
-                        if v:
-                            cache_bits.append(f"{k}={v}")
-                    if cache_bits:
-                        preface = "[Context cache: " + ", ".join(cache_bits) + "]\n" + preface
-                # Record the user turn immediately
                 # CRITICAL FIX (2025-10-17): Use _original_user_prompt if available to avoid
                 # recording system instructions in conversation history (P0-3 fix)
                 # CRITICAL FIX (2025-10-19): Use Supabase storage instead of in-memory history_store
@@ -236,7 +226,7 @@ class ChatTool(SimpleTool):
                         tool_name="chat"
                     )
         except Exception as e:
-            logger.warning(f"[chat:context] Failed to assemble conversation context: {e}")
+            logger.warning(f"[chat:context] Failed to record user turn: {e}")
 
         # Phase 5: propagate stream flag by temporarily setting GLM_STREAM_ENABLED for duration of call
         try:
@@ -248,9 +238,9 @@ class ChatTool(SimpleTool):
             logger.warning(f"[chat:stream] Failed to set stream flag: {e}")
             self._prev_stream_env = None
 
+        # BUG FIX #14 (2025-10-20): No longer build text preface
+        # Conversation history is provided via _messages parameter to SDK providers
         base_prompt = self.prepare_chat_style_prompt(request)
-        if preface:
-            return f"{preface}\nCurrent request:\n{base_prompt}"
         return base_prompt
 
     def format_response(self, response: str, request: ChatRequest, model_info: Optional[dict] = None) -> str:
