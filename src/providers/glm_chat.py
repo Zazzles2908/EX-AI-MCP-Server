@@ -530,5 +530,151 @@ def generate_content(
         raise
 
 
-__all__ = ["build_payload", "generate_content"]
+def chat_completions_create(
+    sdk_client: Any,
+    *,
+    model: str,
+    messages: list[dict[str, Any]],
+    tools: Optional[list[Any]] = None,
+    tool_choice: Optional[Any] = None,
+    temperature: float = 0.3,
+    **kwargs
+) -> dict:
+    """
+    SDK-native chat completions method for GLM provider.
+
+    This method accepts pre-built message arrays (SDK-native format) instead of
+    building messages from text prompts. This is the preferred method for tools
+    and workflow systems that manage conversation history.
+
+    Args:
+        sdk_client: ZhipuAI SDK client instance
+        model: Model name (already resolved)
+        messages: Pre-built message array in OpenAI format
+        tools: Optional list of tools for function calling
+        tool_choice: Optional tool choice directive
+        temperature: Temperature value (default: 0.3)
+        **kwargs: Additional parameters (stream, thinking_mode, etc.)
+
+    Returns:
+        Normalized dict with provider, model, content, usage, metadata
+
+    Example:
+        >>> messages = [
+        ...     {"role": "system", "content": "You are a helpful assistant"},
+        ...     {"role": "user", "content": "Hello"}
+        ... ]
+        >>> result = chat_completions_create(
+        ...     sdk_client=client,
+        ...     model="glm-4.6",
+        ...     messages=messages,
+        ...     temperature=0.5
+        ... )
+    """
+    # Build payload with messages instead of prompt
+    # Extract system message if present
+    system_prompt = None
+    user_messages = []
+
+    for msg in messages:
+        role = msg.get("role", "")
+        content = msg.get("content", "")
+
+        if role == "system":
+            # Combine multiple system messages if present
+            if system_prompt:
+                system_prompt += "\n\n" + content
+            else:
+                system_prompt = content
+        else:
+            # Keep user and assistant messages
+            user_messages.append(msg)
+
+    # Build payload using the messages array
+    payload = {
+        "model": model,
+        "messages": messages,  # Use full message array (SDK handles it)
+        "stream": bool(kwargs.get("stream", False)),
+    }
+
+    if temperature is not None:
+        payload["temperature"] = temperature
+
+    # Max tokens handling
+    max_output_tokens = kwargs.get("max_output_tokens") or kwargs.get("max_tokens")
+    if max_output_tokens:
+        payload["max_tokens"] = int(max_output_tokens)
+
+    # Thinking mode support
+    if kwargs.get("thinking_mode"):
+        from .glm_config import get_capabilities, SUPPORTED_MODELS, resolve_model_name_for_glm
+        caps = get_capabilities(model, SUPPORTED_MODELS, resolve_model_name_for_glm)
+        if caps.supports_extended_thinking:
+            payload["thinking"] = {"type": "enabled"}
+            logger.debug(f"Enabled thinking mode for GLM model {model}")
+
+    # Tools and tool_choice
+    if tools:
+        payload["tools"] = tools
+        if tool_choice:
+            payload["tool_choice"] = tool_choice
+        elif model == "glm-4.6":
+            # glm-4.6 requires explicit tool_choice="auto"
+            payload["tool_choice"] = "auto"
+            logger.debug(f"GLM-4.6: Auto-setting tool_choice='auto' for function calling")
+
+    # Call SDK
+    stream = payload.get("stream", False)
+
+    try:
+        if stream:
+            # Streaming not yet implemented for chat_completions_create
+            # Fall back to non-streaming
+            logger.warning("Streaming not yet supported in chat_completions_create, using non-streaming")
+            payload["stream"] = False
+            stream = False
+
+        # Apply circuit breaker
+        breaker = circuit_breaker_manager.get_breaker('glm')
+
+        @breaker
+        def _glm_sdk_call():
+            return sdk_client.chat.completions.create(**payload)
+
+        resp = _glm_sdk_call()
+
+        # Extract response
+        choice0 = resp.choices[0] if resp.choices else None
+        message = choice0.message if choice0 else None
+        content_text = message.content if message else ""
+        finish_reason = choice0.finish_reason if choice0 else "unknown"
+
+        # Extract usage
+        usage_dict = {}
+        if hasattr(resp, "usage") and resp.usage:
+            usage_dict = {
+                "prompt_tokens": getattr(resp.usage, "prompt_tokens", 0),
+                "completion_tokens": getattr(resp.usage, "completion_tokens", 0),
+                "total_tokens": getattr(resp.usage, "total_tokens", 0),
+            }
+
+        # Return normalized dict (same format as Kimi)
+        return {
+            "provider": "GLM",
+            "model": model,
+            "content": content_text or "",
+            "tool_calls": None,  # TODO: Extract tool calls if present
+            "usage": usage_dict,
+            "raw": resp.model_dump() if hasattr(resp, "model_dump") else {},
+            "metadata": {
+                "finish_reason": finish_reason,
+            },
+        }
+
+    except Exception as e:
+        logger.error(f"GLM chat_completions_create failed: {e}", exc_info=True)
+        raise RuntimeError(f"GLM chat completion failed: {e}")
+
+
+__all__ = ["build_payload", "generate_content", "chat_completions_create"]
 

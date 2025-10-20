@@ -78,6 +78,47 @@ class GLMModelProvider(ModelProvider):
         effective_temp = self.get_effective_temperature(resolved, temperature)
         return glm_chat.build_payload(prompt, system_prompt, resolved, effective_temp, max_output_tokens, **kwargs)
 
+    def chat_completions_create(
+        self,
+        *,
+        model: str,
+        messages: list[dict[str, Any]],
+        tools: Optional[list[Any]] = None,
+        tool_choice: Optional[Any] = None,
+        temperature: float = 0.3,
+        **kwargs
+    ) -> dict:
+        """
+        SDK-native chat completions method (message array format).
+
+        This is the preferred method for tools and workflow systems that manage
+        conversation history. It accepts pre-built message arrays instead of
+        building messages from text prompts.
+
+        Args:
+            model: Model name (will be resolved to canonical name)
+            messages: Pre-built message array in OpenAI format
+            tools: Optional list of tools for function calling
+            tool_choice: Optional tool choice directive
+            temperature: Temperature value (default: 0.3)
+            **kwargs: Additional parameters (stream, thinking_mode, etc.)
+
+        Returns:
+            Normalized dict with provider, model, content, usage, metadata
+        """
+        resolved = self._resolve_model_name(model)
+        effective_temp = self.get_effective_temperature(resolved, temperature)
+
+        return glm_chat.chat_completions_create(
+            sdk_client=self._sdk_client,
+            model=resolved,
+            messages=messages,
+            tools=tools,
+            tool_choice=tool_choice,
+            temperature=effective_temp,
+            **kwargs
+        )
+
     def generate_content(
         self,
         prompt: str,
