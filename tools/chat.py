@@ -223,9 +223,18 @@ class ChatTool(SimpleTool):
                 # Record the user turn immediately
                 # CRITICAL FIX (2025-10-17): Use _original_user_prompt if available to avoid
                 # recording system instructions in conversation history (P0-3 fix)
-                from src.conversation.history_store import get_history_store
-                user_prompt_to_record = getattr(request, "_original_user_prompt", request.prompt)
-                get_history_store().record_turn(request.continuation_id, "user", user_prompt_to_record)
+                # CRITICAL FIX (2025-10-19): Use Supabase storage instead of in-memory history_store
+                # to ensure consistency across all tools
+                from utils.conversation.threads import _get_storage_backend
+                storage = _get_storage_backend()
+                if storage:
+                    user_prompt_to_record = getattr(request, "_original_user_prompt", request.prompt)
+                    storage.add_turn(
+                        request.continuation_id,
+                        "user",
+                        user_prompt_to_record,
+                        tool_name="chat"
+                    )
         except Exception as e:
             logger.warning(f"[chat:context] Failed to assemble conversation context: {e}")
 
@@ -257,8 +266,27 @@ class ChatTool(SimpleTool):
             if getattr(request, "continuation_id", None):
                 has_continuation = True
                 # Persist assistant turn
-                from src.conversation.history_store import get_history_store
-                get_history_store().record_turn(request.continuation_id, "assistant", str(response))
+                # CRITICAL FIX (2025-10-19): Use Supabase storage instead of in-memory history_store
+                # CRITICAL FIX (2025-10-19): For first turn, store response temporarily and save it
+                # in _create_continuation_offer() after the conversation is created in Supabase.
+                # For subsequent turns, save immediately since conversation already exists.
+                from utils.conversation.threads import _get_storage_backend
+                storage = _get_storage_backend()
+                if storage:
+                    # Check if this is a first turn (continuation_id was just created in _parse_response)
+                    # by checking if the conversation exists in storage
+                    thread_context = storage.get_thread(request.continuation_id)
+                    if thread_context:
+                        # Existing conversation - save assistant response immediately
+                        storage.add_turn(
+                            request.continuation_id,
+                            "assistant",
+                            str(response),
+                            tool_name="chat"
+                        )
+                    else:
+                        # First turn - store response temporarily for _create_continuation_offer to save
+                        request._assistant_response_to_save = str(response)
                 # Capture cache tokens if present in model_info
                 try:
                     if model_info and isinstance(model_info, dict):

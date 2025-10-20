@@ -71,6 +71,8 @@ _ws = None  # type: ignore
 _ws_lock = asyncio.Lock()
 _health_monitor_task = None  # type: ignore
 _last_successful_call = 0.0  # Track last successful tool call
+_shutdown_event = None  # type: ignore  # Global shutdown event for graceful termination
+_stdin_monitor_task = None  # type: ignore  # Task monitoring stdin for parent death
 
 
 def _extract_clean_content(raw_text: str) -> str:
@@ -88,6 +90,71 @@ def _extract_clean_content(raw_text: str) -> str:
     except Exception:
         pass
     return raw_text.strip()
+
+
+async def _parent_process_monitor():
+    """
+    Monitor parent process to detect when MCP client dies.
+
+    CRITICAL FIX (2025-10-19): Prevents orphaned processes when MCP client crashes.
+    When the parent MCP client (Augment Code, Claude Desktop) dies, this process
+    becomes orphaned. This monitor detects parent death and triggers graceful shutdown.
+
+    Uses psutil to check if parent process still exists.
+    """
+    global _shutdown_event
+    try:
+        import psutil
+
+        # Get parent process ID
+        parent_pid = os.getppid()
+        logger.info(f"[PARENT_MONITOR] Started monitoring parent process (PID: {parent_pid})")
+
+        # Check if parent exists
+        try:
+            parent = psutil.Process(parent_pid)
+            parent_name = parent.name()
+            logger.info(f"[PARENT_MONITOR] Parent process: {parent_name} (PID: {parent_pid})")
+        except psutil.NoSuchProcess:
+            logger.warning(f"[PARENT_MONITOR] Parent process {parent_pid} not found - may already be dead")
+            _shutdown_event.set()
+            return
+
+        # Monitor parent process
+        while not _shutdown_event.is_set():
+            try:
+                # Check if parent still exists
+                if not psutil.pid_exists(parent_pid):
+                    logger.warning(f"[PARENT_MONITOR] Parent process {parent_pid} died. Initiating shutdown...")
+                    _shutdown_event.set()
+                    break
+
+                # Also check if parent is a zombie (defunct)
+                try:
+                    parent = psutil.Process(parent_pid)
+                    if parent.status() == psutil.STATUS_ZOMBIE:
+                        logger.warning(f"[PARENT_MONITOR] Parent process {parent_pid} is zombie. Initiating shutdown...")
+                        _shutdown_event.set()
+                        break
+                except psutil.NoSuchProcess:
+                    logger.warning(f"[PARENT_MONITOR] Parent process {parent_pid} disappeared. Initiating shutdown...")
+                    _shutdown_event.set()
+                    break
+
+                # Check every 5 seconds
+                await asyncio.sleep(5.0)
+
+            except Exception as e:
+                logger.error(f"[PARENT_MONITOR] Error checking parent process: {e}")
+                await asyncio.sleep(5.0)
+
+    except ImportError:
+        logger.warning("[PARENT_MONITOR] psutil not available - parent monitoring disabled")
+        logger.warning("[PARENT_MONITOR] Install psutil to enable orphaned process prevention")
+    except Exception as e:
+        logger.exception(f"[PARENT_MONITOR] Fatal error in parent monitor: {e}")
+    finally:
+        logger.info("[PARENT_MONITOR] Parent process monitor stopped")
 
 
 async def _connection_health_monitor():
@@ -411,17 +478,61 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextCon
 # Single stdio entrypoint (cleaned up)
 
 def main() -> None:
-    global _health_monitor_task
+    global _health_monitor_task, _stdin_monitor_task, _shutdown_event
     init_opts = server.create_initialization_options()
     try:
         from mcp.server.stdio import stdio_server as _stdio_server
         async def _runner():
-            # Start health monitor task
+            global _shutdown_event, _stdin_monitor_task, _health_monitor_task
+
+            # Create shutdown event
+            _shutdown_event = asyncio.Event()
+
+            # CRITICAL FIX (2025-10-19): Start parent process monitor to detect parent death
+            # This prevents orphaned processes when MCP client crashes
+            _stdin_monitor_task = asyncio.create_task(_parent_process_monitor())
+            logger.info("[MAIN] Started parent process monitor for orphaned process prevention")
+
+            # Start health monitor task (deprecated but kept for compatibility)
             _health_monitor_task = asyncio.create_task(_connection_health_monitor())
             logger.info("[MAIN] Started connection health monitor for auto-reconnection")
 
-            async with _stdio_server() as (read_stream, write_stream):
-                await server.run(read_stream, write_stream, init_opts)
+            try:
+                async with _stdio_server() as (read_stream, write_stream):
+                    # Run server with shutdown monitoring
+                    server_task = asyncio.create_task(server.run(read_stream, write_stream, init_opts))
+                    shutdown_task = asyncio.create_task(_shutdown_event.wait())
+
+                    # Wait for either server completion or shutdown signal
+                    done, pending = await asyncio.wait(
+                        [server_task, shutdown_task],
+                        return_when=asyncio.FIRST_COMPLETED
+                    )
+
+                    # If shutdown was triggered, cancel server
+                    if shutdown_task in done:
+                        logger.warning("[MAIN] Shutdown event triggered - cancelling server")
+                        server_task.cancel()
+                        try:
+                            await server_task
+                        except asyncio.CancelledError:
+                            pass
+
+                    # Cancel pending tasks
+                    for task in pending:
+                        task.cancel()
+                        try:
+                            await task
+                        except asyncio.CancelledError:
+                            pass
+
+            finally:
+                # Cleanup monitor tasks
+                if _stdin_monitor_task and not _stdin_monitor_task.done():
+                    _stdin_monitor_task.cancel()
+                if _health_monitor_task and not _health_monitor_task.done():
+                    _health_monitor_task.cancel()
+
         asyncio.run(_runner())
     except KeyboardInterrupt:
         logger.info("EX WS Shim interrupted; exiting cleanly")

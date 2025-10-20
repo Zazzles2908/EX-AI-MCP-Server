@@ -215,8 +215,46 @@ def get_thread(thread_id: str) -> Optional[ThreadContext]:
                         return thread_data
                     elif isinstance(thread_data, dict):
                         logger.debug(f"[STORAGE_INTEGRATION] Retrieved thread {thread_id} from storage factory (dict)")
-                        # For now, fall through to Redis since dict format needs conversion
-                        # TODO: Implement dict to ThreadContext conversion
+                        # CRITICAL FIX (2025-10-19): Convert Supabase dict format to ThreadContext
+                        # Supabase returns: {'id', 'conversation_id', 'messages', 'metadata', 'storage', 'created_at', 'updated_at'}
+                        # ThreadContext expects: {'thread_id', 'turns', 'tool_name', 'created_at', 'last_updated_at', ...}
+                        try:
+                            # Convert messages to turns
+                            turns = []
+                            for msg in thread_data.get('messages', []):
+                                turn = ConversationTurn(
+                                    role=msg.get('role', 'user'),
+                                    content=msg.get('content', ''),
+                                    timestamp=msg.get('created_at', ''),
+                                    files=msg.get('files'),
+                                    images=msg.get('images'),
+                                    tool_name=msg.get('tool_name'),
+                                    model_provider=msg.get('model_provider'),
+                                    model_name=msg.get('model_name'),
+                                    model_metadata=msg.get('model_metadata')
+                                )
+                                turns.append(turn)
+
+                            # Extract metadata
+                            metadata = thread_data.get('metadata', {})
+
+                            # Create ThreadContext
+                            context = ThreadContext(
+                                thread_id=thread_data.get('id', thread_id),
+                                parent_thread_id=metadata.get('parent_thread_id'),
+                                created_at=thread_data.get('created_at', ''),
+                                last_updated_at=thread_data.get('updated_at', ''),
+                                tool_name=metadata.get('tool_name', 'unknown'),
+                                turns=turns,
+                                initial_context=metadata.get('initial_context', {}),
+                                session_fingerprint=metadata.get('session_fingerprint'),
+                                client_friendly_name=metadata.get('client_friendly_name')
+                            )
+                            logger.debug(f"[STORAGE_INTEGRATION] Converted Supabase dict to ThreadContext ({len(turns)} turns)")
+                            return context
+                        except Exception as e:
+                            logger.warning(f"[STORAGE_INTEGRATION] Failed to convert dict to ThreadContext: {e}")
+                            # Fall through to Redis
                     else:
                         logger.warning(f"[STORAGE_INTEGRATION] Unexpected thread data type: {type(thread_data)}")
             except Exception as e:

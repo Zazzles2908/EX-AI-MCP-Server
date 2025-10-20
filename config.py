@@ -101,6 +101,21 @@ COST_AWARE_ROUTING: bool = _parse_bool_env("COST_AWARE_ROUTING", "true")
 # Can be overridden per-tool with TOOLNAME_USE_ASSISTANT_MODEL_DEFAULT env vars
 DEFAULT_USE_ASSISTANT_MODEL: bool = _parse_bool_env("DEFAULT_USE_ASSISTANT_MODEL", "true")
 
+# Context Engineering Configuration (Phase 1: Defense-in-Depth History Stripping)
+# Prevents recursive embedding of conversation history that causes token explosion
+# STRIP_EMBEDDED_HISTORY: Enable/disable history stripping (default: True)
+# DETECTION_MODE: "conservative" (high confidence markers) or "aggressive" (broader detection)
+# DRY_RUN_MODE: Test without making changes (default: False)
+# LOG_STRIPPING: Log when history stripping occurs (default: True)
+# MIN_TOKEN_THRESHOLD: Only strip if content exceeds this token count (default: 100)
+CONTEXT_ENGINEERING = {
+    "strip_embedded_history": _parse_bool_env("STRIP_EMBEDDED_HISTORY", "true"),
+    "detection_mode": os.getenv("DETECTION_MODE", "conservative"),
+    "dry_run": _parse_bool_env("DRY_RUN_MODE", "false"),
+    "log_stripping": _parse_bool_env("LOG_STRIPPING", "true"),
+    "min_token_threshold": int(os.getenv("MIN_TOKEN_THRESHOLD", "100")),
+}
+
 # Production Settings
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 MAX_RETRIES: int = int(os.getenv("MAX_RETRIES", "3"))
@@ -117,6 +132,17 @@ MAX_CONCURRENT_REQUESTS: int = int(os.getenv("MAX_CONCURRENT_REQUESTS", "10"))
 RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "100"))
 CACHE_ENABLED: bool = _parse_bool_env("CACHE_ENABLED", "true")
 CACHE_TTL: int = int(os.getenv("CACHE_TTL", "300"))
+
+# BUG FIX #11 (2025-10-19): Async Supabase operations for non-blocking conversation persistence
+# When enabled, Supabase writes use fire-and-forget pattern to avoid blocking responses
+# Reads remain synchronous (we need the data), but writes return immediately
+USE_ASYNC_SUPABASE: bool = _parse_bool_env("USE_ASYNC_SUPABASE", "true")
+ENABLE_SUPABASE_WRITE_CACHING: bool = _parse_bool_env("ENABLE_SUPABASE_WRITE_CACHING", "true")
+
+# BUG FIX #11 (2025-10-20): Conversation queue configuration for async write pattern
+# Replaces ThreadPoolExecutor with async queue to prevent resource exhaustion
+CONVERSATION_QUEUE_SIZE: int = int(os.getenv("CONVERSATION_QUEUE_SIZE", "1000"))
+CONVERSATION_QUEUE_WARNING_THRESHOLD: int = int(os.getenv("CONVERSATION_QUEUE_WARNING_THRESHOLD", "500"))
 
 # Security Settings
 VALIDATE_API_KEYS: bool = _parse_bool_env("VALIDATE_API_KEYS", "true")
