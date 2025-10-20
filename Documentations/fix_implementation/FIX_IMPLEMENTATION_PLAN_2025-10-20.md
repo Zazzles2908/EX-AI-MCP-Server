@@ -462,6 +462,22 @@ async def save_message_async(self, conversation_id, role, content, ...):
 - [ ] Supabase writes don't block responses
 - [ ] Queue doesn't overflow under load
 
+### Code Quality Tests ✅ COMPLETE (2025-10-20 21:15 AEDT)
+- [x] Pyflakes installed in container (requirements.txt)
+- [x] Container rebuilt with pyflakes
+- [x] All critical bugs fixed (undefined logger in registry_selection.py)
+- [x] All unused imports removed (re, uuid, asyncio, ThreadPoolExecutor, Optional)
+- [x] All f-strings without placeholders fixed (8 instances)
+- [x] All unused variables removed (findings in orchestration.py)
+- [x] Docker logs checked - NO ERRORS ✅
+- [x] Container restart successful ✅
+
+**Code Quality Summary:**
+- **Critical Bug Fixed:** Missing logger initialization in registry_selection.py (would crash during provider fallback)
+- **13 Code Quality Issues Fixed:** 4 unused imports, 8 f-strings, 1 unused variable
+- **Commits:** ddeeae2 (code quality), 9762c6d (logger fix), 7db7fae (pyflakes in requirements)
+- **Validation:** EXAI consulted (architectural feedback provided), Docker logs clean
+
 ---
 
 ## 📊 EXPECTED IMPROVEMENTS
