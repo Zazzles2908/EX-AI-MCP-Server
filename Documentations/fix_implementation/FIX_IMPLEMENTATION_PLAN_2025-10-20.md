@@ -169,12 +169,38 @@ finally:
 
 ---
 
-## 🔧 PHASE 2: COMPLETE MESSAGE ARRAY MIGRATION 🔄 IN PROGRESS
+## 🔧 PHASE 2: COMPLETE MESSAGE ARRAY MIGRATION ✅ COMPLETE
 
-### Fix #3: Remove Text-Based Conversation Building 🔄 IN PROGRESS
+### Fix #3: Add chat_completions_create to GLM Provider ✅ COMPLETE
 
-**Problem:** Two competing formats (text vs arrays)
-**Status:** 🔄 PARTIALLY COMPLETE - Need to verify all SDK providers use message arrays
+**Problem:** GLM provider only had text-based generate_content() method
+**Status:** ✅ COMPLETE (2025-10-20 20:45 AEDT)
+
+**What Was Done:**
+1. ✅ Added `chat_completions_create()` function to `src/providers/glm_chat.py`
+   - Accepts pre-built message arrays (SDK-native format)
+   - Supports tools, tool_choice, thinking_mode
+   - Returns normalized dict (same format as Kimi)
+   - Includes circuit breaker protection
+
+2. ✅ Added wrapper method to `src/providers/glm.py`
+   - Resolves model names and temperature
+   - Delegates to glm_chat.chat_completions_create()
+
+3. ✅ Created test script and verified functionality
+   - Test script: `scripts/test_glm_chat_completions.py`
+   - Test 1: Simple message array - PASSED ✅
+   - Test 2: Multi-turn conversation - PASSED ✅
+   - Verified conversation context maintained
+
+**Commits:**
+- `db5cf2a` - feat: Add chat_completions_create method to GLM provider (Phase 2 completion)
+
+**Impact:**
+- Both Kimi and GLM now support SDK-native message arrays
+- Consistent API across all SDK providers
+- Tools can pass conversation history directly
+- Eliminates text-based format confusion
 
 **Step 1: Deprecate build_conversation_history()**
 
