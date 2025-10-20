@@ -8,17 +8,35 @@
 
 ## 🚨 EXECUTIVE SUMMARY
 
+**CORRECT ARCHITECTURE (How It Should Work):**
+
+```
+User → MCP Protocol → EXAI Server → Model Selection (GLM/Kimi)
+                                   ↓
+                          Native SDK (Z.ai/Moonshot)
+                                   ↓
+                          Tool Execution & Response
+                                   ↓
+                          Back to User via MCP
+                                   ↓
+                    Supabase (async storage/audit trail)
+                          ↓ (if SDK fails)
+                    Fallback/Recovery Point
+```
+
+**ACTUAL PROBLEM:**
+
 **The system has THREE competing conversation management implementations running simultaneously:**
 
-1. **Legacy Text Embedding** (`utils/conversation/history.py`) - OLD
-2. **Supabase Message Arrays** (`utils/conversation/supabase_memory.py`) - NEW
-3. **In-Memory History Store** (`src/conversation/memory_policy.py`) - LEGACY
+1. **Legacy Text Embedding** (`utils/conversation/history.py`) - OLD, SHOULD BE DELETED
+2. **Supabase Message Arrays** (`utils/conversation/supabase_memory.py`) - CORRECT, BUT MIXED WITH LEGACY
+3. **In-Memory History Store** (`src/conversation/memory_policy.py`) - LEGACY, SHOULD BE DELETED
 
-**Result:** Functions cancel each other out, causing:
-- Duplicate Supabase queries (3-5x per request)
-- Contradictory conversation formats (text vs arrays)
-- Workflow tools stuck in infinite loops
-- EXAI tools non-functional due to confusion
+**Result:** Legacy code bloat causes:
+- Duplicate Supabase queries (3-5x per request) - treating Supabase as primary instead of audit trail
+- Contradictory conversation formats (text vs arrays) - SDKs need arrays, legacy uses text
+- Workflow tools stuck in infinite loops - circuit breaker broken
+- EXAI tools non-functional - confusion from overlapping systems
 
 ---
 
@@ -129,7 +147,30 @@ else:
 
 ---
 
-### Issue #4: Async Supabase Not Actually Async
+### Issue #4: Supabase Treated as Primary Instead of Audit Trail
+
+**ARCHITECTURAL MISUNDERSTANDING:**
+
+**How It Should Work:**
+```
+User Request → SDK (primary) → Response to User
+                              ↓ (async, non-blocking)
+                         Supabase (audit trail)
+```
+
+**How It Actually Works:**
+```
+User Request → Load from Supabase (BLOCKING!)
+            → SDK with Supabase data
+            → Response to User
+            → Write to Supabase (BLOCKING!)
+```
+
+**The Issue:**
+- Supabase queries are **synchronous and blocking** (150-250ms per request)
+- System treats Supabase as **primary data source** instead of **audit trail**
+- Should be: SDK → User (fast), then Supabase async (background)
+- Actually is: Supabase → SDK → User → Supabase (slow)
 
 **Configuration Says:**
 ```env
@@ -145,11 +186,12 @@ def _write_message_background(...):
     memory._write_message_background(...)  # ← SYNCHRONOUS call in thread
 ```
 
-**The Issue:**
-- Claims to be "async" but uses ThreadPoolExecutor
+**Additional Problems:**
+- Claims to be "async" but uses ThreadPoolExecutor (not true async)
 - ThreadPoolExecutor can exhaust resources (max workers)
 - Not true async - just "background sync"
 - Still blocks if thread pool is full
+- **Reads from Supabase are ALWAYS synchronous** (not even background threads!)
 
 ---
 
@@ -250,24 +292,34 @@ The tool "succeeds" internally but gets cancelled by client timeout.
 ## 🎯 ROOT CAUSES
 
 ### 1. Incomplete Migration
-- Started migrating to message arrays
+- Started migrating to message arrays (SDK-native format)
 - Never finished removing old text-based system
-- Both systems run simultaneously
+- Both systems run simultaneously, causing format conflicts
 
 ### 2. No Deprecation Strategy
 - Old functions still exist and get called
 - No warnings or errors when using legacy code
 - Developers don't know which to use
+- **CRITICAL:** Legacy code should have been deleted, not left alongside new code
 
-### 3. Over-Engineering
-- Three layers of conversation management
-- Multiple caching systems
-- Redundant storage backends
+### 3. Architectural Misunderstanding
+- **Supabase should be audit trail/fallback** (async, non-blocking)
+- **Actually implemented as primary data source** (sync, blocking)
+- This causes 150-250ms latency per request
+- Should be: SDK → User (fast), Supabase in background
+- Actually is: Supabase → SDK → User → Supabase (slow)
 
-### 4. Bug Fixes That Made It Worse
-- "BUG FIX #11" added async queue
-- "BUG FIX #12" changed memory_policy to use Supabase
+### 4. Over-Engineering from Incomplete Cleanup
+- Three layers of conversation management (should be ONE)
+- Multiple caching systems (should be ONE request-scoped cache)
+- Redundant storage backends (should be SDK primary, Supabase audit)
+- **Root cause:** Never deleted old code when adding new features
+
+### 5. Bug Fixes That Made It Worse
+- "BUG FIX #11" added async queue (good idea, wrong implementation)
+- "BUG FIX #12" changed memory_policy to use Supabase (made it primary instead of audit)
 - Each fix added complexity without removing old code
+- **Pattern:** Band-aid fixes instead of surgical removal of legacy code
 
 ---
 

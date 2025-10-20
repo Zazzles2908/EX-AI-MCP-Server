@@ -8,11 +8,17 @@
 
 ## 🎯 OBJECTIVES
 
+**PRIMARY GOAL: KILL LEGACY CODE - SURGICAL REMOVAL, NOT BAND-AIDS**
+
 1. **Make EXAI functional** - Fix workflow tools and conversation management
-2. **Eliminate redundancy** - Remove duplicate queries and competing systems
-3. **Complete migration** - Finish message array implementation
-4. **Improve performance** - Reduce latency by 60-70%
-5. **Simplify architecture** - One conversation system, not three
+2. **DELETE legacy code** - Remove old text-based system entirely (not deprecate, DELETE)
+3. **Fix architecture** - Supabase as audit trail (async), not primary data source (sync)
+4. **Eliminate redundancy** - Remove duplicate queries and competing systems
+5. **Complete migration** - Finish message array implementation (SDK-native format)
+6. **Improve performance** - Reduce latency by 60-70%
+7. **Simplify architecture** - ONE conversation system (message arrays), not three
+
+**PHILOSOPHY: If it's legacy, DELETE IT. Don't leave it "just in case."**
 
 ---
 
@@ -248,35 +254,61 @@ messages = kwargs["_messages"]
 
 ---
 
-## 🔧 PHASE 3: REMOVE LEGACY CODE (2 hours)
+## 🔧 PHASE 3: KILL LEGACY CODE (2 hours)
+
+**PHILOSOPHY: DELETE, DON'T DEPRECATE. SURGICAL REMOVAL.**
 
 ### Fix #4: Delete Unused Conversation Systems
 
-**Step 1: Remove Legacy History Store**
+**Step 1: DELETE Legacy History Store (COMPLETE REMOVAL)**
 
-**Files to delete:**
-- `src/conversation/history_store.py`
-- `src/conversation/memory_policy.py`
-- `src/conversation/__init__.py` (if only contains legacy imports)
+**Files to DELETE entirely:**
+- `src/conversation/history_store.py` - DELETE FILE
+- `src/conversation/memory_policy.py` - DELETE FILE
+- `src/conversation/__init__.py` - DELETE FILE (if only contains legacy imports)
+- `utils/conversation/history.py` - DELETE FILE
 
-**Step 2: Remove Text-Based History Builder**
+**Rationale:** These are 100% legacy. No modern code should use them.
 
-**File:** `utils/conversation/history.py`
+**Step 2: DELETE Text-Based History Functions**
 
-**Delete entire file** (after confirming no callers remain)
+**File:** `utils/conversation/supabase_memory.py`
+
+**DELETE these functions entirely:**
+- `build_conversation_history()` (lines 443-554) - DELETE
+- Any text-based formatting functions - DELETE
+
+**KEEP only:**
+- `get_messages_array()` - This is the ONLY conversation builder we need
+- Supabase storage wrapper
+- Async write queue
 
 **Step 3: Simplify Storage Factory**
 
 **File:** `utils/conversation/storage_factory.py`
 
-**Remove:**
-- `build_conversation_history()` function (lines 286-320)
-- All text-based history methods
+**DELETE:**
+- `build_conversation_history()` function (lines 286-320) - DELETE
+- All text-based history methods - DELETE
+- Any fallback to text format - DELETE
 
-**Keep:**
+**KEEP:**
 - `get_messages_array()` only
 - Supabase storage wrapper
-- Caching logic
+- Request-scoped caching (from Phase 1)
+
+**Step 4: Verify No Callers Remain**
+
+**Search entire codebase for:**
+```bash
+grep -r "build_conversation_history" src/ tools/ utils/
+grep -r "assemble_context_block" src/ tools/ utils/
+grep -r "history_store" src/ tools/ utils/
+```
+
+**If any callers found:** Update them to use `get_messages_array()` or delete them
+
+**Expected result:** Zero matches (all legacy code removed)
 
 ---
 
