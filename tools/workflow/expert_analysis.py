@@ -88,7 +88,49 @@ class ExpertAnalysisMixin:
             or len(consolidated_findings.findings) >= 2
             or len(consolidated_findings.issues_found) > 0
         )
-    
+
+    def should_use_message_arrays(self) -> bool:
+        """
+        Check if message arrays should be used instead of text prompts.
+
+        Phase 2 Migration: Feature flag to enable SDK-native message arrays.
+        Set USE_MESSAGE_ARRAYS=true in .env to enable.
+        """
+        import os
+        use_message_arrays = os.getenv("USE_MESSAGE_ARRAYS", "false").strip().lower()
+        return use_message_arrays in ("true", "1", "yes")
+
+    def prepare_messages_for_expert_analysis(
+        self,
+        system_prompt: str,
+        expert_context: str,
+        consolidated_findings: ConsolidatedFindings
+    ) -> list[dict[str, str]]:
+        """
+        Prepare message array for expert analysis (Phase 2 Migration).
+
+        Builds SDK-native message array format:
+        [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}]
+
+        Args:
+            system_prompt: System prompt for expert analysis
+            expert_context: Context prepared from consolidated findings
+            consolidated_findings: All findings from workflow steps
+
+        Returns:
+            List of message dicts in SDK-native format
+        """
+        messages = []
+
+        # Add system message if provided
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+
+        # Add user message with expert context
+        messages.append({"role": "user", "content": expert_context})
+
+        return messages
+
     def prepare_expert_analysis_context(self, consolidated_findings: ConsolidatedFindings) -> str:
         """
         Prepare context for external model call.
@@ -313,28 +355,24 @@ class ExpertAnalysisMixin:
                 logger.warning(f"Expert validation already in progress for {cache_key}, waiting...")
             logger.info(f"[EXPERT_DEDUP] About to release lock for {cache_key}")
 
-        # Wait for in-progress validation to complete (outside lock to allow progress)
-        if cache_key in _expert_validation_in_progress:
-            max_wait = 120  # Maximum 2 minutes wait
-            wait_interval = 0.5
-            waited = 0.0
-            while cache_key in _expert_validation_in_progress and waited < max_wait:
-                await asyncio.sleep(wait_interval)
-                waited += wait_interval
-                if waited % 5 == 0:  # Log every 5 seconds
-                    logger.info(f"[EXPERT_DEDUP] Still waiting for in-progress validation ({waited:.1f}s)")
-
-            # Check cache again after waiting
+        # SIMPLIFIED DUPLICATE PREVENTION (Expert Recommendation - Phase 2 Fix)
+        # Single lock acquisition to check cache and mark in-progress
+        async with _expert_validation_lock:
+            # Check cache first
             if cache_key in _expert_validation_cache:
-                logger.info(f"[EXPERT_DEDUP] Using cached result after waiting {waited:.1f}s")
+                logger.info(f"[EXPERT_DEDUP] Using cached result")
                 return _expert_validation_cache[cache_key]
 
-            # If still in progress after max wait, log warning and proceed anyway
+            # Check if already in progress - return error instead of waiting
             if cache_key in _expert_validation_in_progress:
-                logger.error(f"[EXPERT_DEDUP] In-progress validation timed out after {waited:.1f}s, proceeding anyway")
+                logger.warning(f"[EXPERT_DEDUP] Duplicate call detected, returning error")
+                return {
+                    "error": "Expert analysis already in progress for this request",
+                    "status": "duplicate_request",
+                    "raw_analysis": ""
+                }
 
-        # Mark as in progress
-        async with _expert_validation_lock:
+            # Mark as in progress
             _expert_validation_in_progress.add(cache_key)
             logger.info(f"[EXPERT_DEDUP] Marked {cache_key} as in-progress")
 
