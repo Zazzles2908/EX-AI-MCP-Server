@@ -521,7 +521,59 @@ async def save_message_async(self, conversation_id, role, content, ...):
 
 ---
 
-**Plan Complete:** 2025-10-20 19:15 AEDT  
-**Ready for Execution:** YES  
+**Plan Complete:** 2025-10-20 19:15 AEDT
+**Ready for Execution:** YES
 **Approval Required:** User confirmation before starting Phase 1
+
+---
+
+## 📚 POST-IMPLEMENTATION: TOOL USAGE DOCUMENTATION
+
+**Date:** 2025-10-20 22:00 AEDT
+**Status:** ✅ COMPLETE
+**Commit:** 5fb3904
+
+### Problem Identified
+- AI assistant (Claude) misunderstood workflow tool architecture
+- Attempted to use debug_EXAI-WS to investigate chat_EXAI-WS failure
+- Both tools "failed" because Claude didn't understand proper usage pattern
+- Root cause: Lack of clear decision framework for tool selection
+
+### Solution Implemented
+Created comprehensive **EXAI_TOOL_DECISION_GUIDE.md** with:
+- Decision flowchart for choosing the right tool
+- Tool selection matrix with clear use cases
+- Common mistakes and how to avoid them
+- Proper usage patterns with examples
+- Red flags when using wrong tool
+- Checklist before calling workflow tools
+
+### Key Insight Documented
+**Workflow tools don't investigate for you!**
+- Claude must investigate FIRST using view/codebase-retrieval
+- Workflow tools structure findings and provide expert validation
+- Auto-execution is internal-only (no AI calls during steps 2-N)
+- Expert analysis happens at the END (one AI call for validation)
+
+### Impact
+- Clear guidelines for when/how to use each EXAI tool
+- Prevents future tool misuse
+- Improves efficiency by using right tool for each task
+- Better understanding of workflow tool architecture
+
+---
+
+## 🎯 NEXT PRIORITIES
+
+### Priority 1: Phase 2 Functional Testing (IMMEDIATE)
+- [ ] Test all EXAI workflow tools with message arrays
+- [ ] Verify continuation works across multiple turns
+- [ ] Verify file context preserved in message arrays
+- [ ] Test both Kimi and GLM providers with SDK-native format
+- [ ] Check Supabase to verify message array format
+
+### Priority 2: Minor Code Quality (OPTIONAL)
+- [ ] Fix 48 remaining pyflakes issues (documented in REMAINING_PYFLAKES_ISSUES.md)
+- All are cosmetic with NO FUNCTIONAL IMPACT
+- Can be addressed incrementally during future refactoring
 
