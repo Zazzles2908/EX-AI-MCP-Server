@@ -249,15 +249,14 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
 
     model_context = ModelContext.from_arguments(arguments)
 
-    # Build conversation history with model-specific limits
-    logger.debug(f"[CONVERSATION_DEBUG] Building conversation history for thread {continuation_id}")
-    logger.debug(f"[CONVERSATION_DEBUG] Thread has {len(context.turns)} turns, tool: {context.tool_name}")
+    # BUG FIX #14 (2025-10-20): No longer build text-based conversation history
+    # Modern approach: Request handler provides _messages parameter to SDK providers
+    # Tools receive conversation context via message arrays, not text strings
+    logger.debug(f"[CONVERSATION_DEBUG] Thread {continuation_id} has {len(context.turns)} turns, tool: {context.tool_name}")
     logger.debug(f"[CONVERSATION_DEBUG] Using model: {model_context.model_name}")
-    conversation_history, conversation_tokens = build_conversation_history(context, model_context)
-    logger.debug(f"[CONVERSATION_DEBUG] Conversation history built: {conversation_tokens:,} tokens")
-    logger.debug(
-        f"[CONVERSATION_DEBUG] Conversation history length: {len(conversation_history)} chars (~{conversation_tokens:,} tokens)"
-    )
+    conversation_history = ""
+    conversation_tokens = 0
+    logger.debug(f"[CONVERSATION_DEBUG] Skipping text-based history building (using message arrays instead)")
 
     # Add dynamic follow-up instructions based on turn count
     follow_up_instructions = get_follow_up_instructions(len(context.turns))
