@@ -49,9 +49,13 @@ def setup_logging(
     # Get or create logger
     logger = logging.getLogger(component_name)
     logger.setLevel(log_level)
-    
+
     # Clear existing handlers to avoid duplicates
     logger.handlers.clear()
+
+    # Prevent propagation to root logger to avoid duplicate messages
+    # (root logger may have its own handlers from async_logging setup)
+    logger.propagate = False
     
     # Create formatter
     formatter = logging.Formatter(
@@ -119,12 +123,36 @@ def setup_basic_logging(log_level: Optional[str] = None) -> None:
 def get_logger(name: str) -> logging.Logger:
     """
     Get a logger instance by name.
-    
+
     Args:
         name: Logger name
-        
+
     Returns:
         Logger instance
     """
     return logging.getLogger(name)
+
+
+def configure_websockets_logging() -> None:
+    """
+    Configure websockets library logging to suppress handshake noise.
+
+    The websockets library logs handshake failures at ERROR level, which creates
+    noise from port scanners, health checks, and clients that connect without
+    completing the HTTP upgrade handshake. These errors are unavoidable and
+    expected for any public-facing WebSocket server.
+
+    This function suppresses these errors by setting the websockets library
+    loggers to WARNING level, which only shows actual problems (not noise).
+
+    Call this once during application startup, typically in the daemon entry point.
+    """
+    # Suppress handshake failure noise from port scanners and health checks
+    # Set to CRITICAL to suppress ERROR-level handshake failures
+    logging.getLogger('websockets.server').setLevel(logging.CRITICAL)
+    logging.getLogger('websockets.protocol').setLevel(logging.CRITICAL)
+    logging.getLogger('websockets.client').setLevel(logging.CRITICAL)
+
+    # Log that we've configured this (at INFO level so we can verify it's working)
+    logging.info("[LOGGING] Configured websockets library logging to suppress handshake noise")
 

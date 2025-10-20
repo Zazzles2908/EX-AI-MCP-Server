@@ -10,13 +10,12 @@ Key Features:
 - Cross-tool context transfer
 - Clean content extraction for conversation history
 - Workflow metadata tracking
+- Storage backend abstraction (memory/supabase/dual)
 """
 
 import json
 import logging
 from typing import Any, Optional
-
-from utils.conversation_memory import add_turn
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +26,8 @@ class ConversationIntegrationMixin:
 
     This class handles conversation threading, turn storage, and metadata
     management for multi-step workflows with continuation support.
+
+    Updated to use storage factory pattern for Supabase integration.
     """
 
     # CRITICAL FIX: Removed stub _call_expert_analysis() method that was shadowing
@@ -38,16 +39,25 @@ class ConversationIntegrationMixin:
     # ================================================================================
     # Conversation Turn Storage
     # ================================================================================
-    
+
     def store_conversation_turn(self, continuation_id: str, response_data: dict, request):
         """
-        Store the conversation turn. Tools can override for custom memory storage.
+        Store the conversation turn using storage factory pattern.
+        Tools can override for custom memory storage.
         """
         # CRITICAL: Extract clean content for conversation history (exclude internal workflow metadata)
         clean_content = self._extract_clean_workflow_content_for_history(response_data)
-        
-        add_turn(
-            thread_id=continuation_id,
+
+        # CRITICAL FIX: Use cached storage backend to avoid creating 60+ instances
+        from utils.conversation.threads import _get_storage_backend
+
+        storage = _get_storage_backend()
+        if not storage:
+            logger.warning(f"{self.get_name()}: Storage backend not available for turn storage")
+            return
+
+        storage.add_turn(
+            continuation_id=continuation_id,
             role="assistant",
             content=clean_content,  # Use cleaned content instead of full response_data
             tool_name=self.get_name(),
@@ -162,22 +172,22 @@ class ConversationIntegrationMixin:
                     f"model: {resolved_model_name}, provider: {provider_name}"
                 )
             else:
-                # Fallback - try to get model info from request
-                request = self.get_workflow_request_model()(**arguments)
-                model_name = self.get_request_model_name(request)
-                
+                # Fallback - try to get model info from arguments directly
+                # Don't re-validate the request as arguments may have been modified during execution
+                model_name = arguments.get("model", "unknown")
+
                 # Basic metadata without provider info
                 metadata = {
                     "tool_name": self.get_name(),
                     "model_used": model_name,
                     "provider_used": "unknown",
                 }
-                
+
                 # Preserve existing metadata and add workflow metadata
                 if "metadata" not in response_data:
                     response_data["metadata"] = {}
                 response_data["metadata"].update(metadata)
-                
+
                 logger.debug(
                     f"[WORKFLOW_METADATA] {self.get_name()}: Added fallback metadata - "
                     f"model: {model_name}, provider: unknown"
@@ -234,19 +244,23 @@ class ConversationIntegrationMixin:
             # Call expert analysis with timeout protection
             print(f"[DEBUG_EXPERT] About to await _call_expert_analysis...")
             import asyncio
+            import os
+            # Make timeout configurable via environment variable
+            timeout_secs = float(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", "180"))
             try:
                 expert_analysis = await asyncio.wait_for(
                     self._call_expert_analysis(arguments, request),
-                    timeout=180.0  # 3 minute absolute timeout
+                    timeout=timeout_secs
                 )
                 print(f"[DEBUG_EXPERT] _call_expert_analysis completed successfully")
             except asyncio.TimeoutError:
-                print(f"[DEBUG_EXPERT] CRITICAL: _call_expert_analysis timed out after 180s!")
-                logger.error(f"Expert analysis timed out after 180s for {self.get_name()}")
+                print(f"[DEBUG_EXPERT] CRITICAL: _call_expert_analysis timed out after {timeout_secs}s!")
+                logger.error(f"Expert analysis timed out after {timeout_secs}s for {self.get_name()}")
                 expert_analysis = {
-                    "error": "Expert analysis timed out after 180 seconds",
+                    "error": f"Expert analysis timed out after {timeout_secs} seconds",
                     "status": "analysis_timeout",
-                    "raw_analysis": ""
+                    "raw_analysis": "",
+                    "timeout_duration": f"{timeout_secs}s"
                 }
             except Exception as e:
                 print(f"[DEBUG_EXPERT] CRITICAL: _call_expert_analysis raised exception: {e}")
@@ -303,11 +317,14 @@ class ConversationIntegrationMixin:
                     response_data["next_steps"] = expert_analysis.get(
                         "next_steps", "Continue based on expert analysis."
                     )
-            elif isinstance(expert_analysis, dict) and expert_analysis.get("status") == "analysis_error":
-                # Expert analysis failed - promote error status
+            elif isinstance(expert_analysis, dict) and expert_analysis.get("status") in ["analysis_error", "analysis_timeout"]:
+                # Expert analysis failed or timed out - promote error status
+                # BUG FIX: analysis_timeout was falling through to success path
                 response_data["status"] = "error"
                 response_data["content"] = expert_analysis.get("error", "Expert analysis failed")
                 response_data["content_type"] = "text"
+                if expert_analysis.get("status") == "analysis_timeout":
+                    response_data["timeout_duration"] = "180s"
                 del response_data["expert_analysis"]
             else:
                 # Expert analysis was successfully executed - include expert guidance

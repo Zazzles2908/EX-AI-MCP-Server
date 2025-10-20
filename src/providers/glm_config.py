@@ -1,4 +1,8 @@
-"""GLM model configuration and validation."""
+"""GLM model configuration and validation.
+
+Last Updated: 2025-10-09
+Last Verified: 2025-10-09 (against open.bigmodel.cn documentation and zhipuai SDK)
+"""
 
 import logging
 from typing import Optional
@@ -9,87 +13,62 @@ logger = logging.getLogger(__name__)
 
 
 # GLM Model Configurations
-# NOTE: Only glm-4-plus and glm-4.6 support NATIVE web search via tools parameter
-# Other models can still use web search via direct /web_search API endpoint
-# See tools/providers/glm/glm_web_search.py for direct API implementation
+# Last Updated: 2025-10-09
+# Last Verified: 2025-10-09 against https://open.bigmodel.cn/dev/api
+# NOTE: ALL GLM models support web search functionality
+# See tools/providers/glm/glm_web_search.py for web search implementation
 SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
-    "glm-4-plus": ModelCapabilities(
-        provider=ProviderType.GLM,
-        model_name="glm-4-plus",
-        friendly_name="GLM-4-Plus",
-        context_window=128000,
-        max_output_tokens=8192,
-        supports_images=True,
-        supports_function_calling=True,
-        supports_streaming=True,
-        supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="GLM 4 Plus - supports websearch",
-    ),
-    "glm-4-flash": ModelCapabilities(
-        provider=ProviderType.GLM,
-        model_name="glm-4-flash",
-        friendly_name="GLM-4-Flash",
-        context_window=128000,
-        max_output_tokens=8192,
-        supports_images=True,
-        supports_function_calling=True,
-        supports_streaming=True,
-        supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="GLM 4 Flash - fast and cheap",
-    ),
     "glm-4.6": ModelCapabilities(
         provider=ProviderType.GLM,
         model_name="glm-4.6",
         friendly_name="GLM-4.6",
-        context_window=200000,  # 200K context window
+        context_window=200000,  # 200K context window (verified 2025-10-09 from api.z.ai docs)
         max_output_tokens=8192,
         supports_images=True,
-        supports_function_calling=True,
+        supports_function_calling=True,  # Via tools parameter
         supports_streaming=True,
         supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="GLM 4.6 flagship model with 200K context window - supports websearch",
+        supports_extended_thinking=True,  # Via "thinking": {"type": "enabled"} parameter (verified 2025-10-09)
+        description="GLM 4.6 flagship with 200K context, web search, thinking mode",
     ),
     "glm-4.5-flash": ModelCapabilities(
         provider=ProviderType.GLM,
         model_name="glm-4.5-flash",
         friendly_name="GLM-4.5-Flash",
-        context_window=128000,
+        context_window=128000,  # 128K context window (verified 2025-10-09)
         max_output_tokens=8192,
         supports_images=True,
         supports_function_calling=True,
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="GLM 4.5 Flash - fast, does not support native web search tool calling (use direct API instead)",
+        description="GLM 4.5 Flash - fast and cost-effective with web search support",
     ),
     "glm-4.5": ModelCapabilities(
         provider=ProviderType.GLM,
         model_name="glm-4.5",
         friendly_name="GLM-4.5",
-        context_window=128000,
+        context_window=128000,  # 128K context window (verified 2025-10-09)
         max_output_tokens=8192,
         supports_images=True,
         supports_function_calling=True,
         supports_streaming=True,
         supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="GLM 4.5 standard",
+        supports_extended_thinking=True,  # Hybrid reasoning model with thinking mode (verified 2025-10-09)
+        description="GLM 4.5 hybrid reasoning model with thinking mode and web search",
     ),
     "glm-4.5-air": ModelCapabilities(
         provider=ProviderType.GLM,
         model_name="glm-4.5-air",
         friendly_name="GLM-4.5-Air",
-        context_window=128000,
+        context_window=128000,  # 128K context window (verified 2025-10-09)
         max_output_tokens=8192,
         supports_images=True,
         supports_function_calling=True,
         supports_streaming=True,
         supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="GLM 4.5 Air - lightweight",
+        supports_extended_thinking=True,  # Hybrid reasoning model with thinking mode (verified 2025-10-09)
+        description="GLM 4.5 Air - efficient hybrid reasoning with thinking mode",
         aliases=["glm-4.5-x"],  # GLM-4.5-X is an alias for glm-4.5-air
     ),
     "glm-4.5v": ModelCapabilities(
@@ -110,10 +89,10 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
 
 def get_all_model_aliases(supported_models: dict[str, ModelCapabilities]) -> dict[str, list[str]]:
     """Get all model aliases from supported models.
-    
+
     Args:
         supported_models: Dictionary of supported model configurations
-        
+
     Returns:
         Dictionary mapping model names to their aliases
     """
@@ -122,6 +101,40 @@ def get_all_model_aliases(supported_models: dict[str, ModelCapabilities]) -> dic
         if caps.aliases:
             result[name] = caps.aliases
     return result
+
+
+def resolve_model_name_for_glm(model_name: str) -> str:
+    """Resolve model shorthand to full name for GLM models.
+
+    This is a standalone function that can be passed to get_capabilities()
+    without requiring a GLMProvider instance.
+
+    Args:
+        model_name: Model name that may be an alias
+
+    Returns:
+        Resolved model name
+    """
+    # First check if it's already a base model name (case-sensitive exact match)
+    if model_name in SUPPORTED_MODELS:
+        return model_name
+
+    # Check case-insensitively for both base models and aliases
+    model_name_lower = model_name.lower()
+
+    # Check base model names case-insensitively
+    for base_model in SUPPORTED_MODELS:
+        if base_model.lower() == model_name_lower:
+            return base_model
+
+    # Check aliases
+    all_aliases = get_all_model_aliases(SUPPORTED_MODELS)
+    for base_model, aliases in all_aliases.items():
+        if any(alias.lower() == model_name_lower for alias in aliases):
+            return base_model
+
+    # If not found, return as-is
+    return model_name
 
 
 def get_capabilities(

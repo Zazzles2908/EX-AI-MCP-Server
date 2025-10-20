@@ -31,7 +31,7 @@ from src.providers.registry_config import (
 if TYPE_CHECKING:
     from tools.models import ToolModelCategory
 
-from utils.health import CircuitState
+from utils.infrastructure.health import CircuitState
 
 
 # ================================================================================
@@ -285,7 +285,7 @@ class ModelProviderRegistry:
             Dict mapping model names to provider types
         """
         # Import here to avoid circular imports
-        from utils.model_restrictions import get_restriction_service
+        from utils.model.restrictions import get_restriction_service
 
         restriction_service = get_restriction_service() if respect_restrictions else None
         models: dict[str, ProviderType] = {}

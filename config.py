@@ -101,6 +101,21 @@ COST_AWARE_ROUTING: bool = _parse_bool_env("COST_AWARE_ROUTING", "true")
 # Can be overridden per-tool with TOOLNAME_USE_ASSISTANT_MODEL_DEFAULT env vars
 DEFAULT_USE_ASSISTANT_MODEL: bool = _parse_bool_env("DEFAULT_USE_ASSISTANT_MODEL", "true")
 
+# Context Engineering Configuration (Phase 1: Defense-in-Depth History Stripping)
+# Prevents recursive embedding of conversation history that causes token explosion
+# STRIP_EMBEDDED_HISTORY: Enable/disable history stripping (default: True)
+# DETECTION_MODE: "conservative" (high confidence markers) or "aggressive" (broader detection)
+# DRY_RUN_MODE: Test without making changes (default: False)
+# LOG_STRIPPING: Log when history stripping occurs (default: True)
+# MIN_TOKEN_THRESHOLD: Only strip if content exceeds this token count (default: 100)
+CONTEXT_ENGINEERING = {
+    "strip_embedded_history": _parse_bool_env("STRIP_EMBEDDED_HISTORY", "true"),
+    "detection_mode": os.getenv("DETECTION_MODE", "conservative"),
+    "dry_run": _parse_bool_env("DRY_RUN_MODE", "false"),
+    "log_stripping": _parse_bool_env("LOG_STRIPPING", "true"),
+    "min_token_threshold": int(os.getenv("MIN_TOKEN_THRESHOLD", "100")),
+}
+
 # Production Settings
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 MAX_RETRIES: int = int(os.getenv("MAX_RETRIES", "3"))
@@ -118,13 +133,24 @@ RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "100"))
 CACHE_ENABLED: bool = _parse_bool_env("CACHE_ENABLED", "true")
 CACHE_TTL: int = int(os.getenv("CACHE_TTL", "300"))
 
+# BUG FIX #11 (2025-10-19): Async Supabase operations for non-blocking conversation persistence
+# When enabled, Supabase writes use fire-and-forget pattern to avoid blocking responses
+# Reads remain synchronous (we need the data), but writes return immediately
+USE_ASYNC_SUPABASE: bool = _parse_bool_env("USE_ASYNC_SUPABASE", "true")
+ENABLE_SUPABASE_WRITE_CACHING: bool = _parse_bool_env("ENABLE_SUPABASE_WRITE_CACHING", "true")
+
+# BUG FIX #11 (2025-10-20): Conversation queue configuration for async write pattern
+# Replaces ThreadPoolExecutor with async queue to prevent resource exhaustion
+CONVERSATION_QUEUE_SIZE: int = int(os.getenv("CONVERSATION_QUEUE_SIZE", "1000"))
+CONVERSATION_QUEUE_WARNING_THRESHOLD: int = int(os.getenv("CONVERSATION_QUEUE_WARNING_THRESHOLD", "500"))
+
 # Security Settings
 VALIDATE_API_KEYS: bool = _parse_bool_env("VALIDATE_API_KEYS", "true")
 
-# Consensus Tool Defaults
-# Agentic engine removed - was experimental, disabled by default, and added unnecessary complexity
-# SECURE_INPUTS_ENFORCED kept for potential future use
-SECURE_INPUTS_ENFORCED: bool = _parse_bool_env("SECURE_INPUTS_ENFORCED", "false")
+# Input Security (CHANGED 2025-10-16: Default TRUE for security-by-default)
+# Prevents path traversal attacks and validates file paths
+# SECURE_INPUTS_ENFORCED: Validates file paths to prevent directory traversal
+SECURE_INPUTS_ENFORCED: bool = _parse_bool_env("SECURE_INPUTS_ENFORCED", "true")
 
 # Activity tool feature flags (default OFF)
 ACTIVITY_SINCE_UNTIL_ENABLED: bool = _parse_bool_env("ACTIVITY_SINCE_UNTIL_ENABLED", "false")
@@ -202,6 +228,35 @@ def _calculate_mcp_prompt_limit() -> int:
 
 MCP_PROMPT_SIZE_LIMIT: int = _calculate_mcp_prompt_limit()
 
+# Model Output Token Limits
+# Controls maximum response length from AI models
+#
+# IMPORTANT CONFIGURATION NOTES:
+# 1. These values are DEFAULT maximums used when max_output_tokens is not explicitly provided
+# 2. Setting these too high may waste tokens; too low may cause truncation
+# 3. Official model limits (as of 2025-10-14):
+#    - Kimi K2 models: 16384 tokens (official Moonshot AI limit)
+#    - GLM models: 8192 tokens (official ZhipuAI limit)
+# 4. Set to 0 or empty string to disable automatic max_tokens (let model use its default)
+#
+# USAGE:
+# - When a tool/provider doesn't specify max_output_tokens, these defaults are used
+# - When a tool/provider DOES specify max_output_tokens, that value takes precedence
+# - To disable automatic max_tokens enforcement, set: DEFAULT_MAX_OUTPUT_TOKENS=0
+#
+# TROUBLESHOOTING:
+# - If responses are truncated: Check if max_output_tokens is being set too low
+# - If API errors occur: Some models may not support max_tokens parameter
+# - If costs are high: Consider lowering these values for routine tasks
+DEFAULT_MAX_OUTPUT_TOKENS: int = int(os.getenv("DEFAULT_MAX_OUTPUT_TOKENS", "8192"))
+KIMI_MAX_OUTPUT_TOKENS: int = int(os.getenv("KIMI_MAX_OUTPUT_TOKENS", "16384"))
+GLM_MAX_OUTPUT_TOKENS: int = int(os.getenv("GLM_MAX_OUTPUT_TOKENS", "8192"))
+
+# Whether to enforce max_tokens even when not explicitly requested
+# Set to False to only use max_tokens when explicitly provided by the caller
+# Set to True to always enforce max_tokens using the defaults above
+ENFORCE_MAX_TOKENS: bool = _parse_bool_env("ENFORCE_MAX_TOKENS", "true")
+
 # Language/Locale Configuration
 # LOCALE: Language/locale specification for AI responses
 # When set, all AI tools will respond in the specified language while
@@ -218,7 +273,7 @@ LOCALE: str = os.getenv("LOCALE", "")
 # Auggie config discovery (optional helper)
 # Moved to utils/config_helpers.py for better separation of concerns
 # Import here for backward compatibility
-from utils.config_helpers import get_auggie_config_path
+from utils.config.helpers import get_auggie_config_path
 
 
 # =============================================================================
@@ -238,17 +293,21 @@ from utils.config_helpers import get_auggie_config_path
 
 
 class TimeoutConfig:
-    """Centralized timeout configuration with coordinated hierarchy."""
+    """Centralized timeout configuration with coordinated hierarchy.
+
+    TRACK 2 FIX (2025-10-16): Updated defaults to 30s for MCP tools to prevent indefinite hangs.
+    Previous defaults (90-150s) were too high and caused poor user experience.
+    """
 
     # Tool-level timeouts (primary)
-    SIMPLE_TOOL_TIMEOUT_SECS = int(os.getenv("SIMPLE_TOOL_TIMEOUT_SECS", "60"))
-    WORKFLOW_TOOL_TIMEOUT_SECS = int(os.getenv("WORKFLOW_TOOL_TIMEOUT_SECS", "120"))
-    EXPERT_ANALYSIS_TIMEOUT_SECS = int(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", "90"))
+    SIMPLE_TOOL_TIMEOUT_SECS = int(os.getenv("SIMPLE_TOOL_TIMEOUT_SECS", "30"))
+    WORKFLOW_TOOL_TIMEOUT_SECS = int(os.getenv("WORKFLOW_TOOL_TIMEOUT_SECS", "45"))
+    EXPERT_ANALYSIS_TIMEOUT_SECS = int(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", "60"))
 
     # Provider timeouts
-    GLM_TIMEOUT_SECS = int(os.getenv("GLM_TIMEOUT_SECS", "90"))
-    KIMI_TIMEOUT_SECS = int(os.getenv("KIMI_TIMEOUT_SECS", "120"))
-    KIMI_WEB_SEARCH_TIMEOUT_SECS = int(os.getenv("KIMI_WEB_SEARCH_TIMEOUT_SECS", "150"))
+    GLM_TIMEOUT_SECS = int(os.getenv("GLM_TIMEOUT_SECS", "30"))
+    KIMI_TIMEOUT_SECS = int(os.getenv("KIMI_TIMEOUT_SECS", "30"))
+    KIMI_WEB_SEARCH_TIMEOUT_SECS = int(os.getenv("KIMI_WEB_SEARCH_TIMEOUT_SECS", "30"))
 
     @classmethod
     def get_daemon_timeout(cls) -> int:

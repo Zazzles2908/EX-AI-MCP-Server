@@ -84,7 +84,7 @@ class GLMUploadFileTool(BaseTool):
         try:
             # FileCache: reuse existing file_id if enabled and present
             from pathlib import Path as _P
-            from utils.file_cache import FileCache
+            from utils.file.cache import FileCache
             cache_enabled = os.getenv("FILECACHE_ENABLED", "true").strip().lower() == "true"
             file_id = None
             if cache_enabled:

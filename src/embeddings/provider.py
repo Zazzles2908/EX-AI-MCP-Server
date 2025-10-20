@@ -81,10 +81,103 @@ class KimiEmbeddingsProvider(EmbeddingsProvider):
 
 
 class GLMEmbeddingsProvider(EmbeddingsProvider):
+    """GLM Embeddings Provider using ZhipuAI SDK
+
+    Last Updated: 2025-10-14 (Docker Migration - Switched to zhipuai SDK)
+
+    Supports:
+    - embedding-2 model (1024 dimensions, recommended)
+    - embedding-3 model (8192 dimensions)
+
+    CRITICAL HISTORY - SDK MIGRATION:
+    - Phase 5 (2025-10-09): Used zai-sdk because zhipuai SDK didn't work with z.ai proxy
+    - 2025-10-14: Removed zai-sdk due to pyjwt version conflict with other dependencies
+    - Current: Using zhipuai SDK (same as GLM chat provider)
+
+    ⚠️ IMPORTANT: If embeddings fail with zhipuai SDK + z.ai proxy:
+    - Option 1: Switch to official endpoint (slower but guaranteed to work):
+      GLM_EMBEDDINGS_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+    - Option 2: Reinstall zai-sdk and resolve pyjwt conflict:
+      pip install zai-sdk>=0.0.4
+    - Option 3: Use Kimi embeddings instead:
+      EMBEDDINGS_PROVIDER=kimi
+
+    API Endpoint: https://api.z.ai/api/paas/v4 (z.ai proxy - 3x faster)
+    Fallback Endpoint: https://open.bigmodel.cn/api/paas/v4 (official - slower but stable)
+    Documentation: https://open.bigmodel.cn/dev/api#text_embedding (docs site, not API endpoint)
+    """
     def __init__(self, model: Optional[str] = None) -> None:
-        self.model = model or os.getenv("GLM_EMBED_MODEL", "text-embedding-ada-002")
-        # Placeholder: implement using ZhipuAI embeddings API if/when available.
-        raise NotImplementedError("GLM embeddings not implemented yet; prefer external adapter or Kimi short-term")
+        self.model = model or os.getenv("GLM_EMBED_MODEL", "embedding-2")
+        self.api_key = os.getenv("GLM_API_KEY")
+
+        # Use z.ai endpoint with zhipuai SDK (same as chat provider)
+        self.base_url = os.getenv("GLM_EMBEDDINGS_BASE_URL", "https://api.z.ai/api/paas/v4")
+
+        if not self.api_key:
+            raise RuntimeError(
+                "GLM_API_KEY not found in environment. "
+                "Set GLM_API_KEY to use GLM embeddings."
+            )
+
+        logger.info(f"Initializing GLMEmbeddingsProvider with model: {self.model}")
+        logger.info(f"Using zhipuai SDK with endpoint: {self.base_url}")
+
+        # Initialize zhipuai SDK client (same as GLM chat provider)
+        try:
+            from zhipuai import ZhipuAI
+            self.client = ZhipuAI(
+                api_key=self.api_key,
+                base_url=self.base_url
+            )
+            logger.info(f"GLM embeddings client initialized successfully with zhipuai SDK")
+        except ImportError as e:
+            logger.error(f"Failed to import zhipuai SDK: {e}")
+            raise RuntimeError(
+                "zhipuai SDK not installed. Install with: pip install zhipuai>=2.1.0"
+            ) from e
+        except Exception as e:
+            logger.error(f"Failed to initialize GLM embeddings client: {e}")
+            raise RuntimeError(f"Failed to initialize GLM embeddings client: {e}") from e
+
+    def embed(self, texts: Sequence[str]) -> List[List[float]]:
+        """Generate embeddings for the given texts using GLM API
+
+        Args:
+            texts: Sequence of texts to embed
+
+        Returns:
+            List of embedding vectors (each vector is a list of floats)
+        """
+        if not texts:
+            return []
+
+        try:
+            # Call GLM embeddings API using ZhipuAI SDK
+            response = self.client.embeddings.create(
+                model=self.model,
+                input=list(texts)
+            )
+
+            # Extract embeddings from response
+            # Response format: response.data = [EmbeddingObject, ...]
+            # Each EmbeddingObject has: .embedding (list of floats), .index, .object
+            data = getattr(response, "data", None)
+            if not data:
+                raise RuntimeError("GLM embeddings response missing 'data' field")
+
+            out: List[List[float]] = []
+            for item in data:
+                vec = getattr(item, "embedding", None)
+                if not isinstance(vec, list):
+                    raise RuntimeError(f"Unexpected embeddings item format from GLM: {type(vec)}")
+                out.append([float(x) for x in vec])
+
+            logger.info(f"Generated {len(out)} embeddings with {len(out[0]) if out else 0} dimensions")
+            return out
+
+        except Exception as e:
+            logger.error(f"Failed to generate GLM embeddings: {e}")
+            raise RuntimeError(f"Failed to generate GLM embeddings: {e}") from e
 
 
 class ExternalEmbeddingsProvider(EmbeddingsProvider):

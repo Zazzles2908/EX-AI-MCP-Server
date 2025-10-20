@@ -20,6 +20,7 @@ from typing import Any, Optional, TYPE_CHECKING
 
 from src.providers.base import ModelProvider, ProviderType
 from src.providers.registry_config import _apply_cost_aware, _apply_free_first
+from src.router.routing_cache import get_routing_cache
 
 if TYPE_CHECKING:
     from tools.models import ToolModelCategory
@@ -43,6 +44,14 @@ def get_preferred_fallback_model(
     3) Ask provider for preference; else take first allowed
     4) If nothing available, default to a safe GLM/Kimi model present in stack
     """
+    # Try cache first (3min TTL)
+    routing_cache = get_routing_cache()
+    cache_context = {"tool_category": str(tool_category) if tool_category else "BALANCED"}
+    cached_model = routing_cache.get_model_selection(cache_context)
+    if cached_model:
+        logger.debug(f"[ROUTING_CACHE] Fallback model cache HIT: {cached_model}")
+        return cached_model
+
     try:
         from tools.models import ToolModelCategory as _Cat
     except Exception:
@@ -84,20 +93,31 @@ def get_preferred_fallback_model(
         except Exception:
             chosen = None
         if chosen:
+            # Cache the selection (3min TTL)
+            routing_cache.set_model_selection(cache_context, chosen)
+            logger.debug(f"[ROUTING_CACHE] Cached fallback model: {chosen}")
             return chosen
         # Otherwise pick first ordered
         if ordered:
+            # Cache the selection (3min TTL)
+            routing_cache.set_model_selection(cache_context, ordered[0])
+            logger.debug(f"[ROUTING_CACHE] Cached fallback model: {ordered[0]}")
             return ordered[0]
 
     # Cross-provider default if nothing chosen
+    default_model = os.getenv("DEFAULT_MODEL", "glm-4.5-flash") or "glm-4.5-flash"
     try:
         if cls.get_provider(ProviderType.GLM):
-            return "glm-4.5-flash"
-        if cls.get_provider(ProviderType.KIMI):
-            return "kimi-k2-0711-preview"
+            default_model = "glm-4.5-flash"
+        elif cls.get_provider(ProviderType.KIMI):
+            default_model = "kimi-k2-0711-preview"
     except Exception:
         pass
-    return os.getenv("DEFAULT_MODEL", "glm-4.5-flash") or "glm-4.5-flash"
+
+    # Cache the default (3min TTL)
+    routing_cache.set_model_selection(cache_context, default_model)
+    logger.debug(f"[ROUTING_CACHE] Cached fallback model (default): {default_model}")
+    return default_model
 
 
 def get_best_provider_for_category(
@@ -150,7 +170,7 @@ def _get_allowed_models_for_provider(provider: ModelProvider, provider_type: Pro
     falls back to the provider's SUPPORTED_MODELS keys.
     """
     try:
-        from utils.model_restrictions import get_restriction_service
+        from utils.model.restrictions import get_restriction_service
     except Exception:
         get_restriction_service = None  # type: ignore
 
@@ -188,13 +208,25 @@ def _auggie_fallback_chain(
 ) -> list[str]:
     """
     Return a prioritized list of candidate models for a category.
-    Priority sources:
-      1) auggie.config 'fallback' chains (if configured)
-      2) Seed with get_preferred_fallback_model, then expand by provider order
-      3) Apply simple hint-based biasing (vision/deep_reasoning keywords)
+
+    SIMPLIFIED FALLBACK STRATEGY (2025-10-16):
+    - FAST_RESPONSE: Only GLM-4.6 (no fallback to Kimi models)
+    - EXTENDED_REASONING: Kimi K2 models only
+    - BALANCED: GLM-4.5 series
+
+    This prevents cascading timeouts through multiple providers.
     """
     # Import registry class to access class methods
     from src.providers.registry_core import ModelProviderRegistry as cls
+
+    # Import category enum
+    try:
+        from tools.models import ToolModelCategory as _Cat
+    except Exception:
+        class _Cat:  # minimal stub
+            FAST_RESPONSE = object()
+            EXTENDED_REASONING = object()
+            BALANCED = object()
 
     # 1) Try explicit chains from auggie settings
     try:
@@ -235,27 +267,32 @@ def _auggie_fallback_chain(
     except Exception:
         pass
 
-    # 2) Derive a reasonable default ordering
-    seed = get_preferred_fallback_model(registry_instance, category)
-    order: list[str] = [seed] if seed else []
+    # 2) SIMPLIFIED: Category-specific fallback chains (NO cross-provider fallback)
+    order: list[str] = []
 
-    # Expand by provider priority, preserving per-provider allowed ordering
-    for ptype in cls.PROVIDER_PRIORITY_ORDER:
-        prov = cls.get_provider(ptype)
-        if not prov:
-            continue
+    if category is not None:
         try:
-            allowed = _get_allowed_models_for_provider(prov, ptype)
+            cat_name = category.name
         except Exception:
-            try:
-                allowed = prov.list_models(respect_restrictions=True)
-            except Exception:
-                allowed = []
-        for name in allowed:
-            if name not in order:
-                order.append(name)
+            cat_name = None
 
-    # 3) Hint-based biasing
+        if cat_name == "FAST_RESPONSE":
+            # FAST_RESPONSE: Only GLM models (no Kimi fallback)
+            order = ["glm-4.6", "glm-4.5-flash", "glm-4.5"]
+        elif cat_name == "EXTENDED_REASONING":
+            # EXTENDED_REASONING: Only Kimi K2 models
+            order = ["kimi-k2-0905-preview", "kimi-k2-0711-preview", "kimi-thinking-preview"]
+        elif cat_name == "BALANCED":
+            # BALANCED: GLM-4.5 series
+            order = ["glm-4.5", "glm-4.5-air", "glm-4.6"]
+        else:
+            # Unknown category: use GLM-4.6 as safe default
+            order = ["glm-4.6"]
+    else:
+        # No category: use GLM-4.6 as safe default
+        order = ["glm-4.6"]
+
+    # 3) Hint-based biasing (vision/thinking)
     if hints:
         low_map = {m.lower(): m for m in order}
         priorities = []
@@ -281,20 +318,33 @@ def call_with_fallback(
     category: Optional["ToolModelCategory"],
     call_fn,
     hints: Optional[list[str]] = None,
+    max_attempts: int = 2,  # CHANGED 2025-10-16: Limit to 2 attempts to prevent cascading timeouts
 ):
     """
     Execute call_fn(model_name) over a category-aware fallback chain.
     Records lightweight telemetry for each attempt and returns the first
     successful response. Raises the last exception if all attempts fail.
+
+    Args:
+        registry_instance: Registry instance
+        category: Tool model category for fallback selection
+        call_fn: Function to call with model_name parameter
+        hints: Optional hints for model selection
+        max_attempts: Maximum number of fallback attempts (default: 2)
     """
     # Import registry class to access class methods
     from src.providers.registry_core import ModelProviderRegistry as cls
 
     chain = _auggie_fallback_chain(registry_instance, category, hints)
+
+    # LIMIT ATTEMPTS: Prevent cascading timeouts through multiple providers
+    chain = chain[:max_attempts]
+
     last_exc: Exception | None = None
-    for model in chain:
+    for attempt_num, model in enumerate(chain, 1):
         t0 = _t.perf_counter()
         try:
+            logging.info(f"Fallback attempt {attempt_num}/{len(chain)}: trying model '{model}'")
             resp = call_fn(model)
             dt_ms = (_t.perf_counter() - t0) * 1000.0
             if resp is None:
@@ -322,9 +372,14 @@ def call_with_fallback(
                 output_tokens=int(usage.get("output_tokens", 0) or 0),
                 latency_ms=dt_ms,
             )
+            logging.info(f"Fallback attempt {attempt_num}/{len(chain)}: SUCCESS with model '{model}' ({dt_ms:.0f}ms)")
             return resp
         except Exception as e:
-            dt_ms = (_t.perf_counter() - t0) * 1000.0
+            # Calculate duration even if call_fn failed before dt_ms was set
+            try:
+                dt_ms = (_t.perf_counter() - t0) * 1000.0
+            except Exception:
+                dt_ms = 0.0  # Fallback if perf_counter fails
             cls.record_telemetry(model, False, latency_ms=dt_ms)
             # JSONL error logging for exception
             try:
@@ -336,6 +391,7 @@ def call_with_fallback(
                 record_error(str(provider), model, "call_failed", str(e))
             except Exception:
                 pass
+            logging.warning(f"Fallback attempt {attempt_num}/{len(chain)}: FAILED with model '{model}' ({dt_ms:.0f}ms): {e}")
             last_exc = e
             continue
     if last_exc:

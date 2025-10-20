@@ -3,9 +3,18 @@
 import json
 import logging
 import os
+import time
 from typing import Any, Optional
 
 from .base import ModelResponse, ProviderType
+
+# PHASE 3 (2025-10-18): Import monitoring utilities
+from utils.monitoring import record_glm_event
+from utils.timezone_helper import log_timestamp
+
+# PHASE 1 (2025-10-18): Import circuit breaker for resilience
+from src.resilience.circuit_breaker_manager import circuit_breaker_manager
+import pybreaker
 
 logger = logging.getLogger(__name__)
 
@@ -45,21 +54,69 @@ def build_payload(
     
     if temperature is not None:
         payload["temperature"] = temperature
+
+    # Max tokens handling - respects ENFORCE_MAX_TOKENS configuration
+    # If max_output_tokens is explicitly provided, always use it
+    # If not provided and ENFORCE_MAX_TOKENS=true, use GLM_MAX_OUTPUT_TOKENS default
+    # If not provided and ENFORCE_MAX_TOKENS=false, don't set max_tokens (let model decide)
+    from config import GLM_MAX_OUTPUT_TOKENS, ENFORCE_MAX_TOKENS
     if max_output_tokens:
+        # Explicitly provided - always use it
         payload["max_tokens"] = int(max_output_tokens)
+    elif ENFORCE_MAX_TOKENS and GLM_MAX_OUTPUT_TOKENS > 0:
+        # Not provided, but enforcement is enabled - use default
+        payload["max_tokens"] = int(GLM_MAX_OUTPUT_TOKENS)
+        logger.debug(f"Using default max_tokens={GLM_MAX_OUTPUT_TOKENS} for GLM (ENFORCE_MAX_TOKENS=true)")
+    # else: Don't set max_tokens, let the model use its default
     
+    # GLM Thinking Mode Support (glm-4.6 and later)
+    # API Format: "thinking": {"type": "enabled"}
+    # Source: https://docs.z.ai/api-reference/llm/chat-completion
+    if 'thinking_mode' in kwargs:
+        thinking_mode = kwargs.pop('thinking_mode', None)
+        # Check if model supports thinking (glm-4.6 and later)
+        from .glm_config import get_capabilities, SUPPORTED_MODELS, resolve_model_name_for_glm
+        caps = get_capabilities(model_name, SUPPORTED_MODELS, resolve_model_name_for_glm)
+        if caps.supports_extended_thinking:
+            # GLM uses "thinking": {"type": "enabled"} format
+            payload["thinking"] = {"type": "enabled"}
+            logger.debug(f"Enabled thinking mode for GLM model {model_name}")
+        else:
+            logger.warning(
+                f"⚠️ Model {model_name} doesn't support thinking_mode - parameter ignored. "
+                f"Use glm-4.6, glm-4.5, or glm-4.5-air for thinking mode support. "
+                f"Requested mode: {thinking_mode}"
+            )
+
     # Pass through GLM tool capabilities when requested (e.g., native web_search)
     try:
         tools = kwargs.get("tools")
         if tools:
             payload["tools"] = tools
-        tool_choice = kwargs.get("tool_choice")
-        if tool_choice:
-            payload["tool_choice"] = tool_choice
+
+            # CRITICAL FIX (Bug #3): glm-4.6 requires explicit tool_choice="auto"
+            # Without this, glm-4.6 returns raw JSON tool calls as text instead of executing them
+            # Other GLM models work without explicit tool_choice, but glm-4.6 needs it
+            tool_choice = kwargs.get("tool_choice")
+            if not tool_choice and model_name == "glm-4.6":
+                payload["tool_choice"] = "auto"
+                logger.debug(f"GLM-4.6: Auto-setting tool_choice='auto' for function calling (Bug #3 fix)")
+            elif tool_choice:
+                payload["tool_choice"] = tool_choice
+
+            # CRITICAL FIX (2025-10-15): GLM-4.6 requires tool_stream=True for streaming tool calls
+            # According to Z.ai documentation: https://docs.z.ai/guides/tools/stream-tool
+            # When stream=True AND tools are present, must set tool_stream=True
+            if payload.get("stream"):
+                import os as _os
+                tool_stream_enabled = _os.getenv("GLM_TOOL_STREAM_ENABLED", "true").strip().lower() == "true"
+                if tool_stream_enabled:
+                    payload["tool_stream"] = True
+                    logger.debug(f"GLM-4.6: Enabled tool_stream=True for streaming tool calls")
     except Exception as e:
-        logger.warning(f"Failed to add tools/tool_choice to GLM payload (model: {model}): {e}")
+        logger.warning(f"Failed to add tools/tool_choice to GLM payload (model: {model_name}): {e}")
         # Continue - payload will be sent without tools, API may reject if tools were required
-    
+
     # Images handling placeholder
     return payload
 
@@ -101,7 +158,15 @@ def generate_content(
     logger.debug(f"GLM generate_content called with kwargs keys: {list(kwargs.keys())}")
 
     payload = build_payload(prompt, system_prompt, model_name, temperature, max_output_tokens, **kwargs)
-    
+
+    # PHASE 3 (2025-10-18): Monitor API call start
+    start_time = time.time()
+    request_size = len(str(payload).encode('utf-8'))
+    error = None
+
+    # PHASE 1 (2025-10-18): Apply circuit breaker protection
+    breaker = circuit_breaker_manager.get_breaker('glm')
+
     try:
         stream = bool(payload.get("stream", False))
         
@@ -137,7 +202,13 @@ def generate_content(
                 sdk_kwargs["tool_choice"] = payload["tool_choice"]
 
             logger.debug(f"GLM SDK kwargs keys: {list(sdk_kwargs.keys())}")
-            resp = sdk_client.chat.completions.create(**sdk_kwargs)
+
+            # PHASE 1 (2025-10-18): Wrap SDK API call with circuit breaker
+            @breaker
+            def _glm_sdk_call():
+                return sdk_client.chat.completions.create(**sdk_kwargs)
+
+            resp = _glm_sdk_call()
             
             if stream:
                 # Aggregate streamed chunks from SDK iterator
@@ -145,8 +216,23 @@ def generate_content(
                 actual_model = None
                 response_id = None
                 created_ts = None
+
+                # CRITICAL FIX (2025-10-15): Add streaming timeout to prevent 6+ hour hangs
+                # Get timeout from env (default 5 minutes for GLM)
+                # Note: time module already imported at module level (line 6)
+                stream_timeout = int(os.getenv("GLM_STREAM_TIMEOUT", "300"))  # 5 minutes default
+                stream_start = time.time()
+
                 try:
                     for event in resp:
+                        # Check if streaming has exceeded timeout
+                        elapsed = time.time() - stream_start
+                        if elapsed > stream_timeout:
+                            raise TimeoutError(
+                                f"GLM streaming exceeded timeout of {stream_timeout}s (elapsed: {int(elapsed)}s). "
+                                "This prevents indefinite hangs. Increase GLM_STREAM_TIMEOUT if needed."
+                            )
+
                         try:
                             # Support both delta and message content shapes
                             choice = getattr(event, "choices", [None])[0]
@@ -167,6 +253,9 @@ def generate_content(
                             logger.debug(f"Failed to parse GLM streaming event metadata: {e}")
                             # Continue - skip this event, next event may have valid data
                             continue
+                except TimeoutError as timeout_err:
+                    logger.error(f"GLM streaming timeout: {timeout_err}")
+                    raise RuntimeError(f"GLM SDK streaming timeout: {timeout_err}") from timeout_err
                 except Exception as stream_err:
                     raise RuntimeError(f"GLM SDK streaming failed: {stream_err}") from stream_err
                 
@@ -304,7 +393,12 @@ def generate_content(
                     },
                 )
             else:
-                raw = http_client.post_json("/chat/completions", payload)
+                # PHASE 1 (2025-10-18): Wrap HTTP API call with circuit breaker
+                @breaker
+                def _glm_http_call():
+                    return http_client.post_json("/chat/completions", payload)
+
+                raw = _glm_http_call()
                 choice0 = (raw.get("choices") or [{}])[0]
                 message = choice0.get("message") or {}
                 text = message.get("content") or ""
@@ -348,6 +442,28 @@ def generate_content(
 
                 usage = raw.get("usage", {})
         
+        # PHASE 3 (2025-10-18): Monitor successful API call
+        response_time_ms = (time.time() - start_time) * 1000
+        response_size = len(str(text).encode('utf-8'))
+
+        # Extract token usage for monitoring
+        total_tokens = 0
+        if usage:
+            total_tokens = usage.get("total_tokens", 0)
+
+        record_glm_event(
+            direction="receive",
+            function_name="glm_chat.generate_content",
+            data_size=response_size,
+            response_time_ms=response_time_ms,
+            metadata={
+                "model": model_name,
+                "tokens": total_tokens,
+                "streamed": stream,
+                "timestamp": log_timestamp()
+            }
+        )
+
         return ModelResponse(
             content=text or "",
             usage={
@@ -365,8 +481,52 @@ def generate_content(
                 "tool_choice": payload.get("tool_choice"),
             },
         )
+    except pybreaker.CircuitBreakerError:
+        # PHASE 1 (2025-10-18): Circuit breaker is OPEN - GLM API is unavailable
+        logger.error("GLM circuit breaker OPEN - API unavailable")
+        error = "Circuit breaker OPEN - GLM API unavailable"
+
+        # Record monitoring event
+        response_time_ms = (time.time() - start_time) * 1000
+        record_glm_event(
+            direction="error",
+            function_name="glm_chat.generate_content",
+            data_size=request_size,
+            error=error,
+            metadata={
+                "model": model_name,
+                "timestamp": log_timestamp()
+            }
+        )
+
+        # Return error response (graceful degradation)
+        return ModelResponse(
+            content="",
+            usage=None,
+            model_name=model_name,
+            friendly_name="GLM",
+            provider=ProviderType.GLM,
+            metadata={
+                "error": error,
+                "circuit_breaker_open": True,
+            },
+        )
     except Exception as e:
         logger.error("GLM generate_content failed: %s", e)
+        error = str(e)
+
+        # PHASE 3 (2025-10-18): Monitor API call failure
+        response_time_ms = (time.time() - start_time) * 1000
+        record_glm_event(
+            direction="error",
+            function_name="glm_chat.generate_content",
+            data_size=request_size,
+            error=error,
+            metadata={
+                "model": model_name,
+                "timestamp": log_timestamp()
+            }
+        )
         raise
 
 

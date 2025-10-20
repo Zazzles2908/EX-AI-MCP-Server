@@ -6,6 +6,7 @@ brainstorming, problem-solving, and collaborative thinking. It supports file con
 images, and conversation continuation for seamless multi-turn interactions.
 """
 
+import logging
 from typing import TYPE_CHECKING, Any, Optional
 
 from pydantic import Field
@@ -19,6 +20,8 @@ from tools.shared.base_models import ToolRequest
 
 from .simple.base import SimpleTool
 
+logger = logging.getLogger(__name__)
+
 # Field descriptions matching the original Chat tool exactly
 CHAT_FIELD_DESCRIPTIONS = {
     "prompt": (
@@ -31,7 +34,11 @@ CHAT_FIELD_DESCRIPTIONS = {
         "kind of response would be most helpful. The more context and detail you provide, the more "
         "valuable and targeted the response will be."
     ),
-    "files": "Optional files for context (must be FULL absolute paths to real files / folders - DO NOT SHORTEN)",
+    "files": (
+        "Optional files for context - EMBEDS CONTENT AS TEXT in prompt (not uploaded to platform). "
+        "Use for small files (<5KB). For large files or persistent reference, use kimi_upload_and_extract tool instead. "
+        "(must be FULL absolute paths to real files / folders - DO NOT SHORTEN)"
+    ),
     "images": (
         "Optional images for visual context. Useful for UI discussions, diagrams, visual problems, "
         "error screens, or architectural mockups. (must be FULL absolute paths to real files / folders - DO NOT SHORTEN - OR these can be base64 data)"
@@ -214,10 +221,22 @@ class ChatTool(SimpleTool):
                     if cache_bits:
                         preface = "[Context cache: " + ", ".join(cache_bits) + "]\n" + preface
                 # Record the user turn immediately
-                from src.conversation.history_store import get_history_store
-                get_history_store().record_turn(request.continuation_id, "user", request.prompt)
-        except Exception:
-            pass
+                # CRITICAL FIX (2025-10-17): Use _original_user_prompt if available to avoid
+                # recording system instructions in conversation history (P0-3 fix)
+                # CRITICAL FIX (2025-10-19): Use Supabase storage instead of in-memory history_store
+                # to ensure consistency across all tools
+                from utils.conversation.threads import _get_storage_backend
+                storage = _get_storage_backend()
+                if storage:
+                    user_prompt_to_record = getattr(request, "_original_user_prompt", request.prompt)
+                    storage.add_turn(
+                        request.continuation_id,
+                        "user",
+                        user_prompt_to_record,
+                        tool_name="chat"
+                    )
+        except Exception as e:
+            logger.warning(f"[chat:context] Failed to assemble conversation context: {e}")
 
         # Phase 5: propagate stream flag by temporarily setting GLM_STREAM_ENABLED for duration of call
         try:
@@ -225,7 +244,8 @@ class ChatTool(SimpleTool):
             self._prev_stream_env = _os.getenv("GLM_STREAM_ENABLED", None)
             if getattr(request, "stream", None) is not None:
                 _os.environ["GLM_STREAM_ENABLED"] = "true" if bool(request.stream) else "false"
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[chat:stream] Failed to set stream flag: {e}")
             self._prev_stream_env = None
 
         base_prompt = self.prepare_chat_style_prompt(request)
@@ -246,8 +266,27 @@ class ChatTool(SimpleTool):
             if getattr(request, "continuation_id", None):
                 has_continuation = True
                 # Persist assistant turn
-                from src.conversation.history_store import get_history_store
-                get_history_store().record_turn(request.continuation_id, "assistant", str(response))
+                # CRITICAL FIX (2025-10-19): Use Supabase storage instead of in-memory history_store
+                # CRITICAL FIX (2025-10-19): For first turn, store response temporarily and save it
+                # in _create_continuation_offer() after the conversation is created in Supabase.
+                # For subsequent turns, save immediately since conversation already exists.
+                from utils.conversation.threads import _get_storage_backend
+                storage = _get_storage_backend()
+                if storage:
+                    # Check if this is a first turn (continuation_id was just created in _parse_response)
+                    # by checking if the conversation exists in storage
+                    thread_context = storage.get_thread(request.continuation_id)
+                    if thread_context:
+                        # Existing conversation - save assistant response immediately
+                        storage.add_turn(
+                            request.continuation_id,
+                            "assistant",
+                            str(response),
+                            tool_name="chat"
+                        )
+                    else:
+                        # First turn - store response temporarily for _create_continuation_offer to save
+                        request._assistant_response_to_save = str(response)
                 # Capture cache tokens if present in model_info
                 try:
                     if model_info and isinstance(model_info, dict):
@@ -257,10 +296,10 @@ class ChatTool(SimpleTool):
                             get_cache_store().record(request.continuation_id, {
                                 k: cache.get(k) for k in ("session_id", "call_key", "token") if cache.get(k)
                             })
-                except Exception:
-                    pass
-        except Exception:
-            pass
+                except Exception as e:
+                    logger.warning(f"[chat:cache] Failed to record cache tokens: {e}")
+        except Exception as e:
+            logger.warning(f"[chat:response] Failed to persist assistant turn: {e}")
         finally:
             # Restore GLM_STREAM_ENABLED after call
             try:
@@ -271,8 +310,8 @@ class ChatTool(SimpleTool):
                         _os.environ.pop("GLM_STREAM_ENABLED", None)
                     else:
                         _os.environ["GLM_STREAM_ENABLED"] = str(prev)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"[chat:cleanup] Failed to restore stream env: {e}")
 
         # Only append "AGENT'S TURN" message for multi-turn conversations
         # For standalone calls (especially with web search), return clean response

@@ -31,7 +31,7 @@ def create_model_context(model_name: str, model_option: Optional[str] = None):
     Returns:
         ModelContext object
     """
-    from utils.model_context import ModelContext
+    from utils.model.context import ModelContext
     
     model_context = ModelContext(model_name, model_option)
     logger.debug(
@@ -57,16 +57,18 @@ def validate_file_sizes(arguments: Dict[str, Any], model_name: str, env_true_fun
     """
     if "files" not in arguments or not arguments["files"]:
         return None
-    
+
     logger.debug(f"Checking file sizes for {len(arguments['files'])} files with model {model_name}")
-    
-    if env_true_func("STRICT_FILE_SIZE_REJECTION", "false"):
-        from utils.file_utils import check_total_file_size
+
+    # CHANGED 2025-10-16: Default TRUE for security-by-default (prevents DoS attacks)
+    # Set STRICT_FILE_SIZE_REJECTION=false in .env to disable if needed
+    if env_true_func("STRICT_FILE_SIZE_REJECTION", "true"):
+        from utils.file.operations import check_total_file_size
         file_size_check = check_total_file_size(arguments["files"], model_name)
         if file_size_check:
             logger.warning(f"File size check failed with model {model_name}")
             return file_size_check
-    
+
     return None
 
 

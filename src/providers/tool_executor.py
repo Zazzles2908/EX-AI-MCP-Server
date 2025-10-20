@@ -20,67 +20,113 @@ logger = logging.getLogger(__name__)
 
 def run_web_search_backend(query: str) -> dict:
     """
-    Execute web search using configured backend.
-    
-    Supports: duckduckgo (default), tavily, bing
-    
+    Execute web search using GLM native web search API.
+
+    Uses Z.ai /api/paas/v4/web_search endpoint (native GLM web search).
+    Documentation: https://docs.z.ai/api-reference/tools/web-search
+
+    Last Updated: 2025-10-09 (Removed DuckDuckGo fallback, using native GLM only)
+
     Args:
         query: Search query string
-        
+
     Returns:
-        Dictionary with search results
+        Dictionary with search results from GLM web search
     """
-    backend = os.getenv("SEARCH_BACKEND", "duckduckgo").strip().lower()
-    
     try:
-        if backend == "tavily":
-            api_key = os.getenv("TAVILY_API_KEY", "").strip()
-            if not api_key:
-                raise RuntimeError("TAVILY_API_KEY not set")
-            payload = json.dumps({"api_key": api_key, "query": query, "max_results": 5}).encode("utf-8")
-            req = urllib.request.Request("https://api.tavily.com/search", data=payload, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=25) as resp:
-                data = json.loads(resp.read().decode("utf-8", errors="ignore"))
-                results = []
-                for it in (data.get("results") or [])[:5]:
-                    url = it.get("url") or it.get("link")
-                    if url:
-                        results.append({"title": it.get("title") or it.get("snippet"), "url": url})
-                return {"engine": "tavily", "query": query, "results": results}
-                
-        if backend == "bing":
-            key = os.getenv("BING_SEARCH_API_KEY", "").strip()
-            if not key:
-                raise RuntimeError("BING_SEARCH_API_KEY not set")
-            q = urllib.parse.urlencode({"q": query})
-            req = urllib.request.Request(f"https://api.bing.microsoft.com/v7.0/search?{q}", headers={"Ocp-Apim-Subscription-Key": key})
-            with urllib.request.urlopen(req, timeout=25) as resp:
-                data = json.loads(resp.read().decode("utf-8", errors="ignore"))
-                results = []
-                for it in (data.get("webPages", {}).get("value") or [])[:5]:
-                    results.append({"title": it.get("name"), "url": it.get("url")})
-                return {"engine": "bing", "query": query, "results": results}
-                
-        # Default: DuckDuckGo
-        try:
-            from duckduckgo_search import DDGS
-            with DDGS() as ddgs:
-                results = []
-                for r in ddgs.text(query, max_results=5):
-                    results.append({"title": r.get("title"), "url": r.get("href") or r.get("link")})
-                return {"engine": "duckduckgo", "query": query, "results": results}
-        except ImportError:
-            # Fallback to simple HTTP request if duckduckgo_search not installed
-            q = urllib.parse.quote_plus(query)
-            req = urllib.request.Request(f"https://html.duckduckgo.com/html/?q={q}", headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                html = resp.read().decode("utf-8", errors="ignore")
-                # Very basic parsing - just return query confirmation
-                return {"engine": "duckduckgo_fallback", "query": query, "results": [{"title": f"Search: {query}", "url": f"https://duckduckgo.com/?q={q}"}]}
-                
+        # CRITICAL FIX (P2.1): Enhanced API key validation and logging for Docker debugging
+        api_key = os.getenv("GLM_API_KEY", "").strip()
+        if not api_key:
+            error_msg = (
+                "GLM_API_KEY not found in environment variables. "
+                "This is required for web search functionality. "
+                "In Docker, verify .env.docker is properly mounted and contains GLM_API_KEY."
+            )
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+
+        # Log API key presence (first 8 chars only for security)
+        logger.debug(f"GLM_API_KEY found: {api_key[:8]}... (length: {len(api_key)})")
+
+        base_url = os.getenv("GLM_BASE_URL", "https://api.z.ai/api/paas/v4").strip()
+        web_search_url = f"{base_url}/web_search"
+
+        logger.info(f"Initiating GLM web search for query: '{query}' using endpoint: {web_search_url}")
+
+        # Prepare request payload
+        # Documentation: https://docs.z.ai/api-reference/tools/web-search
+        payload = {
+            "search_query": query,
+            "count": int(os.getenv("GLM_WEBSEARCH_COUNT", "10")),
+            "search_engine": os.getenv("GLM_WEBSEARCH_ENGINE", "search-prime"),  # search-prime or search-pro
+            "search_recency_filter": os.getenv("GLM_WEBSEARCH_RECENCY", "all"),  # oneDay, oneWeek, oneMonth, oneYear, all
+        }
+
+        logger.debug(f"Web search payload: {json.dumps(payload, indent=2)}")
+
+        # Optional parameters
+        domain_filter = os.getenv("GLM_WEBSEARCH_DOMAIN_FILTER", "").strip()
+        if domain_filter:
+            payload["search_domain_filter"] = domain_filter
+
+        # Make request to GLM web search API
+        data = json.dumps(payload).encode("utf-8")
+        accept_lang = os.getenv("GLM_ACCEPT_LANGUAGE", "en-US,en")
+        req = urllib.request.Request(
+            web_search_url,
+            data=data,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Accept-Language": accept_lang,
+            }
+        )
+
+        timeout_s = float(os.getenv("GLM_WEBSEARCH_TIMEOUT_SECS", "30"))
+
+        with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+            raw = resp.read().decode("utf-8", errors="ignore")
+            result = json.loads(raw)
+
+            # Add metadata
+            result["engine"] = "glm_native"
+            result["query"] = query
+
+            # CRITICAL FIX (P2.1): Enhanced success logging
+            result_count = len(result.get("results", []))
+            logger.info(
+                f"GLM native web search completed successfully for query: '{query}' "
+                f"(returned {result_count} results)"
+            )
+            return result
+
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="ignore") if hasattr(e, "read") else ""
+        # CRITICAL FIX (P2.1): Enhanced error logging for Docker debugging
+        error_msg = (
+            f"GLM web search HTTP {e.code} error for query '{query}': {body}\n"
+            f"Endpoint: {web_search_url}\n"
+            f"This may indicate: API key invalid, rate limiting, or network restrictions in Docker."
+        )
+        logger.error(error_msg, exc_info=True)
+        return {"engine": "glm_native", "query": query, "error": error_msg, "results": []}
+
+    except urllib.error.URLError as e:
+        # CRITICAL FIX (P2.1): Enhanced network error logging
+        error_msg = (
+            f"GLM web search network error for query '{query}': {e}\n"
+            f"Endpoint: {web_search_url}\n"
+            f"This may indicate: Docker container lacks internet access, DNS resolution failure, "
+            f"or firewall blocking outbound connections."
+        )
+        logger.error(error_msg, exc_info=True)
+        return {"engine": "glm_native", "query": query, "error": error_msg, "results": []}
+
     except Exception as e:
-        logger.error(f"Web search failed for query '{query}': {e}")
-        return {"engine": backend, "query": query, "error": str(e), "results": []}
+        error_msg = f"GLM web search failed: {e}"
+        logger.error(error_msg)
+        return {"engine": "glm_native", "query": query, "error": error_msg, "results": []}
 
 
 def extract_tool_calls(response_dict: Dict[str, Any]) -> Optional[List[Dict[str, Any]]]:

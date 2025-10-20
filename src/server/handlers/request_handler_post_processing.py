@@ -54,7 +54,8 @@ async def handle_files_required(
         if _text:
             try:
                 _data = json.loads(_text)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Failed to parse result JSON: {e}")
                 _data = None
             if isinstance(_data, dict) and str(_data.get("status", "")).lower() == "files_required_to_continue":
                 _next = dict((_data.get("next_call") or {}).get("arguments") or {})
@@ -65,15 +66,16 @@ async def handle_files_required(
                         from src.server.utils.file_context_resolver import resolve_files
                         resolved = resolve_files(_globs)
                         _files.extend(resolved)
-                    except Exception:
+                    except Exception as e:
+                        logger.debug(f"File context resolver failed, using legacy globbing: {e}")
                         # Fallback to legacy best-effort globbing if resolver fails
                         for _g in list(_globs)[:8]:
                             try:
                                 for p in glob.glob(_g, recursive=True)[:20]:
                                     if isinstance(p, str):
                                         _files.append(p)
-                            except Exception:
-                                pass
+                            except Exception as glob_err:
+                                logger.debug(f"Failed to glob pattern '{_g}': {glob_err}")
                 if not _files:
                     try:
                         from utils.cache import get_session_cache, make_session_key
@@ -82,10 +84,47 @@ async def handle_files_required(
                         if _cid:
                             _cached = _cache.get(make_session_key(_cid)) or {}
                             _files = list(_cached.get("files") or [])
-                    except Exception:
-                        pass
-                if _files:
-                    _next["files"] = sorted(list(dict.fromkeys(_files)))[:50]
+                    except Exception as e:
+                        logger.debug(f"Failed to retrieve files from session cache: {e}")
+                # CRITICAL FIX: Prevent infinite recursion loops
+                # Check if we have new files to provide
+                _prev_files = set(arguments.get("files") or [])
+                _new_files = set(_files)
+
+                if not _files:
+                    # No files available - return error instead of recursing
+                    logger.warning(f"[FILES-AUTO] Expert requested files but none available - returning error instead of recursing")
+                    error_response = {
+                        "status": "error",
+                        "content": (
+                            "Expert analysis requested additional files but none were available. "
+                            "Please provide the requested files manually and try again."
+                        ),
+                        "files_requested": _data.get("files_needed") or [],
+                        "instructions": _data.get("mandatory_instructions"),
+                        "metadata": {"error_type": "files_not_available"}
+                    }
+                    return [TextContent(type="text", text=json.dumps(error_response, ensure_ascii=False))]
+
+                if _prev_files == _new_files and _prev_files:
+                    # Same files as before - would cause infinite loop
+                    logger.warning(f"[FILES-AUTO] File list unchanged ({len(_files)} files) - breaking potential infinite loop")
+                    error_response = {
+                        "status": "error",
+                        "content": (
+                            "Expert analysis requested files that were already provided. "
+                            "This indicates the analysis cannot proceed with the current information. "
+                            "Please provide additional context or different files."
+                        ),
+                        "files_already_provided": sorted(list(_prev_files)),
+                        "files_requested": _data.get("files_needed") or [],
+                        "instructions": _data.get("mandatory_instructions"),
+                        "metadata": {"error_type": "infinite_loop_prevented"}
+                    }
+                    return [TextContent(type="text", text=json.dumps(error_response, ensure_ascii=False))]
+
+                # We have new files - safe to continue
+                _next["files"] = sorted(list(dict.fromkeys(_files)))[:50]
                 # ensure continuation_id and model
                 if not _next.get("continuation_id"):
                     _cid = _data.get("continuation_id") or arguments.get("continuation_id")
@@ -95,14 +134,15 @@ async def handle_files_required(
                 if str(_resolved_model or "").lower() == "auto":
                     _resolved_model = os.getenv("DEFAULT_MODEL", "glm-4.5-flash")
                 _next["model"] = _resolved_model
-                logger.info(f"[FILES-AUTO] Providing {len(_next.get('files') or [])} files to {tool_name} and continuing")
+                logger.info(f"[FILES-AUTO] Providing {len(_next.get('files') or [])} NEW files to {tool_name} and continuing (prev: {len(_prev_files)}, new: {len(_new_files)})")
                 result = await execute_with_monitor_func(lambda: tool.execute(_next))
                 if isinstance(result, TextContent):
                     result = [result]
                 elif not isinstance(result, list):
                     try:
                         result = [TextContent(type="text", text=str(result))]
-                    except Exception:
+                    except Exception as e:
+                        logger.debug(f"Failed to normalize result to TextContent: {e}")
                         result = []
     except Exception as _e:
         logger.debug(f"[FILES-AUTO] skipped/failed: {_e}")
@@ -144,8 +184,8 @@ async def auto_continue_workflows(
             cap = int((os.getenv("CLIENT_MAX_WORKFLOW_STEPS") or os.getenv("CLAUDE_MAX_WORKFLOW_STEPS", "0") or "0"))
             if cap > 0:
                 max_steps = min(max_steps, cap)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to parse workflow step cap: {e}")
         
         if auto_en and isinstance(result, list) and result:
             while steps < max_steps:
@@ -159,7 +199,8 @@ async def auto_continue_workflows(
                     break
                 try:
                     data = json.loads(text)
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Failed to parse workflow result JSON: {e}")
                     break
                 status = str(data.get("status", ""))
                 if not status.startswith("pause_for_"):
@@ -186,7 +227,8 @@ async def auto_continue_workflows(
                 elif not isinstance(result, list):
                     try:
                         result = [TextContent(type="text", text=str(result))]
-                    except Exception:
+                    except Exception as e:
+                        logger.debug(f"Failed to normalize workflow result to TextContent: {e}")
                         result = []
                 steps += 1
     except Exception as _e:
@@ -221,7 +263,7 @@ def attach_progress_and_summary(
     """
     try:
         from utils.progress import get_progress_log
-        from utils.token_utils import estimate_tokens as __est_tokens
+        from utils.model.token_utils import estimate_tokens as __est_tokens
         
         progress_log = get_progress_log()
         if isinstance(result, list) and result:
@@ -233,7 +275,8 @@ def attach_progress_and_summary(
                     text = primary.text or ""
                     try:
                         data = json.loads(text)
-                    except Exception:
+                    except Exception as e:
+                        logger.debug(f"Failed to parse progress JSON: {e}")
                         data = None
                     if isinstance(data, dict):
                         data.setdefault("metadata", {})["progress"] = progress_log
@@ -242,7 +285,8 @@ def attach_progress_and_summary(
                                 data["content"] = f"=== PROGRESS ===\n{progress_block}\n=== END PROGRESS ===\n\n" + data["content"]
                             else:
                                 data["progress_text"] = progress_block
-                        except Exception:
+                        except Exception as e:
+                            logger.debug(f"Failed to inject progress into content: {e}")
                             data["progress_text"] = progress_block
                         primary.text = json.dumps(data, ensure_ascii=False)
             
@@ -259,7 +303,8 @@ def attach_progress_and_summary(
                         __last_text = __primary.text or ""
                     elif isinstance(__primary, dict):
                         __last_text = __primary.get("text")
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Failed to extract last text from result: {e}")
                     __last_text = None
                 __meta = {}
                 try:
@@ -267,7 +312,8 @@ def attach_progress_and_summary(
                         __meta = json.loads(__last_text)
                     else:
                         __meta = {}
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Failed to parse metadata JSON: {e}")
                     __meta = {}
                 __next_req = bool(__meta.get("next_step_required") is True)
                 __status = str(__meta.get("status") or ("pause_for_analysis" if __next_req else "ok")).upper()
@@ -282,7 +328,8 @@ def attach_progress_and_summary(
                             __tokens += __est_tokens(__blk.text or "")
                         elif isinstance(__blk, dict):
                             __tokens += __est_tokens(str(__blk.get("text") or ""))
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Failed to estimate token count: {e}")
                     __tokens = 0
                 __expert_flag = bool(arguments.get("use_assistant_model") or __meta.get("use_assistant_model"))
                 if __expert_flag:

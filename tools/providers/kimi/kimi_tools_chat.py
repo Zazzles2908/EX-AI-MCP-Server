@@ -142,11 +142,18 @@ class KimiChatWithToolsTool(BaseTool):
                 tool_choice = None
 
         # Websearch tool injection via provider capabilities layer for consistency
-        use_websearch = bool(arguments.get("use_websearch", False)) or (
-            os.getenv("KIMI_ENABLE_INTERNET_TOOL", "false").strip().lower() == "true" or
-            os.getenv("KIMI_ENABLE_INTERNET_SEARCH", "false").strip().lower() == "true"
-        )
-        if use_websearch and bool(arguments.get("use_websearch", False)):
+        # CRITICAL FIX (Bug #2): Respect explicit user choice first, then fall back to env defaults
+        use_websearch_arg = arguments.get("use_websearch")
+        if use_websearch_arg is not None:
+            # User explicitly set use_websearch - respect their choice (even if False)
+            use_websearch = bool(use_websearch_arg)
+        else:
+            # No explicit choice - use environment variable defaults
+            use_websearch = (
+                os.getenv("KIMI_ENABLE_INTERNET_TOOL", "false").strip().lower() == "true" or
+                os.getenv("KIMI_ENABLE_INTERNET_SEARCH", "false").strip().lower() == "true"
+            )
+        if use_websearch:
             try:
                 from src.providers.capabilities import get_capabilities_for_provider
                 caps = get_capabilities_for_provider(ProviderType.KIMI)

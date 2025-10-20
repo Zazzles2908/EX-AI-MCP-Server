@@ -1,14 +1,20 @@
-import logging
-import os
-from typing import Any, List
-from mcp.types import Tool, Prompt, TextContent, GetPromptResult, PromptMessage
-
 """
 MCP Protocol Handlers Module
 
 This module contains the main MCP protocol handlers for tools and prompts.
 These handlers implement the MCP specification for tool discovery and execution.
+
+ARCHITECTURE NOTE (v2.0.2+):
+- This module delegates to singleton registry via src/server/registry_bridge
+- NEVER instantiate ToolRegistry directly - always use get_registry()
+- registry_bridge.build() is idempotent and delegates to src/bootstrap/singletons
+- Ensures TOOLS is SERVER_TOOLS identity check always passes
 """
+
+import logging
+import os
+from typing import Any, List
+from mcp.types import Tool, Prompt, TextContent, GetPromptResult, PromptMessage
 
 
 logger = logging.getLogger(__name__)
@@ -56,7 +62,9 @@ async def handle_list_tools() -> list[Tool]:
 
     # Add all registered AI-powered tools from the dynamic registry (lazy build to avoid cycles)
     from src.server.registry_bridge import get_registry as _get_reg  # type: ignore
-    _reg = _get_reg(); _reg.build()
+    _reg = _get_reg()
+    # Idempotent guard: build() delegates to singleton, safe to call multiple times
+    _reg.build()
     for tool in _reg.list_tools().values():
         nm = tool.name.lower()
         if allowlist and nm not in allowlist:
@@ -82,7 +90,7 @@ _providers_configured = False
 
 async def handle_list_prompts() -> list[Prompt]:
     """
-    List all available prompts for Claude Code shortcuts.
+    List all available prompts for MCP client shortcuts.
 
     This handler returns prompts that enable shortcuts like /ex:thinkdeeper.
     We automatically generate prompts from all tools (1:1 mapping) plus add
@@ -96,7 +104,9 @@ async def handle_list_prompts() -> list[Prompt]:
 
     # Add a prompt for each tool (lazy build to avoid cycles)
     from src.server.registry_bridge import get_registry as _get_reg  # type: ignore
-    _reg = _get_reg(); _reg.build()
+    _reg = _get_reg()
+    # Idempotent guard: build() delegates to singleton, safe to call multiple times
+    _reg.build()
     for tool_name, tool in _reg.list_tools().items():
         prompts.append(
             Prompt(
@@ -126,7 +136,7 @@ async def handle_get_prompt(name: str, arguments: dict[str, Any] = None) -> GetP
     Get prompt details and generate the actual prompt text.
 
     This handler is called when a user invokes a prompt (e.g., /ex:thinkdeeper or /ex:chat:gpt5).
-    It generates the appropriate text that Claude will then use to call the
+    It generates the appropriate text that the MCP client will then use to call the
     underlying tool.
 
     Supports structured prompt names like "chat:gpt5" where:
@@ -147,7 +157,9 @@ async def handle_get_prompt(name: str, arguments: dict[str, Any] = None) -> GetP
 
     # Handle special "continue" case or direct tool prompts (no rich templates)
     from src.server.registry_bridge import get_registry as _get_reg  # type: ignore
-    _reg = _get_reg(); _reg.build()
+    _reg = _get_reg()
+    # Idempotent guard: build() delegates to singleton, safe to call multiple times
+    _reg.build()
     _tool_names = set(_reg.list_tools().keys())
     if name.lower() == "continue":
         tool_name = "chat"

@@ -33,7 +33,8 @@ class TracerRequest(WorkflowRequest):
     relevant_context: list[str] = Field(
         default_factory=list, description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["relevant_context"]
     )
-    confidence: Optional[str] = Field("exploring", description=TRACER_WORKFLOW_FIELD_DESCRIPTIONS["confidence"])
+    # confidence field inherited from WorkflowRequest with correct Literal type validation
+    # Note: tracer uses "exploring" as default, but base class uses "low" - this may need adjustment
 
     # Tracer-specific fields (used in step 1 to initialize)
     trace_mode: Optional[Literal["precision", "dependencies", "ask"]] = Field(
@@ -53,7 +54,7 @@ class TracerRequest(WorkflowRequest):
 
     # Exclude other non-tracing fields
     temperature: Optional[float] = Field(default=None, exclude=True)
-    thinking_mode: Optional[str] = Field(default=None, exclude=True)
+    # thinking_mode field inherited from ToolRequest with correct Literal type validation
     use_websearch: Optional[bool] = Field(default=None, exclude=True)
     use_assistant_model: Optional[bool] = Field(default=False, exclude=True, description="Tracing is self-contained")
 

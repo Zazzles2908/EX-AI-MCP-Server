@@ -220,7 +220,7 @@ class ListModelsTool(BaseTool):
                     # Check if restrictions are applied
                     restriction_service = None
                     try:
-                        from utils.model_restrictions import get_restriction_service
+                        from utils.model.restrictions import get_restriction_service
 
                         restriction_service = get_restriction_service()
                         if restriction_service.has_restrictions(ProviderType.OPENROUTER):

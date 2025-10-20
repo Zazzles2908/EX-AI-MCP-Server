@@ -17,6 +17,7 @@ from typing import Optional, Dict, Any
 
 from src.providers.registry import ModelProviderRegistry as R
 from src.providers.base import ProviderType
+from src.router.routing_cache import get_routing_cache
 
 logger = logging.getLogger("router")
 
@@ -49,6 +50,8 @@ class RouterService:
         self._diag_enabled = os.getenv("ROUTER_DIAGNOSTICS_ENABLED", "false").strip().lower() == "true"
         # Minimal JSON logging
         logger.setLevel(getattr(logging, os.getenv("ROUTER_LOG_LEVEL", "INFO").upper(), logging.INFO))
+        # Routing cache for performance optimization
+        self._routing_cache = get_routing_cache()
 
     def preflight(self) -> None:
         """Check provider readiness and log available models; optionally probe chat."""
@@ -57,6 +60,11 @@ class RouterService:
             by_provider: Dict[str, list[str]] = {}
             for name, ptype in avail.items():
                 by_provider.setdefault(ptype.name, []).append(name)
+                # Cache provider availability status (5min TTL)
+                self._routing_cache.set_provider_status(
+                    ptype.name,
+                    {"available": True, "models": sorted(by_provider[ptype.name])}
+                )
             logger.info(json.dumps({
                 "event": "preflight_models",
                 "providers": {k: sorted(v) for k, v in by_provider.items()},
@@ -157,6 +165,23 @@ class RouterService:
                 return dec
             logger.info(json.dumps({"event": "route_explicit_unavailable", "requested": req}))
 
+        # Try cache for auto routing (3min TTL)
+        if req.lower() == "auto":
+            cache_context = {"requested": req, "hint": hint or {}}
+            cached_model = self._routing_cache.get_model_selection(cache_context)
+            if cached_model:
+                prov = R.get_provider_for_model(cached_model)
+                if prov is not None:
+                    dec = RouteDecision(
+                        requested=req,
+                        chosen=cached_model,
+                        reason="auto_cached",
+                        provider=prov.get_provider_type().name,
+                        meta={"cached": True}
+                    )
+                    logger.debug(f"[ROUTING_CACHE] Model selection cache HIT: {cached_model}")
+                    return dec
+
         # Build candidate order from hint + defaults, then apply budget filter if present
         hint_candidates = self.accept_agentic_hint(hint)
         default_order = [self._fast_default, self._long_default]
@@ -192,7 +217,7 @@ class RouterService:
 
         # Health circuit filter: skip candidates with open circuits
         try:
-            from utils.health import is_blocked
+            from utils.infrastructure.health import is_blocked
         except Exception:
             is_blocked = None
 
@@ -214,6 +239,12 @@ class RouterService:
                     meta["budget"] = budget_val
                 dec = RouteDecision(requested=req, chosen=candidate, reason=reason, provider=prov.get_provider_type().name, meta=meta)
                 logger.info(dec.to_json())
+
+                # Cache the model selection (3min TTL)
+                if req.lower() == "auto":
+                    cache_context = {"requested": req, "hint": hint or {}}
+                    self._routing_cache.set_model_selection(cache_context, candidate)
+                    logger.debug(f"[ROUTING_CACHE] Cached model selection: {candidate}")
                 try:
                     # Optional synthesis hop (Phase 5 optional)
                     try:

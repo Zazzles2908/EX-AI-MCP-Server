@@ -85,7 +85,7 @@ class TestExpertDeduplication:
                 return 0.7, []
             
             def _resolve_model_context(self, arguments, request):
-                from utils.model_context import ModelContext
+                from utils.model.context import ModelContext
                 return "test-model", ModelContext("test-model")
             
             def _prepare_files_for_expert_analysis(self):
@@ -110,7 +110,7 @@ class TestExpertDeduplication:
         mock_provider.get_provider_type = Mock(return_value=Mock(value="test"))
 
         # Mock model context with provider property
-        from utils.model_context import ModelContext
+        from utils.model.context import ModelContext
         tool._model_context = ModelContext("test-model")
 
         # Patch the provider property
@@ -180,7 +180,7 @@ class TestExpertDeduplication:
                 return 0.7, []
             
             def _resolve_model_context(self, arguments, request):
-                from utils.model_context import ModelContext
+                from utils.model.context import ModelContext
                 return "test-model", ModelContext("test-model")
             
             def _prepare_files_for_expert_analysis(self):
@@ -209,7 +209,7 @@ class TestExpertDeduplication:
         mock_provider.generate_content = Mock(side_effect=lambda *args, **kwargs: mock_response)
         mock_provider.get_provider_type = Mock(return_value=Mock(value="test"))
 
-        from utils.model_context import ModelContext
+        from utils.model.context import ModelContext
         tool._model_context = ModelContext("test-model")
 
         # Patch the provider property

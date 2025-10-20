@@ -19,7 +19,9 @@ from typing import Any, Optional
 from mcp.types import TextContent
 
 from tools.shared.base_models import ConsolidatedFindings
-from utils.conversation_memory import create_thread
+from tools.workflow.file_cache import get_file_cache
+from tools.workflow.performance_optimizer import get_performance_optimizer, normalize_path
+from utils.conversation.threads import create_thread
 from utils.progress import send_progress
 
 logger = logging.getLogger(__name__)
@@ -38,6 +40,14 @@ class OrchestrationMixin:
     Note: handle_work_completion() is implemented in ConversationIntegrationMixin.
     We don't override it here to avoid MRO conflicts.
     """
+
+    # CRITICAL FIX (2025-10-19): Circuit breaker for infinite loops
+    # Track consecutive failures to prevent container crashes
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._consecutive_file_failures = 0
+        self._max_consecutive_failures = 3
+        self._last_failure_error = None
 
     # ================================================================================
     # Main Workflow Orchestration
@@ -187,8 +197,18 @@ class OrchestrationMixin:
                     pass
                 response_data = await self.handle_work_completion(response_data, request, arguments)
             else:
-                # Force the AI assistant to work before calling tool again
-                response_data = self.handle_work_continuation(response_data, request)
+                # AUTO-EXECUTION: Continue internally instead of forcing pause
+                logger.info(f"[AUTO-EXEC] {self.get_name()}: Starting auto-execution for step {request.step_number}")
+                try:
+                    send_progress(f"{self.get_name()}: Auto-executing next step...")
+                except Exception:
+                    pass
+                try:
+                    response_data = await self._auto_execute_next_step(response_data, request, arguments)
+                    logger.info(f"[AUTO-EXEC] {self.get_name()}: Auto-execution completed, status={response_data.get('status')}")
+                except Exception as auto_exec_error:
+                    logger.error(f"[AUTO-EXEC] {self.get_name()}: Auto-execution failed: {auto_exec_error}", exc_info=True)
+                    raise
             
             # Allow tools to customize the final response
             response_data = self.customize_workflow_response(response_data, request)
@@ -397,6 +417,396 @@ class OrchestrationMixin:
     # ================================================================================
     # Work Continuation and Completion
     # ================================================================================
+
+    async def _auto_execute_next_step(self, response_data: dict, request, arguments: dict):
+        """
+        Auto-execute the next step internally without forcing a pause.
+        This replaces the forced pause mechanism with seamless auto-execution.
+
+        Day 2 Enhancement: Dynamic step limits, context-aware generation, and backtracking.
+        """
+        # Day 2.5: Handle backtracking if requested
+        if hasattr(request, 'backtrack_from_step') and request.backtrack_from_step:
+            logger.info(f"{self.get_name()}: Backtracking from step {request.backtrack_from_step}")
+            self._handle_backtrack(request.backtrack_from_step)
+            # Reset backtrack flag after handling
+            request.backtrack_from_step = None
+
+        # Day 2.4: Dynamic step limit based on task complexity
+        MAX_AUTO_STEPS = self._calculate_dynamic_step_limit(request, arguments)
+
+        # Check if we've exceeded max steps
+        if request.step_number >= MAX_AUTO_STEPS:
+            logger.info(f"{self.get_name()}: Reached max auto-steps ({MAX_AUTO_STEPS}), completing workflow")
+            request.next_step_required = False
+            return await self.handle_work_completion(response_data, request, arguments)
+
+        # Read relevant files internally
+        file_contents = self._read_relevant_files(request)
+
+        # Day 2.2: Generate context-aware next step instructions
+        required_actions = self.get_required_actions(
+            request.step_number, self.get_request_confidence(request), request.findings, request.total_steps
+        )
+        next_instructions = self._generate_context_aware_instructions(request, required_actions)
+
+        # Create next request data
+        next_step_number = request.step_number + 1
+        next_request_data = arguments.copy()
+        next_request_data.update({
+            "step_number": next_step_number,
+            "step": next_instructions,
+            "findings": self._consolidate_current_findings(),
+            "embedded_file_contents": file_contents,
+            "continuation_id": response_data.get("continuation_id")
+        })
+
+        # Create next request object
+        try:
+            next_request = self.get_workflow_request_model()(**next_request_data)
+        except Exception as e:
+            logger.error(f"{self.get_name()}: Failed to create next request: {e}")
+            # Fall back to completion on error
+            request.next_step_required = False
+            return await self.handle_work_completion(response_data, request, arguments)
+
+        # Process next step
+        step_data = self.prepare_step_data(next_request)
+        self.work_history.append(step_data)
+        self._update_consolidated_findings(step_data)
+
+        # Check if we should continue or complete
+        if self._should_continue_execution(next_request):
+            # Recursively continue auto-execution
+            logger.info(f"{self.get_name()}: Continuing auto-execution (step {next_step_number})")
+            response_data["status"] = f"{self.get_name()}_auto_executing"
+            response_data["auto_execution_step"] = next_step_number
+            return await self._auto_execute_next_step(response_data, next_request, next_request_data)
+        else:
+            # Complete the workflow
+            logger.info(f"{self.get_name()}: Auto-execution complete, finalizing")
+            next_request.next_step_required = False
+            return await self.handle_work_completion(response_data, next_request, next_request_data)
+
+    def _read_relevant_files(self, request) -> dict:
+        """
+        Read all relevant files internally and return their contents.
+
+        Day 3.1: Now uses file cache to eliminate redundant I/O operations.
+        Day 3.2: Now uses parallel file reading for workflows with many files (>2).
+        """
+        relevant_files = self.get_request_relevant_files(request) or []
+
+        if not relevant_files:
+            return {}
+
+        # Get file cache instance
+        cache = get_file_cache()
+
+        # Day 3.2: Use parallel reading for multiple files
+        if len(relevant_files) > 2:
+            logger.debug(f"{self.get_name()}: Reading {len(relevant_files)} files in parallel")
+            file_contents = cache.read_files_parallel(relevant_files, max_workers=4)
+        else:
+            # Sequential reading for small file counts
+            file_contents = {}
+            for file_path in relevant_files:
+                try:
+                    content = cache.read_file(file_path)
+                    file_contents[file_path] = content
+                    logger.debug(f"{self.get_name()}: Read file {file_path} ({len(content)} chars)")
+                    # Reset failure counter on success
+                    self._consecutive_file_failures = 0
+                    self._last_failure_error = None
+                except Exception as e:
+                    error_msg = str(e)
+                    logger.warning(f"{self.get_name()}: Failed to read {file_path}: {error_msg}")
+
+                    # CRITICAL FIX (2025-10-19): Circuit breaker for repeated failures
+                    # Track consecutive failures to prevent infinite loops
+                    if error_msg == self._last_failure_error:
+                        self._consecutive_file_failures += 1
+                    else:
+                        self._consecutive_file_failures = 1
+                        self._last_failure_error = error_msg
+
+                    # Circuit breaker: abort after 3 consecutive identical failures
+                    if self._consecutive_file_failures >= self._max_consecutive_failures:
+                        logger.error(
+                            f"{self.get_name()}: [CIRCUIT_BREAKER] Triggered after "
+                            f"{self._consecutive_file_failures} consecutive failures with same error: {error_msg}"
+                        )
+                        raise Exception(
+                            f"Circuit breaker triggered: {self._consecutive_file_failures} consecutive "
+                            f"file read failures. Error: {error_msg}. This usually indicates a path "
+                            f"handling issue (Windows paths in Docker) or missing files."
+                        )
+
+                    file_contents[file_path] = f"Error reading file: {error_msg}"
+
+        # Log cache statistics periodically
+        if len(relevant_files) > 0:
+            stats = cache.get_stats()
+            logger.debug(f"{self.get_name()}: Cache stats - hit_rate={stats['hit_rate']:.1%}, size={stats['cache_size']}")
+
+        return file_contents
+
+    def _read_file_content(self, file_path: str) -> str:
+        """
+        Read a single file with proper encoding handling.
+
+        Day 3.3: Now uses performance optimizer for path validation.
+        """
+        from pathlib import Path
+
+        # Day 3.3: Use performance optimizer for path validation
+        optimizer = get_performance_optimizer()
+        normalized_path = normalize_path(file_path)
+
+        if not optimizer.is_valid_path(normalized_path):
+            raise Exception(f"File does not exist: {file_path}")
+
+        try:
+            return Path(normalized_path).read_text(encoding='utf-8')
+        except UnicodeDecodeError:
+            # Try with different encoding
+            try:
+                return Path(normalized_path).read_text(encoding='latin-1')
+            except Exception as e:
+                raise Exception(f"Failed to read file with any encoding: {e}")
+        except Exception as e:
+            raise Exception(f"Failed to read file: {e}")
+
+    def _consolidate_current_findings(self) -> str:
+        """Consolidate all findings from work history into a summary."""
+        if not hasattr(self, 'work_history') or not self.work_history:
+            return ""
+
+        findings_parts = []
+        for step in self.work_history:
+            if step.get("findings"):
+                findings_parts.append(f"Step {step.get('step_number', '?')}: {step['findings']}")
+
+        return " | ".join(findings_parts) if findings_parts else ""
+
+    def _should_continue_execution(self, request) -> bool:
+        """
+        Determine if auto-execution should continue.
+
+        Day 2 Enhancement: Smarter decision-making based on:
+        - Confidence level and progression
+        - Information sufficiency with quality assessment
+        - Evidence quality and hypothesis validation
+        - Finding completeness and depth
+        """
+        # Check confidence level with progression tracking
+        confidence = self.get_request_confidence(request)
+        if confidence in ["certain", "very_high", "almost_certain"]:
+            logger.info(f"{self.get_name()}: High confidence ({confidence}), stopping auto-execution")
+            return False
+
+        # Day 2.1: Enhanced confidence assessment
+        # Day 2.6.1: EXAI Recommendation - Make stagnation detection confidence-aware
+        # Track confidence progression - if confidence hasn't improved in 3 steps, likely stuck
+        if hasattr(self, 'work_history') and len(self.work_history) >= 3:
+            recent_confidences = [
+                step.get('confidence', 'exploring')
+                for step in self.work_history[-3:]
+            ]
+            # Only flag stagnation at low/medium confidence levels (not at high confidence)
+            if len(set(recent_confidences)) == 1:
+                stagnant_confidence = recent_confidences[0]
+                if stagnant_confidence in ['exploring', 'low', 'medium']:
+                    # BUG FIX #10 (2025-10-19): Circuit breaker must ABORT, not just log
+                    # Previous behavior: logged warning but continued, causing infinite loops
+                    # New behavior: abort auto-execution to prevent resource waste
+                    logger.warning(
+                        f"{self.get_name()}: Circuit breaker triggered - Confidence stagnant at "
+                        f"'{stagnant_confidence}' for 3 steps. Aborting auto-execution to prevent infinite loop. "
+                        f"Consider: (1) providing more context/files, (2) breaking task into smaller steps, "
+                        f"(3) using chat_EXAI-WS for manual guidance."
+                    )
+                    return False  # ABORT: Stop auto-execution
+                elif stagnant_confidence in ['high', 'very_high', 'certain']:
+                    logger.debug(f"{self.get_name()}: Confidence stable at '{stagnant_confidence}' - legitimately confident")
+                    # This is good - high confidence is stable, not stuck
+
+        # Check information sufficiency with enhanced quality assessment
+        try:
+            assessment = self.assess_information_sufficiency(request)
+            if assessment.get("sufficient"):
+                logger.info(f"{self.get_name()}: Information sufficient, stopping auto-execution")
+                return False
+
+            # Day 2.3: Enhanced sufficiency check - consider evidence quality
+            # Day 2.6.2: EXAI Recommendation - Use ratio-based threshold instead of absolute numbers
+            if hasattr(self, 'work_history'):
+                files_checked = sum(1 for step in self.work_history if step.get('files_checked'))
+                relevant_files = sum(1 for step in self.work_history if step.get('relevant_files'))
+
+                # Use ratio-based threshold (40%) for more accurate off-track detection
+                if files_checked > 0:
+                    ratio = relevant_files / files_checked
+                    if ratio < 0.4:  # Less than 40% of files are relevant
+                        logger.info(f"{self.get_name()}: Low relevant file ratio ({relevant_files}/{files_checked} = {ratio:.1%}), investigation may be off-track")
+
+        except Exception as e:
+            logger.debug(f"{self.get_name()}: Could not assess sufficiency: {e}")
+
+        # Day 2.1: Check if hypothesis is validated
+        # Day 2.6.3: EXAI Recommendation - Use Jaccard similarity instead of simple keyword overlap
+        if hasattr(request, 'hypothesis') and request.hypothesis:
+            # If hypothesis is well-formed and findings support it, consider stopping
+            findings = getattr(request, 'findings', '')
+            if findings and len(findings) > 200:  # Substantial findings
+                # Use Jaccard similarity for better semantic matching (no sklearn needed)
+                similarity = self._calculate_jaccard_similarity(request.hypothesis, findings)
+                if similarity >= 0.3:  # 30% similarity threshold
+                    logger.info(f"{self.get_name()}: Hypothesis appears validated (Jaccard similarity: {similarity:.1%})")
+                    # Increase confidence internally but don't force stop
+                else:
+                    logger.debug(f"{self.get_name()}: Hypothesis validation low (Jaccard similarity: {similarity:.1%})")
+
+        # Continue execution
+        return True
+
+    def _calculate_jaccard_similarity(self, text1: str, text2: str) -> float:
+        """
+        Day 2.6.3: Calculate Jaccard similarity between two texts.
+
+        Jaccard similarity = |intersection| / |union|
+
+        This is a lightweight semantic similarity metric that doesn't require
+        external dependencies like sklearn. It measures the overlap between
+        two sets of words.
+
+        Args:
+            text1: First text (e.g., hypothesis)
+            text2: Second text (e.g., findings)
+
+        Returns:
+            Similarity score between 0.0 and 1.0
+        """
+        if not text1 or not text2:
+            return 0.0
+
+        # Convert to lowercase and split into word sets
+        words1 = set(text1.lower().split())
+        words2 = set(text2.lower().split())
+
+        # Calculate Jaccard similarity
+        intersection = len(words1 & words2)
+        union = len(words1 | words2)
+
+        similarity = intersection / union if union > 0 else 0.0
+
+        return similarity
+
+    def _calculate_dynamic_step_limit(self, request, arguments: dict) -> int:
+        """
+        Day 2.4 + 2025-10-19 Enhancement: Calculate dynamic step limit based on task complexity.
+
+        CRITICAL CHANGE (2025-10-19): Removed hard step limits to enable fully agentic operation.
+        User request: "i dont want you to have restrictions where you have to do 5 steps"
+
+        Now uses only a safety mechanism (50 steps) to prevent infinite loops.
+        Actual termination is controlled by:
+        - Confidence level (certain/very_high/almost_certain)
+        - Information sufficiency
+        - next_step_required flag
+
+        Factors considered:
+        - Tool type (debug=simple, analyze=complex, secaudit=very complex)
+        - Initial total_steps estimate
+        - Number of relevant files
+        - Confidence progression
+        """
+        # REMOVED: Hard step limits (was 8-20 steps)
+        # NEW: Only safety mechanism to prevent infinite loops
+        safety_limit = 50
+
+        # Log the change for transparency
+        logger.info(f"{self.get_name()}: Fully agentic mode enabled - safety limit: {safety_limit} steps")
+        logger.debug(f"{self.get_name()}: Termination controlled by confidence/sufficiency, not step count")
+
+        return safety_limit
+
+    def _generate_context_aware_instructions(self, request, required_actions: list) -> str:
+        """
+        Day 2.2: Generate context-aware next step instructions.
+
+        Considers:
+        - Current findings and gaps
+        - Confidence level
+        - Files already checked
+        - Hypothesis validation status
+        """
+        confidence = self.get_request_confidence(request)
+        findings = getattr(request, 'findings', '')
+
+        # Base instructions from required actions
+        base_instructions = ', '.join(required_actions)
+
+        # Add context based on confidence
+        if confidence == 'exploring':
+            context = "Focus on gathering initial evidence and forming hypotheses"
+        elif confidence in ['low', 'medium']:
+            context = "Validate hypotheses with concrete evidence from code"
+        elif confidence == 'high':
+            context = "Confirm findings and check for edge cases"
+        else:
+            context = "Final validation and completeness check"
+
+        # Add file-specific guidance if relevant files exist
+        relevant_files = self.get_request_relevant_files(request) or []
+        if relevant_files and len(relevant_files) < 3:
+            context += f". Examine {len(relevant_files)} relevant file(s) thoroughly"
+        elif len(relevant_files) >= 3:
+            context += f". Analyze patterns across {len(relevant_files)} files"
+
+        # Combine into clear instructions
+        return f"{base_instructions}. {context}"
+
+    def _handle_backtrack(self, backtrack_from_step: int):
+        """
+        Day 2.5: Handle backtracking to a previous step.
+
+        This allows the investigation to revisit earlier steps if new evidence
+        invalidates previous findings or if the investigation went down a wrong path.
+
+        Strategy:
+        - Preserve work history up to backtrack point
+        - Clear findings after that point
+        - Reset consolidated findings
+        - Log the backtrack for transparency
+        """
+        if not hasattr(self, 'work_history') or not self.work_history:
+            logger.warning(f"{self.get_name()}: Cannot backtrack - no work history")
+            return
+
+        # Find the backtrack point in work history
+        backtrack_index = None
+        for i, step in enumerate(self.work_history):
+            if step.get('step_number') == backtrack_from_step:
+                backtrack_index = i
+                break
+
+        if backtrack_index is None:
+            logger.warning(f"{self.get_name()}: Cannot find step {backtrack_from_step} in work history")
+            return
+
+        # Preserve work up to backtrack point, discard everything after
+        discarded_steps = len(self.work_history) - backtrack_index
+        self.work_history = self.work_history[:backtrack_index + 1]
+
+        logger.info(
+            f"{self.get_name()}: Backtracked to step {backtrack_from_step}, "
+            f"discarded {discarded_steps} subsequent steps"
+        )
+
+        # Reset consolidated findings to reflect the backtrack
+        if hasattr(self, '_consolidated_findings'):
+            self._consolidated_findings = self._consolidate_current_findings()
 
     def handle_work_continuation(self, response_data: dict, request) -> dict:
         """

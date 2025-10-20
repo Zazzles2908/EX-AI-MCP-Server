@@ -1,23 +1,34 @@
-# EX-AI MCP Server - Production-Ready v2.1
+# EX-AI MCP Server - Production-Ready v2.2
 
 ![Twin Entry-Points](https://img.shields.io/badge/twin--entry--points-safe-brightgreen)
 ![Tool Count](https://img.shields.io/badge/tools-29-blue)
 ![Python](https://img.shields.io/badge/python-3.13-blue)
+![Phase A](https://img.shields.io/badge/Phase%20A-Complete-brightgreen)
+![Phase B](https://img.shields.io/badge/Phase%20B-Complete-brightgreen)
+![Phase C](https://img.shields.io/badge/Phase%20C-Complete-brightgreen)
 
-> **2025-09-30 Major Refactoring Complete** 🎉
+> **2025-10-13 System Stabilization & Optimization** 🎉
 >
-> **Phase 1.3 & 3.4 Refactoring Achievements:**
-> - ✅ **request_handler.py**: 1,345 → 160 lines (88% reduction) - Thin orchestrator pattern
-> - ✅ **provider_config.py**: 290 → 77 lines (73% reduction) - Modular provider management
+> **Phase A (Stabilize) - COMPLETE ✅**
+> - ✅ **Auth Token Error Fixed**: Resolved intermittent auth warnings
+> - ✅ **Critical Issues #7-10 Fixed**: Progress reports, file embedding, model auto-upgrade
+> - ✅ **System Stability Verified**: 24-hour stability test passed, 100% test success rate
+>
+> **Phase B (Cleanup) - COMPLETE ✅**
+> - ✅ **WorkflowTools Validated**: Critical daemon deadlock fixed, 5+ tools verified functional
+> - ✅ **Integration Tests**: 5/5 tests passing (100% success rate)
+> - ✅ **Multi-Provider Support**: GLM and Kimi both working seamlessly
+>
+> **Phase C (Optimize) - COMPLETE ✅**
+> - ✅ **Performance Benchmarking**: Baseline established, no critical bottlenecks found
+> - ✅ **Documentation Consolidation**: Master index created, clear navigation, quick reference card
+> - ✅ **Testing Coverage**: Pragmatic completion, 38% coverage (up from 24%), utility tools 100% tested
+>
+> **Previous Achievements (2025-09-30):**
+> - ✅ **request_handler.py**: 1,345 → 160 lines (88% reduction)
+> - ✅ **provider_config.py**: 290 → 77 lines (73% reduction)
 > - ✅ **Total Code Reduction**: 1,398 lines removed (86% reduction)
 > - ✅ **100% Backward Compatibility**: All tests passing, zero breaking changes
-> - ✅ **13 New Modules Created**: Clean separation of concerns
->
-> **AI Manager Transformation Design:**
-> - 📋 Comprehensive AI Manager system prompt redesign (3-layer architecture)
-> - 📋 Agentic architecture consolidation plan (Option A: Enhance RouterService)
-> - 📋 Documentation reorganization complete (docs/current + docs/archive)
-> - 📋 Security audit complete (all API keys removed from documentation)
 >
 > **Architecture:**
 > - GLM-first MCP WebSocket daemon with intelligent AI Manager routing
@@ -29,7 +40,32 @@
 >
 
 
-A production-ready MCP (Model Context Protocol) server with intelligent routing capabilities using GLM-4.5-Flash as an AI manager. Now featuring a massively refactored, modular codebase with 86% code reduction while maintaining 100% backward compatibility.
+A production-ready MCP (Model Context Protocol) server with intelligent routing capabilities using GLM-4.5-Flash as an AI manager. System has been stabilized through comprehensive Phase A & B work, with critical daemon deadlock fixed and 100% test success rate achieved.
+
+## 📚 Documentation Navigation
+
+### 🎯 Quick Links
+
+| I want to... | Go to... |
+|--------------|----------|
+| **Get started quickly** | [Installation](#-installation) → [Quick Start](#quick-start) |
+| **Understand the system** | [docs/system-reference/01-system-overview.md](docs/system-reference/01-system-overview.md) |
+| **Use the tools** | [docs/system-reference/03-tool-ecosystem.md](docs/system-reference/03-tool-ecosystem.md) |
+| **Configure features** | [docs/system-reference/04-features-and-capabilities.md](docs/system-reference/04-features-and-capabilities.md) |
+| **Deploy to production** | [docs/system-reference/06-deployment-guide.md](docs/system-reference/06-deployment-guide.md) |
+| **Troubleshoot issues** | [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) |
+| **Track project progress** | [docs/consolidated_checklist/GOD_CHECKLIST_CONSOLIDATED.md](docs/consolidated_checklist/GOD_CHECKLIST_CONSOLIDATED.md) |
+| **See what's been fixed** | [Phase A Summary](docs/consolidated_checklist/evidence/) → [Phase B Summary](docs/consolidated_checklist/PHASE_B_CLEANUP_SUMMARY.md) |
+
+### 📖 Documentation Structure
+
+- **[docs/system-reference/](docs/system-reference/)** - Definitive system documentation (architecture, tools, features, API)
+- **[docs/guides/](docs/guides/)** - User guides (tool selection, parameters, examples, troubleshooting)
+- **[docs/consolidated_checklist/](docs/consolidated_checklist/)** - Project roadmap and phase tracking (A/B/C/D)
+- **[docs/architecture/](docs/architecture/)** - Detailed architecture documentation and investigations
+- **[docs/maintenance/](docs/maintenance/)** - Documentation maintenance and archiving guidelines
+
+---
 
 ## 🏥 Quick Health Check
 

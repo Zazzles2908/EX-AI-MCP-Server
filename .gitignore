@@ -113,6 +113,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.env.supabase
 
 # Spyder project settings
 .spyderproject
@@ -152,6 +153,8 @@ cython_debug/
 *.pem
 .env.local
 .env.*.local
+.env.docker
+supabase/.env.supabase
 
 # Test outputs
 test_output/
@@ -203,3 +206,7 @@ tool_validation_suite/**/*.log
 
 # Test scripts (will be created later)
 tool_validation_suite/tests/
+
+# Supabase MCP Configuration - DO NOT COMMIT
+# Contains project-specific Supabase credentials
+supabase/supabase_mcp/supabase_mcp_config.json

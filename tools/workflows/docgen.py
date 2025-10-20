@@ -282,8 +282,10 @@ class DocgenTool(WorkflowTool):
         ]
 
         # Exclude common fields that documentation generation doesn't need
+        # CRITICAL FIX (2025-10-17): DO NOT exclude 'model' field - users expect to pass it
+        # even if the tool doesn't use it. Excluding it causes schema validation errors (P0-4 fix)
         excluded_common_fields = [
-            "model",  # Documentation doesn't need external model selection
+            # "model",  # REMOVED: Accept model parameter for consistency with other tools
             "temperature",  # Documentation doesn't need temperature control
             "thinking_mode",  # Documentation doesn't need thinking mode
             "use_websearch",  # Documentation doesn't need web search
@@ -293,7 +295,8 @@ class DocgenTool(WorkflowTool):
         return WorkflowSchemaBuilder.build_schema(
             tool_specific_fields=self.get_tool_fields(),
             required_fields=self.get_required_fields(),  # Include docgen-specific required fields
-            model_field_schema=None,  # Exclude model field - docgen doesn't need external model selection
+            # CRITICAL FIX (2025-10-17): Allow model field to be included in schema (P0-4 fix)
+            # model_field_schema=None,  # REMOVED: Accept model parameter for consistency
             auto_mode=False,  # Force non-auto mode to prevent model field addition
             tool_name=self.get_name(),
             excluded_workflow_fields=excluded_workflow_fields,

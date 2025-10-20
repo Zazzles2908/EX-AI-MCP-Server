@@ -47,8 +47,8 @@ async def reconstruct_context(name: str, arguments: Dict[str, Any], req_id: str)
         try:
             mcp_activity_logger = logging.getLogger("mcp_activity")
             mcp_activity_logger.info(f"CONVERSATION_RESUME: {name} resuming thread {continuation_id} req_id={req_id}")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to log conversation resume to mcp_activity: {e}")
         
         arguments = await reconstruct_thread_context(arguments)
         logger.debug(f"[CONVERSATION_DEBUG] After thread reconstruction, arguments keys: {list(arguments.keys())}")

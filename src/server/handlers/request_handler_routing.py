@@ -6,6 +6,12 @@ This module handles tool name resolution and filtering including:
 - Thinking tool aliasing (deepthink → thinkdeep)
 - Client allow/deny list enforcement
 - Unknown tool suggestions using difflib
+
+ARCHITECTURE NOTE (v2.0.2+):
+- This module delegates to singleton registry via src/server/registry_bridge
+- NEVER instantiate ToolRegistry directly - always use get_registry()
+- registry_bridge.build() is idempotent and delegates to src/bootstrap/singletons
+- Ensures TOOLS is SERVER_TOOLS identity check always passes
 """
 
 import difflib
@@ -62,22 +68,6 @@ def normalize_tool_name(name: str, tool_map: Dict[str, Any], think_routing_enabl
     return name
 
 
-def check_client_filters(name: str) -> Optional[str]:
-    """
-    Check allow/deny lists, return error message if blocked.
-    
-    Args:
-        name: Tool name to check
-        
-    Returns:
-        Error message if blocked, None if allowed
-    """
-    # Client filtering logic would go here
-    # Currently not implemented in the original code
-    # Placeholder for future implementation
-    return None
-
-
 def suggest_tool_name(name: str, tool_map: Dict[str, Any], env_true_func) -> Optional[TextContent]:
     """
     Suggest close matches for unknown tool names using difflib.
@@ -95,6 +85,7 @@ def suggest_tool_name(name: str, tool_map: Dict[str, Any], env_true_func) -> Opt
             try:
                 from src.server.registry_bridge import get_registry as _get_reg  # type: ignore
                 _reg = _get_reg()
+                # Idempotent guard: build() delegates to singleton, safe to call multiple times
                 _reg.build()
                 _names = list(_reg.list_tools().keys())
                 cand = difflib.get_close_matches(name, _names, n=1, cutoff=0.6)
@@ -106,10 +97,10 @@ def suggest_tool_name(name: str, tool_map: Dict[str, Any], env_true_func) -> Opt
                         type="text",
                         text=f"Unknown tool: {name}. Did you mean: {suggestion}? {desc}"
                     )
-            except Exception:
-                pass
-    except Exception:
-        pass
+            except Exception as e:
+                logger.debug(f"Failed to generate tool suggestion for '{name}': {e}")
+    except Exception as e:
+        logger.debug(f"Tool suggestion lookup failed for '{name}': {e}")
     
     return None
 
@@ -138,7 +129,6 @@ def handle_unknown_tool(name: str, tool_map: Dict[str, Any], env_true_func) -> l
 # Export public API
 __all__ = [
     'normalize_tool_name',
-    'check_client_filters',
     'suggest_tool_name',
     'handle_unknown_tool',
 ]

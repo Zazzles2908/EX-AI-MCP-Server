@@ -448,7 +448,7 @@ of the evidence, even when it strongly points in one direction.""",
             # Inject per-step ModelContext for file prep when running outside server wrapper
             if request.relevant_files:
                 try:
-                    from utils.model_context import ModelContext
+                    from utils.model.context import ModelContext
                     # Create a temporary context only for file prep
                     _temp_ctx = ModelContext(model_name)
                     self._model_context = _temp_ctx

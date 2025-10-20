@@ -11,7 +11,7 @@ Key Models:
 """
 
 import logging
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -19,11 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 # Shared field descriptions to avoid duplication
+# Last Updated: 2025-10-09
 COMMON_FIELD_DESCRIPTIONS = {
     "model": (
         "Model to use. Use 'auto' to let the server select the best model. "
-        "Supported examples (if providers are configured): GLM: 'glm-4','glm-4-air','glm-4-flash','glm-4-plus','glm-4.5','glm-4.5-air','glm-4.5-flash','glm-4.5-x','glm-4.5v'; "
-        "Kimi/Moonshot: 'kimi','kimi-k2','kimi-k2-turbo','kimi-k2-thinking','moonshot-128k','moonshot-32k','moonshot-8k','moonshot-v1-128k','moonshot-v1-32k','moonshot-v1-8k'."
+        "Supported examples (if providers are configured): GLM: 'glm-4.6','glm-4.5','glm-4.5-flash','glm-4.5-air','glm-4.5-x','glm-4.5v'; "
+        "Kimi/Moonshot: 'kimi-k2-0905-preview','kimi-k2-0711-preview','kimi-k2-turbo-preview','kimi-thinking-preview','moonshot-v1-128k','moonshot-v1-32k','moonshot-v1-8k','kimi-latest'."
     ),
     "temperature": (
         "Temperature for response (0.0 to 1.0). Lower values are more focused and deterministic, "
@@ -54,7 +55,11 @@ COMMON_FIELD_DESCRIPTIONS = {
         "to aid with contextual understanding. Useful for UI discussions, diagrams, "
         "visual problems, error screens, architecture mockups, and visual analysis tasks."
     ),
-    "files": ("Optional files for context (must be FULL absolute paths to real files / folders - DO NOT SHORTEN)"),
+    "files": (
+        "Optional files for context - EMBEDS CONTENT AS TEXT in prompt (not uploaded to platform). "
+        "Use for small files (<5KB). For large files or persistent reference, use kimi_upload_and_extract tool instead. "
+        "(must be FULL absolute paths to real files / folders - DO NOT SHORTEN)"
+    ),
 }
 
 # Workflow-specific field descriptions
@@ -103,7 +108,9 @@ class ToolRequest(BaseModel):
     # Model configuration
     model: Optional[str] = Field(None, description=COMMON_FIELD_DESCRIPTIONS["model"])
     temperature: Optional[float] = Field(None, ge=0.0, le=1.0, description=COMMON_FIELD_DESCRIPTIONS["temperature"])
-    thinking_mode: Optional[str] = Field(None, description=COMMON_FIELD_DESCRIPTIONS["thinking_mode"])
+    thinking_mode: Optional[Literal["minimal", "low", "medium", "high", "max"]] = Field(
+        None, description=COMMON_FIELD_DESCRIPTIONS["thinking_mode"]
+    )
 
     # Features
     use_websearch: Optional[bool] = Field(True, description=COMMON_FIELD_DESCRIPTIONS["use_websearch"])
@@ -140,28 +147,28 @@ class WorkflowRequest(BaseWorkflowRequest):
     Used by: debug, precommit, codereview, refactor, thinkdeep, analyze
     """
 
-    # Required workflow fields
-    step: str = Field(..., description=WORKFLOW_FIELD_DESCRIPTIONS["step"])
-    step_number: int = Field(..., ge=1, description=WORKFLOW_FIELD_DESCRIPTIONS["step_number"])
-    total_steps: int = Field(..., ge=1, description=WORKFLOW_FIELD_DESCRIPTIONS["total_steps"])
-    next_step_required: bool = Field(..., description=WORKFLOW_FIELD_DESCRIPTIONS["next_step_required"])
+    # Note: step, step_number, total_steps, next_step_required inherited from BaseWorkflowRequest
+    # No need to redefine them here
 
     # Work tracking fields
-    findings: str = Field(..., description=WORKFLOW_FIELD_DESCRIPTIONS["findings"])
-    files_checked: list[str] = Field(default_factory=list, description=WORKFLOW_FIELD_DESCRIPTIONS["files_checked"])
-    relevant_files: list[str] = Field(default_factory=list, description=WORKFLOW_FIELD_DESCRIPTIONS["relevant_files"])
+    findings: str = Field(..., max_length=50000, description=WORKFLOW_FIELD_DESCRIPTIONS["findings"])
+    files_checked: list[str] = Field(default_factory=list, max_length=1000, description=WORKFLOW_FIELD_DESCRIPTIONS["files_checked"])
+    relevant_files: list[str] = Field(default_factory=list, max_length=1000, description=WORKFLOW_FIELD_DESCRIPTIONS["relevant_files"])
     relevant_context: list[str] = Field(
-        default_factory=list, description=WORKFLOW_FIELD_DESCRIPTIONS["relevant_context"]
+        default_factory=list, max_length=1000, description=WORKFLOW_FIELD_DESCRIPTIONS["relevant_context"]
     )
-    issues_found: list[dict] = Field(default_factory=list, description=WORKFLOW_FIELD_DESCRIPTIONS["issues_found"])
-    confidence: str = Field("low", description=WORKFLOW_FIELD_DESCRIPTIONS["confidence"])
+    issues_found: list[dict] = Field(default_factory=list, max_length=1000, description=WORKFLOW_FIELD_DESCRIPTIONS["issues_found"])
+    confidence: Literal["exploring", "low", "medium", "high", "very_high", "almost_certain", "certain"] = Field(
+        "low", description=WORKFLOW_FIELD_DESCRIPTIONS["confidence"]
+    )
 
     # Optional workflow fields
-    hypothesis: Optional[str] = Field(None, description=WORKFLOW_FIELD_DESCRIPTIONS["hypothesis"])
+    hypothesis: Optional[str] = Field(None, max_length=10000, description=WORKFLOW_FIELD_DESCRIPTIONS["hypothesis"])
     backtrack_from_step: Optional[int] = Field(
         None, ge=1, description=WORKFLOW_FIELD_DESCRIPTIONS["backtrack_from_step"]
     )
-    use_assistant_model: Optional[bool] = Field(True, description=WORKFLOW_FIELD_DESCRIPTIONS["use_assistant_model"])
+    # CRITICAL FIX: Default to None so env var DEFAULT_USE_ASSISTANT_MODEL is respected
+    use_assistant_model: Optional[bool] = Field(None, description=WORKFLOW_FIELD_DESCRIPTIONS["use_assistant_model"])
 
     @field_validator("files_checked", "relevant_files", "relevant_context", mode="before")
     @classmethod
@@ -170,6 +177,30 @@ class WorkflowRequest(BaseWorkflowRequest):
         if isinstance(v, str):
             logger.warning(f"Field received string '{v}' instead of list, converting to empty list")
             return []
+        return v
+
+    @field_validator("step_number")
+    @classmethod
+    def validate_step_number(cls, v, info):
+        """Validate that step_number doesn't exceed total_steps."""
+        if info.data.get("total_steps") and v > info.data["total_steps"]:
+            raise ValueError(f"step_number ({v}) cannot exceed total_steps ({info.data['total_steps']})")
+        return v
+
+    @field_validator("backtrack_from_step")
+    @classmethod
+    def validate_backtrack(cls, v, info):
+        """Validate that backtrack_from_step is less than current step_number."""
+        if v is not None and info.data.get("step_number") and v >= info.data["step_number"]:
+            raise ValueError(f"backtrack_from_step ({v}) must be less than current step_number ({info.data['step_number']})")
+        return v
+
+    @field_validator("step", "findings", "hypothesis")
+    @classmethod
+    def validate_non_empty_strings(cls, v):
+        """Validate that string fields contain actual content, not just whitespace."""
+        if v is not None and isinstance(v, str) and not v.strip():
+            raise ValueError("Field cannot be empty or contain only whitespace")
         return v
 
 
@@ -194,7 +225,9 @@ class ConsolidatedFindings(BaseModel):
     hypotheses: list[dict] = Field(default_factory=list, description="Evolution of hypotheses across work steps")
     issues_found: list[dict] = Field(default_factory=list, description="All issues found with severity levels")
     images: list[str] = Field(default_factory=list, description="Images collected during overall work")
-    confidence: str = Field("low", description="Latest confidence level from work steps")
+    confidence: Literal["exploring", "low", "medium", "high", "very_high", "almost_certain", "certain"] = Field(
+        "low", description="Latest confidence level from work steps"
+    )
 
 
 # Tool-specific field descriptions are now declared in each tool file

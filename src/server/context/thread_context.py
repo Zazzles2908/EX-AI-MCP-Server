@@ -87,13 +87,13 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
         - Optimized file deduplication minimizes redundant content
 
     Example Usage Flow:
-        1. Claude: "Continue analyzing the security issues" + continuation_id
+        1. User: "Continue analyzing the security issues" + continuation_id
         2. reconstruct_thread_context() loads previous analyze conversation
         3. Debug tool receives full context including previous file analysis
         4. Debug tool can reference specific findings from analyze tool
         5. Natural cross-tool collaboration without context loss
     """
-    from utils.conversation_memory import add_turn, build_conversation_history, get_thread
+    from utils.conversation.memory import add_turn, build_conversation_history, get_thread
 
     continuation_id = arguments["continuation_id"]
 
@@ -111,7 +111,7 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
         except (AttributeError, TypeError) as e:
             logger.debug(f"Failed to log to mcp_activity: {e}")
 
-        # Return error asking Claude to restart conversation with full context
+        # Return error asking user to restart conversation with full context
         raise ValueError(
             f"Conversation thread '{continuation_id}' was not found or has expired. "
             f"This may happen if the conversation was created more than 3 hours ago or if the "
@@ -167,7 +167,7 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
         # Capture files referenced in this turn
         user_files = arguments.get("files", [])
         logger.debug(f"[CONVERSATION_DEBUG] Adding user turn to thread {continuation_id}")
-        from utils.token_utils import estimate_tokens
+        from utils.model.token_utils import estimate_tokens
 
         user_prompt_tokens = estimate_tokens(user_prompt)
         logger.debug(
@@ -182,16 +182,41 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
             logger.debug(f"[CONVERSATION_DEBUG] Successfully added user turn to thread {continuation_id}")
 
     # Create model context early to use for history building
-    from utils.model_context import ModelContext
+    from utils.model.context import ModelContext
+
+    # CRITICAL FIX (P1): Model consistency validation to detect model switching
+    # This prevents safety-critical calculation variance (e.g., 8x variance in K2 models)
+    model_from_args = arguments.get("model")
+    if context.turns and model_from_args:
+        # Check if model is switching from previous turn
+        last_turn = next((turn for turn in reversed(context.turns)
+                         if turn.role == "assistant" and turn.model_name), None)
+
+        if last_turn and last_turn.model_name != model_from_args:
+            logger.warning(
+                f"[MODEL_SWITCH] Model changed from {last_turn.model_name} to {model_from_args} "
+                f"during continuation {continuation_id}. This may cause inconsistent results."
+            )
+
+            # Extra warning for K2 model variants (known to have calculation variance)
+            k2_models = ["kimi-k2-0905", "kimi-k2-0711", "kimi-k2-turbo"]
+            if any(k2 in last_turn.model_name for k2 in k2_models) and any(k2 in model_from_args for k2 in k2_models):
+                logger.error(
+                    f"[SAFETY_RISK] K2 model variant switched during conversation! "
+                    f"This can cause 8x variance in safety calculations. "
+                    f"Previous: {last_turn.model_name}, Current: {model_from_args}"
+                )
 
     # Check if we should use the model from the previous conversation turn
-    model_from_args = arguments.get("model")
     if not model_from_args and context.turns:
         # Find the last assistant turn to get the model used
         for turn in reversed(context.turns):
             if turn.role == "assistant" and turn.model_name:
                 arguments["model"] = turn.model_name
-                logger.debug(f"[CONVERSATION_DEBUG] Using model from previous turn: {turn.model_name}")
+                # CRITICAL FIX (Bug #4): Lock model to prevent routing override
+                # This ensures the model stays consistent across conversation turns
+                arguments["_model_locked_by_continuation"] = True
+                logger.debug(f"[CONVERSATION_DEBUG] Using model from previous turn: {turn.model_name} (locked)")
                 break
 
     # Ensure providers configured for token allocation/capabilities during reconstruction
@@ -244,6 +269,12 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
     logger.debug(
         f"[CONVERSATION_DEBUG] User input length: {len(original_prompt)} chars (~{original_prompt_tokens:,} tokens)"
     )
+
+    # CRITICAL FIX (2025-10-17): Save the CLEAN user prompt for conversation history
+    # This prevents system instructions from polluting the conversation history
+    # The enhanced prompt (with follow-up instructions) is used for the AI model,
+    # but the original prompt (without instructions) is what gets recorded in history
+    arguments["_original_user_prompt"] = original_prompt
 
     # Merge original context with new prompt and follow-up instructions
     if conversation_history:

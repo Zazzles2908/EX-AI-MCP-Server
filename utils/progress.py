@@ -86,14 +86,19 @@ def send_progress(message: str, level: str = "info") -> None:
     # Best-effort MCP notification
     try:
         if _mcp_notifier is None:
+            _logger.debug("[PROGRESS] No MCP notifier registered")
             return
+        _logger.debug(f"[PROGRESS] Calling MCP notifier with message: {message}")
         result = _mcp_notifier(message, level_lower)
         if asyncio.iscoroutine(result):
             # Fire and forget; do not await within tool critical paths
+            _logger.debug("[PROGRESS] Creating async task for notifier")
             asyncio.create_task(result)  # type: ignore[arg-type]
-    except Exception:
+        else:
+            _logger.debug("[PROGRESS] Notifier returned sync result")
+    except Exception as e:
         # Never allow progress emission to break tool execution
-        _logger.debug("[PROGRESS] MCP notifier unavailable or failed; continuing")
+        _logger.error(f"[PROGRESS] MCP notifier failed: {e}", exc_info=True)
 
 
 # ============================================================================

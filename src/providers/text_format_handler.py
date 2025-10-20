@@ -42,6 +42,42 @@ PATTERN_FORMAT_C_JSON = re.compile(
     re.DOTALL
 )
 
+# Format E: <function=use_websearch><parameter=keyword>query</parameter></function> (GLM-4.6 format)
+PATTERN_FORMAT_E = re.compile(
+    r'<function=use_websearch>\s*<parameter=keyword>\s*(.*?)\s*</parameter>',
+    re.DOTALL | re.IGNORECASE
+)
+
+# Alternative Format E: <function=web_search><parameter=query>...</parameter></function>
+PATTERN_FORMAT_E_ALT = re.compile(
+    r'<function=web_search>\s*<parameter=(?:query|keyword)>\s*(.*?)\s*</parameter>',
+    re.DOTALL | re.IGNORECASE
+)
+
+# Format F: <search>query: value</search> or <search>\n  query: value\n</search> (GLM-4.6 alternative format)
+PATTERN_FORMAT_F = re.compile(
+    r'<search>\s*query:\s*([^\n<]+)',
+    re.DOTALL | re.IGNORECASE
+)
+
+# Format F Alt: <search>value</search> (simple format)
+PATTERN_FORMAT_F_SIMPLE = re.compile(
+    r'<search>\s*([^<]+?)\s*</search>',
+    re.DOTALL | re.IGNORECASE
+)
+
+# Format G: <TOOL_CALL>{"name": "web_search", "arguments": "{\"query\": \"...\"}"}</TOOL_CALL> (GLM-4.6 uppercase JSON format)
+PATTERN_FORMAT_G = re.compile(
+    r'<TOOL_CALL>\s*\{\s*"name"\s*:\s*"web_search"\s*,\s*"arguments"\s*:\s*"([^"]+)"\s*\}\s*</TOOL_CALL>',
+    re.DOTALL
+)
+
+# Format G Alt: Extract full JSON from <TOOL_CALL>
+PATTERN_FORMAT_G_JSON = re.compile(
+    r'<TOOL_CALL>\s*(\{.*?\})\s*</TOOL_CALL>',
+    re.DOTALL
+)
+
 
 def extract_query_from_text(text: str) -> Optional[str]:
     """
@@ -54,6 +90,57 @@ def extract_query_from_text(text: str) -> Optional[str]:
         Extracted query string, or None if no query found
     """
     query = None
+
+    # Try Format G: <TOOL_CALL>{"name": "web_search", "arguments": "{\"query\": \"...\"}"}</TOOL_CALL> (HIGHEST PRIORITY - GLM-4.6 uppercase JSON)
+    match_g_json = PATTERN_FORMAT_G_JSON.search(text)
+    if match_g_json:
+        try:
+            tool_data = json.loads(match_g_json.group(1))
+            if tool_data.get("name") == "web_search":
+                # Arguments might be a JSON string or dict
+                args = tool_data.get("arguments", "{}")
+                if isinstance(args, str):
+                    # Parse the escaped JSON string
+                    args_data = json.loads(args)
+                else:
+                    args_data = args
+
+                query = args_data.get("query", "").strip()
+                if query:
+                    logger.info(f"✅ Parsed Format G (GLM-4.6 <TOOL_CALL> uppercase JSON): query='{query}'")
+                    return query
+        except (json.JSONDecodeError, KeyError, AttributeError) as e:
+            logger.debug(f"Failed to parse Format G JSON: {e}")
+
+    # Try Format F: <search>query: value</search> (GLM-4.6 format - HIGH PRIORITY)
+    match_f = PATTERN_FORMAT_F.search(text)
+    if match_f:
+        query = match_f.group(1).strip()
+        logger.info(f"✅ Parsed Format F (GLM-4.6 <search>query: value</search>): query='{query}'")
+        return query
+
+    # Try Format F Simple: <search>value</search>
+    match_f_simple = PATTERN_FORMAT_F_SIMPLE.search(text)
+    if match_f_simple:
+        query = match_f_simple.group(1).strip()
+        # Only accept if it looks like a reasonable query (not empty, not too long)
+        if query and len(query) < 500 and not query.startswith('<'):
+            logger.info(f"✅ Parsed Format F Simple (<search>value</search>): query='{query}'")
+            return query
+
+    # Try Format E: <function=use_websearch><parameter=keyword>query</parameter> (GLM-4.6 format)
+    match_e = PATTERN_FORMAT_E.search(text)
+    if match_e:
+        query = match_e.group(1).strip()
+        logger.info(f"✅ Parsed Format E (GLM-4.6 <function=use_websearch>): query='{query}'")
+        return query
+
+    # Try Format E Alt: <function=web_search><parameter=query>...</parameter>
+    match_e_alt = PATTERN_FORMAT_E_ALT.search(text)
+    if match_e_alt:
+        query = match_e_alt.group(1).strip()
+        logger.info(f"✅ Parsed Format E Alt (<function=web_search>): query='{query}'")
+        return query
 
     # Try Format A: <tool_call>web_search\nquery: value (NEW - actual GLM format)
     match_a = PATTERN_FORMAT_A.search(text)
@@ -90,6 +177,7 @@ def extract_query_from_text(text: str) -> Optional[str]:
         except json.JSONDecodeError as e:
             logger.debug(f"Failed to parse Format C JSON: {e}")
 
+    logger.warning(f"⚠️ No web search query pattern matched in text: {text[:200]}...")
     return None
 
 
@@ -175,17 +263,31 @@ def parse_and_execute_web_search(text: str) -> Tuple[str, bool]:
 def has_text_format_tool_call(text: str) -> bool:
     """
     Check if text contains a tool call in text format.
-    
+
     Args:
         text: Response text to check
-        
+
     Returns:
         True if text format tool call detected, False otherwise
     """
     if not text:
         return False
-    
-    # Check for common text format markers
-    markers = ["<tool_call>", "<tool_code>", "<function="]
-    return any(marker in text for marker in markers)
+
+    # Check for common text format markers (including GLM-4.6 formats)
+    markers = [
+        "<TOOL_CALL>",                 # GLM-4.6 uppercase JSON format (MOST COMMON NOW)
+        "<tool_call>",
+        "<tool_code>",
+        "<function=use_websearch>",  # GLM-4.6 format variant 1
+        "<function=web_search>",      # GLM-4.6 format variant 2
+        "<function=",                  # Generic function call
+        "<search>"                     # GLM-4.6 format variant 3
+    ]
+    has_marker = any(marker in text for marker in markers)
+
+    if has_marker:
+        logger.info(f"✅ Text format tool call detected in response (length: {len(text)} chars)")
+        logger.debug(f"Response preview: {text[:300]}...")
+
+    return has_marker
 

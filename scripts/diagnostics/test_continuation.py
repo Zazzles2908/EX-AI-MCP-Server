@@ -16,7 +16,7 @@ from src.server.handlers import handle_call_tool  # type: ignore
 
 async def main():
     # Pre-create a thread for continuation using conversation memory
-    from utils.conversation_memory import create_thread
+    from utils.conversation.memory import create_thread
     cont_id = create_thread("chat", initial_request={})
     out = {
         "cont_id": cont_id,

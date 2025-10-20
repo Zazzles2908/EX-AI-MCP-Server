@@ -39,8 +39,9 @@ TOOL_MAP: Dict[str, tuple[str, str]] = {
     "challenge": ("tools.challenge", "ChallengeTool"),
     # Orchestrators (aliases map to autopilot)
     # Kimi utilities
-    "kimi_upload_and_extract": ("tools.providers.kimi.kimi_upload", "KimiUploadAndExtractTool"),
-    "kimi_multi_file_chat": ("tools.providers.kimi.kimi_upload", "KimiMultiFileChatTool"),
+    "kimi_upload_files": ("tools.providers.kimi.kimi_files", "KimiUploadFilesTool"),
+    "kimi_chat_with_files": ("tools.providers.kimi.kimi_files", "KimiChatWithFilesTool"),
+    "kimi_manage_files": ("tools.providers.kimi.kimi_files", "KimiManageFilesTool"),
     "kimi_intent_analysis": ("tools.providers.kimi.kimi_intent", "KimiIntentAnalysisTool"),
     "kimi_capture_headers": ("tools.providers.kimi.kimi_capture_headers", "KimiCaptureHeadersTool"),
     # GLM utilities
@@ -82,7 +83,9 @@ TOOL_VISIBILITY = {
     "listmodels": "advanced",              # Diagnostics - useful during development
     "activity": "advanced",
     "version": "advanced",                 # Diagnostics - useful during development
-    "kimi_upload_and_extract": "advanced", # Backend pathway - useful during development
+    "kimi_upload_files": "advanced",       # File upload - useful during development
+    "kimi_chat_with_files": "core",        # Core tool for file-based analysis
+    "kimi_manage_files": "advanced",       # File management - useful during development
     "kimi_chat_with_tools": "advanced",
     "kimi_capture_headers": "advanced",    # Diagnostics - useful during development
     "glm_upload_file": "advanced",         # Backend pathway - useful during development
