@@ -14,7 +14,7 @@ Key Features:
 
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from mcp.types import TextContent
 
@@ -254,9 +254,9 @@ class OrchestrationMixin:
                         logger.error(f"[SERIALIZATION_DEBUG] Non-serializable key '{key}': type={type(value)}, error={key_err}")
                 raise
 
-            logger.info(f"[SERIALIZATION_DEBUG] About to create TextContent and return")
+            logger.info("[SERIALIZATION_DEBUG] About to create TextContent and return")
             result = [TextContent(type="text", text=json_str)]
-            logger.info(f"[SERIALIZATION_DEBUG] TextContent created, about to return")
+            logger.info("[SERIALIZATION_DEBUG] TextContent created, about to return")
             return result
         
         except Exception as e:
@@ -762,7 +762,6 @@ class OrchestrationMixin:
         - Hypothesis validation status
         """
         confidence = self.get_request_confidence(request)
-        findings = getattr(request, 'findings', '')
 
         # Base instructions from required actions
         base_instructions = ', '.join(required_actions)

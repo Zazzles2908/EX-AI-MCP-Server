@@ -195,7 +195,7 @@ class DualStorageConversation:
 
             # In dry run mode, don't actually save the stripped content
             if self.config.get("dry_run", False):
-                logger.info(f"[DUAL_STORAGE] DRY RUN: Would have stripped history from turn")
+                logger.info("[DUAL_STORAGE] DRY RUN: Would have stripped history from turn")
                 content = original_content  # Restore original for dry run
 
         supabase_success = False

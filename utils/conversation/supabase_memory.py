@@ -16,12 +16,8 @@ Target: 90% token reduction (108K → <10K)
 """
 
 import logging
-import re
 import time
-import uuid
-import asyncio
 from typing import Optional, Dict, Any, List
-from concurrent.futures import ThreadPoolExecutor
 from src.storage.supabase_client import get_storage_manager
 from src.storage.conversation_mapper import get_conversation_mapper
 from src.storage.file_handler import get_file_handler
@@ -357,7 +353,7 @@ class SupabaseConversationMemory:
                 queue = get_conversation_queue_sync()
                 if queue is None:
                     # Fallback to synchronous write if queue not available
-                    logger.warning(f"[ASYNC_SUPABASE] Async queue not available, falling back to sync write")
+                    logger.warning("[ASYNC_SUPABASE] Async queue not available, falling back to sync write")
                     # Continue to synchronous path below
                 else:
                     queue.put_sync(item)

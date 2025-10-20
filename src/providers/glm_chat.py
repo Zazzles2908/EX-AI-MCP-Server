@@ -100,7 +100,7 @@ def build_payload(
             tool_choice = kwargs.get("tool_choice")
             if not tool_choice and model_name == "glm-4.6":
                 payload["tool_choice"] = "auto"
-                logger.debug(f"GLM-4.6: Auto-setting tool_choice='auto' for function calling (Bug #3 fix)")
+                logger.debug("GLM-4.6: Auto-setting tool_choice='auto' for function calling (Bug #3 fix)")
             elif tool_choice:
                 payload["tool_choice"] = tool_choice
 
@@ -112,7 +112,7 @@ def build_payload(
                 tool_stream_enabled = _os.getenv("GLM_TOOL_STREAM_ENABLED", "true").strip().lower() == "true"
                 if tool_stream_enabled:
                     payload["tool_stream"] = True
-                    logger.debug(f"GLM-4.6: Enabled tool_stream=True for streaming tool calls")
+                    logger.debug("GLM-4.6: Enabled tool_stream=True for streaming tool calls")
     except Exception as e:
         logger.warning(f"Failed to add tools/tool_choice to GLM payload (model: {model_name}): {e}")
         # Continue - payload will be sent without tools, API may reject if tools were required
@@ -316,7 +316,7 @@ def generate_content(
                                     # Append search results to content
                                     if search_data:
                                         text = text + "\n\n[Web Search Results]\n" + _json.dumps(search_data, indent=2, ensure_ascii=False)
-                                        logger.info(f"GLM web_search executed successfully via tool_calls array")
+                                        logger.info("GLM web_search executed successfully via tool_calls array")
                                 except Exception as e:
                                     logger.debug(f"Failed to parse web_search tool call: {e}")
                 elif has_tool_call_text:
@@ -324,9 +324,9 @@ def generate_content(
                     logger.warning(f"GLM returned tool call as TEXT: {text[:200]}")
                     text, success = parse_and_execute_web_search(text)
                     if success:
-                        logger.info(f"GLM web_search executed successfully via text format handler")
+                        logger.info("GLM web_search executed successfully via text format handler")
                     else:
-                        logger.warning(f"Failed to execute web_search from text format")
+                        logger.warning("Failed to execute web_search from text format")
 
                 usage = raw.get("usage", {})
         else:
@@ -428,7 +428,7 @@ def generate_content(
                                         search_data = args
                                     if search_data:
                                         text = text + "\n\n[Web Search Results]\n" + _json.dumps(search_data, indent=2, ensure_ascii=False)
-                                        logger.info(f"GLM web_search executed successfully via tool_calls array (HTTP path)")
+                                        logger.info("GLM web_search executed successfully via tool_calls array (HTTP path)")
                                 except Exception as e:
                                     logger.debug(f"Failed to parse web_search tool call: {e}")
                 elif has_tool_call_text:
@@ -436,9 +436,9 @@ def generate_content(
                     logger.warning(f"GLM returned tool call as TEXT (HTTP path): {text[:200]}")
                     text, success = parse_and_execute_web_search(text)
                     if success:
-                        logger.info(f"GLM web_search executed successfully via text format handler (HTTP path)")
+                        logger.info("GLM web_search executed successfully via text format handler (HTTP path)")
                     else:
-                        logger.warning(f"Failed to execute web_search from text format (HTTP path)")
+                        logger.warning("Failed to execute web_search from text format (HTTP path)")
 
                 usage = raw.get("usage", {})
         
@@ -621,7 +621,7 @@ def chat_completions_create(
         elif model == "glm-4.6":
             # glm-4.6 requires explicit tool_choice="auto"
             payload["tool_choice"] = "auto"
-            logger.debug(f"GLM-4.6: Auto-setting tool_choice='auto' for function calling")
+            logger.debug("GLM-4.6: Auto-setting tool_choice='auto' for function calling")
 
     # Call SDK
     stream = payload.get("stream", False)
