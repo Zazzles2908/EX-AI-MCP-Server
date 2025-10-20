@@ -110,33 +110,12 @@ class ContinuationMixin:
                         f"{self.get_name()}: Retrieved updated thread with {turn_count} turns"
                     )
 
-                # Build conversation history with updated thread context
-                try:
-                    # Try storage's build method first (for supabase)
-                    if hasattr(storage, 'build_conversation_history'):
-                        conversation_history, conversation_tokens = storage.build_conversation_history(
-                            continuation_id, self._model_context
-                        )
-                    else:
-                        # Fallback to memory's build method
-                        from utils.conversation.memory import build_conversation_history
-                        conversation_history, conversation_tokens = build_conversation_history(
-                            thread_context, self._model_context
-                        )
-                except Exception as e:
-                    logger.warning(f"Error building conversation history: {e}, using fallback")
-                    conversation_history = ""
+                # BUG FIX #14 (2025-10-20): No longer build text-based conversation history
+                # Modern approach: Request handler provides _messages parameter to SDK providers
+                # Tools receive conversation context via message arrays, not text strings
 
-                # Get the base prompt from the tool
-                base_prompt = prompt_field_value
-
-                # Combine with conversation history
-                if conversation_history:
-                    final_prompt = f"{conversation_history}\n\n=== NEW USER INPUT ===\n{base_prompt}"
-                else:
-                    final_prompt = base_prompt
-
-                return final_prompt, False
+                # Use base prompt directly - conversation history is handled via _messages
+                return prompt_field_value, False
             else:
                 # Thread not found, prepare normally
                 logger.warning(f"Thread {continuation_id} not found, preparing prompt normally")
