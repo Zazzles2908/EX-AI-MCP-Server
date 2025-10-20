@@ -19,7 +19,7 @@ def test_health_circuit_skips_blocked_model(monkeypatch):
     monkeypatch.setattr(R, "get_provider_for_model", staticmethod(fake_get_provider_for_model))
 
     # Block the fast model via health circuit -> should route to long model
-    from utils.health import open_circuit
+    from utils.infrastructure.health import open_circuit
     open_circuit("glm-4.5-flash")
 
     from src.router.service import RouterService

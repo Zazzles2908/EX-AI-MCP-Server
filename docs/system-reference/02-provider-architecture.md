@@ -20,12 +20,13 @@ The EX-AI-MCP-Server implements a **dual-provider architecture** with intelligen
 | **Flagship Model** | GLM-4.6 (200K context) | kimi-k2-0905-preview (256K context) |
 | **Base URL** | https://api.z.ai/v1 | https://api.moonshot.ai/v1 |
 | **Pricing** | $0.60/$2.20 per M tokens | $0.60/$2.50 per M tokens |
-| **Web Search** | Native integration | Not available |
+| **Web Search** | ✅ Native integration | ✅ $web_search builtin |
 | **Streaming** | SSE streaming | SSE streaming |
 | **Tool Calling** | OpenAI-compatible | OpenAI-compatible |
-| **Best For** | Web search, cost optimization | Tool use, coding, agentic workflows |
-| **Multimodal** | Images, audio, video, files | Text only |
-| **Caching** | Prompt caching | Advanced caching |
+| **Thinking Mode** | ✅ glm-4.6, glm-4.5, glm-4.5-air | ✅ kimi-thinking-preview |
+| **Best For** | Web search, cost optimization, thinking | Tool use, coding, agentic workflows, caching |
+| **Multimodal** | Images, audio, video, files | Text, files |
+| **Caching** | Prompt caching | Advanced context caching |
 
 ---
 

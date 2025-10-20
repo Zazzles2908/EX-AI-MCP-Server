@@ -71,13 +71,7 @@ class ThinkDeepWorkflowRequest(WorkflowRequest):
         "Do NOT use 'certain' unless the thinking is comprehensively complete, use 'very_high' or 'almost_certain' instead when in doubt. "
         "Using 'certain' means you have complete confidence locally and prevents external model validation.",
     )
-    thinking_mode: Optional[str] = Field(
-        default=None,
-        description="Control the depth of expert analysis reasoning (minimal, low, medium, high, max). "
-        "Trade-off between speed and depth: minimal (~5-7s, quick validation), low (~8-10s, standard validation), "
-        "medium (~15-20s, thorough analysis), high (~25-30s, deep analysis), max (~40-60s, exhaustive reasoning). "
-        "If not specified, falls back to EXPERT_ANALYSIS_THINKING_MODE env variable (default: minimal for speed).",
-    )
+    # thinking_mode field inherited from ToolRequest with correct Literal type validation
 
     # Advanced workflow features
     backtrack_from_step: Optional[int] = Field(
@@ -97,11 +91,7 @@ class ThinkDeepWorkflowRequest(WorkflowRequest):
         le=1.0,
         # exclude=True  # Excluded from MCP schema but available for internal use
     )
-    thinking_mode: Optional[str] = Field(
-        default=None,
-        description="Thinking depth: minimal (0.5% of model max), low (8%), medium (33%), high (67%), max (100% of model max). Defaults to 'high' if not specified.",
-        # exclude=True  # Excluded from MCP schema but available for internal use
-    )
+    # NOTE: thinking_mode is already defined above at lines 74-80, removed duplicate definition
     use_websearch: Optional[bool] = Field(
         default=None,
         description="Enable web search for documentation, best practices, and current information. Particularly useful for: brainstorming sessions, architectural design discussions, exploring industry best practices, working with specific frameworks/technologies, researching solutions to complex problems, or when current documentation and community insights would enhance the analysis.",

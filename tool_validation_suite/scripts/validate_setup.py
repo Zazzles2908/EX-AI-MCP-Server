@@ -224,7 +224,7 @@ def check_api_connectivity():
                     "Authorization": f"Bearer {glm_key}"
                 },
                 json={
-                    "model": "glm-4-flash",
+                    "model": "glm-4.5-flash",
                     "messages": [{"role": "user", "content": "test"}],
                     "max_tokens": 5
                 },

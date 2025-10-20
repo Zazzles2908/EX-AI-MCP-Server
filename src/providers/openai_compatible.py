@@ -19,6 +19,9 @@ from .base import (
 )
 from .mixins import RetryMixin
 
+# Initialize logger for this module
+logger = logging.getLogger(__name__)
+
 
 class OpenAICompatibleProvider(RetryMixin, ModelProvider):
     """Base class for any provider using an OpenAI-compatible API.
@@ -55,7 +58,7 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
 
         # Warn if using external URL without authentication
         if self.base_url and not self._is_localhost_url() and not api_key:
-            logging.warning(
+            logger.warning(
                 f"Using external URL '{self.base_url}' without API key. "
                 "This may be insecure. Consider setting an API key for authentication."
             )
@@ -162,7 +165,8 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
                     pass
 
             return False
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Failed to check if URL is localhost: {e}")
             return False
 
 
@@ -258,14 +262,14 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
 
             except Exception as e:
                 # If all else fails, try absolute minimal client without custom httpx
-                logging.warning(f"Failed to create client with custom httpx, falling back to minimal config: {e}")
+                logger.warning(f"Failed to create client with custom httpx, falling back to minimal config: {e}", exc_info=True)
                 try:
                     minimal_kwargs = {"api_key": self.api_key}
                     if self.base_url:
                         minimal_kwargs["base_url"] = self.base_url
                     self._client = OpenAI(**minimal_kwargs)
                 except Exception as fallback_error:
-                    logging.error(f"Even minimal OpenAI client creation failed: {fallback_error}")
+                    logger.error(f"Even minimal OpenAI client creation failed: {fallback_error}", exc_info=True)
                     raise
             finally:
                 # Restore original proxy environment variables
@@ -502,8 +506,8 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
             hdrs = getattr(self.client, "_default_headers", None)
             if hdrs is not None:
                 hdrs.setdefault("Msh-Trace-Mode", "on")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to set provider-specific headers: {e}")
 
         # Log sanitized payload
         try:
@@ -516,19 +520,39 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
                     return [_san(x) for x in v]
                 return v
 
-            logging.info(
+            logger.info(
                 "chat.completions.create payload (sanitized): %s",
                 _json.dumps(_san(completion_params), ensure_ascii=False),
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to log sanitized payload: {e}")
 
         # Determine capability support
         supports_temperature = effective_temperature is not None
         if supports_temperature:
             completion_params["temperature"] = effective_temperature
-        if max_output_tokens and supports_temperature:
-            completion_params["max_tokens"] = int(max_output_tokens)
+
+        # Max tokens handling - respects ENFORCE_MAX_TOKENS configuration
+        # If max_output_tokens is explicitly provided, always use it
+        # If not provided and ENFORCE_MAX_TOKENS=true, use provider-specific default
+        # If not provided and ENFORCE_MAX_TOKENS=false, don't set max_tokens (let model decide)
+        if supports_temperature:
+            from config import DEFAULT_MAX_OUTPUT_TOKENS, KIMI_MAX_OUTPUT_TOKENS, ENFORCE_MAX_TOKENS
+            from .base import ProviderType
+
+            if max_output_tokens:
+                # Explicitly provided - always use it
+                completion_params["max_tokens"] = int(max_output_tokens)
+            elif ENFORCE_MAX_TOKENS:
+                # Not provided, but enforcement is enabled - use provider-specific default
+                provider_type = self.get_provider_type()
+                if provider_type == ProviderType.KIMI and KIMI_MAX_OUTPUT_TOKENS > 0:
+                    completion_params["max_tokens"] = int(KIMI_MAX_OUTPUT_TOKENS)
+                    logger.debug(f"Using default max_tokens={KIMI_MAX_OUTPUT_TOKENS} for Kimi (ENFORCE_MAX_TOKENS=true)")
+                elif DEFAULT_MAX_OUTPUT_TOKENS > 0:
+                    completion_params["max_tokens"] = int(DEFAULT_MAX_OUTPUT_TOKENS)
+                    logger.debug(f"Using default max_tokens={DEFAULT_MAX_OUTPUT_TOKENS} (ENFORCE_MAX_TOKENS=true)")
+            # else: Don't set max_tokens, let the model use its default
 
         # Optional parameters
         if kwargs.get("tools"):
@@ -584,9 +608,9 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
                 if token:
                     # Save on the provider for reuse in this process; upper layers may also persist per session
                     setattr(self, "_kimi_cache_token", token)
-                    logging.info("Kimi context cache saved token suffix=%s", str(token)[-6:])
-            except Exception:
-                pass
+                    logger.info("Kimi context cache saved token suffix=%s", str(token)[-6:])
+            except Exception as e:
+                logger.debug(f"Failed to capture Kimi cache token: {e}")
 
             # Streaming
             if completion_params.get("stream") is True:
@@ -610,7 +634,8 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
                                 response_id = event.id
                             if created_ts is None and getattr(event, "created", None):
                                 created_ts = event.created
-                        except Exception:
+                        except Exception as e:
+                            logger.debug(f"Failed to process streaming event: {e}")
                             continue
                 except Exception as stream_err:
                     raise RuntimeError(f"Streaming failed: {stream_err}") from stream_err
@@ -636,7 +661,8 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
             try:
                 choices = getattr(response, "choices", []) or []
                 choice0 = choices[0] if len(choices) > 0 else None
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Failed to extract choices from response: {e}")
                 choice0 = None
 
             content = None
@@ -645,21 +671,21 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
                     msg = getattr(choice0, "message", None)
                     if msg is not None and getattr(msg, "content", None):
                         content = msg.content
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to extract message content: {e}")
             if not content and choice0 is not None:
                 try:
                     if getattr(choice0, "content", None):
                         content = choice0.content
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to extract choice content: {e}")
             if not content and choice0 is not None:
                 try:
                     delta = getattr(choice0, "delta", None)
                     if delta is not None and getattr(delta, "content", None):
                         content = delta.content
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to extract delta content: {e}")
             if not content:
                 content = getattr(response, "content", None) or ""
 
@@ -672,7 +698,8 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
                     raw_dict = response.model_dump()
                 elif isinstance(response, dict):
                     raw_dict = response
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Failed to convert response to dict: {e}")
                 raw_dict = None
 
             return ModelResponse(

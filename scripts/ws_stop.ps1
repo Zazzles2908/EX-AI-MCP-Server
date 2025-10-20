@@ -49,6 +49,25 @@ if ($DaemonPid) {
   Write-Host "No daemon PID found; ensuring port is free..." -ForegroundColor Yellow
 }
 
+# Stop all shim processes to prevent orphaned shims from respawning daemon
+Write-Host "Stopping all shim processes..." -ForegroundColor Yellow
+$shimCount = 0
+Get-Process python -ErrorAction SilentlyContinue | ForEach-Object {
+  try {
+    $cmdLine = (Get-WmiObject Win32_Process -Filter "ProcessId = $($_.Id)" -ErrorAction SilentlyContinue).CommandLine
+    if ($cmdLine -like "*run_ws_shim.py*") {
+      Write-Host "  Killing shim PID $($_.Id)..." -ForegroundColor Yellow
+      Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+      $shimCount++
+    }
+  } catch {}
+}
+if ($shimCount -gt 0) {
+  Write-Host "Stopped $shimCount shim process(es)." -ForegroundColor Green
+} else {
+  Write-Host "No shim processes found." -ForegroundColor Gray
+}
+
 # Wait for port to close (up to 8s)
 $deadline = (Get-Date).AddSeconds(8)
 while (Test-Listening) {

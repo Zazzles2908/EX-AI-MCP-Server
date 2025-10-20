@@ -66,7 +66,7 @@ class FileEmbeddingMixin:
                 continuation_id = current_arguments.get("continuation_id")
                 
                 if continuation_id:
-                    from utils.conversation_memory import get_conversation_file_list, get_thread
+                    from utils.conversation.memory import get_conversation_file_list, get_thread
                     
                     thread_context = get_thread(continuation_id)
                     if thread_context:
@@ -119,8 +119,16 @@ class FileEmbeddingMixin:
             tuple[str, list[str]]: (file_content, processed_files)
         """
         # Use read_files directly with token budgeting, bypassing filter_new_files
-        from utils.file_utils import expand_paths, read_files
+        from utils.file.operations import expand_paths, read_files
         import os
+
+        # ISSUE #8 FIX: Add max file count limit to prevent bloat
+        # Get max file count from env (default 20 files)
+        try:
+            max_file_count = int(os.getenv("EXPERT_ANALYSIS_MAX_FILE_COUNT", "20"))
+        except ValueError:
+            logger.warning("Invalid EXPERT_ANALYSIS_MAX_FILE_COUNT, defaulting to 20 files")
+            max_file_count = 20
 
         # Get max file size from env (default 10KB)
         try:
@@ -129,10 +137,15 @@ class FileEmbeddingMixin:
             logger.warning("Invalid EXPERT_ANALYSIS_MAX_FILE_SIZE_KB, defaulting to 10KB")
             max_file_size_kb = 10
 
-        # Filter out files that are too large
+        # Filter out files that are too large and enforce file count limit
         filtered_files = []
         skipped_files = []
         for file_path in files:
+            # ISSUE #8 FIX: Stop if we've reached max file count
+            if len(filtered_files) >= max_file_count:
+                skipped_files.append((file_path, "count_limit"))
+                continue
+
             try:
                 if os.path.isfile(file_path):
                     file_size_kb = os.path.getsize(file_path) / 1024
@@ -151,10 +164,21 @@ class FileEmbeddingMixin:
                 filtered_files.append(file_path)  # Include it anyway, let read_files handle errors
 
         if skipped_files:
-            logger.info(
-                f"[WORKFLOW_FILES] {self.get_name()}: Skipped {len(skipped_files)} large files "
-                f"(>{max_file_size_kb}KB): {[f[0] for f in skipped_files]}"
-            )
+            size_skipped = [f for f in skipped_files if f[1] != "count_limit"]
+            count_skipped = [f for f in skipped_files if f[1] == "count_limit"]
+
+            if size_skipped:
+                logger.info(
+                    f"[WORKFLOW_FILES] {self.get_name()}: Skipped {len(size_skipped)} large files "
+                    f"(>{max_file_size_kb}KB): {[f[0] for f in size_skipped]}"
+                )
+
+            if count_skipped:
+                logger.warning(
+                    f"[WORKFLOW_FILES] {self.get_name()}: Skipped {len(count_skipped)} files due to max count limit "
+                    f"({max_file_count} files). Total files requested: {len(files)}. "
+                    f"Increase EXPERT_ANALYSIS_MAX_FILE_COUNT if needed."
+                )
 
         # Get token budget for files
         current_model_context = self.get_current_model_context()
@@ -298,7 +322,7 @@ class FileEmbeddingMixin:
                 except Exception as e:
                     logger.error(f"[WORKFLOW_FILES] {self.get_name()}: Failed to resolve model context: {e}")
                     # Create fallback model context (preserves existing test behavior)
-                    from utils.model_context import ModelContext
+                    from utils.model.context import ModelContext
 
                     model_name = self.get_request_model_name(request)
                     self._model_context = ModelContext(model_name)  # type: ignore
@@ -332,7 +356,7 @@ class FileEmbeddingMixin:
             )
             # If token budget forced truncation, add a concise summary of remaining files
             try:
-                from utils.file_utils import expand_paths
+                from utils.file.operations import expand_paths
                 requested = set(expand_paths(request_files))
                 embedded = set(processed_files or [])
                 remaining = [f for f in requested if f not in embedded]

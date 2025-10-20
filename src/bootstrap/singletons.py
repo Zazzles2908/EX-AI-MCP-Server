@@ -61,8 +61,10 @@ def ensure_providers_configured() -> None:
         return
     
     try:
+        # NOTE: This imports from src/server/providers/provider_config.py
+        # which is a thin orchestrator that delegates to helper modules
         from src.server.providers import configure_providers
-        
+
         logger.info("Configuring providers (first-time initialization)")
         configure_providers()
         _providers_configured = True
@@ -141,9 +143,10 @@ def ensure_provider_tools_registered(tools_dict: Dict[str, Any]) -> None:
         prov_tools: Dict[str, Any] = {}
         
         # Kimi provider tools (lenient registration)
-        # NOTE: kimi_upload_and_extract and kimi_chat_with_tools are INTERNAL ONLY
         kimi_tools = [
-            ("kimi_multi_file_chat", ("tools.providers.kimi.kimi_upload", "KimiMultiFileChatTool")),
+            ("kimi_upload_files", ("tools.providers.kimi.kimi_files", "KimiUploadFilesTool")),
+            ("kimi_chat_with_files", ("tools.providers.kimi.kimi_files", "KimiChatWithFilesTool")),
+            ("kimi_manage_files", ("tools.providers.kimi.kimi_files", "KimiManageFilesTool")),
             ("kimi_intent_analysis", ("tools.providers.kimi.kimi_intent", "KimiIntentAnalysisTool")),
         ]
         

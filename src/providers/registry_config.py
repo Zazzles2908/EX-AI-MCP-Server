@@ -41,7 +41,7 @@ from src.providers.base import ModelProvider, ProviderType
 if TYPE_CHECKING:
     from tools.models import ToolModelCategory
 
-from utils.health import HealthManager
+from utils.infrastructure.health import HealthManager
 
 
 # ================================================================================
@@ -299,7 +299,7 @@ class HealthWrappedProvider(ModelProvider):
                 if _health_enabled() and not _health_log_only():
                     HealthWrappedProvider._schedule(self._health.record_result(True))
                 try:
-                    from utils.metrics import record_provider_call
+                    from utils.infrastructure.metrics import record_provider_call
 
                     record_provider_call(self._ptype.value, model_name, True, latency_ms)
                 except Exception:
@@ -310,7 +310,7 @@ class HealthWrappedProvider(ModelProvider):
                 if _health_enabled():
                     HealthWrappedProvider._schedule(self._health.record_result(False))
                 try:
-                    from utils.metrics import record_provider_call
+                    from utils.infrastructure.metrics import record_provider_call
 
                     record_provider_call(self._ptype.value, model_name, False, None)
                 except Exception:

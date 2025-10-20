@@ -68,20 +68,9 @@ class GLMCapabilities(ProviderCapabilitiesBase):
         if not self.supports_websearch() or not config.get("use_websearch"):
             return WebSearchSchema(None, None)
 
-        # CRITICAL: Only glm-4-plus and glm-4.6 support NATIVE web search tool calling
-        # Other models can still use web search via direct /web_search API endpoint
-        # This check prevents passing tools parameter to models that don't support it
-        model_name = config.get("model_name", "")
-        websearch_supported_models = ["glm-4-plus", "glm-4.6"]
-
-        if model_name not in websearch_supported_models:
-            # Model doesn't support native tool calling for web search
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.info(f"Model {model_name} does not support native web search tool calling")
-            logger.info(f"Web search is still available via direct /web_search API endpoint")
-            logger.info(f"Use glm_web_search tool for direct API access")
-            return WebSearchSchema(None, None)
+        # ALL GLM models support native web search tool calling (verified 2025-10-09)
+        # Source: https://api.z.ai/api/paas/v4/web_search documentation
+        # Models: glm-4.6, glm-4.5, glm-4.5-flash, glm-4.5-air, glm-4.5v all support web search
 
         # GLM requires web_search object with configuration parameters
         # Default to Jina search with one week recency filter

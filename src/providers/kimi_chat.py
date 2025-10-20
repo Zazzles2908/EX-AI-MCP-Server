@@ -3,9 +3,18 @@
 import hashlib
 import logging
 import os
+import time
 from typing import Any, Optional
 
 from . import kimi_cache
+
+# PHASE 3 (2025-10-18): Import monitoring utilities
+from utils.monitoring import record_kimi_event
+from utils.timezone_helper import log_timestamp
+
+# PHASE 1 (2025-10-18): Import circuit breaker for resilience
+from src.resilience.circuit_breaker_manager import circuit_breaker_manager
+import pybreaker
 
 logger = logging.getLogger(__name__)
 
@@ -127,19 +136,35 @@ def chat_completions_create(
     content_text = ""
     raw_payload = None
     cache_saved = False
-    
+
+    # PHASE 3 (2025-10-18): Monitor API call start
+    start_time = time.time()
+    request_size = len(str(messages).encode('utf-8'))
+    error = None
+
+    # PHASE 1 (2025-10-18): Apply circuit breaker protection
+    breaker = circuit_breaker_manager.get_breaker('kimi')
+
     try:
         api = getattr(client.chat.completions, "with_raw_response", None)
         if api:
-            raw = api.create(
-                model=model,
-                messages=messages,
-                tools=tools,
-                tool_choice=tool_choice,
-                temperature=temperature,
-                stream=False,
-                extra_headers=extra_headers,
-            )
+            # Build API call parameters
+            api_params = {
+                "model": model,
+                "messages": messages,
+                "tools": tools,
+                "tool_choice": tool_choice,
+                "temperature": temperature,
+                "stream": False,
+                "extra_headers": extra_headers,
+            }
+
+            # PHASE 1 (2025-10-18): Wrap API call with circuit breaker
+            @breaker
+            def _kimi_api_call():
+                return api.create(**api_params)
+
+            raw = _kimi_api_call()
             # Parse JSON body
             try:
                 raw_payload = raw.parse()
@@ -170,26 +195,61 @@ def chat_completions_create(
                 logger.warning(f"Unexpected error extracting cache token: {e}")
                 cache_saved = False
             
-            # Pull content
+            # Pull content with structure validation
             try:
-                choice0 = (raw_payload.choices if hasattr(raw_payload, "choices") else raw_payload.get("choices"))[0]
+                # Validate response structure BEFORE parsing
+                if not hasattr(raw_payload, "choices") and not (isinstance(raw_payload, dict) and "choices" in raw_payload):
+                    raise ValueError(
+                        f"Invalid Kimi API response: missing 'choices' field. "
+                        f"Response type: {type(raw_payload)}"
+                    )
+
+                choices = raw_payload.choices if hasattr(raw_payload, "choices") else raw_payload.get("choices")
+
+                if not choices or len(choices) == 0:
+                    raise ValueError(
+                        f"Invalid Kimi API response: empty 'choices' array. "
+                        f"This may indicate an API error or rate limit."
+                    )
+
+                choice0 = choices[0]
+
+                # Validate choice has message field
+                if not hasattr(choice0, "message") and not (isinstance(choice0, dict) and "message" in choice0):
+                    raise ValueError(
+                        f"Invalid Kimi API response: choice missing 'message' field. "
+                        f"Choice type: {type(choice0)}"
+                    )
+
                 msg = getattr(choice0, "message", None) or choice0.get("message", {})
                 content_text = getattr(msg, "content", None) or msg.get("content", "")
+            except ValueError as e:
+                # Re-raise validation errors - these indicate API problems
+                logger.error(f"Kimi API response validation failed (model: {model}): {e}")
+                raise
             except Exception as e:
                 logger.warning(f"Failed to extract content from Kimi response (model: {model}): {e}")
                 # Continue - empty content will be returned, may indicate API response format change
                 content_text = ""
         else:
             # Fallback without raw headers support
-            resp = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                tools=tools,
-                tool_choice=tool_choice,
-                temperature=temperature,
-                stream=False,
-                extra_headers=extra_headers,
-            )
+            # Build API call parameters
+            api_params = {
+                "model": model,
+                "messages": messages,
+                "tools": tools,
+                "tool_choice": tool_choice,
+                "temperature": temperature,
+                "stream": False,
+                "extra_headers": extra_headers,
+            }
+
+            # PHASE 1 (2025-10-18): Wrap fallback API call with circuit breaker
+            @breaker
+            def _kimi_api_call_fallback():
+                return client.chat.completions.create(**api_params)
+
+            resp = _kimi_api_call_fallback()
             raw_payload = getattr(resp, "model_dump", lambda: resp)()
             try:
                 content_text = resp.choices[0].message.content
@@ -199,8 +259,50 @@ def chat_completions_create(
             except Exception as e:
                 logger.warning(f"Unexpected error extracting content: {e}")
                 content_text = (raw_payload.get("choices", [{}])[0].get("message", {}) or {}).get("content", "")
+    except pybreaker.CircuitBreakerError:
+        # PHASE 1 (2025-10-18): Circuit breaker is OPEN - Kimi API is unavailable
+        logger.error("Kimi circuit breaker OPEN - API unavailable")
+        error = "Circuit breaker OPEN - Kimi API unavailable"
+
+        # Record monitoring event
+        response_time_ms = (time.time() - start_time) * 1000
+        record_kimi_event(
+            direction="error",
+            function_name="kimi_chat.chat_completions_create",
+            data_size=request_size,
+            error=error,
+            metadata={"model": model, "timestamp": log_timestamp()}
+        )
+
+        # Return error response (graceful degradation)
+        return {
+            "provider": "KIMI",
+            "model": model,
+            "content": "",
+            "tool_calls": None,
+            "usage": None,
+            "raw": {},
+            "metadata": {
+                "error": error,
+                "circuit_breaker_open": True,
+            },
+        }
     except Exception as e:
         logger.error("Kimi chat call error: %s", e)
+        error = str(e)
+
+        # PHASE 3 (2025-10-18): Monitor API call failure
+        response_time_ms = (time.time() - start_time) * 1000
+        record_kimi_event(
+            direction="error",
+            function_name="kimi_chat.chat_completions_create",
+            data_size=request_size,
+            error=error,
+            metadata={
+                "model": model,
+                "timestamp": log_timestamp()
+            }
+        )
         raise
 
     # Normalize usage to a plain dict to ensure JSON-serializable output
@@ -248,6 +350,47 @@ def chat_completions_create(
         # Continue - tool_calls will be None, tool use functionality may not work but response is still valid
         tool_calls_data = None
 
+    # Extract finish_reason from response (CRITICAL for detecting truncation)
+    finish_reason = "unknown"
+    try:
+        if isinstance(raw_payload, dict):
+            choices = raw_payload.get("choices", [])
+        else:
+            choices = getattr(raw_payload, "choices", [])
+
+        if choices:
+            if isinstance(choices[0], dict):
+                finish_reason = choices[0].get("finish_reason", "unknown")
+            else:
+                finish_reason = getattr(choices[0], "finish_reason", "unknown")
+    except Exception as e:
+        logger.debug(f"Failed to extract finish_reason from Kimi response (model: {model}): {e}")
+        # Continue - finish_reason will be "unknown", completeness check may not work but response is still valid
+        finish_reason = "unknown"
+
+    # PHASE 3 (2025-10-18): Monitor successful API call
+    response_time_ms = (time.time() - start_time) * 1000
+    response_size = len(str(content_text).encode('utf-8'))
+
+    # Extract token usage for monitoring
+    total_tokens = 0
+    if _usage:
+        total_tokens = _usage.get("total_tokens", 0)
+
+    record_kimi_event(
+        direction="receive",
+        function_name="kimi_chat.chat_completions_create",
+        data_size=response_size,
+        response_time_ms=response_time_ms,
+        metadata={
+            "model": model,
+            "tokens": total_tokens,
+            "cache_hit": bool(cache_attached),
+            "finish_reason": finish_reason,
+            "timestamp": log_timestamp()
+        }
+    )
+
     return {
         "provider": "KIMI",
         "model": model,
@@ -256,6 +399,7 @@ def chat_completions_create(
         "usage": _usage,
         "raw": getattr(raw_payload, "model_dump", lambda: raw_payload)() if hasattr(raw_payload, "model_dump") else raw_payload,
         "metadata": {
+            "finish_reason": finish_reason,  # CRITICAL: Now extracted for completeness validation
             "cache": {
                 "attached": bool(cache_attached),
                 "saved": bool(cache_saved),

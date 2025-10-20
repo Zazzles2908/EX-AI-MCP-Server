@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+"""
+Schema Audit Tool
+
+Validates tool input schemas for MCP compliance.
+
+ARCHITECTURE NOTE (v2.0.2+):
+- This module delegates to singleton registry via src/server/registry_bridge
+- NEVER instantiate ToolRegistry directly - always use get_registry()
+- registry_bridge.build() is idempotent and delegates to src/bootstrap/singletons
+- Ensures TOOLS is SERVER_TOOLS identity check always passes
+"""
+
 import json
 import sys
 from pathlib import Path
@@ -35,7 +47,9 @@ def _contains_nullable(obj: Any) -> bool:
 def audit() -> Dict[str, Any]:
     issues = []
     ok = 0
-    reg = get_registry(); reg.build()
+    reg = get_registry()
+    # Idempotent guard: build() delegates to singleton, safe to call multiple times
+    reg.build()
     for name, tool in reg.list_tools().items():
         try:
             schema = tool.get_input_schema()  # type: ignore

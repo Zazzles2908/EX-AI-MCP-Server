@@ -56,7 +56,7 @@ def get_follow_up_instructions(current_turn_count: int, max_turns: int = None) -
         Follow-up instructions to append to the tool prompt
     """
     if max_turns is None:
-        from utils.conversation_memory import MAX_CONVERSATION_TURNS
+        from utils.conversation.memory import MAX_CONVERSATION_TURNS
 
         max_turns = MAX_CONVERSATION_TURNS
 
@@ -67,16 +67,19 @@ IMPORTANT: This is approaching the final exchange in this conversation thread.
 Do NOT include any follow-up questions in your response. Provide your complete
 final analysis and recommendations."""
     else:
-        # Normal follow-up instructions
+        # Normal follow-up instructions - use dynamic client name
+        from utils.client_info import get_client_friendly_name
+
+        client_name = get_client_friendly_name()
         remaining_turns = max_turns - current_turn_count - 1
         return f"""
 
-CONVERSATION CONTINUATION: You can continue this discussion with Claude! ({remaining_turns} exchanges remaining)
+CONVERSATION CONTINUATION: You can continue this discussion! ({remaining_turns} exchanges remaining)
 
 Feel free to ask clarifying questions or suggest areas for deeper exploration naturally within your response.
 If something needs clarification or you'd benefit from additional context, simply mention it conversationally.
 
-IMPORTANT: When you suggest follow-ups or ask questions, you MUST explicitly instruct Claude to use the continuation_id
+IMPORTANT: When you suggest follow-ups or ask questions, you MUST explicitly instruct the user to use the continuation_id
 to respond. Use clear, direct language based on urgency:
 
 For optional follow-ups: "Please continue this conversation using the continuation_id from this response if you'd "
@@ -87,13 +90,12 @@ For needed responses: "Please respond using the continuation_id from this respon
 For essential/critical responses: "RESPONSE REQUIRED: Please immediately continue using the continuation_id from "
 "this response. Cannot proceed without your clarification/input."
 
-This ensures Claude knows both HOW to maintain the conversation thread AND whether a response is optional, "
-"needed, or essential.
+This ensures the conversation thread is maintained properly and whether a response is optional, needed, or essential.
 
-The tool will automatically provide a continuation_id in the structured response that Claude can use in subsequent
+The tool will automatically provide a continuation_id in the structured response that can be used in subsequent
 tool calls to maintain full conversation context across multiple exchanges.
 
 Remember: Only suggest follow-ups when they would genuinely add value to the discussion, and always instruct "
-"Claude to use the continuation_id when you do."""
+"the user to use the continuation_id when you do."""
 
 

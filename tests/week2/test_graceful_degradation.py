@@ -13,7 +13,7 @@ This test suite validates:
 import pytest
 import asyncio
 import time
-from utils.error_handling import (
+from utils.infrastructure.error_handling import (
     GracefulDegradation,
     CircuitBreakerOpen,
     get_graceful_degradation,

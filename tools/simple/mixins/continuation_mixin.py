@@ -3,6 +3,8 @@ Continuation Mixin for SimpleTool
 
 Provides conversation continuation and caching functionality.
 Extracted from tools/simple/base.py to improve maintainability.
+
+Updated to use storage factory pattern for Supabase integration.
 """
 
 from typing import Optional, Dict, Any
@@ -20,6 +22,7 @@ class ContinuationMixin:
     - Continuation offer creation
     - Thread management
     - Turn tracking
+    - Storage backend abstraction (memory/supabase/dual)
 
     Dependencies:
     - Requires _model_context attribute from BaseTool
@@ -30,94 +33,155 @@ class ContinuationMixin:
 
     def _handle_conversation_history(self, request, continuation_id: Optional[str], prompt_field_value: str):
         """
-        Handle conversation history for continuation.
-        
+        Handle conversation history for continuation using storage factory.
+
         Args:
             request: The validated request object
             continuation_id: Optional continuation ID for existing conversation
             prompt_field_value: The prompt field value from request
-            
+
         Returns:
             Tuple of (final_prompt, should_add_follow_up_instructions)
         """
         if not continuation_id:
             # New conversation - return prompt as-is, will add follow-up instructions later
             return prompt_field_value, True
-            
+
         # Check if conversation history is already embedded
         if "=== CONVERSATION HISTORY ===" in prompt_field_value:
             # Use pre-embedded history
             logger.debug(f"{self.get_name()}: Using pre-embedded conversation history")
             return prompt_field_value, False
-            
+
         # No embedded history - reconstruct it (for in-process calls)
         logger.debug(f"{self.get_name()}: No embedded history found, reconstructing conversation")
-        
+
         try:
-            from utils.conversation_memory import add_turn, build_conversation_history, get_thread
-            
-            thread_context = get_thread(continuation_id)
-            
+            # CRITICAL FIX: Use cached storage backend to avoid creating 60+ instances
+            from utils.conversation.threads import _get_storage_backend
+
+            storage = _get_storage_backend()
+            if not storage:
+                logger.warning(f"{self.get_name()}: Storage backend not available")
+                return prompt_field_value, False
+
+            thread_context = storage.get_thread(continuation_id)
+
             if thread_context:
                 # Add user's new input to conversation
                 user_prompt = self.get_request_prompt(request)
                 user_files = self.get_request_files(request)
+                user_images = self.get_request_images(request)
+
                 if user_prompt:
-                    add_turn(continuation_id, "user", user_prompt, files=user_files)
-                    
-                    # Get updated thread context after adding the turn
-                    thread_context = get_thread(continuation_id)
-                    logger.debug(
-                        f"{self.get_name()}: Retrieved updated thread with {len(thread_context.turns)} turns"
+                    # CRITICAL FIX (2025-10-19): Strip embedded conversation history before saving
+                    # to prevent exponential token growth. When Augment Code (or other AI) sends
+                    # a continuation request, it embeds the full conversation history in the prompt.
+                    # If we save this AS-IS, then on the next turn we'll load it and add history AGAIN,
+                    # causing exponential growth (Turn 1: 1K tokens, Turn 2: 2K, Turn 3: 4K, etc.)
+                    #
+                    # Extract only the NEW user input by stripping everything before "=== NEW USER INPUT ==="
+                    original_prompt = user_prompt
+                    if "=== NEW USER INPUT ===" in user_prompt:
+                        # Extract only the new input after the marker
+                        parts = user_prompt.split("=== NEW USER INPUT ===", 1)
+                        if len(parts) == 2:
+                            user_prompt = parts[1].strip()
+                            logger.info(
+                                f"{self.get_name()}: [CONTEXT_FIX] Stripped embedded history from user prompt "
+                                f"({len(original_prompt):,} → {len(user_prompt):,} chars)"
+                            )
+
+                    storage.add_turn(
+                        continuation_id,
+                        "user",
+                        user_prompt,
+                        files=user_files,
+                        images=user_images,
+                        tool_name=self.get_name()
                     )
-                
+
+                    # Get updated thread context after adding the turn
+                    thread_context = storage.get_thread(continuation_id)
+
+                    # Handle different thread context formats (memory vs supabase)
+                    turn_count = len(thread_context.get('messages', [])) if isinstance(thread_context, dict) else len(thread_context.turns)
+                    logger.debug(
+                        f"{self.get_name()}: Retrieved updated thread with {turn_count} turns"
+                    )
+
                 # Build conversation history with updated thread context
-                conversation_history, conversation_tokens = build_conversation_history(
-                    thread_context, self._model_context
-                )
-                
+                try:
+                    # Try storage's build method first (for supabase)
+                    if hasattr(storage, 'build_conversation_history'):
+                        conversation_history, conversation_tokens = storage.build_conversation_history(
+                            continuation_id, self._model_context
+                        )
+                    else:
+                        # Fallback to memory's build method
+                        from utils.conversation.memory import build_conversation_history
+                        conversation_history, conversation_tokens = build_conversation_history(
+                            thread_context, self._model_context
+                        )
+                except Exception as e:
+                    logger.warning(f"Error building conversation history: {e}, using fallback")
+                    conversation_history = ""
+
                 # Get the base prompt from the tool
                 base_prompt = prompt_field_value
-                
+
                 # Combine with conversation history
                 if conversation_history:
                     final_prompt = f"{conversation_history}\n\n=== NEW USER INPUT ===\n{base_prompt}"
                 else:
                     final_prompt = base_prompt
-                    
+
                 return final_prompt, False
             else:
                 # Thread not found, prepare normally
                 logger.warning(f"Thread {continuation_id} not found, preparing prompt normally")
                 return prompt_field_value, False
-                
+
         except Exception as e:
             logger.error(f"Error handling conversation history: {e}")
             return prompt_field_value, False
 
     def _create_continuation_offer(self, request, model_info: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """
-        Create continuation offer following old base.py pattern.
-        
+        Create continuation offer using storage factory pattern.
+
         Args:
             request: The validated request object
             model_info: Optional model information dictionary
-            
+
         Returns:
             Dictionary with continuation offer data or None
         """
         continuation_id = self.get_request_continuation_id(request)
 
         try:
-            from utils.conversation_memory import create_thread, get_thread
+            # CRITICAL FIX: Use cached storage backend to avoid creating 60+ instances
+            from utils.conversation.threads import _get_storage_backend
             from utils.client_info import get_current_session_fingerprint, get_cached_client_info, format_client_info
+            from utils.conversation.memory import MAX_CONVERSATION_TURNS, create_thread
+
+            storage = _get_storage_backend()
+            if not storage:
+                logger.warning(f"{self.get_name()}: Storage backend not available for continuation offer")
+                return None
 
             if continuation_id:
-                # Existing conversation
-                thread_context = get_thread(continuation_id)
-                if thread_context and thread_context.turns:
-                    turn_count = len(thread_context.turns)
-                    from utils.conversation_memory import MAX_CONVERSATION_TURNS
+                # Existing conversation (or first turn with pre-generated continuation_id)
+                thread_context = storage.get_thread(continuation_id)
+                if thread_context:
+                    # Thread exists - this is a continuation
+                    # Handle different thread context formats (memory vs supabase)
+                    if isinstance(thread_context, dict):
+                        # Supabase format
+                        turn_count = len(thread_context.get('messages', []))
+                    else:
+                        # Memory format
+                        turn_count = len(thread_context.turns) if hasattr(thread_context, 'turns') else 0
 
                     if turn_count >= MAX_CONVERSATION_TURNS - 1:
                         return None  # No more turns allowed
@@ -128,7 +192,13 @@ class ContinuationMixin:
                         "remaining_turns": remaining_turns,
                         "note": f"You can continue this conversation for {remaining_turns} more exchanges.",
                     }
-            else:
+                # CRITICAL FIX (2025-10-19): Thread doesn't exist yet - this is first turn
+                # with pre-generated continuation_id from _parse_response. Treat as new conversation.
+                # Fall through to "New conversation" logic below
+
+            # New conversation - create thread and offer continuation
+            # This handles both: 1) No continuation_id provided, 2) continuation_id exists but thread doesn't
+            if True:  # Always execute this block (replaces "else:" to handle fall-through)
                 # New conversation - create thread and offer continuation
                 # Convert request to dict for initial_context
                 initial_request_dict = self.get_request_as_dict(request)
@@ -142,24 +212,48 @@ class ContinuationMixin:
                 except Exception:
                     sess_fp, friendly = None, None
 
-                new_thread_id = create_thread(
-                    tool_name=self.get_name(),
-                    initial_request=initial_request_dict,
-                    session_fingerprint=sess_fp,
-                    client_friendly_name=friendly,
-                )
+                # CRITICAL FIX (2025-10-19): Use pre-generated continuation_id if available
+                # (from _parse_response), otherwise create a new one
+                if continuation_id:
+                    # Use the pre-generated continuation_id
+                    new_thread_id = continuation_id
+                else:
+                    # Create thread (still uses memory.create_thread for now)
+                    new_thread_id = create_thread(
+                        tool_name=self.get_name(),
+                        initial_request=initial_request_dict,
+                        session_fingerprint=sess_fp,
+                        client_friendly_name=friendly,
+                    )
 
-                # Add the initial user turn to the new thread
-                from utils.conversation_memory import MAX_CONVERSATION_TURNS, add_turn
-
+                # Add the initial user turn using storage
                 user_prompt = self.get_request_prompt(request)
                 user_files = self.get_request_files(request)
                 user_images = self.get_request_images(request)
 
                 # Add user's initial turn
-                add_turn(
-                    new_thread_id, "user", user_prompt, files=user_files, images=user_images, tool_name=self.get_name()
+                storage.add_turn(
+                    new_thread_id,
+                    "user",
+                    user_prompt,
+                    files=user_files,
+                    images=user_images,
+                    tool_name=self.get_name()
                 )
+
+                # CRITICAL FIX (2025-10-19): Save assistant response for first turn
+                # The assistant response is generated BEFORE _create_continuation_offer is called,
+                # so we need to save it here after the conversation is created in Supabase.
+                # For subsequent turns, the assistant response is saved in format_response().
+                if hasattr(request, '_assistant_response_to_save'):
+                    storage.add_turn(
+                        new_thread_id,
+                        "assistant",
+                        request._assistant_response_to_save,
+                        tool_name=self.get_name()
+                    )
+                    # Clean up the temporary attribute
+                    delattr(request, '_assistant_response_to_save')
 
                 note_client = friendly or "You"
                 return {
@@ -227,8 +321,8 @@ class ContinuationMixin:
 
     def _add_assistant_turn_to_conversation(self, continuation_id: str, raw_text: str, request, model_info: Optional[Dict[str, Any]] = None):
         """
-        Add assistant's response to conversation memory.
-        
+        Add assistant's response to conversation using storage factory.
+
         Args:
             continuation_id: The conversation thread ID
             raw_text: The assistant's response text
@@ -237,10 +331,16 @@ class ContinuationMixin:
         """
         if not continuation_id:
             return
-            
+
         try:
-            from utils.conversation_memory import add_turn
-            
+            # CRITICAL FIX: Use cached storage backend to avoid creating 60+ instances
+            from utils.conversation.threads import _get_storage_backend
+
+            storage = _get_storage_backend()
+            if not storage:
+                logger.warning(f"{self.get_name()}: Storage backend not available for turn storage")
+                return
+
             # Extract model metadata for conversation tracking
             model_provider = None
             model_name = None
@@ -263,18 +363,25 @@ class ContinuationMixin:
                 if model_response:
                     model_metadata = {"usage": model_response.usage, "metadata": model_response.metadata}
 
+            # Prepare metadata for storage
+            metadata = {}
+            if model_provider:
+                metadata['model_provider'] = model_provider
+            if model_name:
+                metadata['model_name'] = model_name
+            if model_metadata:
+                metadata['model_metadata'] = model_metadata
+
             # Only add the assistant's response to the conversation
             # The user's turn is handled elsewhere (when thread is created/continued)
-            add_turn(
-                continuation_id,  # thread_id as positional argument
-                "assistant",  # role as positional argument
-                raw_text,  # content as positional argument
+            storage.add_turn(
+                continuation_id,
+                "assistant",
+                raw_text,
                 files=self.get_request_files(request),
                 images=self.get_request_images(request),
-                tool_name=self.get_name(),
-                model_provider=model_provider,
-                model_name=model_name,
-                model_metadata=model_metadata,
+                metadata=metadata,
+                tool_name=self.get_name()
             )
         except Exception as e:
             logger.error(f"Error adding assistant turn to conversation: {e}")

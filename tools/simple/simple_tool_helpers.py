@@ -143,7 +143,7 @@ class SimpleToolHelpersMixin:
         file_context = ""
         if files:
             try:
-                from utils.file_utils import embed_files_in_prompt
+                from utils.file.operations import embed_files_in_prompt
                 file_context = embed_files_in_prompt(files, title=file_context_title)
             except Exception as e:
                 logger.warning(f"Failed to embed files: {e}")

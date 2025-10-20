@@ -43,6 +43,7 @@ The EX-AI-MCP-Server implements a **manager-first routing architecture** that in
 - Architecture design
 - Performance optimization
 - Security audits
+- **Advantage:** 200K context window (vs 128K for GLM-4.5)
 
 **Specialized Tasks → Kimi:**
 - Long context analysis (>100K tokens)

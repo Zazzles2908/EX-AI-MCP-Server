@@ -248,7 +248,7 @@ class ModelManagementMixin:
                 raise ValueError(error_message)
 
             # Create model context for tests
-            from utils.model_context import ModelContext
+            from utils.model.context import ModelContext
             model_context = ModelContext(model_name)
 
         return model_name, model_context
@@ -483,7 +483,10 @@ class ModelManagementMixin:
             # Canonicalize + filter questionable names from being exposed in schemas
             def _canonicalize_and_filter(models: list[str]) -> list[str]:
                 disallow_exact = {"z-ai", "zhipu"}
-                disallow_substrings = ["-250414", "-airx", "-preview", "-0711", "-0905"]
+                # REMOVED: "-preview", "-0711", "-0905" from disallow list
+                # These are valid K2 model names that user prefers (kimi-k2-0905-preview, etc.)
+                # Only filter out truly invalid/internal model IDs
+                disallow_substrings = ["-250414", "-airx"]
                 seen = set()
                 cleaned: list[str] = []
                 for m in models:

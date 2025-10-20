@@ -27,17 +27,29 @@ KIMI_MAX_TOKENS=32768
 ### K2 Series (Agentic Intelligence)
 
 **kimi-k2-0905-preview** - Latest K2 **[RECOMMENDED]**
-- **Context:** 256K tokens
+- **Context:** 256K tokens (262,144 tokens)
 - **Architecture:** 1T/32B MoE (Mixture of Experts)
-- **Pricing:** $0.60 input / $2.50 output per million tokens
-- **Features:** Enhanced coding, tool-calling, agentic workflows
+- **Pricing:** $0.15 (cache hit) / $0.60 (cache miss) input, $2.50 output per million tokens
+- **Features:** Enhanced coding, tool-calling, agentic workflows, automatic caching
 - **Performance:** SOTA on SWE Bench Verified, Tau2, AceBench (among open models)
 - **Use Case:** Production deployments with version pinning for stability
 
 **kimi-k2-0711-preview** - Original K2
-- **Context:** 256K tokens
+- **Context:** 128K tokens (131,072 tokens)
+- **Pricing:** $0.15 (cache hit) / $0.60 (cache miss) input, $2.50 output per million tokens
 - **Features:** Original K2 capabilities
 - **Use Case:** Legacy compatibility
+
+**kimi-k2-turbo-preview** - Fast K2 **[RECOMMENDED FOR SPEED]**
+- **Context:** 256K tokens (262,144 tokens)
+- **Pricing:** $0.60 (cache hit) / $2.40 (cache miss) input, $10.00 output per million tokens
+- **Features:** Faster responses, same K2 capabilities, automatic caching
+- **Use Case:** Fast responses with long context
+
+**kimi-thinking-preview** - Thinking Mode
+- **Context:** 128K tokens
+- **Features:** Reasoning extraction via `reasoning_content` field
+- **Use Case:** Complex reasoning, deep analysis
 
 ### Legacy Models
 

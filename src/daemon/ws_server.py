@@ -23,15 +23,27 @@ else:
 
 from .session_manager import SessionManager
 
+# Semaphore manager imports removed - reverting to original implementation
+
 # Bootstrap logging setup
 import sys
 _bootstrap_path = Path(__file__).resolve().parents[2]
 if str(_bootstrap_path) not in sys.path:
     sys.path.insert(0, str(_bootstrap_path))
 
-from src.bootstrap import setup_logging, get_repo_root
+from src.bootstrap import setup_logging, get_repo_root, configure_websockets_logging
 from src.core.config import get_config
-from src.core.message_bus_client import MessageBusClient
+
+# PHASE 3 (2025-10-18): Import monitoring utilities
+from utils.monitoring import record_websocket_event, get_monitor
+from utils.timezone_helper import log_timestamp
+
+# PHASE 1 (2025-10-18): Import connection manager and rate limiter for resilience
+from src.daemon.connection_manager import get_connection_manager
+from src.resilience.rate_limiter import get_rate_limiter
+
+# PHASE 4 (2025-10-19): Import resilient WebSocket manager for connection resilience
+from src.monitoring.resilient_websocket import ResilientWebSocketManager
 
 LOG_DIR = get_repo_root() / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -44,28 +56,18 @@ _log_listener = setup_async_safe_logging(level=logging.INFO)
 # Setup logging with UTF-8 support for Windows consoles
 logger = setup_logging("ws_daemon", log_file=str(LOG_DIR / "ws_daemon.log"))
 
+# Suppress websockets library handshake noise (port scanners, health checks)
+configure_websockets_logging()
+
+# NOTE: Environment is already loaded by bootstrap.load_env() in run_ws_daemon.py
+# No need to load .env again here - it's already loaded before this module is imported
+
 EXAI_WS_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
-EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8765"))
+EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8079"))  # CRITICAL FIX: Changed default from 8765 to 8079
 MAX_MSG_BYTES = int(os.getenv("EXAI_WS_MAX_BYTES", str(32 * 1024 * 1024)))
 
-# Initialize message bus client (lazy initialization, won't crash if config invalid)
-_message_bus_client: Optional[MessageBusClient] = None
-
-def _get_message_bus_client() -> Optional[MessageBusClient]:
-    """Get or initialize the message bus client."""
-    global _message_bus_client
-    if _message_bus_client is None:
-        try:
-            config = get_config()
-            if config.message_bus_enabled:
-                _message_bus_client = MessageBusClient()
-                logger.info("Message bus client initialized successfully")
-            else:
-                logger.info("Message bus disabled in configuration")
-        except Exception as e:
-            logger.error(f"Failed to initialize message bus client: {e}")
-            logger.warning("Message bus will not be available")
-    return _message_bus_client
+# MESSAGE BUS REMOVED (2025-10-18): Message bus functionality has been completely removed
+# to eliminate code bloat and complexity. All payloads are now delivered via WebSocket.
 
 
 # Thread-safe token manager for secure token rotation with audit logging
@@ -101,9 +103,106 @@ class _TokenManager:
             return True
 
 
-_auth_token_manager = _TokenManager(os.getenv("EXAI_WS_TOKEN", ""))
-PING_INTERVAL = int(os.getenv("EXAI_WS_PING_INTERVAL", "45"))  # wider interval to reduce false timeouts
-PING_TIMEOUT = int(os.getenv("EXAI_WS_PING_TIMEOUT", "30"))    # allow slower systems to respond to pings
+# Semaphore guard context manager for guaranteed cleanup
+class SemaphoreGuard:
+    """
+    Context manager for safe semaphore operations with guaranteed release.
+
+    Prevents semaphore leaks by ensuring release happens even if exceptions occur.
+    Tracks acquisition state and handles edge cases like double-release.
+    """
+
+    def __init__(self, semaphore, name="unknown"):
+        self.semaphore = semaphore
+        self.name = name
+        self.acquired = False
+
+    async def __aenter__(self):
+        """Acquire the semaphore with error handling and tracking."""
+        try:
+            await self.semaphore.acquire()
+            self.acquired = True
+            logger.debug(f"Acquired semaphore: {self.name} (value: {self.semaphore._value})")
+            return self
+        except Exception as e:
+            logger.error(f"Failed to acquire semaphore {self.name}: {e}")
+            self.acquired = False
+            raise
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Release the semaphore with error handling and state tracking."""
+        if self.acquired:
+            try:
+                self.semaphore.release()
+                self.acquired = False
+                logger.debug(f"Released semaphore: {self.name} (value: {self.semaphore._value})")
+            except Exception as e:
+                logger.error(f"Failed to release semaphore {self.name}: {e}")
+                # This is a critical error that could lead to deadlocks
+                logger.critical(f"CRITICAL: Semaphore leak detected for {self.name}!")
+        else:
+            logger.warning(f"Attempted to release non-acquired semaphore: {self.name}")
+
+
+# Atomic cache for thread-safe operations
+class AtomicCache:
+    """
+    Thread-safe cache operations using asyncio.Lock.
+
+    Prevents race conditions in cache access patterns by ensuring
+    atomic check-then-update operations.
+    """
+
+    def __init__(self):
+        self._lock = asyncio.Lock()
+        self._cache = {}
+
+    async def get(self, key: str, default=None):
+        """Get value from cache atomically."""
+        async with self._lock:
+            return self._cache.get(key, default)
+
+    async def set(self, key: str, value):
+        """Set value in cache atomically."""
+        async with self._lock:
+            self._cache[key] = value
+
+    async def pop(self, key: str, default=None):
+        """Remove and return value from cache atomically."""
+        async with self._lock:
+            return self._cache.pop(key, default)
+
+    async def contains(self, key: str) -> bool:
+        """Check if key exists in cache atomically."""
+        async with self._lock:
+            return key in self._cache
+
+    async def clear_expired(self, ttl_func):
+        """Clear expired entries using provided TTL function."""
+        async with self._lock:
+            now = time.time()
+            expired_keys = [k for k, v in self._cache.items() if ttl_func(v, now)]
+            for k in expired_keys:
+                self._cache.pop(k, None)
+            return len(expired_keys)
+
+
+# Initialize auth token manager with validation
+_configured_token = os.getenv("EXAI_WS_TOKEN", "")
+_auth_token_manager = _TokenManager(_configured_token)
+
+# CRITICAL: Log auth configuration status (for debugging auth issues)
+if _configured_token:
+    logger.info(f"[AUTH] Authentication enabled (token first 10 chars): {_configured_token[:10]}...")
+else:
+    logger.warning("[AUTH] Authentication DISABLED (EXAI_WS_TOKEN is empty). "
+                   "All connections will be accepted without auth validation. "
+                   "Set EXAI_WS_TOKEN in .env file to enable authentication.")
+
+# PHASE 4 (2025-10-19): Updated ping interval to 30s for faster connection timeout detection
+# This aligns with ResilientWebSocketManager's 120s connection timeout (4 missed pings)
+PING_INTERVAL = int(os.getenv("EXAI_WS_PING_INTERVAL", "30"))  # 30s interval for faster timeout detection
+PING_TIMEOUT = int(os.getenv("EXAI_WS_PING_TIMEOUT", "10"))    # 10s timeout for ping response
 # WS-level hard ceiling for a single tool invocation; keep small to avoid client-perceived hangs
 
 # ============================================================================
@@ -137,6 +236,11 @@ SESSION_MAX_INFLIGHT = int(os.getenv("EXAI_WS_SESSION_MAX_INFLIGHT", "8"))
 GLOBAL_MAX_INFLIGHT = int(os.getenv("EXAI_WS_GLOBAL_MAX_INFLIGHT", "24"))
 KIMI_MAX_INFLIGHT = int(os.getenv("EXAI_WS_KIMI_MAX_INFLIGHT", "6"))
 GLM_MAX_INFLIGHT = int(os.getenv("EXAI_WS_GLM_MAX_INFLIGHT", "4"))
+
+# BUG FIX #11 (Phase 2 - 2025-10-20): Per-session semaphore feature flag
+# When enabled, uses per-conversation semaphores instead of global semaphore
+# This allows concurrent processing of different conversations
+USE_PER_SESSION_SEMAPHORES = os.getenv("USE_PER_SESSION_SEMAPHORES", "true").lower() == "true"
 
 # ============================================================================
 # OBSERVABILITY FILES (Mission 4: Document JSONL vs JSON intent)
@@ -195,17 +299,23 @@ def _is_health_fresh(max_age_s: float = 20.0) -> bool:
         return False
 
 _sessions = SessionManager()
+
+# Semaphores for concurrency control
 _global_sem = asyncio.BoundedSemaphore(GLOBAL_MAX_INFLIGHT)
 _provider_sems: dict[str, asyncio.BoundedSemaphore] = {
     "KIMI": asyncio.BoundedSemaphore(KIMI_MAX_INFLIGHT),
     "GLM": asyncio.BoundedSemaphore(GLM_MAX_INFLIGHT),
 }
-# Track in-flight calls by semantic call key so duplicate calls can await the same result
-_inflight_by_key: dict[str, asyncio.Event] = {}
-# Track inflight request metadata for fast-fail duplicate responses and TTL cleanup
-_inflight_meta_by_key: dict[str, dict] = {}
-# Lock to protect concurrent access to _inflight_by_key and _inflight_meta_by_key
+
+# Atomic cache instances to prevent race conditions
+_inflight_cache = AtomicCache()
+_inflight_meta_cache = AtomicCache()
+# Lock to protect concurrent access to inflight caches
 _inflight_lock = asyncio.Lock()
+
+# PHASE 4 (2025-10-19): Initialize resilient WebSocket manager
+# This will be initialized in main_async() to use the existing _safe_send as fallback
+_resilient_ws: Optional[ResilientWebSocketManager] = None
 
 _shutdown = asyncio.Event()
 RESULT_TTL_SECS = int(os.getenv("EXAI_WS_RESULT_TTL", "600"))
@@ -256,6 +366,37 @@ def _make_call_key(name: str, arguments: dict) -> str:
     except Exception:
         # Fallback: best-effort string
         return f"{name}:{str(arguments)}"
+
+
+async def _check_and_set_inflight(call_key: str, req_id: str, expires_at: float) -> tuple[bool, Optional[dict]]:
+    """Atomically check if call is in-flight and set if not."""
+    async with _inflight_lock:
+        # Get metadata atomically
+        meta = await _inflight_meta_cache.get(call_key)
+
+        # TTL cleanup if needed
+        if meta and float(meta.get("expires_at", 0)) <= time.time():
+            await _inflight_meta_cache.pop(call_key)
+            await _inflight_cache.pop(call_key)
+            meta = None
+
+        # Check if already in-flight
+        if await _inflight_cache.contains(call_key) and meta:
+            return True, meta
+
+        # Set as in-flight
+        await _inflight_cache.set(call_key, asyncio.Event())
+        await _inflight_meta_cache.set(call_key, {"req_id": req_id, "expires_at": expires_at})
+        return False, None
+
+
+async def _cleanup_inflight(call_key: str) -> None:
+    """Atomically clean up inflight tracking."""
+    async with _inflight_lock:
+        event = await _inflight_cache.pop(call_key)
+        if event:
+            event.set()
+        await _inflight_meta_cache.pop(call_key)
 
 
 def _store_result_by_key(call_key: str, outputs: list[dict]) -> None:
@@ -325,13 +466,59 @@ async def _safe_recv(ws: WebSocketServerProtocol, timeout: float):
         return None
 
 
-async def _safe_send(ws: WebSocketServerProtocol, payload: dict) -> bool:
+async def _safe_send(ws: WebSocketServerProtocol, payload: dict, critical: bool = False) -> bool:
     """Best-effort send that swallows disconnects and logs at debug level.
+
+    PHASE 4 (2025-10-19): Now uses ResilientWebSocketManager for automatic retry and queuing.
+
+    Args:
+        ws: WebSocket connection
+        payload: Message payload to send
+        critical: If True, queue message for retry on failure (default: False)
 
     Returns False if the connection is closed or an error occurred, True on success.
     """
+    start_time = time.time()
+    message_json = json.dumps(payload)
+    data_size = len(message_json.encode('utf-8'))
+
+    # PHASE 4 (2025-10-19): Use ResilientWebSocketManager if available
+    global _resilient_ws
+    if _resilient_ws is not None:
+        try:
+            success = await _resilient_ws.send(ws, payload, critical=critical)
+
+            # Monitor successful sends (sample 1 in 10 for performance)
+            if success and hash(payload.get("request_id", "")) % 10 == 0:
+                response_time_ms = (time.time() - start_time) * 1000
+                record_websocket_event(
+                    direction="send",
+                    function_name="_safe_send",
+                    data_size=data_size,
+                    response_time_ms=response_time_ms,
+                    metadata={"op": payload.get("op"), "timestamp": log_timestamp(), "resilient": True}
+                )
+
+            return success
+        except Exception as e:
+            logger.warning(f"ResilientWebSocketManager error (op: {payload.get('op', 'unknown')}): {e}")
+            # Fall through to legacy send
+
+    # Legacy fallback (if ResilientWebSocketManager not initialized or failed)
     try:
-        await ws.send(json.dumps(payload))
+        await ws.send(message_json)
+
+        # PHASE 3 (2025-10-18): Monitor successful sends (sample 1 in 10 for performance)
+        if hash(payload.get("request_id", "")) % 10 == 0:
+            response_time_ms = (time.time() - start_time) * 1000
+            record_websocket_event(
+                direction="send",
+                function_name="_safe_send",
+                data_size=data_size,
+                response_time_ms=response_time_ms,
+                metadata={"op": payload.get("op"), "timestamp": log_timestamp()}
+            )
+
         return True
     except (
         websockets.exceptions.ConnectionClosedOK,
@@ -341,9 +528,29 @@ async def _safe_send(ws: WebSocketServerProtocol, payload: dict) -> bool:
     ):
         # Normal disconnect during send; treat as benign
         logger.debug("_safe_send: connection closed while sending %s", payload.get("op"))
+
+        # PHASE 3 (2025-10-18): Monitor connection errors
+        record_websocket_event(
+            direction="error",
+            function_name="_safe_send",
+            data_size=data_size,
+            error="Connection closed during send",
+            metadata={"op": payload.get("op"), "timestamp": log_timestamp()}
+        )
+
         return False
     except Exception as e:
         logger.debug("_safe_send: unexpected send error: %s", e)
+
+        # PHASE 3 (2025-10-18): Monitor unexpected errors
+        record_websocket_event(
+            direction="error",
+            function_name="_safe_send",
+            data_size=data_size,
+            error=str(e),
+            metadata={"op": payload.get("op"), "timestamp": log_timestamp()}
+        )
+
         return False
 
 
@@ -395,17 +602,35 @@ def _validate_message(msg: Dict[str, Any]) -> tuple[bool, Optional[str]]:
     return (True, None)
 
 
+def _get_conversation_id_from_arguments(arguments: Dict[str, Any], session_id: str) -> str:
+    """
+    Extract conversation ID from tool arguments for session semaphore management.
+
+    BUG FIX #11 (Phase 2 - 2025-10-20): This function extracts the conversation_id
+    from tool arguments to enable per-conversation semaphore isolation.
+
+    Args:
+        arguments: Tool call arguments
+        session_id: WebSocket session ID (fallback)
+
+    Returns:
+        Conversation ID string (continuation_id if available, otherwise session_id)
+    """
+    # Try to get continuation_id from arguments
+    conv_id = arguments.get("continuation_id")
+
+    # Fallback to session_id if no continuation_id
+    if not conv_id or not isinstance(conv_id, str):
+        conv_id = f"session_{session_id}"
+
+    return conv_id
+
+
 async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dict[str, Any]) -> None:
     op = msg.get("op")
     if op == "list_tools":
-        # CRITICAL: Ensure providers are configured AND provider tools are registered
-        # This must happen on first list_tools call to populate the full tool list
-        try:
-            _ensure_providers_configured()  # Step 1: Configure providers (idempotent)
-            register_provider_specific_tools()  # Step 2: Register provider tools (idempotent)
-        except Exception as e:
-            logger.error(f"Failed to register provider-specific tools for list_tools: {e}", exc_info=True)
-            # Continue - core tools still available even if provider tools fail
+        # NOTE: Providers are configured at daemon startup (see main_async())
+        # No need to call _ensure_providers_configured() here - it's already done
         # Build a minimal tool descriptor set
         tools = []
         for name, tool in SERVER_TOOLS.items():
@@ -442,13 +667,9 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
             logger.info(f"Arguments: <unable to serialize>")
         logger.info(f"=== PROCESSING ===")
 
-        try:
-            _ensure_providers_configured()
-            # Ensure provider-specific tools are registered prior to lookup
-            register_provider_specific_tools()
-        except Exception as e:
-            logger.error(f"Failed to register provider-specific tools for call_tool: {e}", exc_info=True)
-            # Continue - core tools still available even if provider tools fail
+        # NOTE: Providers are configured at daemon startup (see main_async())
+        # No need to call _ensure_providers_configured() here - it's already done
+        # This prevents deadlock when called in async context
         tool = SERVER_TOOLS.get(name)
         if not tool:
             await _safe_send(ws, {
@@ -458,19 +679,25 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
             })
             return
 
-        # Determine provider gate based on requested model or defaults
+        # Determine provider gate based on tool name or requested model
         prov_key = ""
         try:
-            model_name = (arguments or {}).get("model")
-            if not model_name:
-                from config import DEFAULT_MODEL as _DEF_MODEL  # type: ignore
-                model_name = _DEF_MODEL
-            if model_name:
-                # Check which provider advertises this model
-                if model_name in set(ModelProviderRegistry.get_available_model_names(provider_type=ProviderType.KIMI)):
-                    prov_key = "KIMI"
-                elif model_name in set(ModelProviderRegistry.get_available_model_names(provider_type=ProviderType.GLM)):
-                    prov_key = "GLM"
+            # CRITICAL FIX: Kimi tools always use Kimi provider after routing
+            # Check tool name first for explicit provider identification
+            if name.startswith("kimi_"):
+                prov_key = "KIMI"
+            else:
+                # For other tools, detect provider from model name
+                model_name = (arguments or {}).get("model")
+                if not model_name:
+                    from config import DEFAULT_MODEL as _DEF_MODEL  # type: ignore
+                    model_name = _DEF_MODEL
+                if model_name:
+                    # Check which provider advertises this model
+                    if model_name in set(ModelProviderRegistry.get_available_model_names(provider_type=ProviderType.KIMI)):
+                        prov_key = "KIMI"
+                    elif model_name in set(ModelProviderRegistry.get_available_model_names(provider_type=ProviderType.GLM)):
+                        prov_key = "GLM"
         except Exception as e:
             logger.warning(f"Failed to detect provider for tool '{name}': {e}")
             # Continue with empty provider key - metrics may be less accurate
@@ -520,39 +747,62 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
         # Coalesce duplicate semantic calls across reconnects: if another call with the same call_key is in-flight,
         # fast-fail duplicates immediately with a 409-style response including the original request_id.
         now_ts = time.time()
-        async with _inflight_lock:
-            try:
-                meta = _inflight_meta_by_key.get(call_key)
-                # TTL cleanup: drop stale inflight entries
-                if meta and float(meta.get("expires_at", 0)) <= now_ts:
-                    _inflight_meta_by_key.pop(call_key, None)
-                    _inflight_by_key.pop(call_key, None)
-                    meta = None
-            except Exception as e:
-                logger.error(f"Failed to retrieve inflight metadata for call_key '{call_key}': {e}", exc_info=True)
-                # Continue without metadata - duplicate detection may not work for this call
-                meta = None
-            if call_key in _inflight_by_key and meta:
-                await _safe_send(ws, {
-                    "op": "call_tool_res",
-                    "request_id": req_id,
-                    "error": {"code": "DUPLICATE", "message": "duplicate call in flight", "original_request_id": meta.get("req_id")}
-                })
-                return
-            else:
-                _inflight_by_key[call_key] = asyncio.Event()
-                _inflight_meta_by_key[call_key] = {"req_id": req_id, "expires_at": now_ts + float(INFLIGHT_TTL_SECS)}
-
-
-        try:
-            await asyncio.wait_for(_global_sem.acquire(), timeout=0.001)
-        except asyncio.TimeoutError:
+        is_duplicate, meta = await _check_and_set_inflight(call_key, req_id, now_ts + float(INFLIGHT_TTL_SECS))
+        if is_duplicate and meta:
             await _safe_send(ws, {
                 "op": "call_tool_res",
                 "request_id": req_id,
-                "error": {"code": "OVER_CAPACITY", "message": "Global concurrency limit reached; retry soon", "retry_after": RETRY_AFTER_SECS}
+                "error": {"code": "DUPLICATE", "message": "duplicate call in flight", "original_request_id": meta.get("req_id")}
             })
             return
+
+
+        # CRITICAL FIX (2025-10-18): Use SemaphoreGuard context managers for guaranteed cleanup
+        # This prevents semaphore leaks by ensuring release happens even if exceptions occur
+        # BUG FIX #11 (Phase 2 - 2025-10-20): Support per-session semaphores for concurrent processing
+        # Acquire semaphores in order: session/global → provider
+        semaphore_timeout = float(os.getenv("KIMI_SEMAPHORE_TIMEOUT", "0.001"))
+
+        # Track acquisition state for manual cleanup in finally block
+        # Note: We can't use context managers here because we need to hold semaphores
+        # across multiple await points and release them in a specific order in finally
+        global_acquired = False
+        session_acquired = False
+        session_semaphore = None
+        conversation_id = None
+        prov_acquired = False
+        acquired_session = False
+
+        try:
+            # BUG FIX #11 (Phase 2 - 2025-10-20): Use per-session semaphores when enabled
+            if USE_PER_SESSION_SEMAPHORES:
+                # Extract conversation ID from arguments
+                conversation_id = _get_conversation_id_from_arguments(arguments, session_id)
+
+                # Get session semaphore manager
+                from src.daemon.session_semaphore_manager import get_session_semaphore_manager
+                session_manager = await get_session_semaphore_manager()
+
+                # Get semaphore for this conversation
+                session_semaphore = await session_manager.get_semaphore(conversation_id)
+
+                # Acquire session semaphore
+                await asyncio.wait_for(session_semaphore.acquire(), timeout=semaphore_timeout)
+                session_acquired = True
+                logger.debug(f"[SESSION_SEM] Acquired semaphore for conversation {conversation_id}")
+            else:
+                # Use global semaphore (original behavior)
+                await asyncio.wait_for(_global_sem.acquire(), timeout=semaphore_timeout)
+                global_acquired = True  # Mark as acquired IMMEDIATELY after successful acquire
+        except asyncio.TimeoutError:
+            capacity_type = "Session" if USE_PER_SESSION_SEMAPHORES else "Global"
+            await _safe_send(ws, {
+                "op": "call_tool_res",
+                "request_id": req_id,
+                "error": {"code": "OVER_CAPACITY", "message": f"{capacity_type} concurrency limit reached; retry soon", "retry_after": RETRY_AFTER_SECS}
+            })
+            return
+
         # Defer ACK until after provider+session capacity to ensure a single ACK per request
         # Also emit an immediate progress breadcrumb so clients see activity right away
         await _safe_send(ws, {
@@ -563,37 +813,49 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
             "note": "accepted, awaiting provider/session capacity"
         })
 
-        prov_acquired = False
         if prov_key and prov_key in _provider_sems:
             try:
-                await asyncio.wait_for(_provider_sems[prov_key].acquire(), timeout=0.001)
-                prov_acquired = True
+                await asyncio.wait_for(_provider_sems[prov_key].acquire(), timeout=semaphore_timeout)
+                prov_acquired = True  # Mark as acquired IMMEDIATELY after successful acquire
             except asyncio.TimeoutError:
                 await _safe_send(ws, {
                     "op": "call_tool_res",
                     "request_id": req_id,
                     "error": {"code": "OVER_CAPACITY", "message": f"{prov_key} concurrency limit reached; retry soon", "retry_after": RETRY_AFTER_SECS}
                 })
-                _global_sem.release()
+                # BUG FIX #11 (Phase 2 - 2025-10-20): Release session or global semaphore before returning
+                if USE_PER_SESSION_SEMAPHORES and session_acquired and session_semaphore:
+                    session_semaphore.release()
+                    session_acquired = False
+                    logger.debug(f"[SESSION_SEM] Released semaphore for conversation {conversation_id}")
+                elif global_acquired:
+                    _global_sem.release()
+                    global_acquired = False
                 return
             # Defer ACK; will send once after session acquisition to guarantee a single ACK
 
-        acquired_session = False
         try:
             try:
-                await asyncio.wait_for((await _sessions.get(session_id)).sem.acquire(), timeout=0.001)  # type: ignore
-                acquired_session = True
+                await asyncio.wait_for((await _sessions.get(session_id)).sem.acquire(), timeout=semaphore_timeout)  # type: ignore
+                acquired_session = True  # Mark as acquired IMMEDIATELY after successful acquire
             except asyncio.TimeoutError:
                 await _safe_send(ws, {
                     "op": "call_tool_res",
                     "request_id": req_id,
                     "error": {"code": "OVER_CAPACITY", "message": "Session concurrency limit reached; retry soon", "retry_after": RETRY_AFTER_SECS}
                 })
-                try:
+                # Release acquired semaphores before returning
+                if prov_acquired:
+                    _provider_sems[prov_key].release()
+                    prov_acquired = False
+                # BUG FIX #11 (Phase 2 - 2025-10-20): Release session or global semaphore
+                if USE_PER_SESSION_SEMAPHORES and session_acquired and session_semaphore:
+                    session_semaphore.release()
+                    session_acquired = False
+                    logger.debug(f"[SESSION_SEM] Released semaphore for conversation {conversation_id}")
+                elif global_acquired:
                     _global_sem.release()
-                except Exception as e:
-                    logger.error(f"Failed to release global semaphore (over capacity path): {e}", exc_info=True)
-                    # Continue - semaphore state may be corrupted but don't block response
+                    global_acquired = False
                 return
             start = time.time()
             # Single ACK after global+provider+session acquisition
@@ -646,19 +908,62 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                 # already handles "auto" correctly for all cases including continuations
                 # No need to override here at WS boundary
 
-                tool_task = asyncio.create_task(SERVER_HANDLE_CALL_TOOL(name, arguments))
-                while True:
+                # CRITICAL FIX: Wire up progress notifier to send WebSocket frames
+                # This allows tools to send progress updates that reach the client
+                from utils.progress import set_mcp_notifier, clear_mcp_notifier
+
+                async def ws_progress_notifier(message: str, level: str = "info") -> None:
+                    """Send tool progress as WebSocket frame to client.
+
+                    CRITICAL: Sends BOTH progress frame (with message) AND heartbeat frame
+                    (without message) to reset the client's timeout timer. The client only
+                    resets its timeout on heartbeat frames, not progress frames.
+                    """
+                    logger.info(f"[WS_PROGRESS_NOTIFIER] Called with message: {message}, level: {level}")
                     try:
-                        outputs = await asyncio.wait_for(tool_task, timeout=PROGRESS_INTERVAL)
-                        break
-                    except asyncio.TimeoutError:
-                        # Heartbeat progress to client
+                        # Send progress frame with message (CRITICAL: queue on failure)
+                        await _safe_send(ws, {
+                            "op": "progress",
+                            "request_id": req_id,
+                            "name": name,
+                            "message": message,
+                            "level": level,
+                            "t": time.time(),
+                        }, critical=True)
+                        logger.debug(f"[WS_PROGRESS_NOTIFIER] Sent progress frame with message")
+
+                        # CRITICAL FIX: Also send heartbeat frame to reset client timeout
+                        # The client's timeout mechanism only resets on heartbeat frames
                         await _safe_send(ws, {
                             "op": "progress",
                             "request_id": req_id,
                             "name": name,
                             "t": time.time(),
-                        })
+                        }, critical=True)
+                        logger.info(f"[WS_PROGRESS_NOTIFIER] Successfully sent progress + heartbeat frames")
+                    except Exception as e:
+                        logger.error(f"[WS_PROGRESS_NOTIFIER] Failed to send frames: {e}", exc_info=True)
+
+                # Set notifier before tool execution
+                set_mcp_notifier(ws_progress_notifier)
+
+                try:
+                    tool_task = asyncio.create_task(SERVER_HANDLE_CALL_TOOL(name, arguments))
+                except Exception:
+                    clear_mcp_notifier()
+                    raise
+                while True:
+                    try:
+                        outputs = await asyncio.wait_for(tool_task, timeout=PROGRESS_INTERVAL)
+                        break
+                    except asyncio.TimeoutError:
+                        # Heartbeat progress to client (CRITICAL: queue on failure)
+                        await _safe_send(ws, {
+                            "op": "progress",
+                            "request_id": req_id,
+                            "name": name,
+                            "t": time.time(),
+                        }, critical=True)
                         # Enforce hard deadline
                         if time.time() >= deadline:
                             try:
@@ -666,22 +971,30 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                             except Exception as e:
                                 logger.warning(f"Failed to cancel tool task for '{name}' (req_id: {req_id}): {e}")
                                 # Continue - task may complete anyway
+                            # Clear notifier on timeout
+                            clear_mcp_notifier()
                             await _safe_send(ws, {
                                 "op": "call_tool_res",
                                 "request_id": req_id,
                                 "error": {"code": "TIMEOUT", "message": f"call_tool exceeded {tool_timeout}s"}
                             })
                             try:
-                                async with _inflight_lock:
-                                    if call_key in _inflight_by_key:
-                                        _inflight_by_key[call_key].set()
-                                        _inflight_by_key.pop(call_key, None)
-                                    _inflight_meta_by_key.pop(call_key, None)
+                                await _cleanup_inflight(call_key)
                             except Exception as e:
                                 logger.error(f"Failed to clean up inflight tracking after timeout (call_key: {call_key}): {e}", exc_info=True)
                                 # Continue - cleanup failure may cause memory leak but don't block response
                             return
+
+                # Clear notifier after tool completes successfully
+                clear_mcp_notifier()
                 latency = time.time() - start
+
+                # Record performance metrics
+                try:
+                    from utils.infrastructure.performance_metrics import record_tool_call
+                    record_tool_call(name, success=True, latency_ms=latency * 1000)
+                except Exception:
+                    pass  # Don't fail if metrics unavailable
 
                 # CRITICAL FIX: Log successful tool completion
                 logger.info(f"=== TOOL CALL COMPLETE ===")
@@ -722,58 +1035,8 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                 if not outputs_norm:
                     outputs_norm = [{"type": "text", "text": ""}]
 
-                # MESSAGE BUS INTEGRATION: Check if payload should be stored in message bus
-                message_bus_used = False
-                try:
-                    message_bus_client = _get_message_bus_client()
-                    if message_bus_client is not None:
-                        # Calculate payload size
-                        payload_json = json.dumps({"outputs": outputs_norm})
-                        payload_size = len(payload_json.encode('utf-8'))
-
-                        # Check if should use message bus (>1MB threshold)
-                        if message_bus_client.should_use_message_bus(payload_size):
-                            # Generate transaction ID
-                            transaction_id = f"txn_{uuid.uuid4().hex}"
-
-                            # Store in message bus
-                            logger.info(f"Storing large payload in message bus: {payload_size} bytes, txn={transaction_id}")
-                            success = await message_bus_client.store_message(
-                                transaction_id=transaction_id,
-                                session_id=session_id,
-                                tool_name=name,
-                                provider_name=prov_key or "unknown",
-                                payload={"outputs": outputs_norm},
-                                metadata={
-                                    "request_id": req_id,
-                                    "timestamp": time.time(),
-                                    "payload_size_bytes": payload_size
-                                }
-                            )
-
-                            if success:
-                                # Replace outputs with transaction ID reference
-                                logger.info(f"Message bus storage successful, returning transaction ID")
-                                outputs_norm = [{
-                                    "type": "text",
-                                    "text": json.dumps({
-                                        "message_bus_transaction_id": transaction_id,
-                                        "payload_size_bytes": payload_size,
-                                        "retrieval_required": True,
-                                        "session_id": session_id,
-                                        "tool_name": name
-                                    }, separators=(",", ":"))
-                                }]
-                                message_bus_used = True
-                            else:
-                                # Circuit breaker opened, fallback to WebSocket
-                                logger.warning(f"Message bus storage failed (circuit breaker), using WebSocket fallback")
-                        else:
-                            logger.debug(f"Payload size {payload_size} bytes below threshold, using WebSocket")
-                except Exception as e:
-                    logger.error(f"Message bus integration error: {e}", exc_info=True)
-                    logger.warning("Falling back to WebSocket delivery")
-                    # Continue with original outputs_norm
+                # MESSAGE BUS REMOVED (2025-10-18): All payloads are now delivered via WebSocket
+                # Large payloads (>1MB) are handled by WebSocket chunking and compression
 
                 # Detect serialized ToolOutput error-style payloads and surface via error channel
                 error_obj = None
@@ -814,23 +1077,28 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                     logger.debug(f"Failed to create compatibility text field (tool: {name}): {e}")
                     # Continue - compatibility field is optional
 
-                await _safe_send(ws, result_payload)
+                # PHASE 4 (2025-10-19): Mark final result as critical for queuing
+                await _safe_send(ws, result_payload, critical=True)
                 _store_result(req_id, result_payload)
                 # Store by semantic call key to allow delivery across reconnects with new req_id
                 try:
                     _store_result_by_key(call_key, outputs_norm)
                     # Signal any duplicate waiters on this call_key
-                    async with _inflight_lock:
-                        if call_key in _inflight_by_key:
-                            _inflight_by_key[call_key].set()
-                            _inflight_by_key.pop(call_key, None)
-                        _inflight_meta_by_key.pop(call_key, None)
+                    await _cleanup_inflight(call_key)
                 except Exception as e:
                     logger.error(f"Failed to clean up inflight tracking after success (call_key: {call_key}): {e}", exc_info=True)
                     # Continue - cleanup failure may cause memory leak but response already sent
             except asyncio.TimeoutError:
                 # CRITICAL FIX: Log timeout errors
                 latency_timeout = time.time() - start
+
+                # Record performance metrics
+                try:
+                    from utils.infrastructure.performance_metrics import record_tool_call
+                    record_tool_call(name, success=False, latency_ms=latency_timeout * 1000, error_type="TimeoutError")
+                except Exception:
+                    pass  # Don't fail if metrics unavailable
+
                 logger.error(f"=== TOOL CALL TIMEOUT ===")
                 logger.error(f"Tool: {name}")
                 logger.error(f"Duration: {latency_timeout:.2f}s")
@@ -861,17 +1129,22 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                     "error": {"code": "TIMEOUT", "message": f"call_tool exceeded {CALL_TIMEOUT}s"}
                 })
                 try:
-                    async with _inflight_lock:
-                        if call_key in _inflight_by_key:
-                            _inflight_by_key[call_key].set()
-                            _inflight_by_key.pop(call_key, None)
-                        _inflight_meta_by_key.pop(call_key, None)
+                    await _cleanup_inflight(call_key)
                 except Exception as e:
                     logger.error(f"Failed to clean up inflight tracking after timeout (call_key: {call_key}): {e}", exc_info=True)
                     # Continue - cleanup failure may cause memory leak but error response already sent
             except Exception as e:
                 # CRITICAL FIX: Log tool execution errors
                 latency_error = time.time() - start
+
+                # Record performance metrics
+                try:
+                    from utils.infrastructure.performance_metrics import record_tool_call
+                    error_type = type(e).__name__
+                    record_tool_call(name, success=False, latency_ms=latency_error * 1000, error_type=error_type)
+                except Exception:
+                    pass  # Don't fail if metrics unavailable
+
                 logger.error(f"=== TOOL CALL FAILED ===")
                 logger.error(f"Tool: {name}")
                 logger.error(f"Duration: {latency_error:.2f}s")
@@ -903,32 +1176,43 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
                     "error": {"code": "EXEC_ERROR", "message": str(e)}
                 })
                 try:
-                    async with _inflight_lock:
-                        if call_key in _inflight_by_key:
-                            _inflight_by_key[call_key].set()
-                            _inflight_by_key.pop(call_key, None)
-                        _inflight_meta_by_key.pop(call_key, None)
+                    await _cleanup_inflight(call_key)
                 except Exception as e2:
                     logger.error(f"Failed to clean up inflight tracking after error (call_key: {call_key}): {e2}", exc_info=True)
                     # Continue - cleanup failure may cause memory leak but error response already sent
         finally:
+            # Guaranteed semaphore cleanup - release in reverse order of acquisition
             if acquired_session:
                 try:
                     (await _sessions.get(session_id)).sem.release()  # type: ignore
+                    logger.debug(f"Released session semaphore for {session_id}")
                 except Exception as e:
-                    logger.error(f"Failed to release session semaphore (session: {session_id}): {e}", exc_info=True)
-                    # Continue - semaphore state may be corrupted but don't block cleanup
+                    logger.critical(f"CRITICAL: Failed to release session semaphore (session: {session_id}): {e}", exc_info=True)
+                    # This is a semaphore leak - log as critical for monitoring
+
             if prov_acquired:
                 try:
                     _provider_sems[prov_key].release()
+                    logger.debug(f"Released provider semaphore for {prov_key}")
                 except Exception as e:
-                    logger.error(f"Failed to release provider semaphore (provider: {prov_key}): {e}", exc_info=True)
-                    # Continue - semaphore state may be corrupted but don't block cleanup
-            try:
-                _global_sem.release()
-            except Exception as e:
-                logger.error(f"Failed to release global semaphore: {e}", exc_info=True)
-                # Continue - semaphore state may be corrupted but don't block cleanup
+                    logger.critical(f"CRITICAL: Failed to release provider semaphore (provider: {prov_key}): {e}", exc_info=True)
+                    # This is a semaphore leak - log as critical for monitoring
+
+            # BUG FIX #11 (Phase 2 - 2025-10-20): Release session or global semaphore
+            if USE_PER_SESSION_SEMAPHORES and session_acquired and session_semaphore:
+                try:
+                    session_semaphore.release()
+                    logger.debug(f"[SESSION_SEM] Released semaphore for conversation {conversation_id}")
+                except Exception as e:
+                    logger.critical(f"CRITICAL: Failed to release session semaphore (conversation: {conversation_id}): {e}", exc_info=True)
+                    # This is a semaphore leak - log as critical for monitoring
+            elif global_acquired:
+                try:
+                    _global_sem.release()
+                    logger.debug(f"Released global semaphore")
+                except Exception as e:
+                    logger.critical(f"CRITICAL: Failed to release global semaphore: {e}", exc_info=True)
+                    # This is a semaphore leak - log as critical for monitoring
         return
 
     if op == "rotate_token":
@@ -972,109 +1256,211 @@ async def _handle_message(ws: WebSocketServerProtocol, session_id: str, msg: Dic
 
 
 async def _serve_connection(ws: WebSocketServerProtocol) -> None:
-    # Expect hello first with timeout, handle abrupt client disconnects gracefully
-    hello_raw = await _safe_recv(ws, timeout=HELLO_TIMEOUT)
-    if not hello_raw:
-        # Client connected but did not send hello or disconnected; close quietly
-        try:
-            await ws.close(code=4002, reason="hello timeout or disconnect")
-        except Exception as e:
-            logger.debug(f"Failed to close connection after hello timeout: {e}")
-            # Continue - connection may already be closed
-        return
-
-
+    # Get client IP for connection tracking
     try:
-        hello = json.loads(hello_raw)
+        client_ip, client_port = ws.remote_address if hasattr(ws, 'remote_address') else ("unknown", 0)
     except Exception as e:
-        logger.warning(f"Failed to parse hello message: {e}")
-        try:
-            await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "invalid_hello"})
-            try:
-                await ws.close(code=4000, reason="invalid hello")
-            except Exception as e2:
-                logger.debug(f"Failed to close connection after invalid hello: {e2}")
-                # Continue - connection may already be closed
-        except Exception as e2:
-            logger.debug(f"Failed to send hello_ack error: {e2}")
-            # Continue - connection may already be closed
-        return
+        logger.debug(f"[WS_CONNECTION] Could not get remote address: {e}")
+        client_ip, client_port = "unknown", 0
 
-    if hello.get("op") != "hello":
-        logger.warning(f"Client sent message without hello op: {hello.get('op')}")
+    # PHASE 1 (2025-10-18): Enforce connection limits
+    connection_manager = get_connection_manager()
+    can_accept, rejection_reason = connection_manager.can_accept_connection(client_ip)
+
+    if not can_accept:
+        logger.warning(
+            f"[WS_CONNECTION] Connection rejected from {client_ip}:{client_port} - {rejection_reason}"
+        )
+        # PHASE 3: Monitor rejected connections
+        record_websocket_event(
+            direction="reject",
+            function_name="_serve_connection",
+            data_size=0,
+            metadata={
+                "client_ip": client_ip,
+                "client_port": client_port,
+                "reason": rejection_reason,
+                "timestamp": log_timestamp()
+            }
+        )
         try:
-            await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "missing_hello"})
-            try:
-                await ws.close(code=4001, reason="missing hello")
-            except Exception as e:
-                logger.debug(f"Failed to close connection after missing hello: {e}")
-                # Continue - connection may already be closed
+            # Gracefully reject with WebSocket close code
+            # 1008 = Policy Violation (rate limit/connection limit)
+            await ws.close(code=1008, reason=rejection_reason)
         except Exception as e:
-            logger.debug(f"Failed to send missing_hello error: {e}")
-            # Continue - connection may already be closed
+            logger.debug(f"Failed to close rejected connection: {e}")
         return
 
-    token = hello.get("token", "")
-    current_auth_token = await _auth_token_manager.get()
-    if current_auth_token and token != current_auth_token:
-        logger.warning(f"Client sent invalid auth token")
-        try:
-            await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "unauthorized"})
-            try:
-                await ws.close(code=4003, reason="unauthorized")
-            except Exception as e:
-                logger.debug(f"Failed to close connection after unauthorized: {e}")
-                # Continue - connection may already be closed
-        except Exception as e:
-            logger.debug(f"Failed to send unauthorized error: {e}")
-            # Continue - connection may already be closed
-        return
+    # Generate unique connection ID for tracking
+    connection_id = str(uuid.uuid4())
+    connection_manager.register_connection(connection_id, client_ip)
 
-    # Always assign a fresh daemon-side session id for isolation
-    session_id = str(uuid.uuid4())
-    sess = await _sessions.ensure(session_id)
     try:
-        ok = await _safe_send(ws, {"op": "hello_ack", "ok": True, "session_id": sess.session_id})
-        if not ok:
+        logger.info(f"[WS_CONNECTION] New connection from {client_ip}:{client_port} (id: {connection_id})")
+
+        # PHASE 3 (2025-10-18): Monitor connection establishment
+        record_websocket_event(
+            direction="connect",
+            function_name="_serve_connection",
+            data_size=0,
+            metadata={
+                "client_ip": client_ip,
+                "client_port": client_port,
+                "connection_id": connection_id,
+                "timestamp": log_timestamp()
+            }
+        )
+        get_monitor().increment_active_connections("websocket")
+
+        # Expect hello first with timeout, handle abrupt client disconnects gracefully
+        hello_raw = await _safe_recv(ws, timeout=HELLO_TIMEOUT)
+        if not hello_raw:
+            # Client connected but did not send hello or disconnected; close quietly
+            # This is common for health checks, port scanners, or misconfigured clients
+            logger.debug(f"[WS_CONNECTION] No hello received from {client_ip}:{client_port} (likely health check or scanner)")
+            try:
+                await ws.close(code=4002, reason="hello timeout or disconnect")
+            except Exception as e:
+                logger.debug(f"Failed to close connection after hello timeout: {e}")
+                # Continue - connection may already be closed
             return
-    except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError):
-        # Client closed during hello ack; just return
-        return
 
-    try:
-        async for raw in ws:
+        try:
+            hello = json.loads(hello_raw)
+        except Exception as e:
+            logger.warning(f"Failed to parse hello message: {e}")
             try:
-                msg = json.loads(raw)
-            except Exception as e:
-                logger.warning(f"Failed to parse JSON message from client (session: {sess.session_id}): {e}")
-                # Try to inform client; ignore if already closed
+                await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "invalid_hello"})
                 try:
-                    await _safe_send(ws, {"op": "error", "message": "invalid_json"})
+                    await ws.close(code=4000, reason="invalid hello")
                 except Exception as e2:
-                    logger.debug(f"Failed to send invalid_json error: {e2}")
+                    logger.debug(f"Failed to close connection after invalid hello: {e2}")
                     # Continue - connection may already be closed
-                continue
+            except Exception as e2:
+                logger.debug(f"Failed to send hello_ack error: {e2}")
+                # Continue - connection may already be closed
+            return
 
-            # Validate message structure before processing
-            is_valid, error_msg = _validate_message(msg)
-            if not is_valid:
-                logger.warning(f"Invalid message structure from client (session: {sess.session_id}): {error_msg}")
-                try:
-                    await _safe_send(ws, {"op": "error", "message": f"invalid_message: {error_msg}"})
-                except Exception as e:
-                    logger.debug(f"Failed to send invalid_message error: {e}")
-                    # Continue - connection may already be closed
-                continue
-
+        if hello.get("op") != "hello":
+            logger.warning(f"Client sent message without hello op: {hello.get('op')}")
             try:
-                await _handle_message(ws, sess.session_id, msg)
-            except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError):
-                # Client disconnected mid-processing; exit loop
-                break
-    except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError):
-        # Iterator may raise on abrupt close; treat as normal disconnect
-        pass
+                await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "missing_hello"})
+                try:
+                    await ws.close(code=4001, reason="missing hello")
+                except Exception as e:
+                    logger.debug(f"Failed to close connection after missing hello: {e}")
+                    # Continue - connection may already be closed
+            except Exception as e:
+                logger.debug(f"Failed to send missing_hello error: {e}")
+                # Continue - connection may already be closed
+            return
+
+        token = hello.get("token", "")
+        current_auth_token = await _auth_token_manager.get()
+        if current_auth_token and token != current_auth_token:
+            # Enhanced logging for auth debugging (show first 10 chars only for security)
+            expected_preview = current_auth_token[:10] + "..." if len(current_auth_token) > 10 else current_auth_token
+            received_preview = token[:10] + "..." if len(token) > 10 else (token if token else "<empty>")
+            logger.warning(f"[AUTH] Client sent invalid auth token. "
+                           f"Expected: {expected_preview}, Received: {received_preview}")
+            try:
+                await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "unauthorized"})
+                try:
+                    await ws.close(code=4003, reason="unauthorized")
+                except Exception as e:
+                    logger.debug(f"Failed to close connection after unauthorized: {e}")
+                    # Continue - connection may already be closed
+            except Exception as e:
+                logger.debug(f"Failed to send unauthorized error: {e}")
+                # Continue - connection may already be closed
+            return
+
+        # Always assign a fresh daemon-side session id for isolation
+        session_id = str(uuid.uuid4())
+        sess = await _sessions.ensure(session_id)
+        try:
+            ok = await _safe_send(ws, {"op": "hello_ack", "ok": True, "session_id": sess.session_id})
+            if not ok:
+                return
+        except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError):
+            # Client closed during hello ack; just return
+            return
+
+        try:
+            async for raw in ws:
+                try:
+                    msg = json.loads(raw)
+                except Exception as e:
+                    logger.warning(f"Failed to parse JSON message from client (session: {sess.session_id}): {e}")
+                    # Try to inform client; ignore if already closed
+                    try:
+                        await _safe_send(ws, {"op": "error", "message": "invalid_json"})
+                    except Exception as e2:
+                        logger.debug(f"Failed to send invalid_json error: {e2}")
+                        # Continue - connection may already be closed
+                    continue
+
+                # Validate message structure before processing
+                is_valid, error_msg = _validate_message(msg)
+                if not is_valid:
+                    logger.warning(f"Invalid message structure from client (session: {sess.session_id}): {error_msg}")
+                    try:
+                        await _safe_send(ws, {"op": "error", "message": f"invalid_message: {error_msg}"})
+                    except Exception as e:
+                        logger.debug(f"Failed to send invalid_message error: {e}")
+                        # Continue - connection may already be closed
+                    continue
+
+                # PHASE 1 (2025-10-18): Enforce rate limiting
+                rate_limiter = get_rate_limiter()
+                allowed, rejection_reason = rate_limiter.is_allowed(
+                    ip=client_ip,
+                    user_id=sess.session_id,
+                    tokens=1
+                )
+
+                if not allowed:
+                    logger.warning(
+                        f"[WS_RATE_LIMIT] Message rejected from {client_ip} (session: {sess.session_id}) - {rejection_reason}"
+                    )
+                    # PHASE 3: Monitor rate limit rejections
+                    record_websocket_event(
+                        direction="rate_limit",
+                        function_name="_serve_connection",
+                        data_size=len(raw.encode('utf-8')) if isinstance(raw, str) else len(raw),
+                        metadata={
+                            "client_ip": client_ip,
+                            "session_id": sess.session_id,
+                            "reason": rejection_reason,
+                            "timestamp": log_timestamp()
+                        }
+                    )
+                    try:
+                        await _safe_send(ws, {
+                            "op": "error",
+                            "message": f"rate_limit_exceeded: {rejection_reason}"
+                        })
+                    except Exception as e:
+                        logger.debug(f"Failed to send rate_limit error: {e}")
+                        # Continue - connection may already be closed
+                    continue
+
+                try:
+                    await _handle_message(ws, sess.session_id, msg)
+                except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError):
+                    # Client disconnected mid-processing; exit loop
+                    break
+        except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError):
+            # Iterator may raise on abrupt close; treat as normal disconnect
+            pass
     finally:
+        # PHASE 1 (2025-10-18): Unregister connection from connection manager
+        try:
+            connection_manager.unregister_connection(connection_id)
+        except Exception as e:
+            logger.warning(f"Failed to unregister connection {connection_id}: {e}")
+            # Continue - connection cleanup failure is not critical
+
         try:
             await _sessions.remove(sess.session_id)
         except Exception as e:
@@ -1082,40 +1468,175 @@ async def _serve_connection(ws: WebSocketServerProtocol) -> None:
             # Continue - session cleanup failure is not critical
 
 
+async def _recover_semaphore_leaks():
+    """Attempt to recover from semaphore leaks by resetting to expected values."""
+    from src.monitoring.metrics import (
+        record_semaphore_recovery,
+        update_semaphore_values
+    )
+
+    recovered = []
+    recovery_status = "success"
+
+    # Recover global semaphore
+    if _global_sem._value < GLOBAL_MAX_INFLIGHT:
+        leaked = GLOBAL_MAX_INFLIGHT - _global_sem._value
+        recovered_count = 0
+        for _ in range(leaked):
+            try:
+                _global_sem.release()
+                recovered_count += 1
+            except ValueError:
+                recovery_status = "partial"
+                break  # Can't release more than acquired
+
+        if recovered_count > 0:
+            recovered.append(f"Global: +{recovered_count}")
+            record_semaphore_recovery("global", recovery_status, recovered_count)
+
+        # Update metrics
+        update_semaphore_values("global", "global", _global_sem._value, GLOBAL_MAX_INFLIGHT)
+
+    # Recover provider semaphores
+    for provider, sem in _provider_sems.items():
+        expected = {"KIMI": KIMI_MAX_INFLIGHT, "GLM": GLM_MAX_INFLIGHT}.get(provider, 0)
+        if sem._value < expected:
+            leaked = expected - sem._value
+            recovered_count = 0
+            for _ in range(leaked):
+                try:
+                    sem.release()
+                    recovered_count += 1
+                except ValueError:
+                    recovery_status = "partial"
+                    break
+
+            if recovered_count > 0:
+                recovered.append(f"{provider}: +{recovered_count}")
+                record_semaphore_recovery(f"provider_{provider.lower()}", recovery_status, recovered_count)
+
+            # Update metrics
+            update_semaphore_values("provider", provider.lower(), sem._value, expected)
+
+    if recovered:
+        logger.warning(f"SEMAPHORE RECOVERY: Recovered leaks: {', '.join(recovered)}")
+        return True
+    return False
+
+
+async def _check_semaphore_health():
+    """Check for semaphore leaks and attempt recovery."""
+    from src.monitoring.metrics import (
+        record_semaphore_leak,
+        update_semaphore_values
+    )
+
+    issues = []
+
+    # Check global semaphore
+    if _global_sem._value != GLOBAL_MAX_INFLIGHT:
+        issues.append(f"Global semaphore leak: expected {GLOBAL_MAX_INFLIGHT}, got {_global_sem._value}")
+        record_semaphore_leak("global", GLOBAL_MAX_INFLIGHT, _global_sem._value)
+
+    # Always update current values for monitoring
+    update_semaphore_values("global", "global", _global_sem._value, GLOBAL_MAX_INFLIGHT)
+
+    # Check provider semaphores
+    for provider, sem in _provider_sems.items():
+        expected = {"KIMI": KIMI_MAX_INFLIGHT, "GLM": GLM_MAX_INFLIGHT}.get(provider, 0)
+        if sem._value != expected:
+            issues.append(f"Provider {provider} semaphore leak: expected {expected}, got {sem._value}")
+            record_semaphore_leak(f"provider_{provider.lower()}", expected, sem._value)
+
+        # Always update current values for monitoring
+        update_semaphore_values("provider", provider.lower(), sem._value, expected)
+
+    if issues:
+        for issue in issues:
+            logger.warning(f"SEMAPHORE HEALTH: {issue}")
+
+        # Attempt automatic recovery
+        recovered = await _recover_semaphore_leaks()
+        if recovered:
+            logger.info("SEMAPHORE HEALTH: Automatic recovery successful")
+    else:
+        logger.debug("Semaphore health check passed")
+
+
+async def _periodic_semaphore_health(stop_event):
+    """Periodic semaphore health monitoring."""
+    while not stop_event.is_set():
+        await _check_semaphore_health()
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=30.0)  # Check every 30 seconds
+        except asyncio.TimeoutError:
+            continue
+
+
 async def _health_writer(stop_event: asyncio.Event) -> None:
+    """
+    Health writer task that updates health file every 10 seconds.
+
+    CRITICAL FIX (P0): Added timeout to prevent indefinite blocking on session list.
+    If session manager lock is held for >2s, use empty list to keep health file fresh.
+    """
+    last_successful_write = time.time()
+
     while not stop_event.is_set():
         try:
-            sess_ids = await _sessions.list_ids()
-        except Exception as e:
-            logger.debug(f"Failed to list session IDs for health writer: {e}")
-            # Continue with empty list - health file will show 0 sessions
-            sess_ids = []
+            # CRITICAL FIX: Add timeout to prevent indefinite blocking on session lock
+            # If lock is held for >2s, fall back to empty list to keep health file updating
+            try:
+                sess_ids = await asyncio.wait_for(_sessions.list_ids(), timeout=2.0)
+            except asyncio.TimeoutError:
+                logger.warning("Health writer timeout getting session IDs (lock held >2s), using empty list")
+                sess_ids = []
+            except Exception as e:
+                logger.debug(f"Failed to list session IDs for health writer: {e}")
+                # Continue with empty list - health file will show 0 sessions
+                sess_ids = []
 
-        # Approximate inflight via semaphore value
-        try:
-            inflight_global = GLOBAL_MAX_INFLIGHT - _global_sem._value  # type: ignore[attr-defined]
+            # Approximate inflight via semaphore value
+            try:
+                inflight_global = GLOBAL_MAX_INFLIGHT - _global_sem._value  # type: ignore[attr-defined]
+            except Exception as e:
+                logger.debug(f"Failed to get global semaphore value for health writer: {e}")
+                # Continue with None - health file will show null for inflight
+                inflight_global = None
+
+            uptime_seconds = int(time.time() - STARTED_AT) if STARTED_AT else 0
+            snapshot = {
+                "t": time.time(),
+                "pid": os.getpid(),
+                "host": EXAI_WS_HOST,
+                "port": EXAI_WS_PORT,
+                "started_at": STARTED_AT,
+                "uptime_human": str(timedelta(seconds=uptime_seconds)),
+                "sessions": len(sess_ids),
+                "global_capacity": GLOBAL_MAX_INFLIGHT,
+                "global_inflight": inflight_global,
+                "tool_count": len(SERVER_TOOLS),  # Mission 4: Detect tool list divergence
+            }
+
+            try:
+                _health_path.write_text(json.dumps(snapshot, sort_keys=True, indent=2), encoding="utf-8")
+                last_successful_write = time.time()
+            except Exception as e:
+                logger.warning(f"Failed to write health file: {e}")
+                # Continue - health file write failure is not critical
+
+            # CRITICAL FIX: Monitor health writer staleness
+            time_since_write = time.time() - last_successful_write
+            if time_since_write > 30:
+                logger.critical(
+                    f"Health writer failed for {int(time_since_write)}s - daemon may be stuck. "
+                    "This indicates a serious issue with the event loop or blocking operations."
+                )
+
         except Exception as e:
-            logger.debug(f"Failed to get global semaphore value for health writer: {e}")
-            # Continue with None - health file will show null for inflight
-            inflight_global = None
-        uptime_seconds = int(time.time() - STARTED_AT) if STARTED_AT else 0
-        snapshot = {
-            "t": time.time(),
-            "pid": os.getpid(),
-            "host": EXAI_WS_HOST,
-            "port": EXAI_WS_PORT,
-            "started_at": STARTED_AT,
-            "uptime_human": str(timedelta(seconds=uptime_seconds)),
-            "sessions": len(sess_ids),
-            "global_capacity": GLOBAL_MAX_INFLIGHT,
-            "global_inflight": inflight_global,
-            "tool_count": len(SERVER_TOOLS),  # Mission 4: Detect tool list divergence
-        }
-        try:
-            _health_path.write_text(json.dumps(snapshot, sort_keys=True, indent=2), encoding="utf-8")
-        except Exception as e:
-            logger.warning(f"Failed to write health file: {e}")
-            # Continue - health file write failure is not critical
+            logger.error(f"Health writer error: {e}", exc_info=True)
+            # Continue running even on errors to keep health file updating
+
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=10.0)
         except asyncio.TimeoutError:
@@ -1157,10 +1678,119 @@ async def main_async() -> None:
 
     STARTED_AT = time.time()
 
+    # CRITICAL FIX: Configure providers and register tools at startup (not per-request)
+    # This prevents deadlock when _ensure_providers_configured() is called in async context
+    logger.info("Configuring providers and registering tools at daemon startup...")
+    try:
+        _ensure_providers_configured()
+        register_provider_specific_tools()
+        logger.info(f"Providers configured successfully. Total tools available: {len(SERVER_TOOLS)}")
+    except Exception as e:
+        logger.error(f"Failed to configure providers at startup: {e}", exc_info=True)
+        logger.warning("Daemon will start but provider-specific tools may not be available")
+
+    # CRITICAL FIX (2025-10-16): Initialize conversation storage at startup
+    # This prevents lazy initialization on every call which adds 300-700ms latency
+    logger.info("Initializing conversation storage at daemon startup...")
+    try:
+        from utils.conversation.storage_factory import initialize_conversation_storage
+        initialize_conversation_storage()
+        logger.info("Conversation storage initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize conversation storage at startup: {e}", exc_info=True)
+        logger.warning("Daemon will start but conversation storage may have degraded performance")
+
+    # BUG FIX #11 (2025-10-20): Pre-warm external connections to reduce first-call latency
+    # This establishes Supabase and Redis connections before accepting requests
+    logger.info("Pre-warming external connections...")
+    try:
+        from src.daemon.warmup import warmup_all
+        await warmup_all()
+        logger.info("External connections pre-warmed successfully")
+    except Exception as e:
+        logger.error(f"Failed to pre-warm connections: {e}", exc_info=True)
+        logger.warning("Daemon will start but first request may have higher latency")
+
+    # BUG FIX #11 (2025-10-20): Initialize conversation queue for async writes
+    # This starts the async queue consumer for fire-and-forget conversation updates
+    logger.info("Initializing conversation queue...")
+    try:
+        from src.daemon.conversation_queue import get_conversation_queue
+        await get_conversation_queue()
+        logger.info("Conversation queue initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize conversation queue: {e}", exc_info=True)
+        logger.warning("Daemon will start but conversation writes may be slower")
+
+    # BUG FIX #11 (Phase 2 - 2025-10-20): Initialize session semaphore manager for concurrent processing
+    # This enables per-conversation semaphores to allow concurrent EXAI requests
+    logger.info("Initializing session semaphore manager...")
+    try:
+        from src.daemon.session_semaphore_manager import get_session_semaphore_manager
+        await get_session_semaphore_manager()
+        logger.info("Session semaphore manager initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize session semaphore manager: {e}", exc_info=True)
+        logger.warning("Daemon will start but concurrent requests may block each other")
+
+    # CRITICAL FIX (P1): Validate timeout hierarchy on startup
+    logger.info("Validating timeout hierarchy...")
+    try:
+        from config import TimeoutConfig
+        tool_timeout = float(os.getenv("WORKFLOW_TOOL_TIMEOUT_SECS", "180"))
+        daemon_timeout = TimeoutConfig.get_daemon_timeout()
+
+        if daemon_timeout <= tool_timeout:
+            logger.error(f"CRITICAL: Daemon timeout ({daemon_timeout}s) must be greater than tool timeout ({tool_timeout}s)")
+            logger.error("This will cause tools to timeout before the daemon can handle them properly.")
+            logger.error("Please fix your timeout configuration or update TimeoutConfig.get_daemon_timeout()")
+        else:
+            ratio = daemon_timeout / tool_timeout
+            logger.info(f"Timeout hierarchy validated: daemon={daemon_timeout}s, tool={tool_timeout}s (ratio={ratio:.2f}x)")
+
+            # Warn if ratio is too low
+            if ratio < 1.3:
+                logger.warning(f"Timeout ratio is low ({ratio:.2f}x). Consider increasing daemon timeout for better reliability.")
+    except Exception as e:
+        logger.error(f"Failed to validate timeout hierarchy: {e}")
+
+    # Wrapper to handle post-handshake protocol errors gracefully
+    async def _connection_wrapper(ws: WebSocketServerProtocol) -> None:
+        """
+        Wrapper that catches POST-HANDSHAKE protocol errors.
+        Handshake errors are suppressed via configure_websockets_logging() in bootstrap.
+        This wrapper handles errors that occur AFTER successful WebSocket upgrade.
+        """
+        try:
+            await _serve_connection(ws)
+        except websockets.exceptions.InvalidMessage as e:
+            # Post-handshake protocol violation (invalid WebSocket frames)
+            try:
+                client_ip, client_port = ws.remote_address if hasattr(ws, 'remote_address') else ("unknown", 0)
+                logger.debug(f"[WS_PROTOCOL] Invalid WebSocket frame from {client_ip}:{client_port}: {e}")
+            except Exception:
+                logger.debug(f"[WS_PROTOCOL] Invalid WebSocket frame: {e}")
+        except (websockets.exceptions.ConnectionClosedError, ConnectionAbortedError, ConnectionResetError) as e:
+            # Client disconnected unexpectedly
+            logger.debug(f"[WS_DISCONNECT] Client disconnected: {type(e).__name__}")
+        except Exception as e:
+            # Unexpected error - log at warning level
+            try:
+                client_ip, client_port = ws.remote_address if hasattr(ws, 'remote_address') else ("unknown", 0)
+                logger.warning(f"[WS_ERROR] Unexpected error handling connection from {client_ip}:{client_port}: {e}")
+            except Exception:
+                logger.warning(f"[WS_ERROR] Unexpected error handling connection: {e}")
+
+    # PHASE 4 (2025-10-19): Initialize resilient WebSocket manager
+    global _resilient_ws
+    _resilient_ws = ResilientWebSocketManager(fallback_send=_safe_send)
+    await _resilient_ws.start_background_tasks()
+    logger.info("[RESILIENT_WS] Started resilient WebSocket manager with background tasks")
+
     logger.info(f"Starting WS daemon on ws://{EXAI_WS_HOST}:{EXAI_WS_PORT}")
     try:
         async with websockets.serve(
-            _serve_connection,
+            _connection_wrapper,  # Handles post-handshake protocol errors
             EXAI_WS_HOST,
             EXAI_WS_PORT,
             max_size=MAX_MSG_BYTES,
@@ -1170,6 +1800,8 @@ async def main_async() -> None:
         ):
             # Start health writer
             asyncio.create_task(_health_writer(stop_event))
+            # Start semaphore health monitoring
+            asyncio.create_task(_periodic_semaphore_health(stop_event))
             # Wait indefinitely until a signal or external shutdown sets the event
             await stop_event.wait()
     except OSError as e:
@@ -1184,6 +1816,11 @@ async def main_async() -> None:
             return
         raise
     finally:
+        # PHASE 4 (2025-10-19): Stop resilient WebSocket manager background tasks
+        if _resilient_ws:
+            await _resilient_ws.stop_background_tasks()
+            logger.info("[RESILIENT_WS] Stopped resilient WebSocket manager")
+
         _remove_pidfile()
         # Shutdown async logging to flush all messages
         from src.utils.async_logging import shutdown_async_logging

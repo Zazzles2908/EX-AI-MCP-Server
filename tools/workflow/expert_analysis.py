@@ -156,7 +156,35 @@ class ExpertAnalysisMixin:
         Override this to return True if your tool needs the system prompt embedded.
         """
         return False
-    
+
+    def _get_thinking_model_for_provider(self, provider) -> Optional[str]:
+        """Get a thinking-capable model for the given provider.
+
+        This method provides automatic fallback to thinking-capable models
+        when expert analysis requires thinking mode but the user-specified
+        model doesn't support it.
+
+        Args:
+            provider: The model provider instance
+
+        Returns:
+            Model name that supports thinking mode, or None if no fallback available
+        """
+        from src.providers.base import ProviderType
+
+        # Map provider types to their thinking-capable models
+        THINKING_MODELS = {
+            ProviderType.GLM: 'glm-4.6',  # Upgrade from glm-4.5-flash (glm-4.6 is flagship with 200K context)
+            ProviderType.KIMI: 'kimi-thinking-preview',  # Upgrade from kimi-k2-0905-preview
+        }
+
+        try:
+            provider_type = provider.get_provider_type()
+            return THINKING_MODELS.get(provider_type)
+        except Exception as e:
+            logger.warning(f"Failed to get thinking model for provider: {e}")
+            return None
+
     def get_expert_thinking_mode(self, request=None) -> str:
         """
         Get the thinking mode for expert analysis with hybrid fallback.
@@ -323,7 +351,7 @@ class ExpertAnalysisMixin:
                     logger.error(f"Failed to resolve model context for expert analysis: {e}")
                     # Use request model as fallback (preserves existing test behavior)
                     model_name = self.get_request_model_name(request)
-                    from utils.model_context import ModelContext
+                    from utils.model.context import ModelContext
                     model_context = ModelContext(model_name)
                     self._model_context = model_context  # type: ignore
                     self._current_model_name = model_name  # type: ignore
@@ -333,21 +361,64 @@ class ExpertAnalysisMixin:
             provider = self._model_context.provider  # type: ignore
             logger.info(f"[EXPERT_ANALYSIS_DEBUG] Provider resolved: {provider.get_provider_type().value if provider else 'None'}")
 
+            # CRITICAL: Validate model supports thinking mode, auto-upgrade if needed
+            # This prevents hangs when using models like glm-4.5-flash that don't support thinking
+            # ISSUE #10 FIX: Make auto-upgrade configurable via EXPERT_ANALYSIS_AUTO_UPGRADE env var
+            import os
+            auto_upgrade_enabled = os.getenv("EXPERT_ANALYSIS_AUTO_UPGRADE", "true").strip().lower() in ("true", "1", "yes")
+
+            if provider and hasattr(provider, 'supports_thinking_mode'):
+                if not provider.supports_thinking_mode(model_name):
+                    thinking_model = self._get_thinking_model_for_provider(provider)
+                    if thinking_model and auto_upgrade_enabled:
+                        logger.warning(
+                            f"[EXPERT_ANALYSIS] Auto-upgrading {model_name} → {thinking_model} for thinking mode support. "
+                            f"This may affect cost/performance. To disable, set EXPERT_ANALYSIS_AUTO_UPGRADE=false in .env"
+                        )
+                        model_name = thinking_model
+                        # Update model context with thinking-capable model
+                        from utils.model.context import ModelContext
+                        self._model_context = ModelContext(thinking_model)
+                        self._current_model_name = thinking_model
+                        # Update provider reference
+                        provider = self._model_context.provider  # type: ignore
+                    elif thinking_model and not auto_upgrade_enabled:
+                        logger.warning(
+                            f"[EXPERT_ANALYSIS] Model {model_name} doesn't support thinking mode. "
+                            f"Auto-upgrade is disabled (EXPERT_ANALYSIS_AUTO_UPGRADE=false). "
+                            f"Expert analysis may not work as expected. Consider using {thinking_model} instead."
+                        )
+                    elif not thinking_model:
+                        logger.warning(
+                            f"[EXPERT_ANALYSIS] Model {model_name} doesn't support thinking mode and no fallback available. "
+                            f"Expert analysis may not work as expected."
+                        )
+                        logger.info(f"[EXPERT_ANALYSIS] Model context updated to use {thinking_model}")
+                    else:
+                        logger.warning(f"[EXPERT_ANALYSIS] Model {model_name} doesn't support thinking mode and no fallback available")
+                else:
+                    logger.info(f"[EXPERT_ANALYSIS] Model {model_name} supports thinking mode ✓")
+
             # Prepare expert analysis context
             expert_context = self.prepare_expert_analysis_context(self.consolidated_findings)  # type: ignore
             logger.info(f"[EXPERT_ANALYSIS_DEBUG] Expert context prepared ({len(expert_context)} chars)")
             
-            # Check if tool wants to include files in prompt
+            # ISSUE #9 FIX: Clarify file embedding terminology
+            # "File inclusion" means embedding FULL file contents in the prompt
+            # File paths/names are ALWAYS included in the context regardless of this setting
             if self.should_include_files_in_expert_prompt():
-                logger.info(f"[EXPERT_ANALYSIS_DEBUG] File inclusion enabled, preparing files...")
+                logger.info(f"[EXPERT_ANALYSIS_DEBUG] Full file content embedding enabled (EXPERT_ANALYSIS_INCLUDE_FILES=true)")
                 file_content = self._prepare_files_for_expert_analysis()
                 if file_content:
-                    logger.info(f"[EXPERT_ANALYSIS_DEBUG] Adding {len(file_content)} chars of file content to expert context")
+                    logger.info(f"[EXPERT_ANALYSIS_DEBUG] Embedding {len(file_content)} chars of full file content into expert context")
                     expert_context = self._add_files_to_expert_context(expert_context, file_content)
                 else:
-                    logger.info(f"[EXPERT_ANALYSIS_DEBUG] No file content to add")
+                    logger.info(f"[EXPERT_ANALYSIS_DEBUG] No file content to embed (files may be empty or filtered)")
             else:
-                logger.info(f"[EXPERT_ANALYSIS_DEBUG] File inclusion disabled (EXPERT_ANALYSIS_INCLUDE_FILES=false)")
+                logger.info(
+                    f"[EXPERT_ANALYSIS_DEBUG] Full file content embedding disabled (EXPERT_ANALYSIS_INCLUDE_FILES=false). "
+                    f"File paths/names are still included in context, but not full contents."
+                )
             
             # Get system prompt for this tool with localization support
             base_system_prompt = self.get_system_prompt()
@@ -415,7 +486,6 @@ class ExpertAnalysisMixin:
                 provider_kwargs = {}
 
             # Get thinking mode for expert analysis (with parameter support)
-            import time
             thinking_mode_start = time.time()
             expert_thinking_mode = self.get_expert_thinking_mode(request)
             thinking_mode_elapsed = time.time() - thinking_mode_start
@@ -429,157 +499,146 @@ class ExpertAnalysisMixin:
             logger.warning(f"🔥 [EXPERT_ANALYSIS_START] Thinking Mode Selection Time: {thinking_mode_elapsed:.3f}s")
             logger.warning(f"🔥 [EXPERT_ANALYSIS_START] ========================================")
 
-            # Run provider call in a thread to allow cancellation/timeouts even if provider blocks
-            logger.info(
-                f"[EXPERT_DEBUG] About to call provider.generate_content() for {self.get_name()}: "
-                f"prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}, "
-                f"thinking_mode={expert_thinking_mode}"
-            )
-            logger.debug(f"Calling provider.generate_content() for {self.get_name()}: prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}")
-            loop = asyncio.get_running_loop()
-            def _invoke_provider():
-                logger.info(f"[EXPERT_DEBUG] Inside _invoke_provider thread, about to call provider.generate_content()")
-                logger.debug(f"Inside _invoke_provider, calling provider.generate_content()")
-                result = provider.generate_content(
-                    prompt=prompt,
-                    model_name=model_name,
-                    system_prompt=system_prompt,
-                    temperature=validated_temperature,
-                    thinking_mode=expert_thinking_mode,  # Use pre-fetched thinking mode
-                    images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
-                    **provider_kwargs,  # CRITICAL: Use adapter-validated kwargs instead of raw use_websearch
+            # PHASE 2: Async Provider Support
+            # Check if async providers are enabled via feature flag
+            import os
+            use_async_providers = os.getenv("USE_ASYNC_PROVIDERS", "false").strip().lower() in ("true", "1", "yes")
+
+            start_time = time.time()
+            max_wait = timeout_secs  # Use configured timeout (480s for expert analysis)
+
+            if use_async_providers:
+                # PHASE 2: Native async provider path (no run_in_executor)
+                logger.info(f"[EXPERT_DEBUG] Using ASYNC providers for {self.get_name()}")
+                logger.info(
+                    f"[EXPERT_DEBUG] About to call async provider.generate_content() for {self.get_name()}: "
+                    f"prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}, "
+                    f"thinking_mode={expert_thinking_mode}"
                 )
-                logger.info(f"[EXPERT_DEBUG] provider.generate_content() returned successfully")
-                return result
-            logger.info(f"[EXPERT_DEBUG] About to submit _invoke_provider to executor")
-            task = loop.run_in_executor(None, _invoke_provider)
-            logger.info(f"[EXPERT_DEBUG] Task submitted to executor, entering poll loop")
 
-            # Poll until done or deadline; emit progress breadcrumbs so UI stays alive
-            # CRITICAL FIX: Removed max(5.0, ...) to allow 2s heartbeat for better UX
-            hb = self.get_expert_heartbeat_interval_secs(request)
-            while True:
-                # Check completion first
-                if task.done():
+                # Create async provider based on provider type
+                from src.providers.base import ProviderType
+                provider_type = provider.get_provider_type()
+
+                async_provider = None
+                try:
+                    if provider_type == ProviderType.GLM:
+                        from src.providers.async_glm import AsyncGLMProvider
+                        async_provider = AsyncGLMProvider(
+                            api_key=os.getenv("GLM_API_KEY"),
+                            base_url=os.getenv("GLM_API_URL")
+                        )
+                    elif provider_type == ProviderType.KIMI:
+                        from src.providers.async_kimi import AsyncKimiProvider
+                        async_provider = AsyncKimiProvider(
+                            api_key=os.getenv("KIMI_API_KEY"),
+                            base_url=os.getenv("KIMI_API_URL")
+                        )
+                    else:
+                        logger.warning(f"[EXPERT_DEBUG] Async provider not available for {provider_type}, falling back to sync")
+                        use_async_providers = False  # Fall back to sync path
+                except Exception as e:
+                    logger.error(f"[EXPERT_DEBUG] Failed to create async provider: {e}, falling back to sync")
+                    use_async_providers = False  # Fall back to sync path
+
+                if use_async_providers and async_provider:
                     try:
-                        model_response = task.result()
+                        # Use async context manager for proper resource cleanup
+                        async with async_provider:
+                            logger.info(f"[EXPERT_DEBUG] Calling async provider.generate_content()")
+
+                            # CRITICAL: Native async call with timeout wrapper
+                            model_response = await asyncio.wait_for(
+                                async_provider.generate_content(
+                                    prompt=prompt,
+                                    model_name=model_name,
+                                    system_prompt=system_prompt,
+                                    temperature=validated_temperature,
+                                    thinking_mode=expert_thinking_mode,
+                                    images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
+                                    **provider_kwargs,
+                                ),
+                                timeout=max_wait
+                            )
+
+                            logger.info(f"[EXPERT_DEBUG] Async provider.generate_content() returned successfully")
+                            duration = time.time() - start_time
+                            logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] Tool: {self.get_name()}, Duration: {duration:.2f}s (ASYNC)")
+
+                    except asyncio.TimeoutError:
+                        # Timeout - return error result immediately
+                        duration = time.time() - start_time
+                        logger.error(f"🔥 [EXPERT_ANALYSIS_TIMEOUT] Tool: {self.get_name()}, Duration: {duration:.2f}s, Timeout: {max_wait}s (ASYNC)")
+
+                        return {
+                            "error": f"Expert analysis timed out after {max_wait}s",
+                            "status": "analysis_timeout",
+                            "raw_analysis": ""
+                        }
                     except Exception as e:
-                        # Provider error - attempt graceful fallback on rate limit if enabled and time remains
-                        try:
-                            import os as _os
-                            allow_fb = _os.getenv("EXPERT_FALLBACK_ON_RATELIMIT", "true").strip().lower() == "true"
-                        except Exception:
-                            allow_fb = True
-                        err_text = str(e)
-                        is_rate_limited = ("429" in err_text) or ("ReachLimit" in err_text) or ("concurrent" in err_text.lower())
-                        time_left = deadline - time.time()
-                        if allow_fb and is_rate_limited and time_left > 3.0:
-                            # Try fallback to Kimi provider quickly
-                            try:
-                                send_progress(f"{self.get_name()}: Rate-limited on {provider.get_provider_type().value}, falling back to Kimi...")
-                            except Exception:
-                                pass
-                            try:
-                                from src.providers.registry import ModelProviderRegistry
-                                from src.providers.base import ProviderType as _PT
-                                fb_provider = ModelProviderRegistry.get_provider(_PT.KIMI)
-                                fb_model = _os.getenv("KIMI_THINKING_MODEL", "kimi-thinking-preview")
-                            except Exception:
-                                fb_provider = None
-                                fb_model = None
-                            if fb_provider and fb_model:
-                                def _invoke_fb():
-                                    return fb_provider.generate_content(
-                                        prompt=prompt,
-                                        model_name=fb_model,
-                                        system_prompt=system_prompt,
-                                        temperature=validated_temperature,
-                                        thinking_mode=self.get_request_thinking_mode(request),
-                                        use_websearch=self.get_request_use_websearch(request),
-                                        images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
-                                    )
-                                fb_task = loop.run_in_executor(None, _invoke_fb)
-                                # Wait within remaining time, emitting heartbeats
-                                while True:
-                                    if fb_task.done():
-                                        model_response = fb_task.result()
-                                        break
-                                    now_fb = time.time()
-                                    # Soft-deadline early return with partial to avoid client cancel
-                                    if _soft_dl and (now_fb - start) >= _soft_dl:
-                                        logger.warning("Expert analysis fallback soft-deadline reached; returning partial result early")
-                                        result = {"status":"analysis_partial","soft_deadline_exceeded": True, "raw_analysis": ""}
-                                        break
-                                    if now_fb >= deadline:
-                                        try:
-                                            fb_task.cancel()
-                                        except Exception:
-                                            pass
-                                        logger.error("Expert analysis fallback timed out; returning partial context-only result")
-                                        result = {"status":"analysis_timeout","error":"Expert analysis exceeded timeout","raw_analysis":""}
-                                        break
-                                    # CRITICAL FIX: Enhanced progress message with elapsed time and ETA
-                                    elapsed_fb = now_fb - start
-                                    remaining_fb = max(0, deadline - now_fb)
-                                    progress_pct_fb = min(100, int((elapsed_fb / timeout_secs) * 100))
-                                    try:
-                                        send_progress(
-                                            f"{self.get_name()}: Waiting on expert analysis (provider=kimi, fallback) | "
-                                            f"Progress: {progress_pct_fb}% | Elapsed: {elapsed_fb:.1f}s | ETA: {remaining_fb:.1f}s"
-                                        )
-                                    except Exception:
-                                        pass
-                                    # Sleep only up to remaining time
-                                    await asyncio.sleep(min(hb, max(0.1, deadline - now_fb)))
-                                # Check if we set result during fallback timeout/soft-deadline
-                                if result is not None:
-                                    break  # Exit outer loop too
-                                break
-                        # No fallback or still failing - re-raise to outer handler
-                        raise
-                    break
+                        logger.error(f"[EXPERT_DEBUG] Async provider call failed: {e}, falling back to sync")
+                        use_async_providers = False  # Fall back to sync path
 
-                # Check if we set result during fallback
-                if result is not None:
-                    break  # Exit main loop
+            if not use_async_providers:
+                # PHASE 1: Sync provider path with run_in_executor (backward compatible)
+                logger.info(f"[EXPERT_DEBUG] Using SYNC providers for {self.get_name()}")
+                logger.info(
+                    f"[EXPERT_DEBUG] About to call provider.generate_content() for {self.get_name()}: "
+                    f"prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}, "
+                    f"thinking_mode={expert_thinking_mode}"
+                )
+                logger.debug(f"Calling provider.generate_content() for {self.get_name()}: prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}")
+                loop = asyncio.get_running_loop()
+                def _invoke_provider():
+                    logger.info(f"[EXPERT_DEBUG] Inside _invoke_provider thread, about to call provider.generate_content()")
+                    logger.debug(f"Inside _invoke_provider, calling provider.generate_content()")
+                    result = provider.generate_content(
+                        prompt=prompt,
+                        model_name=model_name,
+                        system_prompt=system_prompt,
+                        temperature=validated_temperature,
+                        thinking_mode=expert_thinking_mode,  # Use pre-fetched thinking mode
+                        images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
+                        **provider_kwargs,  # CRITICAL: Use adapter-validated kwargs instead of raw use_websearch
+                    )
+                    logger.info(f"[EXPERT_DEBUG] provider.generate_content() returned successfully")
+                    return result
+                logger.info(f"[EXPERT_DEBUG] About to submit _invoke_provider to executor")
+                task = loop.run_in_executor(None, _invoke_provider)
+                logger.info(f"[EXPERT_DEBUG] Task submitted to executor, using asyncio.wait_for for timeout")
 
-                now = time.time()
-                # Soft-deadline early return with partial to avoid client cancel
-                if _soft_dl and (now - start) >= _soft_dl:
-                    logger.warning("Expert analysis soft-deadline reached; returning partial result early")
-                    result = {
-                        "status": "analysis_partial",
-                        "soft_deadline_exceeded": True,
-                        "raw_analysis": "",
-                    }
-                    break
-                if now >= deadline:
+                try:
+                    # Single async call with timeout - no polling needed!
+                    logger.info(f"[EXPERT_DEBUG] Waiting for task with {max_wait}s timeout")
+                    model_response = await asyncio.wait_for(task, timeout=max_wait)
+                    logger.info(f"[EXPERT_DEBUG] Task completed successfully")
+
+                    # Success - continue with existing response handling
+                    duration = time.time() - start_time
+                    logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] Tool: {self.get_name()}, Duration: {duration:.2f}s (SYNC)")
+
+                except asyncio.TimeoutError:
+                    # Timeout - return error result immediately
+                    duration = time.time() - start_time
+                    logger.error(f"🔥 [EXPERT_ANALYSIS_TIMEOUT] Tool: {self.get_name()}, Duration: {duration:.2f}s, Timeout: {max_wait}s (SYNC)")
+
+                    # Try to cancel the task to free resources
                     try:
                         task.cancel()
                     except Exception:
                         pass
-                    logger.error("Expert analysis timed out; returning partial context-only result")
-                    result = {
+
+                    # Return timeout error immediately - skip response processing
+                    return {
+                        "error": f"Expert analysis timed out after {max_wait}s",
                         "status": "analysis_timeout",
-                        "error": "Expert analysis exceeded timeout",
-                        "raw_analysis": "",
+                        "raw_analysis": ""
                     }
-                    break
-                # CRITICAL FIX: Enhanced progress message with elapsed time, ETA, and progress percentage
-                elapsed = now - start
-                remaining = max(0, deadline - now)
-                progress_pct = min(100, int((elapsed / timeout_secs) * 100))
-                try:
-                    send_progress(
-                        f"{self.get_name()}: Waiting on expert analysis (provider={provider.get_provider_type().value}) | "
-                        f"Progress: {progress_pct}% | Elapsed: {elapsed:.1f}s | ETA: {remaining:.1f}s"
-                    )
-                except Exception:
-                    pass
-                # Sleep only up to remaining time to avoid overshooting deadline
-                await asyncio.sleep(min(hb, max(0.1, deadline - time.time())))
 
+            # (Dead code block removed - see git history for old poll loop implementation)
 
+            # Continue with response handling (works for both timeout and success cases)
+            logger.info(f"[EXPERT_DEBUG] Processing expert analysis result")
             expert_analysis_duration = time.time() - thinking_mode_start
             logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] ========================================")
             logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] Tool: {self.get_name()}")

@@ -106,16 +106,52 @@ class ThinkDeepTool(WorkflowTool):
         """Return default thinking mode for thinkdeep"""
         from config import DEFAULT_THINKING_MODE_THINKDEEP
         return DEFAULT_THINKING_MODE_THINKDEEP
-    # Override expert analysis timing to avoid wrapper timeouts
+
+    # Override expert analysis timing with adaptive timeout based on thinking mode
     def get_expert_timeout_secs(self, request=None) -> float:
-        """Cap thinkdeep expert analysis to a shorter window so callers never hang.
-        Uses THINKDEEP_EXPERT_TIMEOUT_SECS if set, else default 25s.
+        """Adaptive timeout based on thinking mode to prevent premature termination.
+
+        Uses EXPERT_ANALYSIS_TIMEOUT_SECS from .env as base, with adaptive multipliers:
+        - minimal: 0.5x base (quick validation)
+        - low: 0.7x base (standard validation)
+        - medium: 1.0x base (thorough analysis)
+        - high: 1.5x base (deep analysis)
+        - max: 2.0x base (exhaustive reasoning)
+
+        Can be overridden via THINKDEEP_EXPERT_TIMEOUT_SECS env var for manual control.
         """
         import os
-        try:
-            return float(os.getenv("THINKDEEP_EXPERT_TIMEOUT_SECS", "25"))
-        except Exception:
-            return 25.0
+        from config import TimeoutConfig
+
+        # Allow manual override (takes precedence)
+        env_timeout = os.getenv("THINKDEEP_EXPERT_TIMEOUT_SECS")
+        if env_timeout:
+            try:
+                timeout = float(env_timeout)
+                logger.info(f"[THINKDEEP_TIMEOUT] Using manual override: {timeout}s")
+                return timeout
+            except Exception:
+                pass
+
+        # Get base timeout from config (respects .env EXPERT_ANALYSIS_TIMEOUT_SECS)
+        base_timeout = float(TimeoutConfig.EXPERT_ANALYSIS_TIMEOUT_SECS)
+
+        # Adaptive multipliers based on thinking mode
+        thinking_mode = self.get_expert_thinking_mode(request)
+
+        TIMEOUT_MULTIPLIERS = {
+            "minimal": 0.5,   # Quick validation (e.g., 180s * 0.5 = 90s)
+            "low": 0.7,       # Standard validation (e.g., 180s * 0.7 = 126s)
+            "medium": 1.0,    # Thorough analysis (e.g., 180s * 1.0 = 180s)
+            "high": 1.5,      # Deep analysis (e.g., 180s * 1.5 = 270s)
+            "max": 2.0        # Exhaustive reasoning (e.g., 180s * 2.0 = 360s)
+        }
+
+        multiplier = TIMEOUT_MULTIPLIERS.get(thinking_mode, 1.0)  # Default to 'medium'
+        timeout = base_timeout * multiplier
+
+        logger.info(f"[THINKDEEP_TIMEOUT] thinking_mode={thinking_mode}, base={base_timeout}s, multiplier={multiplier}x → timeout={timeout}s")
+        return timeout
 
     def get_expert_heartbeat_interval_secs(self, request=None) -> float:
         """Emit progress frequently enough to satisfy 10s idle clients.
@@ -126,9 +162,6 @@ class ThinkDeepTool(WorkflowTool):
             return float(os.getenv("THINKDEEP_HEARTBEAT_INTERVAL_SECS", "7"))
         except Exception:
             return 7.0
-
-
-        return DEFAULT_THINKING_MODE_THINKDEEP
 
     def customize_workflow_response(self, response_data: dict, request, **kwargs) -> dict:
         """

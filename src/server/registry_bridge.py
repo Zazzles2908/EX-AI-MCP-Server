@@ -3,8 +3,14 @@ from __future__ import annotations
 """
 Registry Bridge for EX MCP Server
 
+ARCHITECTURE NOTE (v2.0.2):
+- This module now delegates to src/bootstrap/singletons for tool registry access
+- Ensures TOOLS is SERVER_TOOLS identity check always passes (same object reference)
+- No longer creates a second ToolRegistry instance - uses singleton pattern
+- All methods return references to the shared singleton tools dict
+
 Purpose:
-- Provide a thin, centralized bridge around tools.registry.ToolRegistry
+- Provide a thin, centralized bridge around the singleton tool registry
 - Build tool instances once (honoring env: LEAN_MODE, DISABLED_TOOLS, etc.)
 - Expose helpers to list/get tools for handlers without importing server.TOOLS
 
@@ -20,30 +26,34 @@ from tools.registry import ToolRegistry
 
 class _RegistryBridge:
     def __init__(self) -> None:
-        self._reg = ToolRegistry()
-        self._built = False
+        # CRITICAL: Delegate to singleton instead of creating second ToolRegistry instance
+        from src.bootstrap.singletons import ensure_tools_built, get_tools
+        self._ensure_tools_built = ensure_tools_built
+        self._get_tools = get_tools
         self._lock = RLock()
 
     def build(self, force: bool = False) -> None:
         with self._lock:
-            if not self._built or force:
-                # Idempotent: ToolRegistry.build_tools() repopulates with current env
-                self._reg.build_tools()
-                self._built = True
+            # Delegate to singleton - idempotent by design
+            # force parameter ignored as singleton handles idempotency
+            self._ensure_tools_built()
 
     def list_tools(self) -> Dict[str, Any]:
-        # Safe to call before build(); returns current (possibly empty) map
-        return self._reg.list_tools()
+        # Return singleton tools dict (same object as server.TOOLS)
+        tools = self._get_tools()
+        return tools if tools is not None else {}
 
     def list_descriptors(self) -> Dict[str, Any]:
-        return self._reg.list_descriptors()
+        # Descriptors are built alongside tools in singleton
+        from tools.registry import ToolRegistry
+        return ToolRegistry().list_descriptors()
 
     def get_tool(self, name: str) -> Any:
-        tools = self._reg.list_tools()
-        if name in tools:
+        # Use singleton tools dict for lookup
+        tools = self._get_tools()
+        if tools and name in tools:
             return tools[name]
-        # fall back to ToolRegistry error for better message
-        return self._reg.get_tool(name)
+        raise KeyError(f"Tool '{name}' not found in registry")
 
 
 # Singleton accessors

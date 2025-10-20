@@ -24,7 +24,7 @@ from mcp.types import TextContent
 
 from utils.client_info import get_current_session_fingerprint, get_cached_client_info, format_client_info
 from utils.progress import send_progress
-from utils.progress_messages import ProgressMessages
+from utils.progress_utils.messages import ProgressMessages
 
 
 class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixin, BaseTool):
@@ -64,8 +64,18 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
     """
 
     # Common field definitions that simple tools can reuse
-    FILES_FIELD = SchemaBuilder.SIMPLE_FIELD_SCHEMAS["files"]
-    IMAGES_FIELD = SchemaBuilder.COMMON_FIELD_SCHEMAS["images"]
+    # Now delegated to SimpleToolSchemaBuilder for better separation of concerns
+    @property
+    def FILES_FIELD(self) -> dict[str, Any]:
+        """Get FILES field schema from Definition Module"""
+        from tools.simple.definition.schema import SimpleToolSchemaBuilder
+        return SimpleToolSchemaBuilder.get_files_field()
+
+    @property
+    def IMAGES_FIELD(self) -> dict[str, Any]:
+        """Get IMAGES field schema from Definition Module"""
+        from tools.simple.definition.schema import SimpleToolSchemaBuilder
+        return SimpleToolSchemaBuilder.get_images_field()
 
     @abstractmethod
     def get_tool_fields(self) -> dict[str, dict[str, Any]]:
@@ -122,12 +132,45 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         """
         return {"readOnlyHint": True}
 
+    def _clean_model_artifacts(self, response: str) -> str:
+        """
+        Remove model-specific artifacts from response.
+
+        CRITICAL FIX (Bug #6): Clean up artifacts that some models add to responses:
+        - GLM-4.5v: <|begin_of_box|>, <|end_of_box|> tags
+        - GLM-4.5-flash: "AGENT'S TURN:" suffix
+        - Progress markers: === PROGRESS === sections
+
+        This cleaning was previously only in the WebSocket shim (run_ws_shim.py),
+        but needs to be in core response handling to work for all clients.
+
+        Args:
+            response: Raw response from model
+
+        Returns:
+            Cleaned response string
+        """
+        import re
+
+        # Remove GLM-4.5v box markers
+        response = re.sub(r'<\|begin_of_box\|>', '', response)
+        response = re.sub(r'<\|end_of_box\|>', '', response)
+
+        # Remove progress sections (=== PROGRESS === ... === END PROGRESS ===)
+        response = re.sub(r'=== PROGRESS ===.*?=== END PROGRESS ===\n*', '', response, flags=re.DOTALL)
+
+        # Remove "AGENT'S TURN:" suffix (GLM-4.5-flash artifact)
+        response = re.sub(r"\n*---\n*\n*AGENT'S TURN:.*", '', response, flags=re.DOTALL)
+
+        return response.strip()
+
     def format_response(self, response: str, request, model_info: Optional[dict] = None) -> str:
         """
         Format the AI response before returning to the client.
 
         This is a hook method that subclasses can override to customize
-        response formatting. The default implementation returns the response as-is.
+        response formatting. The default implementation cleans model artifacts
+        and returns the response.
 
         Args:
             response: The raw response from the AI model
@@ -137,7 +180,8 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         Returns:
             Formatted response string
         """
-        return response
+        # CRITICAL FIX (Bug #6): Clean model artifacts before returning
+        return self._clean_model_artifacts(response)
 
     def get_input_schema(self) -> dict[str, Any]:
         """
@@ -154,13 +198,13 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
 
         Returns:
             Complete JSON schema for the tool
+
+        Note:
+            Schema generation is now delegated to SimpleToolSchemaBuilder
+            in the Definition Module for better separation of concerns.
         """
-        return SchemaBuilder.build_schema(
-            tool_specific_fields=self.get_tool_fields(),
-            required_fields=self.get_required_fields(),
-            model_field_schema=self.get_model_field_schema(),
-            auto_mode=self.is_effective_auto_mode(),
-        )
+        from tools.simple.definition.schema import SimpleToolSchemaBuilder
+        return SimpleToolSchemaBuilder.build_input_schema(self)
 
     def get_request_model(self):
         """
@@ -172,41 +216,32 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         return ToolRequest
 
     # Hook methods for safe attribute access without hasattr/getattr
+    # Now delegated to RequestAccessor in Intake Module for better separation of concerns
 
     def get_request_model_name(self, request) -> Optional[str]:
         """Get model name from request. Override for custom model name handling."""
-        try:
-            return request.model
-        except AttributeError:
-            return None
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_model_name(request)
 
     def get_request_images(self, request) -> list:
         """Get images from request. Override for custom image handling."""
-        try:
-            return request.images if request.images is not None else []
-        except AttributeError:
-            return []
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_images(request)
 
     def get_request_continuation_id(self, request) -> Optional[str]:
         """Get continuation_id from request. Override for custom continuation handling."""
-        try:
-            return request.continuation_id
-        except AttributeError:
-            return None
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_continuation_id(request)
 
     def get_request_prompt(self, request) -> str:
         """Get prompt from request. Override for custom prompt handling."""
-        try:
-            return request.prompt
-        except AttributeError:
-            return ""
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_prompt(request)
 
     def get_request_temperature(self, request) -> Optional[float]:
         """Get temperature from request. Override for custom temperature handling."""
-        try:
-            return request.temperature
-        except AttributeError:
-            return None
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_temperature(request)
 
     def get_validated_temperature(self, request, model_context: Any) -> tuple[float, list[str]]:
         """
@@ -229,51 +264,30 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
 
     def get_request_thinking_mode(self, request) -> Optional[str]:
         """Get thinking_mode from request. Override for custom thinking mode handling."""
-        try:
-            return request.thinking_mode
-        except AttributeError:
-            return None
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_thinking_mode(request)
 
     def get_request_files(self, request) -> list:
         """Get files from request. Override for custom file handling."""
-        try:
-            return request.files if request.files is not None else []
-        except AttributeError:
-            return []
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_files(request)
 
     def get_request_use_websearch(self, request) -> bool:
         """Get use_websearch from request, falling back to env default.
         EX_WEBSEARCH_DEFAULT_ON controls default when request doesn't specify.
         """
-        try:
-            val = getattr(request, "use_websearch", None)
-            if val is not None:
-                return bool(val)
-            import os as __os
-            return __os.getenv("EX_WEBSEARCH_DEFAULT_ON", "true").strip().lower() == "true"
-        except AttributeError:
-            return True
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_use_websearch(request)
 
     def get_request_as_dict(self, request) -> dict:
         """Convert request to dictionary. Override for custom serialization."""
-        try:
-            # Try Pydantic v2 method first
-            return request.model_dump()
-        except AttributeError:
-            try:
-                # Fall back to Pydantic v1 method
-                return request.dict()
-            except AttributeError:
-                # Last resort - convert to dict manually
-                return {"prompt": self.get_request_prompt(request)}
+        from tools.simple.intake.accessor import RequestAccessor
+        return RequestAccessor.get_as_dict(request)
 
     def set_request_files(self, request, files: list) -> None:
         """Set files on request. Override for custom file setting."""
-        try:
-            request.files = files
-        except AttributeError:
-            # If request doesn't support file setting, ignore silently
-            pass
+        from tools.simple.intake.accessor import RequestAccessor
+        RequestAccessor.set_files(request, files)
 
     def get_actually_processed_files(self) -> list:
         """Get actually processed files. Override for custom file tracking."""
@@ -344,7 +358,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 logger.debug(f"{self.get_name()}: Using model context from arguments")
             else:
                 # Create model context if not provided
-                from utils.model_context import ModelContext
+                from utils.model.context import ModelContext
                 from src.providers.registry import ModelProviderRegistry as _Registry
                 # Avoid constructing ModelContext('auto') which triggers provider lookup error.
                 if (model_name or "").strip().lower() == "auto":
@@ -382,22 +396,20 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     logger.debug(f"{self.get_name()}: No embedded history found, reconstructing conversation")
 
                     # Get thread context
-                    from utils.conversation_memory import add_turn, build_conversation_history, get_thread
+                    from utils.conversation.memory import add_turn, build_conversation_history, get_thread
 
                     thread_context = get_thread(continuation_id)
 
                     if thread_context:
-                        # Add user's new input to conversation
-                        user_prompt = self.get_request_prompt(request)
-                        user_files = self.get_request_files(request)
-                        if user_prompt:
-                            add_turn(continuation_id, "user", user_prompt, files=user_files)
+                        # CRITICAL FIX (2025-10-19): Removed duplicate message saving
+                        # ContinuationMixin already handles saving user turns to Supabase
+                        # This was causing duplicate messages in the database
+                        # The thread_context is already updated by ContinuationMixin
 
-                            # Get updated thread context after adding the turn
-                            thread_context = get_thread(continuation_id)
-                            logger.debug(
-                                f"{self.get_name()}: Retrieved updated thread with {len(thread_context.turns)} turns"
-                            )
+                        # Just log that we're using the thread context
+                        logger.debug(
+                            f"{self.get_name()}: Using thread context with {len(thread_context.turns)} turns"
+                        )
 
                         # Build conversation history with updated thread context
                         conversation_history, conversation_tokens = build_conversation_history(
@@ -472,7 +484,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
             system_prompt = language_instruction + web_search_instruction + base_system_prompt
 
             # Estimate tokens for logging
-            from utils.token_utils import estimate_tokens
+            from utils.model.token_utils import estimate_tokens
 
             estimated_tokens = estimate_tokens(prompt)
             logger.debug(f"Prompt length: {len(prompt)} characters (~{estimated_tokens:,} tokens)")
@@ -568,15 +580,52 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                             provider_kwargs["stream"] = True
                     except Exception:
                         pass
-                    model_response = provider.generate_content(
+
+                    # Try semantic cache first
+                    from utils.infrastructure.semantic_cache import get_semantic_cache
+                    import hashlib
+                    cache = get_semantic_cache()
+
+                    # Hash system prompt to avoid false cache hits from truncation
+                    system_prompt_hash = None
+                    if system_prompt:
+                        system_prompt_hash = hashlib.sha256(system_prompt.encode()).hexdigest()[:16]
+
+                    cached_response = cache.get(
                         prompt=prompt,
-                        model_name=self._current_model_name,
-                        system_prompt=system_prompt,
+                        model=self._current_model_name,
                         temperature=temperature,
                         thinking_mode=thinking_mode if provider.supports_thinking_mode(self._current_model_name) else None,
-                        images=images if images else None,
-                        **provider_kwargs,
+                        use_websearch=self.get_request_use_websearch(request),
+                        system_prompt_hash=system_prompt_hash,  # Use hash instead of truncated text
                     )
+
+                    if cached_response is not None:
+                        logger.info(f"Semantic cache HIT for {self.get_name()} (model={self._current_model_name})")
+                        model_response = cached_response
+                    else:
+                        logger.debug(f"Semantic cache MISS for {self.get_name()} (model={self._current_model_name})")
+                        model_response = provider.generate_content(
+                            prompt=prompt,
+                            model_name=self._current_model_name,
+                            system_prompt=system_prompt,
+                            temperature=temperature,
+                            thinking_mode=thinking_mode if provider.supports_thinking_mode(self._current_model_name) else None,
+                            images=images if images else None,
+                            **provider_kwargs,
+                        )
+
+                        # Cache the response
+                        if model_response is not None:
+                            cache.set(
+                                prompt=prompt,
+                                model=self._current_model_name,
+                                response=model_response,
+                                temperature=temperature,
+                                thinking_mode=thinking_mode if provider.supports_thinking_mode(self._current_model_name) else None,
+                                use_websearch=self.get_request_use_websearch(request),
+                                system_prompt_hash=system_prompt_hash,  # Use hash instead of truncated text
+                            )
                 except Exception as _explicit_err:
                     if _fb_on_failure:
                         logger.warning(f"Explicit model call failed; entering fallback chain: {str(_explicit_err)}")
@@ -656,6 +705,66 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     content_type="text",
                 )
                 return [TextContent(type="text", text=tool_output.model_dump_json())]
+
+            # HYBRID PATTERN: DISABLED (2025-10-15)
+            # GLM-4.6 with tool_stream=True now uses web search natively and correctly
+            # The fallback was triggering unnecessarily because GLM embeds search results
+            # without specific markers like "[Web Search Results]"
+            #
+            # DECISION: Trust GLM's native web search implementation
+            # If GLM doesn't search when it should, that's a prompt/model issue, not a code issue
+            #
+            # Original logic kept below for reference but commented out:
+            """
+            use_websearch = self.get_request_use_websearch(request)
+            if use_websearch and self.get_name() == "chat":
+                # Check if response contains web search results
+                response_content = getattr(model_response, "content", "")
+                has_search_results = (
+                    "[Web Search Results]" in response_content or
+                    "search_result" in response_content.lower() or
+                    "web search" in response_content.lower()
+                )
+                if not has_search_results:
+                    logger.info("Web search requested but not found in response - executing fallback search")
+                    send_progress(ProgressMessages.executing_tool("web_search"))
+
+                    try:
+                        # CRITICAL FIX (2025-10-19): Use internal function instead of nested tool call
+                        # This prevents client cancellation of nested tool calls
+                        # Import internal web search function
+                        from src.providers.tool_executor import perform_glm_web_search
+                        import asyncio
+
+                        # Extract search query from user prompt
+                        user_prompt = self.get_request_prompt(request)
+                        search_query = user_prompt[:200]  # Use first 200 chars as query
+
+                        # Execute web search internally (no nested tool call)
+                        logger.debug(f"Executing internal web search for query: {search_query[:50]}...")
+                        search_data = await asyncio.to_thread(
+                            perform_glm_web_search,
+                            search_query,
+                            count=10,
+                            search_recency_filter="oneWeek"
+                        )
+
+                        # Append search results to response
+                        if search_data:
+                            import json as _json
+                            search_results_text = f"\n\n=== WEB SEARCH RESULTS ===\n{_json.dumps(search_data, indent=2, ensure_ascii=False)}\n"
+
+                            # Update model response content
+                            if hasattr(model_response, 'content'):
+                                model_response.content = response_content + search_results_text
+                                logger.info(f"Web search completed successfully, appended {len(search_data.get('results', []))} results")
+                                logger.info("Successfully appended fallback web search results to response")
+                                send_progress(ProgressMessages.tool_complete("web_search"))
+
+                    except Exception as e:
+                        logger.warning(f"Fallback web search failed: {e}")
+                        # Continue without search results - don't fail the entire request
+            """
 
             # Check if model requested tool calls (web_search, etc.)
             # Tool_calls are stored in the raw response within metadata
@@ -805,7 +914,21 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     return [TextContent(type="text", text=tool_output.model_dump_json())]
 
             # Process the model's response
-            if getattr(model_response, "content", None):
+            # CRITICAL: Check finish_reason BEFORE checking content to detect truncation
+            finish_reason = model_response.metadata.get("finish_reason", "unknown")
+
+            # Check for incomplete or blocked responses FIRST
+            if finish_reason in ["length", "content_filter"]:
+                logger.warning(f"Response incomplete or blocked for {self.get_name()}. Finish reason: {finish_reason}")
+                tool_output = ToolOutput(
+                    status="error",
+                    content=f"Response incomplete: {finish_reason}. "
+                           f"{'Content was truncated due to length limit.' if finish_reason == 'length' else 'Content was filtered.'} "
+                           f"Partial content: {getattr(model_response, 'content', '')[:200]}...",
+                    content_type="text",
+                    metadata={"finish_reason": finish_reason}
+                )
+            elif getattr(model_response, "content", None):
                 raw_text = model_response.content
 
                 # Create model info for conversation tracking
@@ -823,12 +946,12 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
 
             else:
                 # Handle cases where the model couldn't generate a response
-                finish_reason = model_response.metadata.get("finish_reason", "Unknown")
-                logger.warning(f"Response blocked or incomplete for {self.get_name()}. Finish reason: {finish_reason}")
+                logger.warning(f"Response blocked or no content for {self.get_name()}. Finish reason: {finish_reason}")
                 tool_output = ToolOutput(
                     status="error",
-                    content=f"Response blocked or incomplete. Finish reason: {finish_reason}",
+                    content=f"Response blocked or no content. Finish reason: {finish_reason}",
                     content_type="text",
+                    metadata={"finish_reason": finish_reason}
                 )
 
             # Return the tool output as TextContent
@@ -886,14 +1009,25 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         """
         from tools.models import ToolOutput
 
+        # CRITICAL FIX (2025-10-19): Create continuation_id BEFORE format_response()
+        # so that format_response() can save the assistant response with the correct ID
+        continuation_id = self.get_request_continuation_id(request)
+        if not continuation_id:
+            # First turn - create new continuation_id and attach to request
+            # so format_response() can use it
+            import uuid
+            continuation_id = str(uuid.uuid4())
+            request.continuation_id = continuation_id
+
         # Format the response using the hook method
+        # ChatTool's format_response() will now have access to continuation_id
         formatted_response = self.format_response(raw_text, request, model_info)
 
         # Handle conversation continuation like old base.py
         continuation_id = self.get_request_continuation_id(request)
         if continuation_id:
             # Add turn to conversation memory
-            from utils.conversation_memory import add_turn
+            from utils.conversation.memory import add_turn
 
             # Extract model metadata for conversation tracking
             model_provider = None
@@ -995,7 +1129,15 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
             )
             self._actually_processed_files = processed_files
             if file_content:
-                user_content = f"{user_content}\n\n=== {file_context_title} ===\n{file_content}\n=== END CONTEXT ===="
+                # CRITICAL FIX (2025-10-17): Add explicit indicator that files are embedded (P0-5 fix)
+                # The AI needs to be explicitly told that files are provided and available for analysis
+                file_count = len(processed_files) if processed_files else "multiple"
+                file_header = (
+                    f"=== {file_context_title} (PROVIDED FOR ANALYSIS) ===\n"
+                    f"NOTE: The following {file_count} file(s) have been embedded and are available for your analysis.\n"
+                    f"You do NOT need to request these files - they are already provided below.\n\n"
+                )
+                user_content = f"{user_content}\n\n{file_header}{file_content}\n=== END CONTEXT ===="
 
         # Check token limits
         self._validate_token_limit(user_content, "Content")
@@ -1006,8 +1148,10 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         if use_websearch:
             websearch_instruction = self.get_websearch_instruction(use_websearch, self.get_websearch_guidance())
 
-        # Combine system prompt with user content
-        full_prompt = f"""{system_prompt}{websearch_instruction}
+        # FIXED 2025-10-16: Do NOT include system prompt in user message!
+        # System prompt goes in the system role, user content goes in user role
+        # This was causing 81K token bloat by duplicating the system prompt
+        full_prompt = f"""{websearch_instruction}
 
 === USER REQUEST ===
 {user_content}
@@ -1058,7 +1202,7 @@ Please provide a thoughtful, comprehensive response:"""
             The effective prompt content
 
         Raises:
-            ValueError: If prompt is too large for MCP transport
+            ValueError: If prompt is empty or too large for MCP transport
         """
         # Check for prompt.txt in files
         files = self.get_request_files(request)
@@ -1073,6 +1217,17 @@ Please provide a thoughtful, comprehensive response:"""
 
         # Use prompt.txt content if available, otherwise use the prompt field
         user_content = prompt_content if prompt_content else self.get_request_prompt(request)
+
+        # CRITICAL FIX (Bug #7): Validate prompt is not empty
+        # Empty prompts waste API calls and should be rejected early
+        if not user_content or not user_content.strip():
+            from tools.models import ToolOutput
+            error_output = ToolOutput(
+                status="invalid_request",
+                error="Prompt cannot be empty. Please provide a non-empty prompt.",
+                data={}
+            )
+            raise ValueError(f"MCP_VALIDATION_ERROR:{error_output.model_dump_json()}")
 
         # Check user input size at MCP transport boundary (excluding conversation history)
         validation_content = self.get_prompt_content_for_size_validation(user_content)
@@ -1112,7 +1267,7 @@ Please provide a thoughtful, comprehensive response:"""
         """
         import os
         from pathlib import Path
-        from utils.file_utils import resolve_and_validate_path
+        from utils.file.operations import resolve_and_validate_path
 
         # Check if request has 'files' attribute (used by most tools)
         files = self.get_request_files(request)
@@ -1141,14 +1296,27 @@ Please provide a thoughtful, comprehensive response:"""
             except Exception:
                 pass
 
+            # Import cross-platform path handler
+            from utils.file.operations import get_path_handler
+            path_handler = get_path_handler()
+
+            # Track normalized paths to update the request
+            normalized_files = []
+
             for file_path in files:
-                # 1) Absolute path requirement
-                if not os.path.isabs(file_path):
-                    return (
-                        f"Error: All file paths must be FULL absolute paths to real files / folders - DO NOT SHORTEN. "
-                        f"Received relative path: {file_path}\n"
-                        f"Please provide the full absolute path starting with '/' (must be FULL absolute paths to real files / folders - DO NOT SHORTEN)"
-                    )
+                # 1) Cross-platform path normalization (handles Windows paths on Linux)
+                normalized_path, was_converted, error_message = path_handler.normalize_path(file_path)
+
+                if error_message:
+                    return error_message
+
+                # Log conversion for debugging if enabled
+                if was_converted and os.getenv('EX_DEBUG_PATH_CONVERSION', 'false').lower() == 'true':
+                    logger.debug(f"Path converted: {file_path} -> {normalized_path}")
+
+                # Use normalized path for subsequent operations
+                file_path = normalized_path
+                normalized_files.append(normalized_path)
 
                 # 2) Secure resolution + containment check within allowed roots
                 try:
@@ -1176,6 +1344,10 @@ Please provide a thoughtful, comprehensive response:"""
                         f"Path: {file_path}\n"
                         f"Allowed roots:\n{allowed_str}"
                     )
+
+            # Update the request object with normalized paths
+            if normalized_files and hasattr(request, 'files'):
+                request.files = normalized_files
 
         return None
 
