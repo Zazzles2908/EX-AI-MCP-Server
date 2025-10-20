@@ -169,5 +169,26 @@ After rebuild, verify:
 
 ---
 
+## 🧹 DEAD CODE CLEANUP (2025-10-20 20:10 AEDT)
+
+**Additional cleanup completed:**
+
+### Test Files Deleted (2 files)
+
+**Reason:** These tests referenced deleted legacy code and are no longer valid.
+
+1. `tests/phase5/test_chat_context_continuation.py`
+   - Imported `src.conversation.history_store.get_history_store` (DELETED)
+   - Tested legacy conversation history functionality
+
+2. `tests/phase8/test_workflows_end_to_end.py`
+   - Imported `src.conversation.history_store.get_history_store` (DELETED)
+   - Imported `src.conversation.memory_policy.assemble_context_block` (DELETED)
+   - Tested legacy text-based conversation assembly
+
+**Commit:** `b82c832` - cleanup: Delete obsolete test files referencing deleted legacy code
+
+---
+
 **STATUS:** Ready to rebuild when Docker Hub is back online (currently 503 Service Unavailable)
 
