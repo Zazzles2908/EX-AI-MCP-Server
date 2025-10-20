@@ -454,6 +454,26 @@ class SupabaseConversationMemory:
     # Modern approach: Use get_messages_array() for SDK-native message format.
     # SDKs (Kimi/GLM) receive message arrays directly, not text strings.
 
+    def clear_request_cache(self):
+        """
+        Clear the request-scoped thread cache.
+
+        BUG FIX #13 (2025-10-20): This MUST be called after each request completes
+        to prevent memory leaks and stale data being served across requests.
+
+        The thread cache is designed to eliminate redundant Supabase queries WITHIN
+        a single request, but it must be cleared BETWEEN requests.
+        """
+        if not self._request_cache_enabled:
+            return
+
+        cache_size = len(self._thread_cache)
+        if cache_size > 0:
+            logger.debug(f"[REQUEST_CACHE] Clearing {cache_size} cached threads")
+            self._thread_cache.clear()
+        else:
+            logger.debug("[REQUEST_CACHE] No cached threads to clear")
+
 
 # Global instance
 _supabase_memory: Optional[SupabaseConversationMemory] = None
@@ -501,25 +521,3 @@ async def process_conversation_update(queue_item):
 
     except Exception as e:
         logger.error(f"[CONV_QUEUE] Error processing conversation update: {e}", exc_info=True)
-
-
-
-    def clear_request_cache(self):
-        """
-        Clear the request-scoped thread cache.
-
-        BUG FIX #13 (2025-10-20): This MUST be called after each request completes
-        to prevent memory leaks and stale data being served across requests.
-
-        The thread cache is designed to eliminate redundant Supabase queries WITHIN
-        a single request, but it must be cleared BETWEEN requests.
-        """
-        if not self._request_cache_enabled:
-            return
-
-        cache_size = len(self._thread_cache)
-        if cache_size > 0:
-            logger.debug(f"[REQUEST_CACHE] Clearing {cache_size} cached threads")
-            self._thread_cache.clear()
-        else:
-            logger.debug("[REQUEST_CACHE] No cached threads to clear")
