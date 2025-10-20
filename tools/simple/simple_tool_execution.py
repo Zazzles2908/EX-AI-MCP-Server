@@ -150,19 +150,15 @@ class SimpleToolExecutionMixin:
                                 f"{self.get_name()}: Retrieved updated thread with {len(thread_context.turns)} turns"
                             )
                         
-                        # Build conversation history with updated thread context
-                        conversation_history, conversation_tokens = build_conversation_history(
-                            thread_context, self._model_context
-                        )
-                        
+                        # BUG FIX #14 (2025-10-20): No longer build text-based conversation history
+                        # Modern approach: Request handler provides _messages parameter to SDK providers
+                        # Tools receive conversation context via message arrays, not text strings
+
                         # Get the base prompt from the tool
                         base_prompt = await self.prepare_prompt(request)
-                        
-                        # Combine with conversation history
-                        if conversation_history:
-                            prompt = f"{conversation_history}\n\n=== NEW USER INPUT ===\n{base_prompt}"
-                        else:
-                            prompt = base_prompt
+
+                        # Use base prompt directly - conversation history is handled via _messages
+                        prompt = base_prompt
                     else:
                         # Thread not found, prepare normally
                         tool_logger.warning(f"Thread {continuation_id} not found, preparing prompt normally")
