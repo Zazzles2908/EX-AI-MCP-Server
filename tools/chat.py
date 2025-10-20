@@ -76,14 +76,27 @@ class ChatTool(SimpleTool):
 
     def get_description(self) -> str:
         return (
-            "GENERAL CHAT & COLLABORATIVE THINKING - Use the AI model as your thinking partner! "
-            "Perfect for: bouncing ideas during your own analysis, getting second opinions on your plans, "
-            "collaborative brainstorming, validating your checklists and approaches, exploring alternatives. "
-            "Also great for: explanations, comparisons, general development questions. "
-            "Use this when you want to ask questions, brainstorm ideas, get opinions, discuss topics, "
-            "share your thinking, or need explanations about concepts and approaches. "
-            "Note: If you're not currently using a top-tier model such as Opus 4 or above, these tools can "
-            "provide enhanced capabilities."
+            "GENERAL CHAT & COLLABORATIVE THINKING - Use the AI model as your thinking partner!\n\n"
+            "✅ USE THIS FOR:\n"
+            "- General questions and explanations\n"
+            "- Brainstorming and ideation\n"
+            "- Getting second opinions on your plans\n"
+            "- Discussing approaches and alternatives\n"
+            "- Validating your checklists and strategies\n"
+            "- Asking 'how to' questions\n"
+            "- Exploring concepts and best practices\n\n"
+            "❌ DON'T USE THIS FOR:\n"
+            "- Code review (use codereview_EXAI-WS instead)\n"
+            "- Debugging (use debug_EXAI-WS instead)\n"
+            "- Code analysis (use analyze_EXAI-WS instead)\n"
+            "- Systematic investigation (use workflow tools instead)\n\n"
+            "HOW IT WORKS:\n"
+            "- You ask a question or share an idea\n"
+            "- AI responds with insights, suggestions, or explanations\n"
+            "- Simple request/response pattern (no multi-step workflow)\n"
+            "- Can include files for context (small files only, <5KB)\n\n"
+            "Note: If you're not currently using a top-tier model such as Opus 4 or above, "
+            "these tools can provide enhanced capabilities."
         )
 
     def get_system_prompt(self) -> str:
