@@ -672,7 +672,8 @@ async def main_async() -> None:
     logger.info("Validating timeout hierarchy...")
     try:
         from config import TimeoutConfig
-        tool_timeout = float(os.getenv("WORKFLOW_TOOL_TIMEOUT_SECS", "180"))
+        # Use centralized timeout configuration (EXAI Fix #3 - 2025-10-21)
+        tool_timeout = float(os.getenv("WORKFLOW_TOOL_TIMEOUT_SECS", str(TimeoutConfig.WORKFLOW_TOOL_TIMEOUT_SECS)))
         daemon_timeout = TimeoutConfig.get_daemon_timeout()
 
         if daemon_timeout <= tool_timeout:
