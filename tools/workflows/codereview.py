@@ -316,8 +316,8 @@ class CodeReviewTool(WorkflowTool):
         return True
 
     def get_expert_thinking_mode(self, request=None) -> str:
-        """Use high thinking mode for thorough code review analysis."""
-        return "high"
+        """Use medium thinking mode for balanced speed and quality (prevents Augment timeout)."""
+        return "medium"
 
     def get_expert_analysis_instruction(self) -> str:
         """Get specific instruction for code review expert analysis."""
