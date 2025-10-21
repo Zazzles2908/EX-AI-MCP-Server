@@ -108,6 +108,23 @@ class AnalyzeTool(WorkflowTool):
         """
         return True
 
+    def get_request_use_websearch(self, request) -> bool:
+        """
+        Enable web search for analyze tool by default.
+
+        Analyze benefits from external documentation for:
+        - Architectural patterns and best practices
+        - Framework-specific implementation details
+        - Industry standards and conventions
+        - Performance benchmarks and optimization techniques
+
+        User can still explicitly disable with use_websearch=false.
+        """
+        try:
+            return request.use_websearch if request.use_websearch is not None else True
+        except AttributeError:
+            return True
+
     def get_input_schema(self) -> dict[str, Any]:
         """Generate input schema using WorkflowSchemaBuilder with analyze-specific overrides."""
         from ..workflow.schema_builders import WorkflowSchemaBuilder
@@ -231,12 +248,22 @@ class AnalyzeTool(WorkflowTool):
 
         Analysis benefits from a second opinion to ensure completeness.
         """
-        # Check if user explicitly requested to skip assistant model
-        if request and not self.get_request_use_assistant_model(request):
-            return False
+        # DEBUG: Log decision process
+        print(f"[DEBUG_SHOULD_CALL] request: {request is not None}")
+        if request:
+            use_assistant = self.get_request_use_assistant_model(request)
+            print(f"[DEBUG_SHOULD_CALL] use_assistant_model: {use_assistant}")
+            if not use_assistant:
+                print(f"[DEBUG_SHOULD_CALL] Returning False - user disabled assistant model")
+                return False
 
         # For analysis, we always want expert validation if we have any meaningful data
-        return len(consolidated_findings.relevant_files) > 0 or len(consolidated_findings.findings) >= 1
+        has_files = len(consolidated_findings.relevant_files) > 0
+        has_findings = len(consolidated_findings.findings) >= 1
+        print(f"[DEBUG_SHOULD_CALL] has_files: {has_files}, has_findings: {has_findings}")
+        result = has_files or has_findings
+        print(f"[DEBUG_SHOULD_CALL] Returning: {result}")
+        return result
 
     def prepare_expert_analysis_context(self, consolidated_findings) -> str:
         """Prepare context for external model call for final analysis validation."""

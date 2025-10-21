@@ -9,7 +9,10 @@ Configuration values can be overridden by environment variables where appropriat
 """
 
 import os
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_bool_env(key: str, default: str = "true") -> bool:
@@ -338,6 +341,77 @@ class TimeoutConfig:
             int: Client timeout in seconds (default: 300s)
         """
         return int(cls.WORKFLOW_TOOL_TIMEOUT_SECS * 2.5)
+
+    @classmethod
+    def validate_all(cls) -> None:
+        """
+        Comprehensive timeout validation.
+        Week 2 Fix #7 (2025-10-21): Validate all timeout configuration at startup.
+
+        Validates:
+        1. All timeout values are positive and reasonable
+        2. Timeout hierarchy is maintained
+        3. Provider timeouts are reasonable
+
+        Raises:
+            ValueError: If any validation fails
+        """
+        # 1. Validate individual timeout values
+        cls._validate_timeout_values()
+
+        # 2. Validate timeout hierarchy
+        cls.validate_hierarchy()
+
+        # 3. Log configuration for debugging
+        cls._log_timeout_config()
+
+    @classmethod
+    def _validate_timeout_values(cls) -> None:
+        """
+        Validate individual timeout values are within reasonable bounds.
+        Week 2 Fix #7 (2025-10-21): Ensure all timeouts are positive and reasonable.
+        """
+        timeouts = {
+            "SIMPLE_TOOL_TIMEOUT_SECS": cls.SIMPLE_TOOL_TIMEOUT_SECS,
+            "WORKFLOW_TOOL_TIMEOUT_SECS": cls.WORKFLOW_TOOL_TIMEOUT_SECS,
+            "EXPERT_ANALYSIS_TIMEOUT_SECS": cls.EXPERT_ANALYSIS_TIMEOUT_SECS,
+            "GLM_TIMEOUT_SECS": cls.GLM_TIMEOUT_SECS,
+            "KIMI_TIMEOUT_SECS": cls.KIMI_TIMEOUT_SECS,
+            "KIMI_WEB_SEARCH_TIMEOUT_SECS": cls.KIMI_WEB_SEARCH_TIMEOUT_SECS,
+        }
+
+        for name, value in timeouts.items():
+            if value <= 0:
+                raise ValueError(f"Timeout {name} must be positive, got {value}")
+
+            # Set reasonable upper bounds (1 hour max for any timeout)
+            if value > 3600:
+                raise ValueError(f"Timeout {name} seems too large: {value} seconds (max: 3600)")
+
+            # Warn about very short timeouts (< 5 seconds)
+            if value < 5:
+                logger.warning(f"Timeout {name} is very short: {value} seconds - may cause premature failures")
+
+    @classmethod
+    def _log_timeout_config(cls) -> None:
+        """
+        Log timeout configuration for debugging.
+        Week 2 Fix #7 (2025-10-21): Log all timeout values at startup.
+        """
+        logger.info("=== TIMEOUT CONFIGURATION ===")
+        logger.info(f"Tool Timeouts:")
+        logger.info(f"  Simple Tool: {cls.SIMPLE_TOOL_TIMEOUT_SECS}s")
+        logger.info(f"  Workflow Tool: {cls.WORKFLOW_TOOL_TIMEOUT_SECS}s")
+        logger.info(f"  Expert Analysis: {cls.EXPERT_ANALYSIS_TIMEOUT_SECS}s")
+        logger.info(f"Provider Timeouts:")
+        logger.info(f"  GLM: {cls.GLM_TIMEOUT_SECS}s")
+        logger.info(f"  Kimi: {cls.KIMI_TIMEOUT_SECS}s")
+        logger.info(f"  Kimi Web Search: {cls.KIMI_WEB_SEARCH_TIMEOUT_SECS}s")
+        logger.info(f"Calculated Timeouts:")
+        logger.info(f"  Daemon: {cls.get_daemon_timeout()}s (1.5x workflow)")
+        logger.info(f"  Shim: {cls.get_shim_timeout()}s (2.0x workflow)")
+        logger.info(f"  Client: {cls.get_client_timeout()}s (2.5x workflow)")
+        logger.info("=== END TIMEOUT CONFIGURATION ===")
 
     @classmethod
     def validate_hierarchy(cls) -> bool:

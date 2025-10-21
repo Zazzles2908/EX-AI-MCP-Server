@@ -375,6 +375,13 @@ class PlannerTool(WorkflowTool):
     def handle_work_continuation(self, response_data: dict, request) -> dict:
         """
         Handle work continuation with planner-specific deep thinking pauses.
+
+        NOTE: This provides guidance for deep thinking but does NOT enforce delays.
+        The planner tool relies on the AI agent to follow the guidance and pause
+        for reflection between steps. This is intentional - forcing delays would
+        break the interactive planning flow and prevent rapid iteration when needed.
+
+        The "deep thinking pause" is a UX pattern, not a technical constraint.
         """
         response_data["status"] = f"pause_for_{self.get_name()}"
         response_data[f"{self.get_name()}_required"] = True
@@ -384,6 +391,7 @@ class PlannerTool(WorkflowTool):
         response_data["required_actions"] = required_actions
 
         # Enhanced deep thinking pauses for complex plans
+        # NOTE: This sets guidance flags but does NOT enforce actual delays
         if request.total_steps >= 5 and request.step_number <= 3:
             response_data["status"] = "pause_for_deep_thinking"
             response_data["thinking_required"] = True

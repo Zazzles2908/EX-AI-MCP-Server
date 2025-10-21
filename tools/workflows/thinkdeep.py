@@ -150,7 +150,11 @@ class ThinkDeepTool(WorkflowTool):
         multiplier = TIMEOUT_MULTIPLIERS.get(thinking_mode, 1.0)  # Default to 'medium'
         timeout = base_timeout * multiplier
 
-        logger.info(f"[THINKDEEP_TIMEOUT] thinking_mode={thinking_mode}, base={base_timeout}s, multiplier={multiplier}x → timeout={timeout}s")
+        # CRITICAL FIX: Cap timeout at 300s (5 minutes) to prevent excessive waits
+        # This prevents client disconnections and poor UX from extremely long timeouts
+        timeout = min(timeout, 300.0)
+
+        logger.info(f"[THINKDEEP_TIMEOUT] thinking_mode={thinking_mode}, base={base_timeout}s, multiplier={multiplier}x → timeout={timeout}s (capped at 300s)")
         return timeout
 
     def get_expert_heartbeat_interval_secs(self, request=None) -> float:
@@ -165,11 +169,21 @@ class ThinkDeepTool(WorkflowTool):
 
     def customize_workflow_response(self, response_data: dict, request, **kwargs) -> dict:
         """
-        Customize the workflow response for thinkdeep-specific needs
+        Customize the workflow response for thinkdeep-specific needs.
+
+        CRITICAL FIX: Clear stored_request_params on step 1 to prevent accumulation
+        across sessions. This fixes the bug where parameters from previous sessions
+        would persist and affect new sessions.
         """
+        # CRITICAL FIX: Clear stored params on step 1 (new session)
+        if request.step_number == 1:
+            self.stored_request_params = {}
+            logger.debug("[THINKDEEP_PARAMS] Cleared stored_request_params for new session")
+
         # Store request parameters for later use in expert analysis (preserve existing if None)
         if not isinstance(getattr(self, "stored_request_params", None), dict):
             self.stored_request_params = {}
+
         try:
             if getattr(request, "temperature", None) is not None:
                 self.stored_request_params["temperature"] = request.temperature
@@ -197,6 +211,8 @@ class ThinkDeepTool(WorkflowTool):
                 self.stored_request_params["model"] = model_val
             except Exception:
                 pass
+
+        logger.debug(f"[THINKDEEP_PARAMS] Stored params: {self.stored_request_params}")
 
         # Add thinking-specific context to response
         response_data.update(
@@ -342,14 +358,33 @@ but also acknowledge strong insights and valid conclusions.
         return super().get_request_thinking_mode(request)
 
     def get_request_use_websearch(self, request) -> bool:
-        """Use stored use_websearch from initial request."""
+        """
+        Use stored use_websearch from initial request, defaulting to True.
+
+        Thinkdeep benefits from web search for:
+        - Complex problem-solving requiring external documentation
+        - Architectural decisions needing industry best practices
+        - Research-oriented investigations
+        - Hypothesis validation with current information
+
+        User can still explicitly disable with use_websearch=false.
+        """
         try:
             stored_params = self.stored_request_params
             if stored_params and stored_params.get("use_websearch") is not None:
                 return stored_params["use_websearch"]
         except AttributeError:
             pass
-        return super().get_request_use_websearch(request)
+
+        # Check request parameter
+        try:
+            if request.use_websearch is not None:
+                return request.use_websearch
+        except AttributeError:
+            pass
+
+        # Default to True for thinkdeep (override base class default of False)
+        return True
     def get_request_use_assistant_model(self, request) -> bool:
         """Smart default for whether to call external expert analysis.
 

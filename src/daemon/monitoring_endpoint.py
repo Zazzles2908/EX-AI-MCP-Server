@@ -235,10 +235,16 @@ async def start_monitoring_server(host: str = "0.0.0.0", port: int = 8080) -> No
     app.router.add_get('/ws', websocket_handler)
     app.router.add_get('/monitoring_dashboard.html', serve_dashboard)
     app.router.add_get('/status', status_handler)
-    app.router.add_get('/', serve_dashboard)  # Default route
+
+    # Semaphore monitor (added 2025-10-21)
+    static_dir = Path(__file__).parent.parent.parent / "static"
+    async def serve_semaphore_monitor(request):
+        return web.FileResponse(static_dir / "semaphore_monitor.html")
+
+    app.router.add_get('/semaphore_monitor.html', serve_semaphore_monitor)
+    app.router.add_get('/', serve_semaphore_monitor)  # Default to semaphore monitor
 
     # Add static file handler for assets (if needed in future)
-    static_dir = Path(__file__).parent.parent.parent / "static"
     if static_dir.exists():
         app.router.add_static('/static', static_dir, name='static')
 
@@ -249,7 +255,8 @@ async def start_monitoring_server(host: str = "0.0.0.0", port: int = 8080) -> No
     await site.start()
 
     logger.info(f"[MONITORING] Monitoring server running on ws://{host}:{port}")
-    logger.info(f"[MONITORING] Dashboard available at http://{host}:{port}/monitoring_dashboard.html")
+    logger.info(f"[MONITORING] 🔍 Semaphore Monitor: http://{host}:{port}/semaphore_monitor.html")
+    logger.info(f"[MONITORING] 📊 Full Dashboard: http://{host}:{port}/monitoring_dashboard.html")
 
     # Keep running
     await asyncio.Future()

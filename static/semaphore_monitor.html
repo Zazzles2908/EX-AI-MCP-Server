@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXAI Semaphore Monitor - Real-Time</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background: #0a0e27;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+        }
+        
+        .header h1 {
+            color: white;
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .status-healthy { background: #10b981; color: white; }
+        .status-warning { background: #f59e0b; color: white; }
+        .status-degraded { background: #ef4444; color: white; }
+        .status-critical { background: #dc2626; color: white; animation: pulse 1s infinite; }
+        .status-unknown { background: #6b7280; color: white; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: #1a1f3a;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border: 2px solid #2a2f4a;
+        }
+        
+        .card h2 {
+            color: #667eea;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #2a2f4a;
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-label {
+            color: #9ca3af;
+            font-size: 0.95em;
+        }
+        
+        .metric-value {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #2a2f4a;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease, background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .progress-healthy { background: #10b981; }
+        .progress-warning { background: #f59e0b; }
+        .progress-critical { background: #ef4444; }
+        
+        .alert-box {
+            background: #1a1f3a;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .alert-box.show {
+            display: block;
+        }
+        
+        .alert-critical {
+            border-left-color: #dc2626;
+            background: #2d1515;
+        }
+        
+        .alert-warning {
+            border-left-color: #f59e0b;
+            background: #2d2515;
+        }
+        
+        .timestamp {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+        
+        .refresh-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .refresh-indicator.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="refresh-indicator" id="refreshIndicator">Updating...</div>
+    
+    <div class="header">
+        <h1>🔍 EXAI Semaphore Monitor</h1>
+        <div class="status-badge" id="overallStatus">Loading...</div>
+    </div>
+    
+    <div id="alerts"></div>
+    
+    <div class="grid">
+        <!-- Global Semaphore -->
+        <div class="card">
+            <h2>🌐 Global Semaphore</h2>
+            <div class="metric">
+                <span class="metric-label">Status</span>
+                <span class="metric-value" id="globalStatus">-</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Available / Expected</span>
+                <span class="metric-value" id="globalValue">- / -</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Utilization</span>
+                <div style="flex: 1; margin-left: 20px;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="globalProgress">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- KIMI Provider -->
+        <div class="card">
+            <h2>🤖 KIMI Provider</h2>
+            <div class="metric">
+                <span class="metric-label">Status</span>
+                <span class="metric-value" id="kimiStatus">-</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Available / Expected</span>
+                <span class="metric-value" id="kimiValue">- / -</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Utilization</span>
+                <div style="flex: 1; margin-left: 20px;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="kimiProgress">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- GLM Provider -->
+        <div class="card">
+            <h2>⚡ GLM Provider</h2>
+            <div class="metric">
+                <span class="metric-label">Status</span>
+                <span class="metric-value" id="glmStatus">-</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Available / Expected</span>
+                <span class="metric-value" id="glmValue">- / -</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Utilization</span>
+                <div style="flex: 1; margin-left: 20px;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="glmProgress">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="timestamp" id="timestamp">Last updated: Never</div>
+    
+    <script>
+        const HEALTH_URL = 'http://localhost:8082/health/semaphores';
+        const REFRESH_INTERVAL = 2000; // 2 seconds
+        
+        function getStatusClass(status) {
+            const map = {
+                'healthy': 'status-healthy',
+                'warning': 'status-warning',
+                'degraded': 'status-degraded',
+                'exhausted': 'status-critical',
+                'critical': 'status-critical',
+                'unknown': 'status-unknown'
+            };
+            return map[status] || 'status-unknown';
+        }
+        
+        function getProgressClass(utilization) {
+            if (utilization >= 0.9) return 'progress-critical';
+            if (utilization >= 0.7) return 'progress-warning';
+            return 'progress-healthy';
+        }
+        
+        function updateSemaphore(prefix, data) {
+            if (!data) return;
+            
+            const statusEl = document.getElementById(`${prefix}Status`);
+            const valueEl = document.getElementById(`${prefix}Value`);
+            const progressEl = document.getElementById(`${prefix}Progress`);
+            
+            statusEl.textContent = data.status.toUpperCase();
+            statusEl.className = 'metric-value ' + getStatusClass(data.status);
+            
+            valueEl.textContent = `${data.current} / ${data.expected}`;
+            
+            const utilization = data.utilization * 100;
+            progressEl.style.width = `${utilization}%`;
+            progressEl.textContent = `${utilization.toFixed(1)}%`;
+            progressEl.className = 'progress-fill ' + getProgressClass(data.utilization);
+        }
+        
+        function updateAlerts(data) {
+            const alertsEl = document.getElementById('alerts');
+            alertsEl.innerHTML = '';
+            
+            const alerts = [];
+            
+            // Check global
+            if (data.global.status === 'exhausted') {
+                alerts.push({
+                    type: 'critical',
+                    message: '🚨 CRITICAL: Global semaphore exhausted! No permits available.'
+                });
+            } else if (data.global.status === 'high_utilization') {
+                alerts.push({
+                    type: 'warning',
+                    message: '⚠️ WARNING: Global semaphore high utilization (>90%)'
+                });
+            }
+            
+            // Check providers
+            for (const [provider, provData] of Object.entries(data.providers || {})) {
+                if (provData.status === 'exhausted') {
+                    alerts.push({
+                        type: 'critical',
+                        message: `🚨 CRITICAL: ${provider.toUpperCase()} semaphore exhausted!`
+                    });
+                } else if (provData.status === 'high_utilization') {
+                    alerts.push({
+                        type: 'warning',
+                        message: `⚠️ WARNING: ${provider.toUpperCase()} semaphore high utilization (>90%)`
+                    });
+                }
+            }
+            
+            // Display alerts
+            alerts.forEach(alert => {
+                const div = document.createElement('div');
+                div.className = `alert-box alert-${alert.type} show`;
+                div.textContent = alert.message;
+                alertsEl.appendChild(div);
+            });
+        }
+        
+        async function fetchHealth() {
+            const indicator = document.getElementById('refreshIndicator');
+            indicator.classList.add('show');
+            
+            try {
+                const response = await fetch(HEALTH_URL);
+                const data = await response.json();
+                
+                // Update overall status
+                const overallStatus = document.getElementById('overallStatus');
+                overallStatus.textContent = data.status.toUpperCase();
+                overallStatus.className = 'status-badge ' + getStatusClass(data.status);
+                
+                // Update semaphores
+                updateSemaphore('global', data.global);
+                updateSemaphore('kimi', data.providers?.kimi);
+                updateSemaphore('glm', data.providers?.glm);
+                
+                // Update alerts
+                updateAlerts(data);
+                
+                // Update timestamp
+                const now = new Date().toLocaleTimeString();
+                document.getElementById('timestamp').textContent = `Last updated: ${now}`;
+                
+            } catch (error) {
+                console.error('Error fetching health:', error);
+                document.getElementById('overallStatus').textContent = 'ERROR';
+                document.getElementById('overallStatus').className = 'status-badge status-unknown';
+            } finally {
+                setTimeout(() => indicator.classList.remove('show'), 300);
+            }
+        }
+        
+        // Initial fetch
+        fetchHealth();
+        
+        // Auto-refresh
+        setInterval(fetchHealth, REFRESH_INTERVAL);
+    </script>
+</body>
+</html>
+

@@ -71,10 +71,16 @@ async def health_check_handler(request: web.Request) -> web.Response:
         status["components"]["disk"] = disk_status
         if disk_status["status"] != "healthy":
             status["status"] = "degraded"
-        
+
+        # Check semaphores (added 2025-10-21 per EXAI recommendations)
+        semaphore_status = await check_semaphore_health_status()
+        status["components"]["semaphores"] = semaphore_status
+        if semaphore_status["status"] != "healthy":
+            status["status"] = "degraded"
+
         # Return appropriate status code
         http_status = 200 if status["status"] == "healthy" else 503
-        
+
         return web.json_response(status, status=http_status)
         
     except Exception as e:
@@ -157,39 +163,44 @@ async def check_supabase_health(supabase_manager) -> Dict[str, Any]:
 
 
 def check_memory_health() -> Dict[str, Any]:
-    """Check memory usage"""
+    """
+    Check memory usage using comprehensive memory monitor.
+    Week 3 Fix #13 (2025-10-21): Enhanced with memory monitoring framework
+    """
     try:
-        process = psutil.Process()
-        memory_info = process.memory_info()
-        memory_mb = memory_info.rss / 1024 / 1024
-        
-        # Get system memory
-        system_memory = psutil.virtual_memory()
-        memory_percent = system_memory.percent
-        
-        # Thresholds
-        WARNING_THRESHOLD = 80.0  # 80% system memory
-        CRITICAL_THRESHOLD = 90.0  # 90% system memory
-        
-        if memory_percent >= CRITICAL_THRESHOLD:
-            status = "unhealthy"
-            message = f"Critical memory usage: {memory_percent:.1f}%"
-        elif memory_percent >= WARNING_THRESHOLD:
-            status = "degraded"
-            message = f"High memory usage: {memory_percent:.1f}%"
+        from src.daemon.monitoring import get_memory_monitor, AlertLevel
+
+        # Get memory monitor and collect current metrics
+        monitor = get_memory_monitor()
+        metrics = monitor.collect_metrics()
+
+        # Check for alerts
+        alert = monitor.check_alerts(metrics)
+
+        # Map alert level to health status
+        if alert:
+            if alert.level == AlertLevel.CRITICAL or alert.level == AlertLevel.LEAK_DETECTED:
+                status = "unhealthy"
+            elif alert.level == AlertLevel.WARNING:
+                status = "degraded"
+            else:
+                status = "healthy"
+            message = alert.message
         else:
             status = "healthy"
-            message = f"Memory usage normal: {memory_percent:.1f}%"
-        
+            message = f"Memory usage normal: {metrics.rss_percent:.1f}%"
+
         return {
             "status": status,
             "message": message,
-            "process_memory_mb": round(memory_mb, 2),
-            "system_memory_percent": round(memory_percent, 2),
-            "system_memory_available_mb": round(system_memory.available / 1024 / 1024, 2)
+            "process_memory_mb": round(metrics.rss / (1024 * 1024), 2),
+            "system_memory_percent": round(metrics.rss_percent, 2),
+            "growth_rate_mb_per_hour": round(metrics.growth_rate_mb_per_hour, 2),
+            "alert_level": alert.level.value if alert else "normal",
         }
-        
+
     except Exception as e:
+        logger.error(f"Memory health check failed: {e}")
         return {
             "status": "unknown",
             "error": str(e)
@@ -232,28 +243,203 @@ def check_disk_health() -> Dict[str, Any]:
         }
 
 
+async def check_semaphore_health_status() -> dict:
+    """
+    Check semaphore health status.
+    Added 2025-10-21 per EXAI monitoring recommendations.
+
+    Returns:
+        Dictionary with semaphore health status
+    """
+    try:
+        # Import here to avoid circular dependencies
+        from src.daemon.ws_server import (
+            _global_sem,
+            _provider_sems,
+            GLOBAL_MAX_INFLIGHT,
+            KIMI_MAX_INFLIGHT,
+            GLM_MAX_INFLIGHT
+        )
+
+        status = {
+            "status": "healthy",
+            "global": {
+                "current": _global_sem._value,
+                "expected": GLOBAL_MAX_INFLIGHT,
+                "utilization": (GLOBAL_MAX_INFLIGHT - _global_sem._value) / GLOBAL_MAX_INFLIGHT,
+                "status": "healthy"
+            },
+            "providers": {}
+        }
+
+        # Check global semaphore
+        if _global_sem._value <= 0:
+            status["global"]["status"] = "exhausted"
+            status["status"] = "critical"
+        elif _global_sem._value != GLOBAL_MAX_INFLIGHT:
+            status["global"]["status"] = "leak_detected"
+            status["status"] = "degraded"
+        elif _global_sem._value <= GLOBAL_MAX_INFLIGHT * 0.1:
+            status["global"]["status"] = "high_utilization"
+            status["status"] = "warning"
+
+        # Check provider semaphores
+        for provider, sem in _provider_sems.items():
+            expected = {"KIMI": KIMI_MAX_INFLIGHT, "GLM": GLM_MAX_INFLIGHT}.get(provider, 0)
+            current = sem._value
+            utilization = (expected - current) / expected if expected > 0 else 0
+
+            provider_status = {
+                "current": current,
+                "expected": expected,
+                "utilization": utilization,
+                "status": "healthy"
+            }
+
+            if current <= 0:
+                provider_status["status"] = "exhausted"
+                status["status"] = "critical"
+            elif current != expected:
+                provider_status["status"] = "leak_detected"
+                if status["status"] == "healthy":
+                    status["status"] = "degraded"
+            elif current <= expected * 0.1:
+                provider_status["status"] = "high_utilization"
+                if status["status"] == "healthy":
+                    status["status"] = "warning"
+
+            status["providers"][provider.lower()] = provider_status
+
+        return status
+
+    except Exception as e:
+        logger.error(f"Error checking semaphore health: {e}", exc_info=True)
+        return {
+            "status": "unknown",
+            "error": str(e)
+        }
+
+
+async def semaphore_health_handler(request: web.Request) -> web.Response:
+    """
+    Dedicated semaphore health endpoint.
+    Added 2025-10-21 per EXAI monitoring recommendations.
+
+    Returns detailed semaphore status including:
+    - Current and expected values
+    - Utilization percentages
+    - Leak detection
+    - Exhaustion alerts
+    """
+    try:
+        status = await check_semaphore_health_status()
+
+        # Return appropriate status code
+        http_status = 200
+        if status["status"] == "critical":
+            http_status = 503
+        elif status["status"] in ["degraded", "warning"]:
+            http_status = 200  # Still operational, just warning
+
+        return web.json_response(status, status=http_status)
+
+    except Exception as e:
+        logger.error(f"Error in semaphore health handler: {e}", exc_info=True)
+        return web.json_response({
+            "status": "error",
+            "error": str(e)
+        }, status=500)
+
+
+async def memory_health_handler(request: web.Request) -> web.Response:
+    """
+    Detailed memory health endpoint.
+    Week 3 Fix #13 (2025-10-21): Comprehensive memory monitoring
+
+    Returns detailed memory metrics, history, and alerts.
+    """
+    try:
+        from src.daemon.monitoring import get_memory_monitor
+
+        monitor = get_memory_monitor()
+        current_metrics = monitor.collect_metrics()
+        current_alert = monitor.check_alerts(current_metrics)
+
+        # Build response
+        response = {
+            "status": "healthy",
+            "timestamp_utc": utc_now_iso(),
+            "current_metrics": current_metrics.to_dict(),
+            "alert": {
+                "level": current_alert.level.value if current_alert else "normal",
+                "message": current_alert.message if current_alert else "No alerts",
+                "threshold_exceeded": current_alert.threshold_exceeded if current_alert else None,
+            },
+            "thresholds": {
+                "warning_percent": monitor.warning_threshold,
+                "critical_percent": monitor.critical_threshold,
+                "leak_mb_per_hour": monitor.leak_threshold,
+            },
+            "baseline": monitor.baseline_metrics.to_dict() if monitor.baseline_metrics else None,
+            "history_size": len(monitor.metrics_history),
+        }
+
+        # Set status based on alert level
+        if current_alert:
+            from src.daemon.monitoring import AlertLevel
+            if current_alert.level in (AlertLevel.CRITICAL, AlertLevel.LEAK_DETECTED):
+                response["status"] = "unhealthy"
+            elif current_alert.level == AlertLevel.WARNING:
+                response["status"] = "degraded"
+
+        http_status = 200 if response["status"] == "healthy" else 503
+        return web.json_response(response, status=http_status)
+
+    except Exception as e:
+        logger.error(f"Memory health endpoint failed: {e}")
+        return web.json_response({
+            "status": "error",
+            "error": str(e),
+            "timestamp_utc": utc_now_iso()
+        }, status=500)
+
+
 async def start_health_server(host: str = "0.0.0.0", port: int = 8081) -> None:
     """
     Start health check HTTP server.
-    
+
     Args:
         host: Host to bind to
         port: Port to bind to
     """
     app = web.Application()
+
+    # Add CORS middleware for monitoring UI (2025-10-21)
+    @web.middleware
+    async def cors_middleware(request: web.Request, handler):
+        response = await handler(request)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
+
+    app.middlewares.append(cors_middleware)
+
     app.router.add_get('/health', health_check_handler)
     app.router.add_get('/healthz', health_check_handler)  # Kubernetes convention
     app.router.add_get('/health/live', health_check_handler)  # Liveness probe
     app.router.add_get('/health/ready', health_check_handler)  # Readiness probe
-    
+    app.router.add_get('/health/semaphores', semaphore_health_handler)  # Semaphore-specific health (added 2025-10-21)
+    app.router.add_get('/health/memory', memory_health_handler)  # Memory-specific health (Week 3 Fix #13, 2025-10-21)
+
     runner = web.AppRunner(app)
     await runner.setup()
-    
+
     site = web.TCPSite(runner, host, port)
     await site.start()
-    
+
     logger.info(f"[HEALTH] Health check server running on http://{host}:{port}/health")
-    
+
     # Keep running
     await asyncio.Future()
 

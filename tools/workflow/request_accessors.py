@@ -64,11 +64,24 @@ class RequestAccessorMixin:
             return self.get_expert_thinking_mode(request)
     
     def get_request_use_websearch(self, request) -> bool:
-        """Get use_websearch from request. Override for custom websearch handling."""
+        """
+        Get use_websearch from request. Override for custom websearch handling.
+
+        Default is False for workflow tools to minimize overhead.
+        Tools that benefit from web search (analyze, thinkdeep) should override this.
+
+        Rationale: Even when tools aren't used, they add overhead through:
+        - Request payload size increases
+        - Model processing overhead (evaluating whether to use tools)
+        - Framework initialization components
+
+        Based on EXAI analysis: web search adds value for architectural patterns
+        and hypothesis-driven solutions, but not for focused code analysis tasks.
+        """
         try:
-            return request.use_websearch if request.use_websearch is not None else True
+            return request.use_websearch if request.use_websearch is not None else False
         except AttributeError:
-            return True
+            return False
     
     def get_request_use_assistant_model(self, request) -> bool:
         """

@@ -34,6 +34,7 @@ Usage:
 
 import asyncio
 import os
+import secrets
 import time
 import uuid
 import logging
@@ -128,7 +129,8 @@ class SessionManager:
             RuntimeError: If maximum concurrent sessions exceeded
         """
         if not session_id:
-            session_id = str(uuid.uuid4())
+            # Week 2 Fix #11 (2025-10-21): Use cryptographically secure session IDs
+            session_id = secrets.token_urlsafe(32)  # 256 bits of entropy
 
         async with self._lock:
             sess = self._sessions.get(session_id)

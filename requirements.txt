@@ -12,8 +12,11 @@ tiktoken>=0.5.0  # Token counting for context engineering
 # ============================================================================
 # WEBSOCKET DAEMON DEPENDENCIES
 # ============================================================================
-# websockets<15 required for Supabase realtime compatibility
-websockets>=11,<15
+# websockets 14.2 - REQUIRED by Supabase realtime package
+# CRITICAL: Supabase realtime 2.4.x requires websockets<15
+# Cannot upgrade to 15.x until Supabase updates their dependency
+# This is a hard dependency constraint, not a preference
+websockets==14.2
 
 # ============================================================================
 # SUPABASE DEPENDENCIES (Track 3: Persistent Storage)
