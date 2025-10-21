@@ -294,6 +294,11 @@ class ToolExecutor:
         global_acquired = False
         provider_acquired = False
 
+        # Result variables - set these instead of returning early
+        success = False
+        outputs = None
+        error_msg = None
+
         try:
             # Acquire global semaphore
             await self.global_sem.acquire()
@@ -320,17 +325,15 @@ class ToolExecutor:
 
                     # Extract outputs (result is already a list of TextContent)
                     outputs = normalize_outputs(result)
-                    return True, outputs, None
+                    success = True
 
                 except asyncio.TimeoutError:
                     error_msg = f"Tool execution timed out after {self.call_timeout}s"
                     logger.warning(f"[{req_id}] {error_msg}")
-                    return False, None, error_msg
 
                 except Exception as e:
                     error_msg = f"Tool execution failed: {str(e)}"
                     logger.error(f"[{req_id}] {error_msg}", exc_info=True)
-                    return False, None, error_msg
 
                 finally:
                     # Cancel progress task
@@ -343,7 +346,6 @@ class ToolExecutor:
             except Exception as e:
                 error_msg = f"Semaphore management failed: {str(e)}"
                 logger.error(f"[{req_id}] {error_msg}", exc_info=True)
-                return False, None, error_msg
 
         finally:
             # Release semaphores in reverse order
@@ -358,6 +360,9 @@ class ToolExecutor:
                     self.global_sem.release()
                 except Exception as e:
                     logger.error(f"[{req_id}] Failed to release global semaphore: {e}")
+
+        # Return result after semaphores are released
+        return success, outputs, error_msg
 
     async def _send_progress_updates(
         self,
