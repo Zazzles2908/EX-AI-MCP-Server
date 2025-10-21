@@ -477,6 +477,21 @@ class ExpertAnalysisMixin:
             else:
                 prompt = expert_context
 
+            # CRITICAL: Monitor prompt size for unpredictability diagnosis (EXAI Fix #3 - 2025-10-21)
+            prompt_size = len(prompt)
+            prompt_tokens_estimate = prompt_size // 4  # Rough estimate: 1 token ≈ 4 chars
+            if prompt_tokens_estimate > 100000:  # Warn if approaching 128k limit
+                logger.warning(
+                    f"⚠️ [PROMPT_SIZE] Tool: {self.get_name()}, "
+                    f"Prompt size: {prompt_size:,} chars (~{prompt_tokens_estimate:,} tokens), "
+                    f"Approaching token limit! May cause truncation."
+                )
+            else:
+                logger.info(
+                    f"📏 [PROMPT_SIZE] Tool: {self.get_name()}, "
+                    f"Prompt size: {prompt_size:,} chars (~{prompt_tokens_estimate:,} tokens)"
+                )
+
             # Optional micro-step draft phase: return early to avoid long expert blocking
             try:
                 import os as _os
@@ -551,6 +566,16 @@ class ExpertAnalysisMixin:
 
             start_time = time.time()
             max_wait = timeout_secs  # Use configured timeout (480s for expert analysis)
+
+            # CRITICAL: Log final model selection for unpredictability diagnosis (EXAI Fix #1 - 2025-10-21)
+            logger.warning(
+                f"🎯 [MODEL_SELECTION] Tool: {self.get_name()}, "
+                f"Model: {model_name}, "
+                f"Provider: {provider.get_provider_type().value if provider else 'None'}, "
+                f"Thinking Mode: {expert_thinking_mode}, "
+                f"Temperature: {validated_temperature}, "
+                f"Timeout: {max_wait}s"
+            )
 
             if use_async_providers:
                 # PHASE 2: Native async provider path (no run_in_executor)
