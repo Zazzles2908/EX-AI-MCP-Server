@@ -290,14 +290,20 @@ class ToolExecutor:
         provider_name = self._get_provider_for_tool(name)
         provider_sem = self.provider_sems.get(provider_name) if provider_name else None
 
-        # Use SemaphoreGuard for guaranteed cleanup
-        async with SemaphoreGuard(
-            global_sem=self.global_sem,
-            provider_sem=provider_sem,
-            provider_name=provider_name,
-            session_id=session_id if self.use_per_session_semaphores else None,
-            session_manager=session_manager if self.use_per_session_semaphores else None
-        ):
+        # Acquire semaphores manually (global + provider)
+        global_acquired = False
+        provider_acquired = False
+
+        try:
+            # Acquire global semaphore
+            await self.global_sem.acquire()
+            global_acquired = True
+
+            # Acquire provider semaphore if needed
+            if provider_sem:
+                await provider_sem.acquire()
+                provider_acquired = True
+
             # Execute tool with timeout and progress updates
             try:
                 # Start progress task
@@ -338,6 +344,20 @@ class ToolExecutor:
                 error_msg = f"Semaphore management failed: {str(e)}"
                 logger.error(f"[{req_id}] {error_msg}", exc_info=True)
                 return False, None, error_msg
+
+        finally:
+            # Release semaphores in reverse order
+            if provider_acquired and provider_sem:
+                try:
+                    provider_sem.release()
+                except Exception as e:
+                    logger.error(f"[{req_id}] Failed to release provider semaphore: {e}")
+
+            if global_acquired:
+                try:
+                    self.global_sem.release()
+                except Exception as e:
+                    logger.error(f"[{req_id}] Failed to release global semaphore: {e}")
 
     async def _send_progress_updates(
         self,
