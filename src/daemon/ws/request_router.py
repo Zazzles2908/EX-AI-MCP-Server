@@ -35,12 +35,16 @@ from src.daemon.input_validation import validate_tool_arguments, ValidationError
 
 # Import semaphore management
 from src.daemon.middleware.semaphores import SemaphoreGuard
+from src.daemon.middleware.semaphore_tracker import get_global_tracker
 
 # Import monitoring
 from utils.monitoring import record_websocket_event
 from utils.timezone_helper import log_timestamp
 
 logger = logging.getLogger(__name__)
+
+# Initialize semaphore tracker for leak detection (EXAI recommendation 2025-10-21)
+_semaphore_tracker = get_global_tracker(leak_threshold=60.0)
 
 
 # ============================================================================
@@ -293,6 +297,8 @@ class ToolExecutor:
         # Acquire semaphores manually (global + provider)
         global_acquired = False
         provider_acquired = False
+        global_sem_id = None
+        provider_sem_id = None
 
         # Result variables - set these instead of returning early
         success = False
@@ -300,14 +306,22 @@ class ToolExecutor:
         error_msg = None
 
         try:
-            # Acquire global semaphore
+            # Acquire global semaphore with tracking
             await self.global_sem.acquire()
             global_acquired = True
+            global_sem_id = await _semaphore_tracker.track_acquire(
+                f"global_sem_{name}",
+                capture_stack=False  # Disable stack capture for performance
+            )
 
-            # Acquire provider semaphore if needed
+            # Acquire provider semaphore if needed with tracking
             if provider_sem:
                 await provider_sem.acquire()
                 provider_acquired = True
+                provider_sem_id = await _semaphore_tracker.track_acquire(
+                    f"provider_sem_{provider_name}_{name}",
+                    capture_stack=False
+                )
 
             # Execute tool with timeout and progress updates
             try:
@@ -348,16 +362,26 @@ class ToolExecutor:
                 logger.error(f"[{req_id}] {error_msg}", exc_info=True)
 
         finally:
-            # Release semaphores in reverse order
+            # Release semaphores in reverse order with tracking
             if provider_acquired and provider_sem:
                 try:
                     provider_sem.release()
+                    if provider_sem_id:
+                        await _semaphore_tracker.track_release(
+                            provider_sem_id,
+                            f"provider_sem_{provider_name}_{name}"
+                        )
                 except Exception as e:
                     logger.error(f"[{req_id}] Failed to release provider semaphore: {e}")
 
             if global_acquired:
                 try:
                     self.global_sem.release()
+                    if global_sem_id:
+                        await _semaphore_tracker.track_release(
+                            global_sem_id,
+                            f"global_sem_{name}"
+                        )
                 except Exception as e:
                     logger.error(f"[{req_id}] Failed to release global semaphore: {e}")
 
