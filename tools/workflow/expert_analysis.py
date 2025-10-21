@@ -583,23 +583,60 @@ class ExpertAnalysisMixin:
                     try:
                         # Use async context manager for proper resource cleanup
                         async with async_provider:
-                            logger.info(f"[EXPERT_DEBUG] Calling async provider.generate_content()")
+                            # PHASE 2 MIGRATION: Use message arrays when feature flag enabled
+                            if self.should_use_message_arrays():
+                                logger.info(f"[EXPERT_DEBUG] Using MESSAGE ARRAYS for async provider call")
 
-                            # CRITICAL: Native async call with timeout wrapper
-                            model_response = await asyncio.wait_for(
-                                async_provider.generate_content(
-                                    prompt=prompt,
-                                    model_name=model_name,
+                                # Prepare message array
+                                messages = self.prepare_messages_for_expert_analysis(
                                     system_prompt=system_prompt,
-                                    temperature=validated_temperature,
-                                    thinking_mode=expert_thinking_mode,
-                                    images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
-                                    **provider_kwargs,
-                                ),
-                                timeout=max_wait
-                            )
+                                    expert_context=expert_context,
+                                    consolidated_findings=self.consolidated_findings
+                                )
 
-                            logger.info(f"[EXPERT_DEBUG] Async provider.generate_content() returned successfully")
+                                logger.info(f"[EXPERT_DEBUG] Calling async provider.chat_completions_create() with {len(messages)} messages")
+
+                                # CRITICAL: Native async call with timeout wrapper
+                                raw_response = await asyncio.wait_for(
+                                    async_provider.chat_completions_create(
+                                        model=model_name,
+                                        messages=messages,
+                                        temperature=validated_temperature,
+                                        thinking_mode=expert_thinking_mode,
+                                        **provider_kwargs,
+                                    ),
+                                    timeout=max_wait
+                                )
+
+                                # Convert dict response to ModelResponse-like object for compatibility
+                                from types import SimpleNamespace
+                                model_response = SimpleNamespace(
+                                    content=raw_response.get('content', ''),
+                                    model=raw_response.get('model', model_name),
+                                    usage=raw_response.get('usage', {})
+                                )
+
+                                logger.info(f"[EXPERT_DEBUG] Async provider.chat_completions_create() returned successfully (MESSAGE ARRAYS)")
+                            else:
+                                logger.info(f"[EXPERT_DEBUG] Using LEGACY TEXT PROMPTS for async provider call")
+                                logger.info(f"[EXPERT_DEBUG] Calling async provider.generate_content()")
+
+                                # LEGACY PATH: Use text-based prompts
+                                model_response = await asyncio.wait_for(
+                                    async_provider.generate_content(
+                                        prompt=prompt,
+                                        model_name=model_name,
+                                        system_prompt=system_prompt,
+                                        temperature=validated_temperature,
+                                        thinking_mode=expert_thinking_mode,
+                                        images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
+                                        **provider_kwargs,
+                                    ),
+                                    timeout=max_wait
+                                )
+
+                                logger.info(f"[EXPERT_DEBUG] Async provider.generate_content() returned successfully (LEGACY)")
+
                             duration = time.time() - start_time
                             logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] Tool: {self.get_name()}, Duration: {duration:.2f}s (ASYNC)")
 
@@ -620,30 +657,76 @@ class ExpertAnalysisMixin:
             if not use_async_providers:
                 # PHASE 1: Sync provider path with run_in_executor (backward compatible)
                 logger.info(f"[EXPERT_DEBUG] Using SYNC providers for {self.get_name()}")
-                logger.info(
-                    f"[EXPERT_DEBUG] About to call provider.generate_content() for {self.get_name()}: "
-                    f"prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}, "
-                    f"thinking_mode={expert_thinking_mode}"
-                )
-                logger.debug(f"Calling provider.generate_content() for {self.get_name()}: prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}")
-                loop = asyncio.get_running_loop()
-                def _invoke_provider():
-                    logger.info(f"[EXPERT_DEBUG] Inside _invoke_provider thread, about to call provider.generate_content()")
-                    logger.debug(f"Inside _invoke_provider, calling provider.generate_content()")
-                    result = provider.generate_content(
-                        prompt=prompt,
-                        model_name=model_name,
+
+                # PHASE 2 MIGRATION: Use message arrays when feature flag enabled
+                if self.should_use_message_arrays():
+                    logger.info(f"[EXPERT_DEBUG] Using MESSAGE ARRAYS for sync provider call")
+
+                    # Prepare message array
+                    messages = self.prepare_messages_for_expert_analysis(
                         system_prompt=system_prompt,
-                        temperature=validated_temperature,
-                        thinking_mode=expert_thinking_mode,  # Use pre-fetched thinking mode
-                        images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
-                        **provider_kwargs,  # CRITICAL: Use adapter-validated kwargs instead of raw use_websearch
+                        expert_context=expert_context,
+                        consolidated_findings=self.consolidated_findings
                     )
-                    logger.info(f"[EXPERT_DEBUG] provider.generate_content() returned successfully")
-                    return result
-                logger.info(f"[EXPERT_DEBUG] About to submit _invoke_provider to executor")
-                task = loop.run_in_executor(None, _invoke_provider)
-                logger.info(f"[EXPERT_DEBUG] Task submitted to executor, using asyncio.wait_for for timeout")
+
+                    logger.info(
+                        f"[EXPERT_DEBUG] About to call provider.chat_completions_create() for {self.get_name()}: "
+                        f"messages={len(messages)}, model={model_name}, temp={validated_temperature}, "
+                        f"thinking_mode={expert_thinking_mode}"
+                    )
+
+                    loop = asyncio.get_running_loop()
+                    def _invoke_provider():
+                        logger.info(f"[EXPERT_DEBUG] Inside _invoke_provider thread, about to call provider.chat_completions_create()")
+                        raw_response = provider.chat_completions_create(
+                            model=model_name,
+                            messages=messages,
+                            temperature=validated_temperature,
+                            thinking_mode=expert_thinking_mode,
+                            **provider_kwargs,
+                        )
+
+                        # Convert dict response to ModelResponse-like object for compatibility
+                        from types import SimpleNamespace
+                        result = SimpleNamespace(
+                            content=raw_response.get('content', ''),
+                            model=raw_response.get('model', model_name),
+                            usage=raw_response.get('usage', {})
+                        )
+                        logger.info(f"[EXPERT_DEBUG] provider.chat_completions_create() returned successfully (MESSAGE ARRAYS)")
+                        return result
+
+                    logger.info(f"[EXPERT_DEBUG] About to submit _invoke_provider to executor")
+                    task = loop.run_in_executor(None, _invoke_provider)
+                    logger.info(f"[EXPERT_DEBUG] Task submitted to executor, using asyncio.wait_for for timeout")
+                else:
+                    logger.info(f"[EXPERT_DEBUG] Using LEGACY TEXT PROMPTS for sync provider call")
+                    logger.info(
+                        f"[EXPERT_DEBUG] About to call provider.generate_content() for {self.get_name()}: "
+                        f"prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}, "
+                        f"thinking_mode={expert_thinking_mode}"
+                    )
+                    logger.debug(f"Calling provider.generate_content() for {self.get_name()}: prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}")
+
+                    loop = asyncio.get_running_loop()
+                    def _invoke_provider():
+                        logger.info(f"[EXPERT_DEBUG] Inside _invoke_provider thread, about to call provider.generate_content()")
+                        logger.debug(f"Inside _invoke_provider, calling provider.generate_content()")
+                        result = provider.generate_content(
+                            prompt=prompt,
+                            model_name=model_name,
+                            system_prompt=system_prompt,
+                            temperature=validated_temperature,
+                            thinking_mode=expert_thinking_mode,  # Use pre-fetched thinking mode
+                            images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
+                            **provider_kwargs,  # CRITICAL: Use adapter-validated kwargs instead of raw use_websearch
+                        )
+                        logger.info(f"[EXPERT_DEBUG] provider.generate_content() returned successfully (LEGACY)")
+                        return result
+
+                    logger.info(f"[EXPERT_DEBUG] About to submit _invoke_provider to executor")
+                    task = loop.run_in_executor(None, _invoke_provider)
+                    logger.info(f"[EXPERT_DEBUG] Task submitted to executor, using asyncio.wait_for for timeout")
 
                 try:
                     # Single async call with timeout - no polling needed!
