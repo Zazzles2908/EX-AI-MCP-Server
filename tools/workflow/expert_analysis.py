@@ -216,7 +216,7 @@ class ExpertAnalysisMixin:
 
         # Map provider types to their thinking-capable models
         THINKING_MODELS = {
-            ProviderType.GLM: 'glm-4.6',  # Upgrade from glm-4.5-flash (glm-4.6 is flagship with 200K context)
+            ProviderType.GLM: 'glm-4.5-flash',  # Fast model to prevent Augment Code timeout (was glm-4.6)
             ProviderType.KIMI: 'kimi-thinking-preview',  # Upgrade from kimi-k2-0905-preview
         }
 
