@@ -343,36 +343,18 @@ class ExpertAnalysisMixin:
         logger.info(f"[EXPERT_DEDUP] Cache size: {len(_expert_validation_cache)}")
         logger.info(f"[EXPERT_DEDUP] In-progress size: {len(_expert_validation_in_progress)}")
 
-        # Check cache first (outside lock for performance)
-        if cache_key in _expert_validation_cache:
-            logger.info(f"Using cached expert validation for {cache_key}")
-            return _expert_validation_cache[cache_key]
-
-        # Acquire lock to check/set in-progress status
-        logger.info(f"[EXPERT_DEDUP] About to acquire lock for {cache_key}")
-        async with _expert_validation_lock:
-            logger.info(f"[EXPERT_DEDUP] Lock acquired for {cache_key}")
-            # Double-check cache after acquiring lock
-            if cache_key in _expert_validation_cache:
-                logger.info(f"[EXPERT_DEDUP] Using cached expert validation (after lock) for {cache_key}")
-                return _expert_validation_cache[cache_key]
-
-            # Check if already in progress
-            if cache_key in _expert_validation_in_progress:
-                logger.warning(f"Expert validation already in progress for {cache_key}, waiting...")
-            logger.info(f"[EXPERT_DEDUP] About to release lock for {cache_key}")
-
-        # SIMPLIFIED DUPLICATE PREVENTION (Expert Recommendation - Phase 2 Fix)
+        # SIMPLIFIED DUPLICATE PREVENTION (EXAI Fix #4 - 2025-10-21)
         # Single lock acquisition to check cache and mark in-progress
+        # Removed duplicate lock handling that was causing complexity
         async with _expert_validation_lock:
             # Check cache first
             if cache_key in _expert_validation_cache:
-                logger.info(f"[EXPERT_DEDUP] Using cached result")
+                logger.info(f"[EXPERT_DEDUP] Using cached result for {cache_key}")
                 return _expert_validation_cache[cache_key]
 
             # Check if already in progress - return error instead of waiting
             if cache_key in _expert_validation_in_progress:
-                logger.warning(f"[EXPERT_DEDUP] Duplicate call detected, returning error")
+                logger.warning(f"[EXPERT_DEDUP] Duplicate call detected for {cache_key}, returning error")
                 return {
                     "error": "Expert analysis already in progress for this request",
                     "status": "duplicate_request",
