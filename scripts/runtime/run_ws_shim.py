@@ -10,7 +10,9 @@ from typing import Any, Dict, List
 
 # Bootstrap: Setup path and load environment
 from pathlib import Path
-_repo_root = Path(__file__).resolve().parents[1]
+# CRITICAL FIX (2025-10-21): Changed from parents[1] to parents[2] after moving to scripts/runtime/
+# scripts/runtime/run_ws_shim.py -> parents[2] = repo root
+_repo_root = Path(__file__).resolve().parents[2]
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
