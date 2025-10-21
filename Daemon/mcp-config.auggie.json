@@ -4,7 +4,7 @@
       "type": "stdio",
       "trust": true,
       "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
-      "args": ["-u", "C:/Project/EX-AI-MCP-Server/scripts/run_ws_shim.py"],
+      "args": ["-u", "C:/Project/EX-AI-MCP-Server/scripts/runtime/run_ws_shim.py"],
       "cwd": "C:/Project/EX-AI-MCP-Server",
       "env": {
         "AUGGIE_CLI": "true",

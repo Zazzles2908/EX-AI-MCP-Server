@@ -33,7 +33,8 @@ services:
       - ./src:/app/src
       - ./utils:/app/utils
       - ./tools:/app/tools
-      - ./scripts:/app/scripts
+      - ./scripts/ws:/app/scripts/ws
+      - ./scripts/runtime:/app/scripts/runtime
       - ./systemprompts:/app/systemprompts  # FIX: Enable hot reload for prompt changes
       - ./streaming:/app/streaming          # FIX: Enable hot reload for streaming changes
       - ./static:/app/static                # FIX: Enable hot reload for static file changes
