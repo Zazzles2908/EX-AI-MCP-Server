@@ -32,9 +32,14 @@ logger = logging.getLogger(__name__)
 
 # Global cache for expert validation results (shared across all tool instances)
 # This prevents duplicate calls even if the tool is instantiated multiple times
-_expert_validation_cache: Dict[str, dict] = {}
+# EXAI Fix #6 (2025-10-21): Added TTL and size limits for cache management
+_expert_validation_cache: Dict[str, tuple[dict, float]] = {}  # (result, timestamp)
 _expert_validation_in_progress: Set[str] = set()
 _expert_validation_lock = asyncio.Lock()
+
+# Cache configuration (EXAI Fix #6 - 2025-10-21)
+_CACHE_TTL_SECS = 3600  # 1 hour TTL
+_CACHE_MAX_SIZE = 100  # Maximum 100 cached results
 
 
 class ExpertAnalysisMixin:
@@ -329,11 +334,14 @@ class ExpertAnalysisMixin:
         # CRITICAL FIX: Duplicate call prevention
         # Create cache key from request_id and consolidated findings content
         # This ensures we don't call expert analysis twice for the same content
+        # EXAI Fix #6 (2025-10-21): Use deterministic hash (hashlib.md5) instead of hash()
         print(f"[EXPERT_ENTRY] Getting request_id from arguments")
         request_id = arguments.get("request_id", "unknown")
         print(f"[EXPERT_ENTRY] request_id={request_id}")
         print(f"[EXPERT_ENTRY] About to hash findings")
-        findings_hash = hash(str(self.consolidated_findings.findings))  # type: ignore
+        import hashlib
+        findings_str = str(self.consolidated_findings.findings)  # type: ignore
+        findings_hash = hashlib.md5(findings_str.encode('utf-8')).hexdigest()[:16]  # First 16 chars
         print(f"[EXPERT_ENTRY] findings_hash={findings_hash}")
         print(f"[EXPERT_ENTRY] Creating cache_key string")
         cache_key = f"{self.get_name()}:{request_id}:{findings_hash}"
@@ -347,10 +355,31 @@ class ExpertAnalysisMixin:
         # Single lock acquisition to check cache and mark in-progress
         # Removed duplicate lock handling that was causing complexity
         async with _expert_validation_lock:
-            # Check cache first
+            # EXAI Fix #6 (2025-10-21): Clean up expired cache entries
+            now = time.time()
+            expired_keys = [k for k, (_, ts) in _expert_validation_cache.items() if now - ts > _CACHE_TTL_SECS]
+            for k in expired_keys:
+                _expert_validation_cache.pop(k, None)
+            if expired_keys:
+                logger.info(f"[EXPERT_CACHE] Cleaned up {len(expired_keys)} expired entries")
+
+            # EXAI Fix #6 (2025-10-21): Enforce cache size limit (LRU eviction)
+            if len(_expert_validation_cache) >= _CACHE_MAX_SIZE:
+                # Remove oldest entry (first in dict)
+                oldest_key = next(iter(_expert_validation_cache))
+                _expert_validation_cache.pop(oldest_key, None)
+                logger.info(f"[EXPERT_CACHE] Evicted oldest entry {oldest_key} (cache full)")
+
+            # Check cache first (with TTL validation)
             if cache_key in _expert_validation_cache:
-                logger.info(f"[EXPERT_DEDUP] Using cached result for {cache_key}")
-                return _expert_validation_cache[cache_key]
+                result, timestamp = _expert_validation_cache[cache_key]
+                if now - timestamp <= _CACHE_TTL_SECS:
+                    logger.info(f"[EXPERT_DEDUP] Using cached result for {cache_key} (age: {now - timestamp:.1f}s)")
+                    return result
+                else:
+                    # Expired, remove it
+                    _expert_validation_cache.pop(cache_key, None)
+                    logger.info(f"[EXPERT_CACHE] Removed expired entry {cache_key}")
 
             # Check if already in progress - return error instead of waiting
             if cache_key in _expert_validation_in_progress:
@@ -820,11 +849,11 @@ class ExpertAnalysisMixin:
                 _expert_validation_in_progress.discard(cache_key)
                 logger.info(f"[EXPERT_DEDUP] Removed {cache_key} from in-progress")
 
-                # Cache the result if we have one
+                # Cache the result if we have one (EXAI Fix #6 - 2025-10-21: with timestamp)
                 if result is not None:
-                    _expert_validation_cache[cache_key] = result
+                    _expert_validation_cache[cache_key] = (result, time.time())
                     logger.info(f"[EXPERT_DEDUP] Cached result for {cache_key}")
-                    logger.info(f"[EXPERT_DEDUP] Cache size now: {len(_expert_validation_cache)}")
+                    logger.info(f"[EXPERT_DEDUP] Cache size now: {len(_expert_validation_cache)}/{_CACHE_MAX_SIZE}")
 
         # CRITICAL FIX: Ensure we ALWAYS return a dict, never None
         if result is None:
