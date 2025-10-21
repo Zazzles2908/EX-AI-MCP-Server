@@ -314,12 +314,12 @@ class ToolExecutor:
                 try:
                     # Execute tool with timeout
                     result = await asyncio.wait_for(
-                        tool.run(**arguments),
+                        tool.execute(arguments),
                         timeout=self.call_timeout
                     )
 
-                    # Extract outputs
-                    outputs = normalize_outputs(getattr(result, "content", []))
+                    # Extract outputs (result is already a list of TextContent)
+                    outputs = normalize_outputs(result)
                     return True, outputs, None
 
                 except asyncio.TimeoutError:
