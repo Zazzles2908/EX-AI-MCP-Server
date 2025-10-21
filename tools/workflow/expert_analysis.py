@@ -25,6 +25,9 @@ from utils.progress import send_progress
 # Import TimeoutConfig for coordinated timeout hierarchy
 from config import TimeoutConfig
 
+# Import PerformanceProfiler for bottleneck identification (EXAI recommendation 2025-10-21)
+from src.utils.performance_profiler import PerformanceProfiler
+
 logger = logging.getLogger(__name__)
 
 # Global cache for expert validation results (shared across all tool instances)
@@ -308,6 +311,10 @@ class ExpertAnalysisMixin:
         CRITICAL FIX: Implements duplicate call prevention using global cache and in-progress tracking.
         This prevents the duplicate expert analysis calls that were causing 300+ second timeouts.
         """
+        # EXAI Recommendation (2025-10-21): Performance profiling to identify bottlenecks
+        profiler = PerformanceProfiler(f"expert_analysis_{self.get_name()}")
+        profiler.checkpoint("start")
+
         # CRITICAL DIAGNOSTIC: Log entry IMMEDIATELY
         import sys
         print(f"[EXPERT_ENTRY] ========== ENTERED _call_expert_analysis ==========", file=sys.stderr, flush=True)
