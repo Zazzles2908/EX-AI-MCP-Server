@@ -45,6 +45,12 @@ tests/
 simulator_tests/
 test_simulation_files/
 pytest.ini
+tool_validation_suite/
+
+# Archives (Docker optimization - 2025-10-21)
+scripts/archive/
+docs-archive-2025-10-14/
+Documentations/
 
 # Development
 .env
