@@ -48,9 +48,19 @@ class CircuitBreakerListener(pybreaker.CircuitBreakerListener):
         self.service_name = service_name
     
     def state_change(self, breaker, old_state, new_state):
-        """Called when circuit breaker state changes"""
+        """Called when circuit breaker state changes (EXAI Fix #5 - 2025-10-21: Enhanced logging)"""
+        # Use emoji for visibility in logs
+        state_emoji = {
+            'closed': '✅',
+            'open': '🔴',
+            'half_open': '🟡'
+        }
+        emoji = state_emoji.get(new_state.name.lower(), '⚪')
+
         logger.warning(
-            f"Circuit breaker [{self.service_name}]: {old_state.name} -> {new_state.name}"
+            f"{emoji} [CIRCUIT_BREAKER] Service: {self.service_name}, "
+            f"State Change: {old_state.name} → {new_state.name}, "
+            f"Fail Count: {breaker.fail_counter}"
         )
         
         # Update Prometheus metrics
