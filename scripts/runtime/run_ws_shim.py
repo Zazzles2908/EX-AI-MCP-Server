@@ -246,7 +246,7 @@ async def _start_daemon_if_configured() -> None:
     try:
         # Launch the daemon in the same venv Python, non-blocking
         py = sys.executable
-        daemon = str(_repo_root / "scripts" / "run_ws_daemon.py")
+        daemon = str(_repo_root / "scripts" / "ws" / "run_ws_daemon.py")
         logger.info(f"Autostarting WS daemon: {py} -u {daemon}")
         # Use CREATE_NEW_PROCESS_GROUP on Windows implicitly via asyncio
         await asyncio.create_subprocess_exec(py, "-u", daemon, cwd=str(_repo_root))
