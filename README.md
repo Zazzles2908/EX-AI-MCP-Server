@@ -164,8 +164,19 @@ ENABLE_FALLBACK=true
 ## 🏃 Quick Start
 
 ### Run the Server
+
+**Option 1: Direct Python (Simple)**
 ```bash
 python server.py
+```
+
+**Option 2: Setup Script (Recommended for first-time setup)**
+```bash
+# Windows
+.\scripts\dev\run-server.ps1
+
+# Linux/macOS
+./scripts/dev/run-server.sh
 ```
 
 ### WebSocket Mode (Optional)
