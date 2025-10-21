@@ -1,238 +1,150 @@
-# EX-AI-MCP-Server Documentation
-**Clean, organized, and easy to navigate**
+# EXAI MCP Server Documentation
 
-**Last Updated:** 2025-10-14
-**Version:** 3.0
-**Status:** Documentation reorganized ✅
-
----
-
-## 🎯 Quick Navigation
-
-### 🆕 I'm New Here
-1. **[Getting Started](01_GETTING_STARTED/)** - Installation and setup
-2. **[System Overview](system-reference/01-system-overview.md)** - What is EX-AI-MCP-Server?
-3. **[Tool Ecosystem](system-reference/03-tool-ecosystem.md)** - What tools are available?
-
-### 🔧 I Want To Use The System
-1. **[Guides](04_GUIDES/)** - How-to guides and tutorials
-2. **[API Reference](03_API_REFERENCE/)** - Complete API documentation
-3. **[System Reference](system-reference/)** - Comprehensive system documentation
-
-### 👨‍💻 I'm A Developer
-1. **[Architecture](02_ARCHITECTURE/)** - System design and patterns
-2. **[API Reference](03_API_REFERENCE/)** - Complete API documentation
-3. **[Current Work](05_CURRENT_WORK/)** - Active development and tasks
-
-### 📊 I'm Tracking Progress
-1. **[Current Work](05_CURRENT_WORK/)** - Active tasks and known issues
-2. **[Master Checklist](05_CURRENT_WORK/MASTER_CHECKLIST.md)** - Overall project progress
-3. **[MCP Implementation](05_CURRENT_WORK/MCP_IMPLEMENTATION_TRACKER.md)** - Current focus
+**Last Updated:** 2025-10-20  
+**Version:** 1.0.0  
+**Status:** Complete
 
 ---
 
 ## 📚 Documentation Structure
 
-### 🆕 [01_GETTING_STARTED/](01_GETTING_STARTED/)
-**Quick start guides and setup instructions**
+This documentation is organized into 3 main categories with 12 comprehensive component guides:
 
-- Installation guide
-- Quick start tutorial
-- Environment setup
-- First-time configuration
+### 01_Core_Architecture (3 documents)
+1. **[System Overview](./01_Core_Architecture/01_System_Overview.md)** - Complete system architecture and design patterns
+2. **[SDK Integration](./01_Core_Architecture/02_SDK_Integration.md)** - Kimi and GLM SDK integration guide
+3. **[Supabase Audit Trail](./01_Core_Architecture/03_Supabase_Audit_Trail.md)** - Audit logging and data persistence
 
-**Status:** Directory created, content pending
+### 02_Service_Components (6 documents)
+4. **[Daemon & WebSocket Management](./02_Service_Components/01_Daemon_WebSocket.md)** - Background processes and real-time communication
+5. **[Docker Containerization](./02_Service_Components/02_Docker.md)** - Container setup and deployment
+6. **[MCP Server Integration](./02_Service_Components/03_MCP_Server.md)** - Model Context Protocol implementation
+7. **[Testing Framework](./02_Service_Components/04_Testing.md)** - Comprehensive testing strategies
+8. **[UI Components](./02_Service_Components/05_UI_Components.md)** - Frontend component library
+9. **[System Prompts Management](./02_Service_Components/06_System_Prompts.md)** - AI prompt templates and versioning
 
----
-
-### 🏗️ [02_ARCHITECTURE/](02_ARCHITECTURE/)
-**System design, patterns, and architectural decisions**
-
-**Key Documents:**
-- **[DEPENDENCY_MAP.md](02_ARCHITECTURE/DEPENDENCY_MAP.md)** - Complete dependency graph
-- **[DESIGN_INTENT.md](02_ARCHITECTURE/DESIGN_INTENT.md)** - Design philosophy
-
-**Architecture Layers:**
-1. Provider Layer - AI model integrations (Kimi, GLM)
-2. Tool Layer - MCP tools (simple, workflow, provider-specific)
-3. Server Layer - WebSocket daemon and request handling
-4. Storage Layer - Supabase integration for persistence
+### 03_Data_Management (3 documents)
+10. **[User Management & Auth](./03_Data_Management/01_User_Auth.md)** - Authentication and authorization
+11. **[Tools & Function Calling](./03_Data_Management/02_Tools_Functions.md)** - Tool registry and execution
+12. **[File Management & Storage](./03_Data_Management/03_File_Storage.md)** - File operations and storage backends
 
 ---
 
-### 📖 [03_API_REFERENCE/](03_API_REFERENCE/)
-**Complete API documentation for all tools and providers**
+## 🎯 Quick Start
 
-**Tool Categories:**
-- **Simple Tools:** chat, thinkdeep, listmodels, version, status
-- **Workflow Tools:** debug, codereview, analyze, refactor, testgen, docgen, secaudit, precommit, planner, consensus, tracer
-- **Provider Tools:** Kimi-specific, GLM-specific
+### For New Developers
+1. Start with [System Overview](./01_Core_Architecture/01_System_Overview.md) to understand the architecture
+2. Read [SDK Integration](./01_Core_Architecture/02_SDK_Integration.md) to understand AI provider integration
+3. Review [Docker Containerization](./02_Service_Components/02_Docker.md) for local development setup
 
-**Documents:**
-- MCP tools API reference
-- JSON schemas for all tools
-- Provider-specific API documentation
+### For Feature Development
+1. Check [Tools & Function Calling](./03_Data_Management/02_Tools_Functions.md) for adding new tools
+2. Review [System Prompts Management](./02_Service_Components/06_System_Prompts.md) for prompt engineering
+3. Consult [Testing Framework](./02_Service_Components/04_Testing.md) for testing guidelines
 
----
-
-### 📚 [04_GUIDES/](04_GUIDES/)
-**How-to guides, tutorials, and best practices**
-
-**Categories:**
-- Setup & Configuration
-- Development
-- Operations
-
-**Available Guides:** 9 guides covering setup, development, and operations
+### For Operations
+1. Review [Docker Containerization](./02_Service_Components/02_Docker.md) for deployment
+2. Check [Daemon & WebSocket Management](./02_Service_Components/01_Daemon_WebSocket.md) for monitoring
+3. Consult [Supabase Audit Trail](./01_Core_Architecture/03_Supabase_Audit_Trail.md) for audit logging
 
 ---
 
-### 🎯 [05_CURRENT_WORK/](05_CURRENT_WORK/)
-**Active development, ongoing tasks, and known issues**
+## 📖 Documentation Standards
 
-**Key Documents:**
-- **[MASTER_CHECKLIST.md](05_CURRENT_WORK/MASTER_CHECKLIST.md)** - Overall project progress
-- **[MCP_IMPLEMENTATION_TRACKER.md](05_CURRENT_WORK/MCP_IMPLEMENTATION_TRACKER.md)** - Active MCP implementation
-- **[MCP_ANALYSIS_REFERENCE.md](05_CURRENT_WORK/MCP_ANALYSIS_REFERENCE.md)** - Complete EX-AI analysis
-- **[KNOWN_ISSUES.md](05_CURRENT_WORK/KNOWN_ISSUES.md)** - Active and resolved issues
-
-**Current Focus:** MCP File Handling Implementation (HIGH PRIORITY)
-
----
-
-### 📦 [06_ARCHIVE/](06_ARCHIVE/)
-**Historical documentation, resolved issues, and legacy content**
-
-**Recent Archives (2025-10-14):**
-- `2025-10-14_old_structure/` - Previous documentation structure
-- `2025-10-14_issues/` - Resolved issues and bug fixes
-- `2025-10-14_implementation/` - Completed implementation docs
-- `2025-10-14_checklists/` - Historical checklists
-
-**Total Archived Files:** ~335 markdown files
-
-**Note:** Archive content is read-only and for reference only
+Each component document includes:
+- **Purpose & Responsibility**: What the component does
+- **Architecture & Design Patterns**: How it's built
+- **Key Files & Their Roles**: Where to find the code
+- **Configuration Variables**: How to configure it
+- **Usage Examples**: How to use it
+- **Common Issues & Solutions**: Troubleshooting guide
+- **Integration Points**: How it connects with other components
 
 ---
 
-### 🎯 [system-reference/](system-reference/)
-**Definitive system documentation (maintained separately)**
+## 🔄 Migration from Old Documentation
 
-**Key Documents:**
-- **[01-system-overview.md](system-reference/01-system-overview.md)** - High-level introduction
-- **[02-provider-architecture.md](system-reference/02-provider-architecture.md)** - Provider system design
-- **[03-tool-ecosystem.md](system-reference/03-tool-ecosystem.md)** - Complete tool catalog
-- **[06-deployment-guide.md](system-reference/06-deployment-guide.md)** - Installation & deployment
+This new documentation structure consolidates 80+ scattered markdown files into 12 focused component guides.
 
-**Total Files:** 36 markdown files
-
----
-
-## 🚀 Common Tasks
-
-### 🆕 Getting Started
-1. Read [System Overview](system-reference/01-system-overview.md)
-2. Follow [Deployment Guide](system-reference/06-deployment-guide.md)
-3. Explore [Getting Started](01_GETTING_STARTED/)
-
-### 🔧 Using a Tool
-1. Browse [API Reference](03_API_REFERENCE/) to find the right tool
-2. Check [Guides](04_GUIDES/) for how-to instructions
-3. Review [System Reference](system-reference/) for comprehensive documentation
-
-### 🐛 Troubleshooting
-1. Check [Known Issues](05_CURRENT_WORK/KNOWN_ISSUES.md)
-2. Review [Guides](04_GUIDES/) for troubleshooting tips
-3. Check logs in `.logs/mcp_server.log`
-
-### 🏗️ Understanding Architecture
-1. Read [System Overview](system-reference/01-system-overview.md)
-2. Review [Architecture](02_ARCHITECTURE/) documentation
-3. Explore [Provider Architecture](system-reference/02-provider-architecture.md)
-
-### 📊 Tracking Progress
-1. Check [Current Work](05_CURRENT_WORK/) for active tasks
-2. Review [Master Checklist](05_CURRENT_WORK/MASTER_CHECKLIST.md) for overall progress
-3. See [MCP Implementation Tracker](05_CURRENT_WORK/MCP_IMPLEMENTATION_TRACKER.md) for current focus
-
----
-
-## 📊 Project Status
-
-### Current Focus: MCP File Handling Implementation
-
-**Priority:** HIGH
-**Status:** Planning complete, ready for Week 1 implementation
-**Approach:** BytesIO Dual-Path architecture with Supabase integration
-
-**Progress:**
-- ✅ **Analysis Complete** - All APIs validated (Kimi, GLM, MCP, Supabase)
-- ✅ **Architecture Designed** - BytesIO Dual-Path approach confirmed
-- ⏳ **Week 1 Implementation** - FileUploader class (pending)
-- ⏳ **Week 2 Implementation** - Integration and testing (pending)
-
-**See:** [MCP Implementation Tracker](05_CURRENT_WORK/MCP_IMPLEMENTATION_TRACKER.md) for details
-
----
-
-## 🔍 Finding Information
-
-### Quick Search Strategy
-
-1. **Start with Quick Navigation** at the top of this page
-2. **Check directory READMEs** for specific topics
-3. **Browse System Reference** for comprehensive documentation
-4. **Search the repository** using your IDE or `grep`
-
-### Directory-Specific Search
-
-```bash
-# Find documentation about a specific tool
-grep -r "tool_name" docs/03_API_REFERENCE/
-
-# Find architecture information
-grep -r "pattern_name" docs/02_ARCHITECTURE/
-
-# Find current work items
-grep -r "task_name" docs/05_CURRENT_WORK/
-
-# Search archived content
-grep -r "historical_topic" docs/06_ARCHIVE/
+**Old Structure:**
+```
+docs/
+├── 01_ARCHITECTURE/
+├── 02_IMPLEMENTATION_STATUS/
+├── 03_EXECUTIVE_SUMMARIES/
+├── 05_CURRENT_WORK/
+├── 07_LOGS/
+├── 08_FUNCTION-TESTING/
+└── current/
 ```
 
----
+**New Structure:**
+```
+Documentations/
+├── 01_Core_Architecture/ (3 docs)
+├── 02_Service_Components/ (6 docs)
+└── 03_Data_Management/ (3 docs)
+```
 
-## 📈 Documentation Statistics
-
-**Active Documentation:**
-- 01_GETTING_STARTED: 1 file (README)
-- 02_ARCHITECTURE: 3 files
-- 03_API_REFERENCE: 4 files
-- 04_GUIDES: 10 files
-- 05_CURRENT_WORK: 5 files
-- system-reference: 36 files
-
-**Total Active:** ~60 files
-**Total Archived:** ~335 files
-**Total:** ~395 markdown files
-
-**Last Reorganization:** 2025-10-14
-**Reduction:** From ~270 scattered files to ~60 organized active files (78% reduction in active docs)
+**Benefits:**
+- ✅ Clear hierarchy and organization
+- ✅ Easy to navigate and find information
+- ✅ No redundant or outdated content
+- ✅ Follows 4-tier architecture
+- ✅ Single source of truth per component
 
 ---
 
-## 🎯 Documentation Principles
+## 🎨 Architecture Principles
 
-1. **Single Source of Truth:** Each piece of information lives in exactly one place
-2. **Clear Navigation:** Find any document in < 2 minutes
-3. **Active vs Archive:** Clear separation between current and historical content
-4. **Cross-References:** Related documents are linked
-5. **Maintained READMEs:** Every directory has a README explaining its purpose
+The EXAI MCP Server follows these core design principles:
+
+1. **Layered Architecture**: Clean 4-tier separation (Presentation → Application → Domain → Infrastructure)
+2. **Top-Down Design**: Organized by conceptual responsibility, not implementation details
+3. **Single Responsibility**: Each module has one clear purpose
+4. **Mixin Composition**: Behavior reuse without deep inheritance
+5. **SDK-First**: Use native SDK capabilities, Supabase for audit only
 
 ---
 
-**Created:** 2025-10-13
-**Reorganized:** 2025-10-14
-**Purpose:** Master documentation index for easy navigation
-**Maintained By:** EX-AI-MCP-Server development team
+## 🔗 Related Resources
+
+- **Architecture Docs**: `docs/02_ARCHITECTURE/` (legacy, for reference)
+- **Design Intent**: `docs/02_ARCHITECTURE/DESIGN_INTENT.md`
+- **Dependency Map**: `docs/02_ARCHITECTURE/DEPENDENCY_MAP.md`
+- **SDK Architecture Shift**: `docs/current/SDK_ARCHITECTURE_SHIFT_2025-10-20.md`
+
+---
+
+## 📝 Contributing to Documentation
+
+When updating documentation:
+1. Follow the established structure and format
+2. Include practical examples and code snippets
+3. Update cross-references when adding new sections
+4. Test all code examples before committing
+5. Keep language clear and concise
+
+---
+
+## ✅ Documentation Status
+
+| Component | Status | Last Updated | Completeness |
+|-----------|--------|--------------|--------------|
+| System Overview | ✅ Complete | 2025-10-20 | 100% |
+| SDK Integration | ✅ Complete | 2025-10-20 | 100% |
+| Supabase Audit Trail | ✅ Complete | 2025-10-20 | 100% |
+| Daemon & WebSocket | ✅ Complete | 2025-10-20 | 100% |
+| Docker | ✅ Complete | 2025-10-20 | 100% |
+| MCP Server | ✅ Complete | 2025-10-20 | 100% |
+| Testing Framework | ✅ Complete | 2025-10-20 | 100% |
+| UI Components | ✅ Complete | 2025-10-20 | 100% |
+| System Prompts | ✅ Complete | 2025-10-20 | 100% |
+| User Auth | ✅ Complete | 2025-10-20 | 100% |
+| Tools & Functions | ✅ Complete | 2025-10-20 | 100% |
+| File Storage | ✅ Complete | 2025-10-20 | 100% |
+
+---
+
+**For Questions or Updates:** Contact the development team or create an issue in the repository.
 
