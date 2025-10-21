@@ -255,8 +255,9 @@ class ConversationIntegrationMixin:
             print(f"[DEBUG_EXPERT] About to await _call_expert_analysis...")
             import asyncio
             import os
-            # Make timeout configurable via environment variable
-            timeout_secs = float(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", "180"))
+            from config import TimeoutConfig
+            # Use centralized timeout configuration (EXAI Fix #3 - 2025-10-21)
+            timeout_secs = float(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", str(TimeoutConfig.EXPERT_ANALYSIS_TIMEOUT_SECS)))
             try:
                 expert_analysis = await asyncio.wait_for(
                     self._call_expert_analysis(arguments, request),
