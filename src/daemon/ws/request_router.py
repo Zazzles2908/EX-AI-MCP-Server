@@ -371,6 +371,9 @@ class ToolExecutor:
                             provider_sem_id,
                             f"provider_sem_{provider_name}_{name}"
                         )
+                except ValueError as e:
+                    # Semaphore was already released (likely by recovery system)
+                    logger.warning(f"[{req_id}] Provider semaphore already released (recovery system): {e}")
                 except Exception as e:
                     logger.error(f"[{req_id}] Failed to release provider semaphore: {e}")
 
@@ -382,6 +385,9 @@ class ToolExecutor:
                             global_sem_id,
                             f"global_sem_{name}"
                         )
+                except ValueError as e:
+                    # Semaphore was already released (likely by recovery system)
+                    logger.warning(f"[{req_id}] Global semaphore already released (recovery system): {e}")
                 except Exception as e:
                     logger.error(f"[{req_id}] Failed to release global semaphore: {e}")
 
@@ -477,7 +483,9 @@ class RequestRouter:
         )
 
         # Initialize tool executor
-        call_timeout = float(validated_env.get("KIMI_CHAT_TOOL_TIMEOUT_SECS", 180.0))
+        # CRITICAL FIX (2025-10-21): Use WORKFLOW_TOOL_TIMEOUT_SECS instead of KIMI_CHAT_TOOL_TIMEOUT_SECS
+        # ToolExecutor is used for ALL tools, not just Kimi chat
+        call_timeout = float(validated_env.get("WORKFLOW_TOOL_TIMEOUT_SECS", 300.0))
         progress_interval = float(validated_env.get("PROGRESS_INTERVAL", 5.0))
         self.tool_executor = ToolExecutor(
             server_tools=server_tools,
@@ -674,11 +682,17 @@ class RequestRouter:
                 logger.info(f"[{req_id}] Duplicate request detected (original: {existing_req_id}), sending retry")
                 error_response = create_error_response(
                     code=ErrorCode.OVER_CAPACITY,
-                    message=f"Duplicate request in progress (original: {existing_req_id})",
+                    message=(
+                        f"This request is already being processed (request ID: {existing_req_id}).\n\n"
+                        f"The system prevents duplicate requests to avoid wasted resources. "
+                        f"Please wait {self.retry_after_secs} seconds and try again, or modify your request "
+                        f"to make it unique (e.g., add a timestamp or change parameters)."
+                    ),
                     request_id=req_id,
                     details={
                         "retry_after_secs": self.retry_after_secs,
-                        "original_request_id": existing_req_id
+                        "original_request_id": existing_req_id,
+                        "suggestion": "Wait for the original request to complete, or modify your request to make it unique"
                     }
                 )
                 await _safe_send(ws, {

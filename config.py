@@ -300,6 +300,9 @@ class TimeoutConfig:
 
     TRACK 2 FIX (2025-10-16): Updated defaults to 30s for MCP tools to prevent indefinite hangs.
     Previous defaults (90-150s) were too high and caused poor user experience.
+
+    EXAI INSIGHT (2025-10-21): Adaptive timeouts based on model complexity.
+    Different models have different processing speeds and thinking depths.
     """
 
     # Tool-level timeouts (primary)
@@ -311,6 +314,50 @@ class TimeoutConfig:
     GLM_TIMEOUT_SECS = int(os.getenv("GLM_TIMEOUT_SECS", "30"))
     KIMI_TIMEOUT_SECS = int(os.getenv("KIMI_TIMEOUT_SECS", "30"))
     KIMI_WEB_SEARCH_TIMEOUT_SECS = int(os.getenv("KIMI_WEB_SEARCH_TIMEOUT_SECS", "30"))
+
+    # EXAI INSIGHT (2025-10-21): Model-specific timeout multipliers
+    # Based on observed performance during comprehensive testing
+    MODEL_TIMEOUT_MULTIPLIERS = {
+        # Thinking models need more time for deep reasoning
+        "kimi-thinking-preview": 1.5,
+        "glm-4.6": 1.3,
+        "kimi-k2-0905-preview": 1.2,
+
+        # Fast models can use less time
+        "glm-4.5-flash": 0.7,
+        "kimi-k2-turbo-preview": 0.8,
+        "glm-4.5-air": 0.6,
+
+        # Standard models use base timeout
+        "glm-4.5": 1.0,
+        "moonshot-v1-128k": 1.0,
+        "moonshot-v1-32k": 1.0,
+        "moonshot-v1-8k": 1.0,
+    }
+
+    @classmethod
+    def get_model_timeout(cls, model_name: str, base_timeout: float) -> float:
+        """
+        Get adaptive timeout for a specific model.
+
+        EXAI INSIGHT (2025-10-21): Different models need different timeouts.
+        Thinking models need more time, fast models can use less.
+
+        Args:
+            model_name: Name of the model
+            base_timeout: Base timeout in seconds
+
+        Returns:
+            Adjusted timeout based on model complexity
+
+        Example:
+            >>> TimeoutConfig.get_model_timeout("glm-4.6", 300)
+            390.0  # 300 * 1.3 multiplier
+            >>> TimeoutConfig.get_model_timeout("glm-4.5-flash", 300)
+            210.0  # 300 * 0.7 multiplier
+        """
+        multiplier = cls.MODEL_TIMEOUT_MULTIPLIERS.get(model_name, 1.0)
+        return base_timeout * multiplier
 
     @classmethod
     def get_daemon_timeout(cls) -> int:

@@ -2,7 +2,11 @@
 Debug tool system prompt
 """
 
-from .base_prompt import FILE_PATH_GUIDANCE, RESPONSE_QUALITY
+# Tier 1: Core components (all AI tools)
+from .base_prompt import (
+    FILE_PATH_GUIDANCE,
+    RESPONSE_QUALITY,
+)
 
 DEBUG_ISSUE_PROMPT = f"""
 ROLE

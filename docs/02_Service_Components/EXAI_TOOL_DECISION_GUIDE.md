@@ -1,8 +1,51 @@
 # EXAI Tool Decision Guide for AI Assistants (Claude)
 
-**Date:** 2025-10-20 22:00 AEDT  
-**Audience:** AI Assistants (Claude) working with EXAI-WS MCP tools  
+**Date:** 2025-10-22 (Updated with Token Efficiency Guidance)
+**Audience:** AI Assistants (Claude) working with EXAI-WS MCP tools
 **Purpose:** Clear decision framework for choosing the right EXAI tool
+
+---
+
+## ⚠️ CRITICAL: TOKEN EFFICIENCY (Added 2025-10-22)
+
+### **ALWAYS Use `files` Parameter - Never Paste Code!**
+
+**❌ WRONG - Wastes 70-80% of tokens:**
+```python
+chat_EXAI-WS(
+    prompt="""
+    Here's the file to validate:
+    ```python
+    [400 lines of code pasted here]
+    ```
+    Please review...
+    """
+)
+```
+
+**✅ CORRECT - Token efficient:**
+```python
+# For files <5KB (most code files)
+chat_EXAI-WS(
+    prompt="Please validate this unified provider interface for production readiness...",
+    files=["c:\\Project\\EX-AI-MCP-Server\\src\\providers\\file_base.py"],
+    model="glm-4.6",
+    thinking_mode="high"
+)
+
+# For files >5KB (large files)
+# Step 1: Upload first
+kimi_upload_files(files=["c:\\Project\\EX-AI-MCP-Server\\large_file.py"])
+# Step 2: Chat with uploaded file
+kimi_chat_with_files(
+    prompt="Please review this implementation...",
+    file_ids=["file-xxx"]
+)
+```
+
+**Token Savings:** 70-80% reduction (4-6x more efficient)
+
+**Rule:** If you're about to paste code in a prompt, STOP and use `files` parameter instead!
 
 ---
 

@@ -158,6 +158,7 @@ class AsyncKimiProvider(AsyncModelProvider):
             model=resolved,
             messages=messages,
             temperature=effective_temp,
+            max_output_tokens=max_output_tokens,
             **kwargs
         )
     
@@ -179,6 +180,42 @@ class AsyncKimiProvider(AsyncModelProvider):
             logger.warning(f"Async Kimi health check failed: {e}")
             return False
     
+    async def chat_completions_create(
+        self,
+        model: str,
+        messages: list[dict],
+        temperature: float = 0.3,
+        thinking_mode: Optional[str] = None,
+        **kwargs,
+    ) -> dict:
+        """Create chat completion using message arrays (for expert_analysis compatibility).
+
+        Args:
+            model: Model name to use
+            messages: List of message dictionaries with 'role' and 'content'
+            temperature: Sampling temperature (0-2)
+            thinking_mode: Optional thinking mode for supported models
+            **kwargs: Additional provider-specific parameters
+
+        Returns:
+            Dictionary with 'content', 'model', 'usage' keys (compatible with expert_analysis)
+        """
+        # Delegate to async_kimi_chat module which returns ModelResponse
+        response = await async_kimi_chat.chat_completions_create_async(
+            client=self._sdk_client,
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            **kwargs
+        )
+
+        # Convert ModelResponse to dict format expected by expert_analysis
+        return {
+            "content": response.content,
+            "model": response.model_name,
+            "usage": response.usage or {},
+        }
+
     async def close(self):
         """Clean up resources."""
         await super().close()

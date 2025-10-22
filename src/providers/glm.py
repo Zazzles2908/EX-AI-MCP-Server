@@ -95,6 +95,8 @@ class GLMModelProvider(ModelProvider):
         conversation history. It accepts pre-built message arrays instead of
         building messages from text prompts.
 
+        PHASE 2.2.4 (2025-10-21): Updated to use session-managed wrapper for concurrent request handling.
+
         Args:
             model: Model name (will be resolved to canonical name)
             messages: Pre-built message array in OpenAI format
@@ -109,7 +111,7 @@ class GLMModelProvider(ModelProvider):
         resolved = self._resolve_model_name(model)
         effective_temp = self.get_effective_temperature(resolved, temperature)
 
-        return glm_chat.chat_completions_create(
+        return glm_chat.chat_completions_create_messages_with_session(
             sdk_client=self._sdk_client,
             model=resolved,
             messages=messages,

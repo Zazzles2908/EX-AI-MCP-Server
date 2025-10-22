@@ -6,6 +6,7 @@ Handles persistent storage for conversations, messages, and files
 import os
 import logging
 import time
+import hashlib
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from functools import wraps
@@ -268,48 +269,113 @@ class SupabaseStorageManager:
     # ========================================================================
     # MESSAGE OPERATIONS
     # ========================================================================
-    
+
+    @staticmethod
+    def generate_idempotency_key(
+        conversation_id: str,
+        role: str,
+        content: str,
+        client_timestamp: Optional[str] = None
+    ) -> str:
+        """
+        Generate a deterministic idempotency key for a message.
+
+        DEDUPLICATION FIX (2025-10-22): Added idempotency key generation
+        to prevent duplicate message insertion.
+
+        Args:
+            conversation_id: UUID of the conversation
+            role: Message role (user, assistant, system)
+            content: Message content
+            client_timestamp: ISO string from client when message was created
+
+        Returns:
+            SHA-256 hash as hex string
+        """
+        # Use current timestamp if not provided
+        if not client_timestamp:
+            client_timestamp = datetime.utcnow().isoformat()
+
+        # Normalize content to reduce false duplicates
+        normalized_content = content.strip()
+
+        # Create deterministic string to hash
+        key_string = f"{conversation_id}:{role}:{normalized_content}:{client_timestamp}"
+
+        # Generate SHA-256 hash (more reliable than MD5)
+        return hashlib.sha256(key_string.encode('utf-8')).hexdigest()
+
     def save_message(
         self,
         conversation_id: str,
         role: str,
         content: str,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
+        client_timestamp: Optional[str] = None
     ) -> Optional[str]:
         """
-        Save a message to a conversation
-        
+        Save a message to a conversation with idempotency key.
+
+        DEDUPLICATION FIX (2025-10-22): Added idempotency key to prevent
+        duplicate message insertion. If a duplicate is detected, returns
+        the existing message ID instead of creating a new one.
+
         Args:
             conversation_id: UUID of the conversation
             role: Message role (user, assistant, system)
             content: Message content
             metadata: Optional metadata (model, tokens, etc.)
-        
+            client_timestamp: Optional timestamp for idempotency key generation
+
         Returns:
             Message UUID or None on error
         """
         if not self._enabled:
             return None
-        
+
         try:
             client = self.get_client()
+
+            # Generate idempotency key
+            idempotency_key = self.generate_idempotency_key(
+                conversation_id, role, content, client_timestamp
+            )
+
             data = {
                 "conversation_id": conversation_id,
                 "role": role,
                 "content": content,
-                "metadata": metadata or {}
+                "metadata": metadata or {},
+                "idempotency_key": idempotency_key
             }
-            
+
             result = client.table("messages").insert(data).execute()
-            
+
             if result.data:
                 msg_id = result.data[0]["id"]
                 logger.debug(f"Saved message: {msg_id} ({role})")
                 return msg_id
-            
+
             return None
-            
+
         except Exception as e:
+            # Check if this is a duplicate key error
+            if "duplicate key" in str(e).lower() or "unique constraint" in str(e).lower():
+                logger.debug(f"Duplicate message detected (idempotency key: {idempotency_key[:16]}...)")
+
+                # Fetch existing message ID
+                try:
+                    existing = client.table("messages").select("id").eq(
+                        "idempotency_key", idempotency_key
+                    ).execute()
+
+                    if existing.data:
+                        existing_id = existing.data[0]["id"]
+                        logger.debug(f"Returning existing message: {existing_id}")
+                        return existing_id
+                except Exception as fetch_error:
+                    logger.error(f"Failed to fetch existing message: {fetch_error}")
+
             logger.error(f"Failed to save message: {e}")
             return None
     
@@ -504,7 +570,7 @@ class SupabaseStorageManager:
     # ========================================================================
     # CONVERSATION-FILE LINKING
     # ========================================================================
-    
+
     def link_file_to_conversation(
         self,
         conversation_id: str,
@@ -512,34 +578,387 @@ class SupabaseStorageManager:
     ) -> bool:
         """
         Link a file to a conversation
-        
+
         Args:
             conversation_id: UUID of the conversation
             file_id: UUID of the file
-        
+
         Returns:
             True if successful, False otherwise
         """
         if not self._enabled:
             return False
-        
+
         try:
             client = self.get_client()
             data = {
                 "conversation_id": conversation_id,
                 "file_id": file_id
             }
-            
+
             result = client.table("conversation_files").insert(data).execute()
-            
+
             if result.data:
                 logger.debug(f"Linked file {file_id} to conversation {conversation_id}")
                 return True
-            
+
             return False
-            
+
         except Exception as e:
             logger.error(f"Failed to link file to conversation: {e}")
+            return False
+
+    # ========================================================================
+    # PROVIDER FILE UPLOAD TRACKING (Phase 2.3.2)
+    # ========================================================================
+
+    @track_performance
+    def save_provider_file_upload(
+        self,
+        provider: str,
+        provider_file_id: str,
+        filename: str,
+        file_size_bytes: int,
+        purpose: str = "file-extract",
+        supabase_file_id: Optional[str] = None,
+        checksum_sha256: Optional[str] = None,
+        mime_type: Optional[str] = None,
+        custom_metadata: Optional[Dict[str, Any]] = None
+    ) -> Optional[str]:
+        """
+        Save provider file upload metadata with validation
+
+        Args:
+            provider: Provider name (kimi, glm, openai, anthropic)
+            provider_file_id: Provider's file identifier
+            filename: Original filename
+            file_size_bytes: File size in bytes
+            purpose: File purpose (file-extract, agent, assistants, training, custom)
+            supabase_file_id: Optional Supabase file UUID
+            checksum_sha256: Optional SHA-256 checksum
+            mime_type: Optional MIME type
+            custom_metadata: Optional custom metadata
+
+        Returns:
+            Record UUID or None on error
+        """
+        if not self._enabled:
+            return None
+
+        # Validate file size (2GB max)
+        if file_size_bytes > 2 * 1024 * 1024 * 1024:
+            logger.error(f"File too large: {file_size_bytes} bytes (max 2GB)")
+            return None
+
+        # Validate purpose
+        valid_purposes = ['file-extract', 'agent', 'assistants', 'training', 'custom']
+        if purpose not in valid_purposes:
+            logger.error(f"Invalid purpose: {purpose}. Must be one of {valid_purposes}")
+            return None
+
+        # Validate provider
+        valid_providers = ['kimi', 'glm', 'openai', 'anthropic']
+        if provider not in valid_providers:
+            logger.error(f"Invalid provider: {provider}. Must be one of {valid_providers}")
+            return None
+
+        try:
+            client = self.get_client()
+            data = {
+                "provider": provider,
+                "provider_file_id": provider_file_id,
+                "filename": filename,
+                "file_size_bytes": file_size_bytes,
+                "purpose": purpose,
+                "supabase_file_id": supabase_file_id,
+                "checksum_sha256": checksum_sha256,
+                "mime_type": mime_type,
+                "custom_metadata": custom_metadata,  # Let JSONB handle None
+                "upload_status": "completed"
+            }
+
+            result = client.table("provider_file_uploads").upsert(data).execute()
+
+            if result.data:
+                record_id = result.data[0]["id"]
+                logger.info(f"Saved provider file upload: {provider}/{provider_file_id} -> {record_id}")
+                return record_id
+
+            return None
+
+        except Exception as e:
+            # Handle duplicate key violations
+            if "duplicate key" in str(e).lower() or "unique constraint" in str(e).lower():
+                logger.warning(f"Duplicate provider file: {provider}/{provider_file_id}")
+                # Try to get existing record
+                existing = self.get_provider_file_by_id(provider, provider_file_id)
+                return existing.get("id") if existing else None
+
+            logger.error(f"Failed to save provider file upload {provider}/{provider_file_id}: {e}")
+            return None
+
+    @track_performance
+    def get_provider_file_by_id(
+        self,
+        provider: str,
+        provider_file_id: str
+    ) -> Optional[Dict]:
+        """
+        Get provider file upload record
+
+        Args:
+            provider: Provider name
+            provider_file_id: Provider's file identifier
+
+        Returns:
+            File record dict or None if not found
+        """
+        if not self._enabled:
+            return None
+
+        try:
+            client = self.get_client()
+            result = client.table("provider_file_uploads").select("*").eq(
+                "provider", provider
+            ).eq("provider_file_id", provider_file_id).execute()
+
+            if result.data:
+                logger.debug(f"Retrieved provider file: {provider}/{provider_file_id}")
+                return result.data[0]
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Failed to get provider file {provider}/{provider_file_id}: {e}")
+            return None
+
+    @track_performance
+    def update_provider_file_last_used(
+        self,
+        provider: str,
+        provider_file_id: str
+    ) -> bool:
+        """
+        Update last_used timestamp for provider file
+
+        Args:
+            provider: Provider name
+            provider_file_id: Provider's file identifier
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not self._enabled:
+            return False
+
+        try:
+            client = self.get_client()
+            result = client.table("provider_file_uploads").update({
+                "last_used": datetime.now().isoformat()
+            }).eq("provider", provider).eq("provider_file_id", provider_file_id).execute()
+
+            if result.data:
+                logger.debug(f"Updated last_used for {provider}/{provider_file_id}")
+                return True
+
+            return False
+
+        except Exception as e:
+            logger.error(f"Failed to update last_used for {provider}/{provider_file_id}: {e}")
+            return False
+
+    @track_performance
+    def get_provider_files_by_purpose(
+        self,
+        provider: str,
+        purpose: str,
+        limit: int = 100
+    ) -> List[Dict]:
+        """
+        Get provider files filtered by purpose
+
+        Args:
+            provider: Provider name
+            purpose: File purpose
+            limit: Maximum number of results
+
+        Returns:
+            List of file records
+        """
+        if not self._enabled:
+            return []
+
+        try:
+            client = self.get_client()
+            result = client.table("provider_file_uploads").select("*").eq(
+                "provider", provider
+            ).eq("purpose", purpose).limit(limit).execute()
+
+            return result.data or []
+
+        except Exception as e:
+            logger.error(f"Failed to get provider files by purpose: {e}")
+            return []
+
+    # ========================================================================
+    # FILE EMBEDDINGS (Phase 2.3.2)
+    # ========================================================================
+
+    @track_performance
+    def save_file_embedding(
+        self,
+        provider_file_id: str,
+        embedding_model: str,
+        embedding_data: List[float],
+        chunk_index: int = 0,
+        text_content: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> Optional[str]:
+        """
+        Save file embedding for caching
+
+        Args:
+            provider_file_id: Provider file UUID
+            embedding_model: Model used for embedding (e.g., 'text-embedding-ada-002')
+            embedding_data: Embedding vector as list of floats
+            chunk_index: Chunk index for multi-chunk embeddings (default 0)
+            text_content: Optional text content that was embedded
+            metadata: Optional metadata
+
+        Returns:
+            Embedding UUID or None on error
+        """
+        if not self._enabled:
+            return None
+
+        try:
+            client = self.get_client()
+            data = {
+                "provider_file_id": provider_file_id,
+                "embedding_model": embedding_model,
+                "embedding_dimension": len(embedding_data),
+                "embedding_data": embedding_data,  # Stored as JSONB array
+                "chunk_index": chunk_index,
+                "text_content": text_content,
+                "metadata": metadata
+            }
+
+            result = client.table("file_embeddings").insert(data).execute()
+
+            if result.data:
+                embedding_id = result.data[0]["id"]
+                logger.info(f"Saved file embedding: {provider_file_id} (model: {embedding_model})")
+                return embedding_id
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Failed to save file embedding: {e}")
+            return None
+
+    @track_performance
+    def get_file_embeddings(
+        self,
+        provider_file_id: str,
+        embedding_model: Optional[str] = None
+    ) -> List[Dict]:
+        """
+        Retrieve cached embeddings for a file
+
+        Args:
+            provider_file_id: Provider file UUID
+            embedding_model: Optional model filter
+
+        Returns:
+            List of embedding records
+        """
+        if not self._enabled:
+            return []
+
+        try:
+            client = self.get_client()
+            query = client.table("file_embeddings").select("*").eq(
+                "provider_file_id", provider_file_id
+            )
+
+            if embedding_model:
+                query = query.eq("embedding_model", embedding_model)
+
+            result = query.order("chunk_index").execute()
+            return result.data or []
+
+        except Exception as e:
+            logger.error(f"Failed to get file embeddings: {e}")
+            return []
+
+    # ========================================================================
+    # FILE ACCESS LOGGING (Phase 2.3.2)
+    # ========================================================================
+
+    def log_file_access(
+        self,
+        provider_file_id: str,
+        operation: str,
+        provider: str,
+        user_id: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
+        response_time_ms: Optional[int] = None,
+        status_code: Optional[int] = None,
+        error_message: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> bool:
+        """
+        Log file access for monitoring and analytics
+
+        Args:
+            provider_file_id: Provider file UUID
+            operation: Operation type (upload, download, delete, list, metadata)
+            provider: Provider name
+            user_id: Optional user identifier
+            ip_address: Optional IP address
+            user_agent: Optional user agent string
+            response_time_ms: Optional response time in milliseconds
+            status_code: Optional HTTP status code
+            error_message: Optional error message
+            metadata: Optional metadata
+
+        Returns:
+            True if successful, False otherwise
+
+        Note: This method does NOT use @track_performance to avoid circular logging
+        """
+        if not self._enabled:
+            return False
+
+        # Validate operation
+        valid_operations = ['upload', 'download', 'delete', 'list', 'metadata']
+        if operation not in valid_operations:
+            logger.warning(f"Invalid operation for file access log: {operation}")
+            return False
+
+        try:
+            client = self.get_client()
+            data = {
+                "provider_file_id": provider_file_id,
+                "operation": operation,
+                "provider": provider,
+                "user_id": user_id,
+                "ip_address": ip_address,
+                "user_agent": user_agent,
+                "response_time_ms": response_time_ms,
+                "status_code": status_code,
+                "error_message": error_message,
+                "metadata": metadata
+            }
+
+            # Fire and forget - don't wait for response
+            client.table("file_access_log").insert(data).execute()
+            return True
+
+        except Exception as e:
+            # Don't log errors for logging failures to avoid recursion
+            logger.debug(f"Failed to log file access: {e}")
             return False
 
 

@@ -2,7 +2,11 @@
 Tracer tool system prompts
 """
 
-from .base_prompt import FILE_PATH_GUIDANCE, RESPONSE_QUALITY
+# Tier 1: Core components (all AI tools)
+from .base_prompt import (
+    FILE_PATH_GUIDANCE,
+    RESPONSE_QUALITY,
+)
 
 TRACER_PROMPT = f"""
 ROLE

@@ -135,7 +135,7 @@ class AsyncGLMProvider(AsyncModelProvider):
     
     async def health_check(self) -> bool:
         """Check if the provider is healthy.
-        
+
         Returns:
             True if provider can make requests, False otherwise
         """
@@ -150,6 +150,43 @@ class AsyncGLMProvider(AsyncModelProvider):
         except Exception as e:
             logger.warning(f"Async GLM health check failed: {e}")
             return False
+
+    async def chat_completions_create(
+        self,
+        model: str,
+        messages: list[dict],
+        temperature: float = 0.3,
+        thinking_mode: Optional[str] = None,
+        **kwargs,
+    ) -> dict:
+        """Create chat completion using message arrays (for expert_analysis compatibility).
+
+        Args:
+            model: Model name to use
+            messages: List of message dictionaries with 'role' and 'content'
+            temperature: Sampling temperature (0-2)
+            thinking_mode: Optional thinking mode for supported models
+            **kwargs: Additional provider-specific parameters
+
+        Returns:
+            Dictionary with 'content', 'model', 'usage' keys (compatible with expert_analysis)
+        """
+        # Delegate to async_glm_chat module which returns ModelResponse
+        response = await async_glm_chat.chat_completions_create_async(
+            client=self._sdk_client,
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            thinking_mode=thinking_mode,
+            **kwargs
+        )
+
+        # Convert ModelResponse to dict format expected by expert_analysis
+        return {
+            "content": response.content,
+            "model": response.model_name,
+            "usage": response.usage or {},
+        }
     
     async def close(self):
         """Clean up resources."""
