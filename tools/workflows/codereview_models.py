@@ -65,7 +65,20 @@ class CodeReviewRequest(WorkflowRequest):
     def validate_step_one_requirements(self):
         """Ensure step 1 has required relevant_files field."""
         if self.step_number == 1 and not self.relevant_files:
-            raise ValueError("Step 1 requires 'relevant_files' field to specify code files or directories to review")
+            raise ValueError(
+                "Code review requires files to review.\n\n"
+                "Please provide 'relevant_files' parameter with absolute paths to files or directories:\n"
+                "  relevant_files=['c:/Project/src/main.py', 'c:/Project/tests/']\n\n"
+                "Example usage:\n"
+                "  {\n"
+                "    \"step\": \"Review authentication code for security issues\",\n"
+                "    \"step_number\": 1,\n"
+                "    \"total_steps\": 1,\n"
+                "    \"next_step_required\": false,\n"
+                "    \"findings\": \"Starting code review\",\n"
+                "    \"relevant_files\": [\"c:/Project/src/auth.py\"]\n"
+                "  }"
+            )
         return self
 
 

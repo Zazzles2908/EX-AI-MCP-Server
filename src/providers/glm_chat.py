@@ -16,6 +16,9 @@ from utils.timezone_helper import log_timestamp
 from src.resilience.circuit_breaker_manager import circuit_breaker_manager
 import pybreaker
 
+# PHASE 2.2.3 (2025-10-21): Import concurrent session manager
+from src.utils.concurrent_session_manager import get_session_manager
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,18 +58,20 @@ def build_payload(
     if temperature is not None:
         payload["temperature"] = temperature
 
-    # Max tokens handling - respects ENFORCE_MAX_TOKENS configuration
-    # If max_output_tokens is explicitly provided, always use it
-    # If not provided and ENFORCE_MAX_TOKENS=true, use GLM_MAX_OUTPUT_TOKENS default
-    # If not provided and ENFORCE_MAX_TOKENS=false, don't set max_tokens (let model decide)
-    from config import GLM_MAX_OUTPUT_TOKENS, ENFORCE_MAX_TOKENS
-    if max_output_tokens:
-        # Explicitly provided - always use it
-        payload["max_tokens"] = int(max_output_tokens)
-    elif ENFORCE_MAX_TOKENS and GLM_MAX_OUTPUT_TOKENS > 0:
-        # Not provided, but enforcement is enabled - use default
-        payload["max_tokens"] = int(GLM_MAX_OUTPUT_TOKENS)
-        logger.debug(f"Using default max_tokens={GLM_MAX_OUTPUT_TOKENS} for GLM (ENFORCE_MAX_TOKENS=true)")
+    # PHASE 2.1.1.1 (2025-10-21): Model-aware max_tokens handling
+    from config import ENFORCE_MAX_TOKENS
+    from .model_config import validate_max_tokens
+
+    validated_max_tokens = validate_max_tokens(
+        model_name=model_name,
+        requested_max_tokens=max_output_tokens,
+        input_tokens=0,  # TODO: Add token counting for input
+        enforce_limits=ENFORCE_MAX_TOKENS
+    )
+
+    if validated_max_tokens is not None:
+        payload["max_tokens"] = validated_max_tokens
+        logger.debug(f"GLM API: Using max_tokens={validated_max_tokens} for model {model_name}")
     # else: Don't set max_tokens, let the model use its default
     
     # GLM Thinking Mode Support (glm-4.6 and later)
@@ -441,7 +446,41 @@ def generate_content(
                         logger.warning("Failed to execute web_search from text format (HTTP path)")
 
                 usage = raw.get("usage", {})
-        
+
+        # PHASE 2.1.2 (2025-10-21): Check for truncation and log to Supabase
+        try:
+            from src.utils.truncation_detector import (
+                check_truncation,
+                should_log_truncation,
+                format_truncation_event,
+                log_truncation_to_supabase_sync
+            )
+
+            # Check for truncation in the response
+            if raw and isinstance(raw, dict):
+                truncation_info = check_truncation(raw, model_name)
+
+                if truncation_info.get('is_truncated'):
+                    logger.warning(f"⚠️ Truncated response detected for {model_name} (finish_reason=length)")
+
+                    # Log to Supabase for monitoring (backup/recovery - non-blocking)
+                    if should_log_truncation(truncation_info):
+                        # Extract tool_name and conversation_id from context if available
+                        tool_name = kwargs.get('tool_name')
+                        conversation_id = kwargs.get('continuation_id')
+
+                        # Format event for Supabase
+                        truncation_event = format_truncation_event(
+                            truncation_info,
+                            tool_name=tool_name,
+                            conversation_id=conversation_id
+                        )
+
+                        # Log synchronously (non-blocking, failures are acceptable)
+                        log_truncation_to_supabase_sync(truncation_event)
+        except Exception as trunc_err:
+            logger.debug(f"Truncation check error (non-critical): {trunc_err}")
+
         # PHASE 3 (2025-10-18): Monitor successful API call
         response_time_ms = (time.time() - start_time) * 1000
         response_size = len(str(text).encode('utf-8'))
@@ -676,5 +715,276 @@ def chat_completions_create(
         raise RuntimeError(f"GLM chat completion failed: {e}")
 
 
-__all__ = ["build_payload", "generate_content", "chat_completions_create"]
+def chat_completions_create_with_continuation(
+    sdk_client: Any,
+    *,
+    model: str,
+    messages: list[dict[str, Any]],
+    tools: Optional[list[Any]] = None,
+    tool_choice: Optional[Any] = None,
+    temperature: float = 0.3,
+    max_output_tokens: Optional[int] = None,
+    use_websearch: bool = False,
+    enable_continuation: bool = True,
+    max_continuation_attempts: int = 3,
+    max_total_tokens: int = 32000,
+    **kwargs
+) -> dict:
+    """
+    Wrapper for chat_completions_create with automatic continuation support.
+
+    PHASE 2.1.3 (2025-10-21): Automatic Continuation
+
+    This function automatically detects truncated responses and continues them
+    until completion or max attempts reached.
+
+    Args:
+        sdk_client: ZhipuAI SDK client instance
+        model: Model name
+        messages: List of message dictionaries
+        tools: Optional list of tools
+        tool_choice: Optional tool choice
+        temperature: Temperature value
+        max_output_tokens: Maximum output tokens per request
+        use_websearch: Whether to enable web search
+        enable_continuation: Whether to enable automatic continuation (default: True)
+        max_continuation_attempts: Maximum continuation attempts (default: 3)
+        max_total_tokens: Maximum cumulative tokens across continuations (default: 32000)
+        **kwargs: Additional parameters
+
+    Returns:
+        Dictionary with provider, model, content, tool_calls, usage, raw, and metadata
+    """
+    # Call the base function
+    initial_response = chat_completions_create(
+        sdk_client,
+        model=model,
+        messages=messages,
+        tools=tools,
+        tool_choice=tool_choice,
+        temperature=temperature,
+        max_output_tokens=max_output_tokens,
+        use_websearch=use_websearch,
+        **kwargs
+    )
+
+    # If continuation is disabled, return as-is
+    if not enable_continuation:
+        return initial_response
+
+    # Check if response was truncated
+    try:
+        from src.utils.truncation_detector import check_truncation
+        from src.utils.continuation_manager import get_continuation_manager
+
+        # Check for truncation
+        truncation_info = check_truncation(initial_response.get('raw', {}), model)
+
+        if not truncation_info.get('is_truncated'):
+            # Not truncated, return as-is
+            return initial_response
+
+        logger.info(f"🔄 Truncated response detected for {model}, starting continuation...")
+
+        # Get continuation manager
+        continuation_manager = get_continuation_manager()
+
+        # Prepare provider callable
+        def provider_callable(cont_messages, **cont_kwargs):
+            return chat_completions_create(
+                sdk_client,
+                model=model,
+                messages=cont_messages,
+                tools=tools,
+                tool_choice=tool_choice,
+                temperature=temperature,
+                max_output_tokens=max_output_tokens,
+                use_websearch=use_websearch,
+                **cont_kwargs
+            )
+
+        # Continue the response
+        continuation_result = continuation_manager.continue_response_sync(
+            original_messages=messages,
+            initial_response=initial_response.get('raw', {}),
+            provider_callable=provider_callable,
+            model=model,
+            max_continuation_attempts=max_continuation_attempts,
+            max_total_tokens=max_total_tokens,
+            **kwargs
+        )
+
+        # Merge the continuation result back into the response format
+        if continuation_result.complete_response:
+            initial_response['content'] = continuation_result.complete_response
+            initial_response['metadata']['continuation'] = {
+                'enabled': True,
+                'attempts': continuation_result.attempts_made,
+                'total_tokens': continuation_result.total_tokens_used,
+                'is_complete': continuation_result.is_complete,
+                'was_truncated': continuation_result.was_truncated,
+                'error': continuation_result.error_message
+            }
+            logger.info(
+                f"✅ Continuation complete: {continuation_result.attempts_made} attempts, "
+                f"{continuation_result.total_tokens_used} tokens"
+            )
+
+        return initial_response
+
+    except Exception as cont_err:
+        logger.warning(f"Continuation failed (non-critical): {cont_err}")
+        # Return original response if continuation fails
+        return initial_response
+
+
+def chat_completions_create_with_session(
+    prompt: str,
+    *,
+    system_prompt: Optional[str] = None,
+    model: str = "glm-4.5-flash",
+    temperature: float = 0.3,
+    max_output_tokens: Optional[int] = None,
+    tools: Optional[list[dict]] = None,
+    tool_choice: Optional[str | dict] = None,
+    use_websearch: bool = False,
+    enable_continuation: bool = True,
+    max_continuation_attempts: int = 3,
+    max_total_tokens: int = 32000,
+    timeout_seconds: Optional[float] = None,
+    request_id: Optional[str] = None,
+    **kwargs
+) -> dict:
+    """
+    Session-managed wrapper for GLM chat with automatic continuation support.
+
+    PHASE 2.2.3 (2025-10-21): Concurrent Request Handling
+    Refactored to use execute_with_session() helper per EXAI recommendation.
+
+    This function wraps chat_completions_create_with_continuation in a managed session
+    to enable concurrent request handling without blocking. Each request gets its own
+    isolated session with timeout handling and lifecycle tracking.
+
+    Args:
+        prompt: User prompt
+        system_prompt: Optional system prompt
+        model: Model name (default: glm-4.5-flash)
+        temperature: Temperature value
+        max_output_tokens: Maximum output tokens
+        tools: Optional list of tools
+        tool_choice: Optional tool choice
+        use_websearch: Whether to enable web search
+        enable_continuation: Whether to enable automatic continuation
+        max_continuation_attempts: Maximum continuation attempts
+        max_total_tokens: Maximum total tokens across continuations
+        timeout_seconds: Optional timeout override (default: 30s)
+        request_id: Optional request ID (generated if not provided)
+        **kwargs: Additional parameters
+
+    Returns:
+        Dictionary with provider, model, content, tool_calls, usage, raw, metadata,
+        and session context (session_id, request_id, duration_seconds)
+    """
+    session_manager = get_session_manager(default_timeout=timeout_seconds or 30.0)
+
+    def _execute_glm_chat():
+        """Internal function to execute GLM chat within session."""
+        return chat_completions_create_with_continuation(
+            prompt,
+            system_prompt=system_prompt,
+            model=model,
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            tools=tools,
+            tool_choice=tool_choice,
+            use_websearch=use_websearch,
+            enable_continuation=enable_continuation,
+            max_continuation_attempts=max_continuation_attempts,
+            max_total_tokens=max_total_tokens,
+            **kwargs
+        )
+
+    # Execute within managed session with automatic session context addition
+    return session_manager.execute_with_session(
+        provider="glm",
+        model=model,
+        func=_execute_glm_chat,
+        request_id=request_id,
+        timeout_seconds=timeout_seconds,
+        add_session_context=True
+    )
+
+
+def chat_completions_create_messages_with_session(
+    sdk_client: Any,
+    *,
+    model: str,
+    messages: list[dict[str, Any]],
+    tools: Optional[list[Any]] = None,
+    tool_choice: Optional[Any] = None,
+    temperature: float = 0.3,
+    timeout_seconds: Optional[float] = None,
+    request_id: Optional[str] = None,
+    **kwargs
+) -> dict:
+    """
+    Session-managed wrapper for GLM chat completions (message-based).
+
+    PHASE 2.2.4 (2025-10-21): Concurrent Request Handling
+    Provides session management for message-based chat completions.
+
+    This function wraps chat_completions_create in a managed session
+    to enable concurrent request handling without blocking. Each request gets its own
+    isolated session with timeout handling and lifecycle tracking.
+
+    Args:
+        sdk_client: ZhipuAI SDK client instance
+        model: Model name (already resolved)
+        messages: Pre-built message array in OpenAI format
+        tools: Optional list of tools for function calling
+        tool_choice: Optional tool choice directive
+        temperature: Temperature value (default: 0.3)
+        timeout_seconds: Optional timeout override (default: 30s)
+        request_id: Optional request ID (generated if not provided)
+        **kwargs: Additional parameters (stream, thinking_mode, etc.)
+
+    Returns:
+        Dictionary with provider, model, content, tool_calls, usage, raw, metadata,
+        and session context (session_id, request_id, duration_seconds)
+    """
+    from src.utils.concurrent_session_manager import get_session_manager
+
+    session_manager = get_session_manager(default_timeout=timeout_seconds or 30.0)
+
+    def _execute_glm_chat():
+        """Internal function to execute GLM chat within session."""
+        return chat_completions_create(
+            sdk_client,
+            model=model,
+            messages=messages,
+            tools=tools,
+            tool_choice=tool_choice,
+            temperature=temperature,
+            **kwargs
+        )
+
+    # Execute within managed session with automatic session context addition
+    return session_manager.execute_with_session(
+        provider="glm",
+        model=model,
+        func=_execute_glm_chat,
+        request_id=request_id,
+        timeout_seconds=timeout_seconds,
+        add_session_context=True
+    )
+
+
+__all__ = [
+    "build_payload",
+    "generate_content",
+    "chat_completions_create",
+    "chat_completions_create_with_continuation",
+    "chat_completions_create_with_session",
+    "chat_completions_create_messages_with_session"
+]
 

@@ -16,6 +16,9 @@ from utils.timezone_helper import log_timestamp
 from src.resilience.circuit_breaker_manager import circuit_breaker_manager
 import pybreaker
 
+# PHASE 2.2.3 (2025-10-21): Import concurrent session manager
+from src.utils.concurrent_session_manager import get_session_manager
+
 logger = logging.getLogger(__name__)
 
 
@@ -51,6 +54,7 @@ def chat_completions_create(
     tools: Optional[list[Any]] = None,
     tool_choice: Optional[Any] = None,
     temperature: float = 0.6,
+    max_output_tokens: Optional[int] = None,
     cache_id: Optional[str] = None,
     reset_cache_ttl: bool = False,
     **kwargs
@@ -159,6 +163,21 @@ def chat_completions_create(
                 "extra_headers": extra_headers,
             }
 
+            # PHASE 2.1.1.1 (2025-10-21): Model-aware max_tokens handling
+            from config import ENFORCE_MAX_TOKENS
+            from .model_config import validate_max_tokens
+
+            validated_max_tokens = validate_max_tokens(
+                model_name=model,
+                requested_max_tokens=max_output_tokens,
+                input_tokens=0,  # TODO: Add token counting for input
+                enforce_limits=ENFORCE_MAX_TOKENS
+            )
+
+            if validated_max_tokens is not None:
+                api_params["max_tokens"] = validated_max_tokens
+                logger.debug(f"Kimi API: Using max_tokens={validated_max_tokens} for model {model}")
+
             # PHASE 1 (2025-10-18): Wrap API call with circuit breaker
             @breaker
             def _kimi_api_call():
@@ -172,6 +191,39 @@ def chat_completions_create(
                 logger.debug(f"Failed to parse raw response, falling back to http_response attribute: {e}")
                 # Continue - fallback to http_response attribute
                 raw_payload = getattr(raw, "http_response", None)
+
+            # PHASE 2.1.2 (2025-10-21): Check for truncation and log to Supabase
+            try:
+                from src.utils.truncation_detector import (
+                    check_truncation,
+                    should_log_truncation,
+                    format_truncation_event,
+                    log_truncation_to_supabase_sync
+                )
+                if raw_payload:
+                    payload_dict = raw_payload.model_dump() if hasattr(raw_payload, 'model_dump') else (raw_payload if isinstance(raw_payload, dict) else {})
+                    truncation_info = check_truncation(payload_dict, model)
+
+                    if truncation_info.get('is_truncated'):
+                        logger.warning(f"⚠️ Truncated response detected for {model} (finish_reason=length)")
+
+                        # Log to Supabase for monitoring (backup/recovery - non-blocking)
+                        if should_log_truncation(truncation_info):
+                            # Extract tool_name and conversation_id from context if available
+                            tool_name = kwargs.get('tool_name')
+                            conversation_id = kwargs.get('continuation_id')
+
+                            # Format event for Supabase
+                            truncation_event = format_truncation_event(
+                                truncation_info,
+                                tool_name=tool_name,
+                                conversation_id=conversation_id
+                            )
+
+                            # Log synchronously (non-blocking, failures are acceptable)
+                            log_truncation_to_supabase_sync(truncation_event)
+            except Exception as trunc_err:
+                logger.debug(f"Truncation check error (non-critical): {trunc_err}")
             
             # Extract headers
             try:
@@ -221,8 +273,24 @@ def chat_completions_create(
                         f"Choice type: {type(choice0)}"
                     )
 
-                msg = getattr(choice0, "message", None) or choice0.get("message", {})
-                content_text = getattr(msg, "content", None) or msg.get("content", "")
+                # Extract message - handle both Pydantic objects and dicts
+                if hasattr(choice0, "message"):
+                    msg = choice0.message
+                elif isinstance(choice0, dict):
+                    msg = choice0.get("message", {})
+                else:
+                    msg = None
+
+                # Extract content - handle both Pydantic objects and dicts
+                if msg:
+                    if hasattr(msg, "content"):
+                        content_text = msg.content
+                    elif isinstance(msg, dict):
+                        content_text = msg.get("content", "")
+                    else:
+                        content_text = ""
+                else:
+                    content_text = ""
             except ValueError as e:
                 # Re-raise validation errors - these indicate API problems
                 logger.error(f"Kimi API response validation failed (model: {model}): {e}")
@@ -243,6 +311,21 @@ def chat_completions_create(
                 "stream": False,
                 "extra_headers": extra_headers,
             }
+
+            # PHASE 2.1.1.1 (2025-10-21): Model-aware max_tokens handling (fallback path)
+            from config import ENFORCE_MAX_TOKENS
+            from .model_config import validate_max_tokens
+
+            validated_max_tokens = validate_max_tokens(
+                model_name=model,
+                requested_max_tokens=max_output_tokens,
+                input_tokens=0,  # TODO: Add token counting for input
+                enforce_limits=ENFORCE_MAX_TOKENS
+            )
+
+            if validated_max_tokens is not None:
+                api_params["max_tokens"] = validated_max_tokens
+                logger.debug(f"Kimi API (fallback): Using max_tokens={validated_max_tokens} for model {model}")
 
             # PHASE 1 (2025-10-18): Wrap fallback API call with circuit breaker
             @breaker
@@ -410,5 +493,217 @@ def chat_completions_create(
     }
 
 
-__all__ = ["prefix_hash", "chat_completions_create"]
+def chat_completions_create_with_continuation(
+    client: Any,
+    *,
+    model: str,
+    messages: list[dict[str, Any]],
+    tools: Optional[list[Any]] = None,
+    tool_choice: Optional[Any] = None,
+    temperature: float = 0.6,
+    max_output_tokens: Optional[int] = None,
+    cache_id: Optional[str] = None,
+    reset_cache_ttl: bool = False,
+    enable_continuation: bool = True,
+    max_continuation_attempts: int = 3,
+    max_total_tokens: int = 32000,
+    **kwargs
+) -> dict:
+    """
+    Wrapper for chat_completions_create with automatic continuation support.
+
+    PHASE 2.1.3 (2025-10-21): Automatic Continuation
+
+    This function automatically detects truncated responses and continues them
+    until completion or max attempts reached.
+
+    Args:
+        client: OpenAI-compatible client instance
+        model: Model name
+        messages: List of message dictionaries
+        tools: Optional list of tools
+        tool_choice: Optional tool choice
+        temperature: Temperature value
+        max_output_tokens: Maximum output tokens per request
+        cache_id: Optional cache identifier
+        reset_cache_ttl: Whether to reset cache TTL
+        enable_continuation: Whether to enable automatic continuation (default: True)
+        max_continuation_attempts: Maximum continuation attempts (default: 3)
+        max_total_tokens: Maximum cumulative tokens across continuations (default: 32000)
+        **kwargs: Additional parameters
+
+    Returns:
+        Dictionary with provider, model, content, tool_calls, usage, raw, and metadata
+    """
+    # Call the base function
+    initial_response = chat_completions_create(
+        client,
+        model=model,
+        messages=messages,
+        tools=tools,
+        tool_choice=tool_choice,
+        temperature=temperature,
+        max_output_tokens=max_output_tokens,
+        cache_id=cache_id,
+        reset_cache_ttl=reset_cache_ttl,
+        **kwargs
+    )
+
+    # If continuation is disabled, return as-is
+    if not enable_continuation:
+        return initial_response
+
+    # Check if response was truncated
+    try:
+        from src.utils.truncation_detector import check_truncation
+        from src.utils.continuation_manager import get_continuation_manager
+
+        # Check for truncation
+        truncation_info = check_truncation(initial_response.get('raw', {}), model)
+
+        if not truncation_info.get('is_truncated'):
+            # Not truncated, return as-is
+            return initial_response
+
+        logger.info(f"🔄 Truncated response detected for {model}, starting continuation...")
+
+        # Get continuation manager
+        continuation_manager = get_continuation_manager()
+
+        # Prepare provider callable
+        def provider_callable(cont_messages, **cont_kwargs):
+            return chat_completions_create(
+                client,
+                model=model,
+                messages=cont_messages,
+                tools=tools,
+                tool_choice=tool_choice,
+                temperature=temperature,
+                max_output_tokens=max_output_tokens,
+                cache_id=cache_id,
+                reset_cache_ttl=reset_cache_ttl,
+                **cont_kwargs
+            )
+
+        # Continue the response
+        continuation_result = continuation_manager.continue_response_sync(
+            original_messages=messages,
+            initial_response=initial_response.get('raw', {}),
+            provider_callable=provider_callable,
+            model=model,
+            max_continuation_attempts=max_continuation_attempts,
+            max_total_tokens=max_total_tokens,
+            **kwargs
+        )
+
+        # Merge the continuation result back into the response format
+        if continuation_result.complete_response:
+            initial_response['content'] = continuation_result.complete_response
+            initial_response['metadata']['continuation'] = {
+                'enabled': True,
+                'attempts': continuation_result.attempts_made,
+                'total_tokens': continuation_result.total_tokens_used,
+                'is_complete': continuation_result.is_complete,
+                'was_truncated': continuation_result.was_truncated,
+                'error': continuation_result.error_message
+            }
+            logger.info(
+                f"✅ Continuation complete: {continuation_result.attempts_made} attempts, "
+                f"{continuation_result.total_tokens_used} tokens"
+            )
+
+        return initial_response
+
+    except Exception as cont_err:
+        logger.warning(f"Continuation failed (non-critical): {cont_err}")
+        # Return original response if continuation fails
+        return initial_response
+
+
+def chat_completions_create_with_session(
+    client: Any,
+    *,
+    model: str,
+    messages: list[dict[str, Any]],
+    tools: Optional[list[Any]] = None,
+    tool_choice: Optional[Any] = None,
+    temperature: float = 0.6,
+    max_output_tokens: Optional[int] = None,
+    cache_id: Optional[str] = None,
+    reset_cache_ttl: bool = False,
+    enable_continuation: bool = True,
+    max_continuation_attempts: int = 3,
+    max_total_tokens: int = 32000,
+    timeout_seconds: Optional[float] = None,
+    request_id: Optional[str] = None,
+    **kwargs
+) -> dict:
+    """
+    Session-managed wrapper for Kimi chat with automatic continuation support.
+
+    PHASE 2.2.3 (2025-10-21): Concurrent Request Handling
+    Refactored to use execute_with_session() helper per EXAI recommendation.
+
+    This function wraps chat_completions_create_with_continuation in a managed session
+    to enable concurrent request handling without blocking. Each request gets its own
+    isolated session with timeout handling and lifecycle tracking.
+
+    Args:
+        client: OpenAI-compatible client instance
+        model: Model name
+        messages: List of message dictionaries
+        tools: Optional list of tools
+        tool_choice: Optional tool choice
+        temperature: Temperature value
+        max_output_tokens: Maximum output tokens
+        cache_id: Optional cache identifier for Moonshot context caching
+        reset_cache_ttl: Whether to reset cache TTL
+        enable_continuation: Whether to enable automatic continuation
+        max_continuation_attempts: Maximum continuation attempts
+        max_total_tokens: Maximum total tokens across continuations
+        timeout_seconds: Optional timeout override (default: 30s)
+        request_id: Optional request ID (generated if not provided)
+        **kwargs: Additional parameters
+
+    Returns:
+        Dictionary with provider, model, content, tool_calls, usage, raw, metadata,
+        and session context (session_id, request_id, duration_seconds)
+    """
+    session_manager = get_session_manager(default_timeout=timeout_seconds or 30.0)
+
+    def _execute_kimi_chat():
+        """Internal function to execute Kimi chat within session."""
+        return chat_completions_create_with_continuation(
+            client,
+            model=model,
+            messages=messages,
+            tools=tools,
+            tool_choice=tool_choice,
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            cache_id=cache_id,
+            reset_cache_ttl=reset_cache_ttl,
+            enable_continuation=enable_continuation,
+            max_continuation_attempts=max_continuation_attempts,
+            max_total_tokens=max_total_tokens,
+            **kwargs
+        )
+
+    # Execute within managed session with automatic session context addition
+    return session_manager.execute_with_session(
+        provider="kimi",
+        model=model,
+        func=_execute_kimi_chat,
+        request_id=request_id,
+        timeout_seconds=timeout_seconds,
+        add_session_context=True
+    )
+
+
+__all__ = [
+    "prefix_hash",
+    "chat_completions_create",
+    "chat_completions_create_with_continuation",
+    "chat_completions_create_with_session"
+]
 

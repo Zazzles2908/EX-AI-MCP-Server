@@ -109,9 +109,12 @@ class KimiModelProvider(OpenAICompatibleProvider):
         return kimi_chat.prefix_hash(messages)
 
     def chat_completions_create(self, *, model: str, messages: list[dict[str, Any]], tools: Optional[list[Any]] = None, tool_choice: Optional[Any] = None, temperature: float = 0.6, **kwargs) -> dict:
-        """Wrapper that injects idempotency and Kimi context-cache headers, captures cache token, and returns normalized dict.
         """
-        return kimi_chat.chat_completions_create(
+        Wrapper that injects idempotency and Kimi context-cache headers, captures cache token, and returns normalized dict.
+
+        PHASE 2.2.4 (2025-10-21): Updated to use session-managed wrapper for concurrent request handling.
+        """
+        return kimi_chat.chat_completions_create_with_session(
             self.client,
             model=model,
             messages=messages,

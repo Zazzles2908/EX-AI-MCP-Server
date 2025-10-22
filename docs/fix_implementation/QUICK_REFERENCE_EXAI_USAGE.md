@@ -38,13 +38,40 @@
 
 ### Tool Call Template
 
+**⚠️ CRITICAL: ALWAYS Use `files` Parameter - Never Paste Code!**
+
+**Token Efficiency Rule:**
+- ✅ **CORRECT:** Use `files=["path/to/file.py"]` parameter (saves 70-80% tokens)
+- ❌ **WRONG:** Paste code in prompt (wastes 4-6x more tokens)
+
 **SAFEST OPTION (Recommended):**
 ```python
 chat_EXAI-WS(
     prompt="I need help debugging X. Here's what I know: [detailed context]",
-    files=["c:\\Project\\EX-AI-MCP-Server\\path\\to\\file.py"],
+    files=["c:\\Project\\EX-AI-MCP-Server\\path\\to\\file.py"],  # ✅ Use files parameter!
     model="glm-4.6",
     use_websearch=false
+)
+
+# ❌ NEVER DO THIS:
+chat_EXAI-WS(
+    prompt="""
+    Here's the code:
+    ```python
+    [pasted code]  # ❌ Wastes tokens!
+    ```
+    """
+)
+```
+
+**For Large Files (>5KB):**
+```python
+# Step 1: Upload
+kimi_upload_files(files=["c:\\Project\\EX-AI-MCP-Server\\large_file.py"])
+# Step 2: Chat with uploaded file
+kimi_chat_with_files(
+    prompt="Please review...",
+    file_ids=["file-xxx"]
 )
 ```
 
@@ -54,7 +81,7 @@ debug_EXAI-WS(
     step="What you're investigating",
     findings="What you've discovered so far",
     hypothesis="Your theory about the cause",
-    relevant_files=["c:\\Project\\EX-AI-MCP-Server\\path\\to\\file.py"],
+    relevant_files=["c:\\Project\\EX-AI-MCP-Server\\path\\to\\file.py"],  # ✅ Use relevant_files!
     model="glm-4.6",
     confidence="certain",  # ⚠️ Set to "certain" when done to force early termination!
     use_websearch=false

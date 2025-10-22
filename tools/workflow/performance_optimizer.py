@@ -202,14 +202,21 @@ def reset_performance_optimizer():
     _performance_optimizer = None
 
 
-# Additional utility: LRU cache for expensive computations
-@lru_cache(maxsize=256)
+# PHASE 2.3.2 (2025-10-22): Migrated to use centralized path normalization
+# This function is now a wrapper around CrossPlatformPathHandler for backward compatibility
+# NOTE: Caching is handled by CrossPlatformPathHandler.normalize_path_cached() - no double caching
 def normalize_path(path: str) -> str:
     """
-    Normalize a file path (with caching).
+    Normalize a file path using the canonical CrossPlatformPathHandler.
 
+    PHASE 2.3.2 (2025-10-22): Migrated to use centralized path normalization
     CRITICAL FIX (2025-10-19): Docker-aware path normalization
-    Converts Windows paths to Docker container paths when running in Docker.
+
+    This function is now a thin wrapper around CrossPlatformPathHandler
+    for backward compatibility. New code should use get_path_handler() directly.
+
+    NOTE: Caching is handled by the underlying CrossPlatformPathHandler.normalize_path_cached()
+    to avoid double caching and memory waste.
 
     Examples:
         Windows: c:\Project\EX-AI-MCP-Server\src\file.py -> /app/src/file.py
@@ -222,45 +229,19 @@ def normalize_path(path: str) -> str:
     Returns:
         Normalized absolute path (Docker-aware)
     """
-    import os
-    import re
+    from utils.file.cross_platform import get_path_handler
 
-    # Check if running in Docker (presence of /app directory)
-    is_docker = os.path.exists('/app')
+    # Use the canonical path handler with caching
+    handler = get_path_handler()
+    normalized_path, was_converted, error = handler.normalize_path_cached(path)
 
-    if is_docker:
-        # Running in Docker - convert Windows paths to Docker paths
+    if error:
+        # Log warning but return best-effort normalization
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Path normalization warning: {error}")
 
-        # Pattern 1: Windows absolute path (e.g., c:\Project\EX-AI-MCP-Server\src\file.py)
-        if re.match(r'^[a-zA-Z]:[\\\/]', path):
-            # CRITICAL FIX (2025-10-19): Convert backslashes to forward slashes BEFORE regex matching
-            # This ensures the regex pattern works correctly with Windows paths
-            normalized_path = path.replace('\\', '/')
-
-            # Extract the part after EX-AI-MCP-Server
-            match = re.search(r'EX-AI-MCP-Server/(.+)$', normalized_path)
-            if match:
-                relative_path = match.group(1)
-                return f'/app/{relative_path}'
-            else:
-                # Fallback: strip drive letter and convert backslashes
-                path_without_drive = re.sub(r'^[a-zA-Z]:[/]', '', normalized_path)
-                return f'/app/{path_without_drive}'
-
-        # Pattern 2: Already a Docker path (e.g., /app/src/file.py)
-        if path.startswith('/app/'):
-            return path
-
-        # Pattern 3: Relative path (e.g., src/file.py)
-        if not path.startswith('/'):
-            return f'/app/{path.replace(chr(92), "/")}'  # chr(92) is backslash
-
-        # Pattern 4: Absolute Linux path (e.g., /home/user/file.py)
-        # Assume it's meant to be relative to /app
-        return path
-    else:
-        # Not in Docker - use standard path resolution
-        return str(Path(path).resolve())
+    return normalized_path
 
 
 @lru_cache(maxsize=128)

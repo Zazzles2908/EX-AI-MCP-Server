@@ -9,7 +9,7 @@ import logging
 from typing import Any, Optional
 
 from .base import ModelResponse, ProviderType
-from .glm_chat import build_payload, generate_content  # Reuse sync implementation
+from .glm_chat import build_payload, generate_content, chat_completions_create  # Reuse sync implementation
 
 logger = logging.getLogger(__name__)
 
@@ -67,4 +67,53 @@ async def generate_content_async(
     )
 # That's it! The entire async implementation is just wrapping the sync function with asyncio.to_thread()
 # No need to duplicate all the streaming/non-streaming logic - it's already in glm_chat.generate_content()
+
+
+async def chat_completions_create_async(
+    client: Any,  # ZhipuAI instance (sync client)
+    model: str,
+    messages: list[dict],
+    temperature: float = 0.3,
+    thinking_mode: Optional[str] = None,
+    **kwargs,
+) -> ModelResponse:
+    """Create chat completion asynchronously using message arrays (for expert_analysis compatibility).
+
+    This wraps the sync chat_completions_create with asyncio.to_thread() for async execution.
+
+    Args:
+        client: ZhipuAI SDK client instance (sync)
+        model: Model name to use
+        messages: List of message dictionaries with 'role' and 'content'
+        temperature: Sampling temperature (0-2)
+        thinking_mode: Optional thinking mode for supported models
+        **kwargs: Additional provider-specific parameters
+
+    Returns:
+        ModelResponse with generated content and metadata
+
+    Raises:
+        RuntimeError: If chat completion fails
+    """
+    logger.debug(f"Async GLM chat_completions_create called for model {model}")
+
+    # Use asyncio.to_thread() to run sync chat_completions_create in thread pool
+    result_dict = await asyncio.to_thread(
+        chat_completions_create,
+        sdk_client=client,
+        model=model,
+        messages=messages,
+        temperature=temperature,
+        thinking_mode=thinking_mode,
+        **kwargs
+    )
+
+    # Convert dict result to ModelResponse for consistency with other async providers
+    return ModelResponse(
+        content=result_dict.get("content", ""),
+        model_name=result_dict.get("model", model),
+        provider=ProviderType.GLM,  # FIXED: Changed from provider_type to provider
+        usage=result_dict.get("usage"),
+        metadata=result_dict.get("metadata", {}),
+    )
 

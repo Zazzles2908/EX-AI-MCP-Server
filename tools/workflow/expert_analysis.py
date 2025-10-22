@@ -480,10 +480,42 @@ class ExpertAnalysisMixin:
             base_system_prompt = self.get_system_prompt()
             language_instruction = self.get_language_instruction()
             system_prompt = language_instruction + base_system_prompt
-            
+
+            # CRITICAL FIX (2025-10-21): Strengthen JSON enforcement with explicit schema
+            # EXAI INSIGHT: Previous enforcement was too weak - models still returned conversational text
+            # Solution: Provide explicit JSON schema and examples
+            json_enforcement = (
+                "\n\n" + "="*80 + "\n"
+                "CRITICAL OUTPUT FORMAT REQUIREMENT - READ CAREFULLY\n"
+                "="*80 + "\n\n"
+                "You MUST respond with ONLY a valid JSON object. No other text is allowed.\n\n"
+                "REQUIRED JSON SCHEMA:\n"
+                "{\n"
+                '  "analysis": "Your detailed analysis here",\n'
+                '  "key_findings": ["Finding 1", "Finding 2", "Finding 3"],\n'
+                '  "recommendations": ["Recommendation 1", "Recommendation 2"],\n'
+                '  "confidence": "high|medium|low",\n'
+                '  "needs_more_info": false,\n'
+                '  "additional_context": "Optional: what additional info would help"\n'
+                "}\n\n"
+                "STRICT RULES:\n"
+                "1. Output ONLY the JSON object - no markdown code blocks (no ```json)\n"
+                "2. No explanatory text before or after the JSON\n"
+                "3. No conversational responses like 'I need more information...'\n"
+                "4. If you need files, set needs_more_info=true and specify in additional_context\n"
+                "5. All text must be inside the JSON structure\n\n"
+                "EXAMPLE VALID OUTPUT:\n"
+                '{"analysis": "The code shows...", "key_findings": ["Issue 1", "Issue 2"], '
+                '"recommendations": ["Fix 1", "Fix 2"], "confidence": "high", "needs_more_info": false}\n\n'
+                "EXAMPLE INVALID OUTPUT (DO NOT DO THIS):\n"
+                "I need more information to continue... ❌ WRONG\n"
+                "```json\\n{...}\\n``` ❌ WRONG\n"
+                "Let me analyze this... ❌ WRONG\n"
+            )
+
             # Check if tool wants system prompt embedded in main prompt
             if self.should_embed_system_prompt():
-                prompt = f"{system_prompt}\n\n{expert_context}\n\n{self.get_expert_analysis_instruction()}"
+                prompt = f"{system_prompt}{json_enforcement}\n\n{expert_context}\n\n{self.get_expert_analysis_instruction()}"
                 system_prompt = ""  # Clear it since we embedded it
             else:
                 prompt = expert_context
@@ -819,8 +851,31 @@ class ExpertAnalysisMixin:
                     response_preview = model_response.content[:500] if len(model_response.content) > 500 else model_response.content
                     logger.debug(f"[EXPERT_ANALYSIS_DEBUG] Raw response preview (first 500 chars): {response_preview}")
 
-                    analysis_result = json.loads(model_response.content.strip())
-                    logger.info(f"Successfully parsed JSON response, caching and returning analysis_result")
+                    # EXAI INSIGHT (2025-10-21): Try to extract JSON even if wrapped in markdown
+                    content = model_response.content.strip()
+
+                    # Try direct parse first
+                    try:
+                        analysis_result = json.loads(content)
+                        logger.info(f"Successfully parsed JSON response (direct parse)")
+                    except json.JSONDecodeError:
+                        # Try to extract JSON from markdown code blocks
+                        import re
+                        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
+                        if json_match:
+                            logger.info(f"Found JSON wrapped in markdown, extracting...")
+                            analysis_result = json.loads(json_match.group(1))
+                            logger.info(f"Successfully parsed JSON response (extracted from markdown)")
+                        else:
+                            # Try to find any JSON object in the response
+                            json_match = re.search(r'\{.*\}', content, re.DOTALL)
+                            if json_match:
+                                logger.info(f"Found JSON object in response, extracting...")
+                                analysis_result = json.loads(json_match.group(0))
+                                logger.info(f"Successfully parsed JSON response (extracted from text)")
+                            else:
+                                raise json.JSONDecodeError("No JSON found in response", content, 0)
+
                     result = analysis_result
                 except json.JSONDecodeError as json_err:
                     # Enhanced logging for JSON parse errors

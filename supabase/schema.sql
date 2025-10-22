@@ -36,12 +36,14 @@ CREATE TABLE messages (
   role message_role NOT NULL,
   content TEXT NOT NULL,
   metadata JSONB DEFAULT '{}',
+  idempotency_key TEXT UNIQUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 COMMENT ON TABLE messages IS 'Stores individual messages within conversations';
 COMMENT ON COLUMN messages.role IS 'Message sender: user, assistant, or system';
 COMMENT ON COLUMN messages.metadata IS 'Stores model used, tokens, thinking mode, etc.';
+COMMENT ON COLUMN messages.idempotency_key IS 'SHA-256 hash for deduplication: hash(conversation_id:role:content:timestamp)';
 
 -- ============================================================================
 -- FILES TABLE
