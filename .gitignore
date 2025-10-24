@@ -210,3 +210,7 @@ tool_validation_suite/tests/
 # Supabase MCP Configuration - DO NOT COMMIT
 # Contains project-specific Supabase credentials
 supabase/supabase_mcp/supabase_mcp_config.json
+
+# MCP Configuration - DO NOT COMMIT
+# Contains MCP server configuration with access tokens
+config/mcp_config.json

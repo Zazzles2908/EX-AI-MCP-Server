@@ -316,12 +316,14 @@ class ConcurrentSessionManager:
         request_id: Optional[str] = None,
         timeout_seconds: Optional[float] = None,
         add_session_context: bool = True,
+        enforce_timeout: bool = True,
         **kwargs
     ) -> Any:
         """
         Execute a function within a managed session.
 
         PHASE 2.2.3 (2025-10-21): Enhanced to optionally add session context to result
+        PHASE 0.3 (2025-10-24): Added timeout enforcement to prevent provider hangs
 
         Args:
             provider: Provider name
@@ -331,6 +333,7 @@ class ConcurrentSessionManager:
             request_id: Optional request ID
             timeout_seconds: Optional timeout override
             add_session_context: If True and result is dict, adds session metadata
+            enforce_timeout: If True, actively enforce timeout (default: True)
             **kwargs: Keyword arguments for func
 
         Returns:
@@ -345,9 +348,41 @@ class ConcurrentSessionManager:
         try:
             session = self.create_session(provider, model, request_id, timeout_seconds)
             session.start()
-            _logger.debug(f"Executing function in session {session.session_id}")
+            _logger.debug(f"Executing function in session {session.session_id} (timeout: {session.timeout_seconds}s, enforce: {enforce_timeout})")
 
-            result = func(*args, **kwargs)
+            # PHASE 0.3 (2025-10-24): Add timeout enforcement
+            if enforce_timeout and session.timeout_seconds:
+                result_container = {'result': None, 'exception': None, 'completed': False}
+
+                def execute_func():
+                    try:
+                        result_container['result'] = func(*args, **kwargs)
+                        result_container['completed'] = True
+                    except Exception as e:
+                        result_container['exception'] = e
+                        result_container['completed'] = True
+
+                # Execute in thread with timeout monitoring
+                exec_thread = threading.Thread(target=execute_func, daemon=True)
+                exec_thread.start()
+                exec_thread.join(timeout=session.timeout_seconds)
+
+                if not result_container['completed']:
+                    # Timeout occurred
+                    session.timeout()
+                    log_request_timeout(session.request_id, session.timeout_seconds, session_id=session.session_id)
+                    raise TimeoutError(
+                        f"{provider} provider timeout after {session.timeout_seconds}s "
+                        f"(session: {session.session_id})"
+                    )
+
+                if result_container['exception']:
+                    raise result_container['exception']
+
+                result = result_container['result']
+            else:
+                # No timeout enforcement - execute directly
+                result = func(*args, **kwargs)
 
             session.complete(result)
             log_request_completed(session.request_id, session_id=session.session_id)

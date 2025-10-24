@@ -66,8 +66,9 @@ class FileEmbeddingMixin:
                 continuation_id = current_arguments.get("continuation_id")
                 
                 if continuation_id:
-                    from utils.conversation.memory import get_conversation_file_list, get_thread
-                    
+                    from utils.conversation.global_storage import get_thread
+                    from utils.conversation.memory import get_conversation_file_list
+
                     thread_context = get_thread(continuation_id)
                     if thread_context:
                         # Get all files from conversation (these were relevant_files in previous steps)

@@ -135,7 +135,7 @@ class GLMUploadFileTool(BaseTool):
                 pass
             raise
 
-    async def execute(self, arguments: dict[str, Any]) -> list["TextContent"]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list["TextContent"]:
         import asyncio as _aio
         from mcp.types import TextContent
         result = await _aio.to_thread(self.run, **arguments)
@@ -214,7 +214,7 @@ class GLMMultiFileChatTool(BaseTool):
         return {"model": model, "content": mr.content, "uploaded": uploaded}
 
 
-    async def execute(self, arguments: dict[str, Any]) -> list["TextContent"]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list["TextContent"]:
         import asyncio as _aio
         from mcp.types import TextContent
         from tools.shared.error_envelope import make_error_envelope

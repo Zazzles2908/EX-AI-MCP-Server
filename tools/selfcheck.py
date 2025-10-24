@@ -65,7 +65,7 @@ class SelfCheckTool(BaseTool):
     def format_response(self, response: str, request: ToolRequest, model_info: dict | None = None) -> str:
         return response
 
-    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list[TextContent]:
         from src.providers.registry import ModelProviderRegistry
 
         log_lines = int(arguments.get("log_lines") or 40)

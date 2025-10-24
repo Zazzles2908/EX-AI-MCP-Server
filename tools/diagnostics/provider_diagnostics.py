@@ -176,7 +176,7 @@ class ProviderDiagnosticsTool(BaseTool):
         
         return result
     
-    async def execute(self, arguments: Dict[str, Any]) -> List[TextContent]:
+    async def execute(self, arguments: Dict[str, Any], on_chunk=None) -> List[TextContent]:
         """Execute provider diagnostics."""
         provider_filter = arguments.get("provider", "all")
         include_test = arguments.get("include_test_call", False)

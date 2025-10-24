@@ -1,0 +1,2728 @@
+{
+  "baseline_version": "0.3.0",
+  "timestamp": "2025-10-24T12:24:02.852543+00:00",
+  "total_executions": 310,
+  "duration_seconds": 130.4953727722168,
+  "results": [
+    {
+      "tool_name": "chat",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 6063.57,
+      "timestamp": "2025-10-24T12:24:08.930146+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 362.79,
+      "timestamp": "2025-10-24T12:24:09.293072+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 360.06,
+      "timestamp": "2025-10-24T12:24:09.653257+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 347.65,
+      "timestamp": "2025-10-24T12:24:10.001021+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 363.92,
+      "timestamp": "2025-10-24T12:24:10.365115+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 343.74,
+      "timestamp": "2025-10-24T12:24:10.708968+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 329.04,
+      "timestamp": "2025-10-24T12:24:11.038131+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 345.18,
+      "timestamp": "2025-10-24T12:24:11.383434+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 401.9,
+      "timestamp": "2025-10-24T12:24:11.785458+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 395.37,
+      "timestamp": "2025-10-24T12:24:12.180977+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 8.0,
+      "timestamp": "2025-10-24T12:24:12.189262+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 3.51,
+      "timestamp": "2025-10-24T12:24:12.192878+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 2.82,
+      "timestamp": "2025-10-24T12:24:12.195778+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 6.28,
+      "timestamp": "2025-10-24T12:24:12.202136+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 8.16,
+      "timestamp": "2025-10-24T12:24:12.210399+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 4.36,
+      "timestamp": "2025-10-24T12:24:12.214961+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 10.2,
+      "timestamp": "2025-10-24T12:24:12.225246+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 3.04,
+      "timestamp": "2025-10-24T12:24:12.228374+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 3.65,
+      "timestamp": "2025-10-24T12:24:12.232097+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 3.15,
+      "timestamp": "2025-10-24T12:24:12.235323+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 8.5,
+      "timestamp": "2025-10-24T12:24:12.243965+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 3.97,
+      "timestamp": "2025-10-24T12:24:12.248166+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 2.83,
+      "timestamp": "2025-10-24T12:24:12.251072+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 3.05,
+      "timestamp": "2025-10-24T12:24:12.254197+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 2.88,
+      "timestamp": "2025-10-24T12:24:12.257158+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 6.74,
+      "timestamp": "2025-10-24T12:24:12.263993+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 11.98,
+      "timestamp": "2025-10-24T12:24:12.276081+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 7.99,
+      "timestamp": "2025-10-24T12:24:12.284166+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 4.18,
+      "timestamp": "2025-10-24T12:24:12.288448+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 7.93,
+      "timestamp": "2025-10-24T12:24:12.296470+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 9.38,
+      "timestamp": "2025-10-24T12:24:12.306051+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 3.89,
+      "timestamp": "2025-10-24T12:24:12.310028+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 2.41,
+      "timestamp": "2025-10-24T12:24:12.312503+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 4.63,
+      "timestamp": "2025-10-24T12:24:12.317208+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 3.27,
+      "timestamp": "2025-10-24T12:24:12.320576+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 8.94,
+      "timestamp": "2025-10-24T12:24:12.329610+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 3.25,
+      "timestamp": "2025-10-24T12:24:12.332965+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 3.87,
+      "timestamp": "2025-10-24T12:24:12.336907+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 3.29,
+      "timestamp": "2025-10-24T12:24:12.340281+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 5.4,
+      "timestamp": "2025-10-24T12:24:12.345762+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 5.08,
+      "timestamp": "2025-10-24T12:24:12.350992+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 2.64,
+      "timestamp": "2025-10-24T12:24:12.353729+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 5.14,
+      "timestamp": "2025-10-24T12:24:12.358933+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 3.06,
+      "timestamp": "2025-10-24T12:24:12.362091+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 8.97,
+      "timestamp": "2025-10-24T12:24:12.371114+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 7.21,
+      "timestamp": "2025-10-24T12:24:12.378431+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 3.83,
+      "timestamp": "2025-10-24T12:24:12.382355+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 11.15,
+      "timestamp": "2025-10-24T12:24:12.393583+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 2.65,
+      "timestamp": "2025-10-24T12:24:12.396311+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 2.83,
+      "timestamp": "2025-10-24T12:24:12.399219+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 2.85,
+      "timestamp": "2025-10-24T12:24:12.402244+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 10.34,
+      "timestamp": "2025-10-24T12:24:12.412657+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 3.39,
+      "timestamp": "2025-10-24T12:24:12.416269+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 3.46,
+      "timestamp": "2025-10-24T12:24:12.419806+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 3.22,
+      "timestamp": "2025-10-24T12:24:12.423101+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 9.4,
+      "timestamp": "2025-10-24T12:24:12.432572+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 10.39,
+      "timestamp": "2025-10-24T12:24:12.443123+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 9.84,
+      "timestamp": "2025-10-24T12:24:12.453043+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 3.64,
+      "timestamp": "2025-10-24T12:24:12.456765+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 5.34,
+      "timestamp": "2025-10-24T12:24:12.462200+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 12.75,
+      "timestamp": "2025-10-24T12:24:12.475089+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 30011.91,
+      "timestamp": "2025-10-24T12:24:42.487108+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Tool execution timeout after 30.0s"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 8.85,
+      "timestamp": "2025-10-24T12:24:42.496040+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 2.98,
+      "timestamp": "2025-10-24T12:24:42.499092+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 2.39,
+      "timestamp": "2025-10-24T12:24:42.501542+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 11.24,
+      "timestamp": "2025-10-24T12:24:42.512854+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 3.76,
+      "timestamp": "2025-10-24T12:24:42.516698+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 3.48,
+      "timestamp": "2025-10-24T12:24:42.520281+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 2.54,
+      "timestamp": "2025-10-24T12:24:42.522904+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 4.58,
+      "timestamp": "2025-10-24T12:24:42.527547+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 7.1,
+      "timestamp": "2025-10-24T12:24:42.534895+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 3.41,
+      "timestamp": "2025-10-24T12:24:42.538399+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 2.62,
+      "timestamp": "2025-10-24T12:24:42.541099+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 8.88,
+      "timestamp": "2025-10-24T12:24:42.550053+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 4.79,
+      "timestamp": "2025-10-24T12:24:42.554929+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 3.16,
+      "timestamp": "2025-10-24T12:24:42.558180+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 3.99,
+      "timestamp": "2025-10-24T12:24:42.562255+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 2.57,
+      "timestamp": "2025-10-24T12:24:42.564909+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 4.24,
+      "timestamp": "2025-10-24T12:24:42.569228+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 2.43,
+      "timestamp": "2025-10-24T12:24:42.571735+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:24:42.571909+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:24:42.571988+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:24:42.572082+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:24:42.572170+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:24:42.572236+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:24:42.572303+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:24:42.572380+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:24:42.572453+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:24:42.572517+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:24:42.572587+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 2.92,
+      "timestamp": "2025-10-24T12:24:42.575632+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: StatusTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 2.92,
+      "timestamp": "2025-10-24T12:24:42.578621+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: StatusTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 4.58,
+      "timestamp": "2025-10-24T12:24:42.583263+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: StatusTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 4.85,
+      "timestamp": "2025-10-24T12:24:42.588172+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: StatusTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 13.78,
+      "timestamp": "2025-10-24T12:24:42.602032+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: StatusTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 3.05,
+      "timestamp": "2025-10-24T12:24:42.605184+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: StatusTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 7.2,
+      "timestamp": "2025-10-24T12:24:42.612453+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: StatusTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 7.19,
+      "timestamp": "2025-10-24T12:24:42.619720+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: StatusTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 2.9,
+      "timestamp": "2025-10-24T12:24:42.622691+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: StatusTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 8.03,
+      "timestamp": "2025-10-24T12:24:42.630888+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: StatusTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 5.99,
+      "timestamp": "2025-10-24T12:24:42.637130+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 2.8,
+      "timestamp": "2025-10-24T12:24:42.639996+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 10.17,
+      "timestamp": "2025-10-24T12:24:42.650238+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 3.19,
+      "timestamp": "2025-10-24T12:24:42.653587+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 3.64,
+      "timestamp": "2025-10-24T12:24:42.657326+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 3.01,
+      "timestamp": "2025-10-24T12:24:42.660392+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 9.35,
+      "timestamp": "2025-10-24T12:24:42.669800+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 10.37,
+      "timestamp": "2025-10-24T12:24:42.680307+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 2.66,
+      "timestamp": "2025-10-24T12:24:42.683040+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 5.94,
+      "timestamp": "2025-10-24T12:24:42.689066+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 5.58,
+      "timestamp": "2025-10-24T12:24:42.694931+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 3.11,
+      "timestamp": "2025-10-24T12:24:42.698133+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 2.74,
+      "timestamp": "2025-10-24T12:24:42.700951+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 2.59,
+      "timestamp": "2025-10-24T12:24:42.703630+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 4.06,
+      "timestamp": "2025-10-24T12:24:42.707776+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 2.95,
+      "timestamp": "2025-10-24T12:24:42.710814+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 5.89,
+      "timestamp": "2025-10-24T12:24:42.716789+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 3.75,
+      "timestamp": "2025-10-24T12:24:42.720631+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 2.46,
+      "timestamp": "2025-10-24T12:24:42.723164+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 5.47,
+      "timestamp": "2025-10-24T12:24:42.728717+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 2.97,
+      "timestamp": "2025-10-24T12:24:42.731897+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 5.01,
+      "timestamp": "2025-10-24T12:24:42.736979+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 2.93,
+      "timestamp": "2025-10-24T12:24:42.739998+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 30012.07,
+      "timestamp": "2025-10-24T12:25:12.752135+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Tool execution timeout after 30.0s"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 3.92,
+      "timestamp": "2025-10-24T12:25:12.756121+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 3.99,
+      "timestamp": "2025-10-24T12:25:12.760180+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 4.27,
+      "timestamp": "2025-10-24T12:25:12.764538+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 2.81,
+      "timestamp": "2025-10-24T12:25:12.767419+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 3.61,
+      "timestamp": "2025-10-24T12:25:12.771099+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 3.03,
+      "timestamp": "2025-10-24T12:25:12.774196+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 4.87,
+      "timestamp": "2025-10-24T12:25:12.779240+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 6.25,
+      "timestamp": "2025-10-24T12:25:12.785564+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 23.33,
+      "timestamp": "2025-10-24T12:25:12.808992+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 4.42,
+      "timestamp": "2025-10-24T12:25:12.813503+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 3.19,
+      "timestamp": "2025-10-24T12:25:12.816768+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 2.54,
+      "timestamp": "2025-10-24T12:25:12.819382+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 2.65,
+      "timestamp": "2025-10-24T12:25:12.822099+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 5.86,
+      "timestamp": "2025-10-24T12:25:12.828033+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 3.37,
+      "timestamp": "2025-10-24T12:25:12.831482+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 4.51,
+      "timestamp": "2025-10-24T12:25:12.836087+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 6.19,
+      "timestamp": "2025-10-24T12:25:12.842470+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 7.83,
+      "timestamp": "2025-10-24T12:25:12.850377+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 3.09,
+      "timestamp": "2025-10-24T12:25:12.853560+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 2.51,
+      "timestamp": "2025-10-24T12:25:12.856121+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 15.61,
+      "timestamp": "2025-10-24T12:25:12.871804+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 6.52,
+      "timestamp": "2025-10-24T12:25:12.878423+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 5.92,
+      "timestamp": "2025-10-24T12:25:12.884429+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 7.88,
+      "timestamp": "2025-10-24T12:25:12.892393+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 3.57,
+      "timestamp": "2025-10-24T12:25:12.896075+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 2.56,
+      "timestamp": "2025-10-24T12:25:12.898700+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: WorkflowTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 6.05,
+      "timestamp": "2025-10-24T12:25:12.904913+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ChallengeTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 8.35,
+      "timestamp": "2025-10-24T12:25:12.913340+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ChallengeTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 3.37,
+      "timestamp": "2025-10-24T12:25:12.916840+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ChallengeTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 2.65,
+      "timestamp": "2025-10-24T12:25:12.919563+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ChallengeTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 6.12,
+      "timestamp": "2025-10-24T12:25:12.925753+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ChallengeTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 7.56,
+      "timestamp": "2025-10-24T12:25:12.933402+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ChallengeTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 3.02,
+      "timestamp": "2025-10-24T12:25:12.936488+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ChallengeTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 2.55,
+      "timestamp": "2025-10-24T12:25:12.939097+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ChallengeTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 6.03,
+      "timestamp": "2025-10-24T12:25:12.945193+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ChallengeTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 7.73,
+      "timestamp": "2025-10-24T12:25:12.952997+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ChallengeTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 4.34,
+      "timestamp": "2025-10-24T12:25:12.957600+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: KimiUploadFilesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 6.91,
+      "timestamp": "2025-10-24T12:25:12.964621+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: KimiUploadFilesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 7.89,
+      "timestamp": "2025-10-24T12:25:12.972652+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: KimiUploadFilesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 6.86,
+      "timestamp": "2025-10-24T12:25:12.979697+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: KimiUploadFilesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 2.74,
+      "timestamp": "2025-10-24T12:25:12.982558+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: KimiUploadFilesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 3.7,
+      "timestamp": "2025-10-24T12:25:12.986367+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: KimiUploadFilesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 6.18,
+      "timestamp": "2025-10-24T12:25:12.992644+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: KimiUploadFilesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 2.8,
+      "timestamp": "2025-10-24T12:25:12.995565+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: KimiUploadFilesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 8.21,
+      "timestamp": "2025-10-24T12:25:13.003893+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: KimiUploadFilesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 4.87,
+      "timestamp": "2025-10-24T12:25:13.008893+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: KimiUploadFilesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009052+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009112+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009172+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009223+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009273+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009317+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009388+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009429+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009475+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009515+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009637+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009682+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009734+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009788+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009831+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009869+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009930+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.009969+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010012+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010047+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010165+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010201+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010255+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010293+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010324+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010354+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010386+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010418+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010465+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010517+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010666+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010712+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010759+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010797+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010831+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010861+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010907+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010952+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.010992+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:13.011027+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 3.43,
+      "timestamp": "2025-10-24T12:25:13.014591+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: GLMUploadFileTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 2.41,
+      "timestamp": "2025-10-24T12:25:13.017132+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: GLMUploadFileTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 6.42,
+      "timestamp": "2025-10-24T12:25:13.023660+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: GLMUploadFileTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 10.44,
+      "timestamp": "2025-10-24T12:25:13.034218+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: GLMUploadFileTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 2.7,
+      "timestamp": "2025-10-24T12:25:13.037021+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: GLMUploadFileTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 30011.07,
+      "timestamp": "2025-10-24T12:25:43.048194+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Tool execution timeout after 30.0s"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 10.57,
+      "timestamp": "2025-10-24T12:25:43.058921+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: GLMUploadFileTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 4.88,
+      "timestamp": "2025-10-24T12:25:43.063925+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: GLMUploadFileTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 2.89,
+      "timestamp": "2025-10-24T12:25:43.066939+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: GLMUploadFileTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 4.09,
+      "timestamp": "2025-10-24T12:25:43.071150+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: GLMUploadFileTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.071309+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.071376+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.071444+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.071518+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.071572+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.071632+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.071687+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.071744+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.071800+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.071857+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.071973+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.072028+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.072087+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.072143+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.072195+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.072252+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.072303+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.072359+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.072415+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:25:43.072461+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 7.33,
+      "timestamp": "2025-10-24T12:25:43.079918+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ProviderCapabilitiesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 5.8,
+      "timestamp": "2025-10-24T12:25:43.085784+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ProviderCapabilitiesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 4.73,
+      "timestamp": "2025-10-24T12:25:43.090603+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ProviderCapabilitiesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 4.07,
+      "timestamp": "2025-10-24T12:25:43.094776+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ProviderCapabilitiesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 4.32,
+      "timestamp": "2025-10-24T12:25:43.099151+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ProviderCapabilitiesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 4.03,
+      "timestamp": "2025-10-24T12:25:43.103262+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ProviderCapabilitiesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 2.8,
+      "timestamp": "2025-10-24T12:25:43.106132+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ProviderCapabilitiesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 3.33,
+      "timestamp": "2025-10-24T12:25:43.109522+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ProviderCapabilitiesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 3.84,
+      "timestamp": "2025-10-24T12:25:43.113430+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ProviderCapabilitiesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 3.79,
+      "timestamp": "2025-10-24T12:25:43.117277+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ProviderCapabilitiesTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 4.89,
+      "timestamp": "2025-10-24T12:25:43.122367+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ListModelsTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 2.63,
+      "timestamp": "2025-10-24T12:25:43.125118+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ListModelsTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 4.94,
+      "timestamp": "2025-10-24T12:25:43.130133+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ListModelsTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 3.38,
+      "timestamp": "2025-10-24T12:25:43.133599+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ListModelsTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 2.52,
+      "timestamp": "2025-10-24T12:25:43.136183+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ListModelsTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 3.57,
+      "timestamp": "2025-10-24T12:25:43.139797+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ListModelsTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 10.25,
+      "timestamp": "2025-10-24T12:25:43.150115+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ListModelsTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 3.29,
+      "timestamp": "2025-10-24T12:25:43.153481+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ListModelsTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 2.55,
+      "timestamp": "2025-10-24T12:25:43.156092+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ListModelsTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 5.96,
+      "timestamp": "2025-10-24T12:25:43.162122+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ListModelsTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 7.98,
+      "timestamp": "2025-10-24T12:25:43.170281+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ActivityTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 2.93,
+      "timestamp": "2025-10-24T12:25:43.173290+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ActivityTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 2.15,
+      "timestamp": "2025-10-24T12:25:43.175513+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ActivityTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 7.28,
+      "timestamp": "2025-10-24T12:25:43.182857+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ActivityTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 6.14,
+      "timestamp": "2025-10-24T12:25:43.189069+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ActivityTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 7.99,
+      "timestamp": "2025-10-24T12:25:43.197188+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ActivityTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 4.46,
+      "timestamp": "2025-10-24T12:25:43.201763+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ActivityTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 3.06,
+      "timestamp": "2025-10-24T12:25:43.204900+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ActivityTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 3.5,
+      "timestamp": "2025-10-24T12:25:43.208462+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ActivityTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 2.45,
+      "timestamp": "2025-10-24T12:25:43.210969+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: ActivityTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 5.34,
+      "timestamp": "2025-10-24T12:25:43.216476+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: VersionTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 2.47,
+      "timestamp": "2025-10-24T12:25:43.219012+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: VersionTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 2.65,
+      "timestamp": "2025-10-24T12:25:43.221723+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: VersionTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 2.43,
+      "timestamp": "2025-10-24T12:25:43.224222+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: VersionTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 3.52,
+      "timestamp": "2025-10-24T12:25:43.227803+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: VersionTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 2.77,
+      "timestamp": "2025-10-24T12:25:43.230626+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: VersionTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 2.34,
+      "timestamp": "2025-10-24T12:25:43.233026+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: VersionTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 14.12,
+      "timestamp": "2025-10-24T12:25:43.247207+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: VersionTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 3.09,
+      "timestamp": "2025-10-24T12:25:43.250386+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: VersionTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 2.31,
+      "timestamp": "2025-10-24T12:25:43.252759+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: VersionTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.86,
+      "timestamp": "2025-10-24T12:25:43.253754+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.64,
+      "timestamp": "2025-10-24T12:25:43.254450+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 4.53,
+      "timestamp": "2025-10-24T12:25:43.259059+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 6.57,
+      "timestamp": "2025-10-24T12:25:43.265688+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.95,
+      "timestamp": "2025-10-24T12:25:43.266708+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.9,
+      "timestamp": "2025-10-24T12:25:43.267671+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.99,
+      "timestamp": "2025-10-24T12:25:43.268729+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 30002.77,
+      "timestamp": "2025-10-24T12:26:13.271564+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Tool execution timeout after 30.0s"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 1.9,
+      "timestamp": "2025-10-24T12:26:13.273571+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 1.2,
+      "timestamp": "2025-10-24T12:26:13.274846+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 4.82,
+      "timestamp": "2025-10-24T12:26:13.279806+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: HealthTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 5.15,
+      "timestamp": "2025-10-24T12:26:13.285063+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: HealthTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 2.92,
+      "timestamp": "2025-10-24T12:26:13.288060+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: HealthTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 3.83,
+      "timestamp": "2025-10-24T12:26:13.291959+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: HealthTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 4.35,
+      "timestamp": "2025-10-24T12:26:13.296390+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: HealthTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 4.82,
+      "timestamp": "2025-10-24T12:26:13.301287+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: HealthTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 2.24,
+      "timestamp": "2025-10-24T12:26:13.303597+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: HealthTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 3.87,
+      "timestamp": "2025-10-24T12:26:13.307518+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: HealthTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 4.8,
+      "timestamp": "2025-10-24T12:26:13.312392+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: HealthTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 2.96,
+      "timestamp": "2025-10-24T12:26:13.315423+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: HealthTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 2.43,
+      "timestamp": "2025-10-24T12:26:13.317990+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: SelfCheckTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 2.77,
+      "timestamp": "2025-10-24T12:26:13.320822+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: SelfCheckTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 2.2,
+      "timestamp": "2025-10-24T12:26:13.323083+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: SelfCheckTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 2.64,
+      "timestamp": "2025-10-24T12:26:13.325774+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: SelfCheckTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 6.52,
+      "timestamp": "2025-10-24T12:26:13.332479+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: SelfCheckTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 3.21,
+      "timestamp": "2025-10-24T12:26:13.335768+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: SelfCheckTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 2.44,
+      "timestamp": "2025-10-24T12:26:13.338277+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: SelfCheckTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 3.84,
+      "timestamp": "2025-10-24T12:26:13.342175+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: SelfCheckTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 3.83,
+      "timestamp": "2025-10-24T12:26:13.346063+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: SelfCheckTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 2.49,
+      "timestamp": "2025-10-24T12:26:13.348636+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': \"Tool execution failed: SelfCheckTool.execute() got an unexpected keyword argument 'on_chunk'\"}"
+    }
+  ]
+}

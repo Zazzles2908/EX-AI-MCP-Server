@@ -94,7 +94,9 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
         5. Natural cross-tool collaboration without context loss
     """
     # BUG FIX #14 (2025-10-20): Removed build_conversation_history import (deleted function)
-    from utils.conversation.memory import add_turn, get_thread
+    # CRITICAL FIX (2025-10-24): Use global_storage to prevent 4x Supabase duplication
+    # This ensures all code paths use the SAME storage instance with SAME request cache
+    from utils.conversation.global_storage import add_turn, get_thread
 
     continuation_id = arguments["continuation_id"]
 

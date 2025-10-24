@@ -75,10 +75,14 @@ class ModelContext:
     def provider(self):
         """Get the model provider lazily."""
         if self._provider is None:
+            import logging
+            logging.info(f"MODEL_CONTEXT_DEBUG: Getting provider for model '{self.model_name}'")
             from src.providers import ModelProviderRegistry  # Import here to avoid circular import
             self._provider = ModelProviderRegistry.get_provider_for_model(self.model_name)
+            logging.info(f"MODEL_CONTEXT_DEBUG: get_provider_for_model returned: {self._provider}")
             if not self._provider:
                 available_models = ModelProviderRegistry.get_available_models()
+                logging.info(f"MODEL_CONTEXT_DEBUG: Available models: {available_models}")
                 raise ValueError(f"Model '{self.model_name}' is not available. Available models: {available_models}")
         return self._provider
 

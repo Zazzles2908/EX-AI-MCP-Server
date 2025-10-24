@@ -38,7 +38,7 @@ class StatusTool(BaseTool):
     def requires_model(self) -> bool:
         return False
 
-    async def execute(self, arguments: Dict[str, Any]) -> list[TextContent]:
+    async def execute(self, arguments: Dict[str, Any], on_chunk=None) -> list[TextContent]:
         tail = int(arguments.get("tail_lines", 30))
         include_tools = bool(arguments.get("include_tools", False))
 

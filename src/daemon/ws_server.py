@@ -588,6 +588,26 @@ async def main_async() -> None:
         _ensure_providers_configured()
         register_provider_specific_tools()
         logger.info(f"Providers configured successfully. Total tools available: {len(SERVER_TOOLS)}")
+
+        # CRITICAL FIX (2025-10-24): Wait for providers to be ready before continuing
+        # This prevents tool schemas from being generated with empty model lists
+        if os.getenv("EXAI_WS_STARTUP_WAIT_PROVIDERS", "false").lower() == "true":
+            timeout = int(os.getenv("EXAI_WS_STARTUP_WAIT_TIMEOUT", "30"))
+            logger.info(f"Waiting up to {timeout}s for providers to be ready...")
+
+            from src.providers.registry import ModelProviderRegistry
+            start_time = time.time()
+
+            while time.time() - start_time < timeout:
+                available_models = ModelProviderRegistry.get_available_models()
+                if available_models:
+                    logger.info(f"Providers ready! {len(available_models)} models available")
+                    break
+                logger.debug("Waiting for providers to initialize...")
+                time.sleep(0.5)
+            else:
+                logger.warning(f"Provider wait timeout after {timeout}s - continuing anyway")
+
     except Exception as e:
         logger.error(f"Failed to configure providers at startup: {e}", exc_info=True)
         logger.warning("Daemon will start but provider-specific tools may not be available")

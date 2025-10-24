@@ -285,7 +285,7 @@ class KimiUploadFilesTool(BaseTool):
 
         return results
 
-    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list[TextContent]:
         import asyncio as _aio
         from tools.shared.error_envelope import make_error_envelope
         try:
@@ -457,7 +457,7 @@ class KimiChatWithFilesTool(BaseTool):
         content = (resp or {}).get("content", "")
         return {"model": model, "content": content}
 
-    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list[TextContent]:
         from tools.shared.error_envelope import make_error_envelope
         try:
             result = await self._run_async(**arguments)
@@ -720,7 +720,7 @@ class KimiManageFilesTool(BaseTool):
         else:
             raise ValueError(f"Unknown operation: {operation}")
 
-    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list[TextContent]:
         import asyncio as _aio
         from tools.shared.error_envelope import make_error_envelope
         try:

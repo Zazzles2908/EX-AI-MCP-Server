@@ -261,12 +261,22 @@ class SupabaseConversationMemory:
             msg_metadata['file_ids'] = file_ids
             msg_metadata['tool_name'] = tool_name
 
-            # Save message
+            # Save message with timestamp for unique idempotency key
+            # CRITICAL FIX (2025-10-23): Include microsecond-precision timestamp
+            # to ensure each message gets a unique idempotency key, preventing
+            # race conditions where duplicate messages are created simultaneously
+            #
+            # ARCHITECTURAL FIX (2025-10-23): Use guaranteed microsecond precision
+            # and rely entirely on database constraints for duplicate prevention
+            from datetime import datetime
+            client_timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
+
             msg_id = self.storage.save_message(
                 conversation_id=conv_id,
                 role=role,
                 content=content,
-                metadata=msg_metadata
+                metadata=msg_metadata,
+                client_timestamp=client_timestamp
             )
 
             if msg_id:
@@ -283,6 +293,65 @@ class SupabaseConversationMemory:
 
         except Exception as e:
             logger.error(f"[BACKGROUND_WRITE] Error adding turn to {continuation_id}: {e}")
+
+    def _is_duplicate_message(self, conversation_id: str, content: str, role: str, limit: int = 10) -> bool:
+        """
+        Check if this message was recently saved to prevent duplicates.
+
+        CRITICAL FIX (2025-10-23): Prevents duplicate messages caused by race conditions
+        during slow API responses (9+ minute Kimi responses triggering retries).
+
+        BUG FIX (2025-10-23): Fixed incorrect method call - use get_or_create_conversation()
+        instead of non-existent get_conversation_id() method.
+
+        Args:
+            conversation_id: Conversation identifier (continuation_id)
+            content: Message content to check
+            role: Message role (user, assistant, system)
+            limit: Number of recent messages to check (default: 10)
+
+        Returns:
+            True if duplicate found, False otherwise
+        """
+        try:
+            # Get the database conversation UUID from the continuation_id
+            # BUG FIX: Use get_or_create_conversation() instead of get_conversation_id()
+            conv_id = self.mapper.get_or_create_conversation(conversation_id)
+            if not conv_id:
+                logger.debug(f"[DEDUP] No conversation found for {conversation_id[:8]}")
+                return False
+
+            # Get recent messages using the correct method name
+            # BUG FIX: Use get_conversation_messages() instead of get_messages()
+            recent_messages = self.storage.get_conversation_messages(conv_id, limit=limit)
+            if not recent_messages:
+                logger.debug(f"[DEDUP] No recent messages found for {conversation_id[:8]}")
+                return False
+
+            # Check for exact content match within last 60 seconds
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+
+            for msg in recent_messages:
+                if msg.get('role') == role and msg.get('content') == content:
+                    # Check timestamp - only consider duplicates within 60 seconds
+                    created_at = msg.get('created_at')
+                    if created_at:
+                        if isinstance(created_at, str):
+                            created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+
+                        time_diff = (now - created_at).total_seconds()
+                        if time_diff < 60:
+                            logger.warning(f"[DEDUP] Found duplicate message from {time_diff:.1f}s ago in {conversation_id[:8]}")
+                            return True
+
+            logger.debug(f"[DEDUP] No duplicates found for {role} message in {conversation_id[:8]}")
+            return False
+
+        except Exception as e:
+            logger.error(f"[DEDUP] Error checking for duplicates: {e}", exc_info=True)
+            # On error, allow the message through (fail open)
+            return False
 
     @timing_decorator("SupabaseMemory.add_turn")
     def add_turn(
@@ -321,19 +390,51 @@ class SupabaseConversationMemory:
                 )
             return False
 
+        # CRITICAL FIX (2025-10-23): Prevent duplicate messages from race conditions
+        # Check if this exact message was recently saved (within last 60 seconds)
+        # This prevents duplicates caused by slow responses triggering retries
+        if self._is_duplicate_message(continuation_id, content, role):
+            logger.warning(f"[DEDUP] Preventing duplicate message: {role} in {continuation_id[:8]}")
+            return True
+
+        # PHASE 1 (2025-10-24): Standardize metadata before storage
+        # Extract and standardize metadata fields to match Supabase schema
+        # DEBUG: Log incoming metadata
+        logger.info(f"[PHASE1_DEBUG] add_turn called with metadata={metadata}, type={type(metadata)}")
+
+        storage_metadata = {}
+        if metadata:
+            if isinstance(metadata, dict):
+                # Direct field mapping
+                if 'model_used' in metadata:
+                    storage_metadata['model_used'] = metadata['model_used']
+                if 'provider_used' in metadata:
+                    storage_metadata['provider_used'] = metadata['provider_used']
+                if 'response_time_ms' in metadata:
+                    storage_metadata['response_time_ms'] = metadata['response_time_ms']
+                if 'token_usage' in metadata:
+                    storage_metadata['token_usage'] = metadata['token_usage']
+                if 'thinking_mode' in metadata:
+                    storage_metadata['thinking_mode'] = metadata['thinking_mode']
+                # Preserve full metadata for backward compatibility
+                storage_metadata['model_metadata'] = metadata
+
+        # PHASE 1 DEBUG (2025-10-24): Log metadata being passed to storage
+        logger.info(f"[PHASE1_METADATA] continuation_id={continuation_id}, storage_metadata={storage_metadata}")
+
         # BUG FIX #11 (Phase 1b - 2025-10-20): If async writes are enabled, submit to async queue and return immediately
         # This prevents blocking the response while saving to Supabase
         # Expected improvement: Eliminates write blocking (~0.13s per request) + avoids ThreadPoolExecutor resource exhaustion
         if self._use_async_queue:
             logger.info(f"[ASYNC_SUPABASE] Submitting write to async queue for {continuation_id}")
 
-            # Prepare the data for the queue
+            # Prepare the data for the queue (use standardized metadata)
             update_data = {
                 'role': role,
                 'content': content,
                 'files': files,
                 'images': images,
-                'metadata': metadata,
+                'metadata': storage_metadata,  # Use standardized metadata
                 'tool_name': tool_name
             }
 
@@ -403,18 +504,28 @@ class SupabaseConversationMemory:
                         file_ids.append(file_id)
                         self.storage.link_file_to_conversation(conv_id, file_id)
 
-            # Prepare message metadata
-            msg_metadata = metadata or {}
+            # Prepare message metadata (use standardized metadata from Phase 1)
+            msg_metadata = storage_metadata or {}
             msg_metadata['file_ids'] = file_ids
             msg_metadata['tool_name'] = tool_name
 
             # Save message (TIMED)
+            # CRITICAL FIX (2025-10-23): Include microsecond-precision timestamp
+            # to ensure each message gets a unique idempotency key, preventing
+            # race conditions where duplicate messages are created simultaneously
+            #
+            # ARCHITECTURAL FIX (2025-10-23): Use guaranteed microsecond precision
+            # and rely entirely on database constraints for duplicate prevention
+            from datetime import datetime
+            client_timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
+
             start_time = time.time()
             msg_id = self.storage.save_message(
                 conversation_id=conv_id,
                 role=role,
                 content=content,
-                metadata=msg_metadata
+                metadata=msg_metadata,
+                client_timestamp=client_timestamp
             )
             log_operation_time("SupabaseMemory.save_message", start_time)
 

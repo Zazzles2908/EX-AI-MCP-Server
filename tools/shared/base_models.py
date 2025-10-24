@@ -19,12 +19,15 @@ logger = logging.getLogger(__name__)
 
 
 # Shared field descriptions to avoid duplication
-# Last Updated: 2025-10-09
+# Last Updated: 2025-10-25 - Enhanced with decision matrices and capability hints
 COMMON_FIELD_DESCRIPTIONS = {
     "model": (
-        "Model to use. Use 'auto' to let the server select the best model. "
-        "Supported examples (if providers are configured): GLM: 'glm-4.6','glm-4.5','glm-4.5-flash','glm-4.5-air','glm-4.5-x','glm-4.5v'; "
-        "Kimi/Moonshot: 'kimi-k2-0905-preview','kimi-k2-0711-preview','kimi-k2-turbo-preview','kimi-thinking-preview','moonshot-v1-128k','moonshot-v1-32k','moonshot-v1-8k','kimi-latest'."
+        "Model to use. Native models: 'auto', 'kimi-k2-0905-preview', 'kimi-k2-0711-preview', "
+        "'moonshot-v1-8k', 'moonshot-v1-32k', 'kimi-k2-turbo-preview', 'moonshot-v1-128k', "
+        "'moonshot-v1-8k-vision-preview', 'moonshot-v1-32k-vision-preview', 'moonshot-v1-128k-vision-preview', "
+        "'kimi-latest', 'kimi-latest-8k', 'kimi-latest-32k', 'kimi-latest-128k', 'kimi-thinking-preview', "
+        "'glm-4.6', 'glm-4.5-flash', 'glm-4.5', 'glm-4.5-air', 'glm-4.5v'. "
+        "Use 'auto' to let the server select the best model. Defaults to 'glm-4.5-flash' if not specified."
     ),
     "temperature": (
         "Temperature for response (0.0 to 1.0). Lower values are more focused and deterministic, "
@@ -49,11 +52,10 @@ COMMON_FIELD_DESCRIPTIONS = {
         "additional findings, or answers to follow-up questions. Can be used across different tools."
     ),
     "images": (
-        "Optional image(s) for visual context. Accepts absolute file paths or "
-        "base64 data URLs. Only provide when user explicitly mentions images. "
-        "When including images, please describe what you believe each image contains "
-        "to aid with contextual understanding. Useful for UI discussions, diagrams, "
-        "visual problems, error screens, architecture mockups, and visual analysis tasks."
+        "Optional image(s) for visual context. Accepts absolute file paths or base64 data URLs. "
+        "Only provide when user explicitly mentions images. When including images, please describe "
+        "what you believe each image contains to aid with contextual understanding. Useful for UI "
+        "discussions, diagrams, visual problems, error screens, architecture mockups, and visual analysis tasks."
     ),
     "files": (
         "Optional files for context - EMBEDS CONTENT AS TEXT in prompt (not uploaded to platform). "

@@ -166,23 +166,17 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
     write_session_cache(arguments)
 
     # BUG FIX #13 (2025-10-20): Clear request-scoped cache after each request
-    # This prevents memory leaks and stale data from being served across requests
+    # CRITICAL FIX (2025-10-24): Use global_storage to ensure we clear the SAME cache
+    # that was used during the request (prevents 4x Supabase duplication)
     # The thread cache eliminates redundant Supabase queries WITHIN a request,
     # but must be cleared BETWEEN requests
     try:
         logger.info(f"[REQUEST_CACHE] Attempting to clear cache for request {req_id}")
-        from utils.conversation.storage_factory import get_conversation_storage
-        storage = get_conversation_storage()
-        logger.info(f"[REQUEST_CACHE] Got storage: {type(storage).__name__}")
-        if hasattr(storage, 'clear_request_cache'):
-            logger.info(f"[REQUEST_CACHE] Calling storage.clear_request_cache()")
-            storage.clear_request_cache()
-        elif hasattr(storage, 'supabase_storage') and hasattr(storage.supabase_storage, 'clear_request_cache'):
-            # Handle DualStorageConversation wrapper
-            logger.info(f"[REQUEST_CACHE] Calling storage.supabase_storage.clear_request_cache()")
-            storage.supabase_storage.clear_request_cache()
-        else:
-            logger.warning(f"[REQUEST_CACHE] Storage {type(storage).__name__} has no clear_request_cache method!")
+        from utils.conversation.global_storage import clear_request_cache, get_global_storage
+        storage = get_global_storage()
+        logger.info(f"[REQUEST_CACHE] Got global storage: {type(storage).__name__} (id={id(storage)})")
+        clear_request_cache()
+        logger.info(f"[REQUEST_CACHE] Successfully cleared request cache")
     except Exception as e:
         # Don't fail the request if cache cleanup fails
         logger.error(f"[REQUEST_CACHE] Failed to clear request cache: {e}", exc_info=True)

@@ -45,7 +45,7 @@ class KimiCaptureHeadersTool(BaseTool):
     def get_system_prompt(self) -> str:
         return "Capture headers via Kimi raw response; return normalized dict."
 
-    async def execute(self, arguments: dict[str, Any]):
+    async def execute(self, arguments: dict[str, Any], on_chunk=None):
         from mcp.types import TextContent
         from src.providers.registry import ModelProviderRegistry
         from src.providers.kimi import KimiModelProvider

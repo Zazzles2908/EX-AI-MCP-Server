@@ -75,7 +75,11 @@ class KimiChatWithToolsTool(BaseTool):
     def format_response(self, response: str, request: ToolRequest, model_info: dict | None = None) -> str:
         return response
 
-    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def execute(
+        self,
+        arguments: dict[str, Any],
+        on_chunk: Any = None  # NEW (2025-10-24): Streaming callback support
+    ) -> list[TextContent]:
         # Resolve provider instance from registry; force Kimi provider and model id
         requested_model = arguments.get("model") or os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0711-preview")
         # Map any non-Kimi requests (e.g., 'auto', 'glm-4.5-flash') to a valid Kimi default
@@ -309,9 +313,12 @@ class KimiChatWithToolsTool(BaseTool):
                         _ckw["tools"] = tools
                     if tools and tool_choice is not None:
                         _ckw["tool_choice"] = tool_choice
+
+                    # NEW (2025-10-24): Pass streaming callback if provided
                     return stream_openai_chat_events(
                         client=prov.client,
                         create_kwargs=_ckw,
+                        on_chunk=on_chunk,  # Forward callback for progressive streaming
                     )
 
                 # Apply overall streaming timeout (env: KIMI_STREAM_TIMEOUT_SECS)

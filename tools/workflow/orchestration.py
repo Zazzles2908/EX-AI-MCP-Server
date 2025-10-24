@@ -529,6 +529,11 @@ class OrchestrationMixin:
             for file_path in relevant_files:
                 try:
                     content = cache.read_file(file_path)
+                    # CRITICAL FIX (2025-10-23): Handle None content from read_file
+                    # BUG: read_file can return None in some error paths, causing "NoneType has no len()" error
+                    if content is None:
+                        raise Exception("read_file returned None (file may not exist or be unreadable)")
+
                     file_contents[file_path] = content
                     logger.debug(f"{self.get_name()}: Read file {file_path} ({len(content)} chars)")
                     # Reset failure counter on success

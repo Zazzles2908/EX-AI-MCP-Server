@@ -192,9 +192,24 @@ class DebugIssueTool(WorkflowTool):
             "Step 3: Receive expert validation and recommendations\n\n"
             "❌ DON'T: Call this tool expecting it to investigate for you\n"
             "✅ DO: Investigate first, then use this tool to structure findings and get expert validation\n\n"
+            "🔧 CAPABILITIES:\n"
+            "- Multi-step workflow: Track investigation progress across multiple steps\n"
+            "- Confidence tracking: Set confidence level (exploring → certain) to enable early termination\n"
+            "- Continuation support: Use 'continuation_id' to resume previous investigations\n"
+            "- Web search: Enable 'use_websearch=true' for framework documentation and error patterns\n"
+            "- Model selection: Defaults to 'glm-4.6' for deep reasoning\n\n"
+            "📊 WORKFLOW PATTERN:\n"
+            "chat (initial question) → debug (investigation) → codereview (validation) → testgen (prevention)\n\n"
             "Perfect for: complex bugs, mysterious errors, performance issues, "
             "race conditions, memory leaks, integration problems."
         )
+
+    def _get_related_tools(self) -> dict[str, list[str]]:
+        """Return related tools for debug workflow patterns"""
+        return {
+            "escalation": ["codereview", "testgen", "refactor"],
+            "alternatives": ["analyze", "thinkdeep"]
+        }
 
     def get_system_prompt(self) -> str:
         return DEBUG_ISSUE_PROMPT
