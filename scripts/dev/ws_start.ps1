@@ -22,7 +22,7 @@ try {
   }
   if ($Shim) {
     Write-Host "Starting stdio shim..." -ForegroundColor Cyan
-    & $Py "scripts\run_ws_shim.py"
+    & $Py "scripts\runtime\run_ws_shim.py"
   } else {
     Write-Host "Starting WS daemon..." -ForegroundColor Cyan
     # If a daemon is running, stop it first for a friendly single-command start

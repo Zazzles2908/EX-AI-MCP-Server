@@ -134,7 +134,7 @@ class ChallengeTool(SimpleTool):
 
         return schema
 
-    async def execute(self, arguments: dict[str, Any]) -> list:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list:
         """
         Execute the challenge tool by wrapping the prompt in critical thinking instructions.
 

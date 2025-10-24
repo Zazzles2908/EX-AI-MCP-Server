@@ -145,6 +145,9 @@ def chat_completions_create(
     start_time = time.time()
     request_size = len(str(messages).encode('utf-8'))
     error = None
+    response_size = 0
+    total_tokens = 0
+    finish_reason = "unknown"
 
     # PHASE 1 (2025-10-18): Apply circuit breaker protection
     breaker = circuit_breaker_manager.get_breaker('kimi')
@@ -347,16 +350,7 @@ def chat_completions_create(
         logger.error("Kimi circuit breaker OPEN - API unavailable")
         error = "Circuit breaker OPEN - Kimi API unavailable"
 
-        # Record monitoring event
-        response_time_ms = (time.time() - start_time) * 1000
-        record_kimi_event(
-            direction="error",
-            function_name="kimi_chat.chat_completions_create",
-            data_size=request_size,
-            error=error,
-            metadata={"model": model, "timestamp": log_timestamp()}
-        )
-
+        # PHASE 3 (2025-10-23): Monitoring will be recorded in finally block
         # Return error response (graceful degradation)
         return {
             "provider": "KIMI",
@@ -373,20 +367,37 @@ def chat_completions_create(
     except Exception as e:
         logger.error("Kimi chat call error: %s", e)
         error = str(e)
-
-        # PHASE 3 (2025-10-18): Monitor API call failure
-        response_time_ms = (time.time() - start_time) * 1000
-        record_kimi_event(
-            direction="error",
-            function_name="kimi_chat.chat_completions_create",
-            data_size=request_size,
-            error=error,
-            metadata={
-                "model": model,
-                "timestamp": log_timestamp()
-            }
-        )
+        # PHASE 3 (2025-10-23): Monitoring will be recorded in finally block
         raise
+    finally:
+        # PHASE 3 (2025-10-23): ALWAYS record monitoring event (all code paths)
+        logger.info(f"[MONITORING_DEBUG] FINALLY BLOCK ENTERED for model={model}")
+
+        try:
+            response_time_ms = (time.time() - start_time) * 1000
+
+            # Determine direction based on error state
+            direction = "error" if error else "receive"
+
+            logger.info(f"[MONITORING_DEBUG] About to call record_kimi_event for model={model}, tokens={total_tokens}, error={error}")
+
+            record_kimi_event(
+                direction=direction,
+                function_name="kimi_chat.chat_completions_create",
+                data_size=response_size if not error else request_size,
+                response_time_ms=response_time_ms,
+                error=error if error else None,
+                metadata={
+                    "model": model,
+                    "tokens": total_tokens,
+                    "cache_hit": bool(cache_attached),
+                    "finish_reason": finish_reason,
+                    "timestamp": log_timestamp()
+                }
+            )
+            logger.info(f"[MONITORING_DEBUG] Successfully called record_kimi_event")
+        except Exception as e:
+            logger.error(f"[MONITORING_DEBUG] FINALLY BLOCK ERROR: {e}", exc_info=True)
 
     # Normalize usage to a plain dict to ensure JSON-serializable output
     _usage = None
@@ -451,28 +462,13 @@ def chat_completions_create(
         # Continue - finish_reason will be "unknown", completeness check may not work but response is still valid
         finish_reason = "unknown"
 
-    # PHASE 3 (2025-10-18): Monitor successful API call
-    response_time_ms = (time.time() - start_time) * 1000
+    # PHASE 3 (2025-10-23): Update monitoring context variables for finally block
     response_size = len(str(content_text).encode('utf-8'))
-
-    # Extract token usage for monitoring
-    total_tokens = 0
     if _usage:
         total_tokens = _usage.get("total_tokens", 0)
 
-    record_kimi_event(
-        direction="receive",
-        function_name="kimi_chat.chat_completions_create",
-        data_size=response_size,
-        response_time_ms=response_time_ms,
-        metadata={
-            "model": model,
-            "tokens": total_tokens,
-            "cache_hit": bool(cache_attached),
-            "finish_reason": finish_reason,
-            "timestamp": log_timestamp()
-        }
-    )
+    # PHASE 1 (2025-10-24): Calculate response time for metadata
+    ai_response_time_ms = int((time.time() - start_time) * 1000)
 
     return {
         "provider": "KIMI",
@@ -489,6 +485,7 @@ def chat_completions_create(
             },
             "idempotency_key": str(call_key) if call_key else None,
             "prefix_hash": msg_prefix_hash or None,
+            "ai_response_time_ms": ai_response_time_ms,
         },
     }
 
@@ -644,6 +641,9 @@ def chat_completions_create_with_session(
     PHASE 2.2.3 (2025-10-21): Concurrent Request Handling
     Refactored to use execute_with_session() helper per EXAI recommendation.
 
+    PHASE 0.3 (2025-10-24): Added timeout enforcement to prevent provider hangs
+    Uses KIMI_SESSION_TIMEOUT env var (default: 25s) with active enforcement
+
     This function wraps chat_completions_create_with_continuation in a managed session
     to enable concurrent request handling without blocking. Each request gets its own
     isolated session with timeout handling and lifecycle tracking.
@@ -661,7 +661,7 @@ def chat_completions_create_with_session(
         enable_continuation: Whether to enable automatic continuation
         max_continuation_attempts: Maximum continuation attempts
         max_total_tokens: Maximum total tokens across continuations
-        timeout_seconds: Optional timeout override (default: 30s)
+        timeout_seconds: Optional timeout override (default: KIMI_SESSION_TIMEOUT env var)
         request_id: Optional request ID (generated if not provided)
         **kwargs: Additional parameters
 
@@ -669,7 +669,11 @@ def chat_completions_create_with_session(
         Dictionary with provider, model, content, tool_calls, usage, raw, metadata,
         and session context (session_id, request_id, duration_seconds)
     """
-    session_manager = get_session_manager(default_timeout=timeout_seconds or 30.0)
+    # PHASE 0.3 (2025-10-24): Use KIMI_SESSION_TIMEOUT from environment
+    default_timeout = float(os.getenv("KIMI_SESSION_TIMEOUT", "25"))
+    enforce_timeout = os.getenv("ENFORCE_SESSION_TIMEOUT", "true").lower() == "true"
+
+    session_manager = get_session_manager(default_timeout=timeout_seconds or default_timeout)
 
     def _execute_kimi_chat():
         """Internal function to execute Kimi chat within session."""
@@ -690,13 +694,15 @@ def chat_completions_create_with_session(
         )
 
     # Execute within managed session with automatic session context addition
+    # PHASE 0.3 (2025-10-24): Enable timeout enforcement to prevent hangs
     return session_manager.execute_with_session(
         provider="kimi",
         model=model,
         func=_execute_kimi_chat,
         request_id=request_id,
         timeout_seconds=timeout_seconds,
-        add_session_context=True
+        add_session_context=True,
+        enforce_timeout=enforce_timeout
     )
 
 

@@ -1,11 +1,11 @@
 {
-  "servers": {
+  "mcpServers": {
     "exai-mcp": {
-      "type": "stdio",
-      "trust": true,
       "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
-      "args": ["-u", "C:/Project/EX-AI-MCP-Server/scripts/runtime/run_ws_shim.py"],
-      "cwd": "C:/Project/EX-AI-MCP-Server",
+      "args": [
+        "-u",
+        "C:/Project/EX-AI-MCP-Server/scripts/runtime/run_ws_shim.py"
+      ],
       "env": {
         "ENV_FILE": "C:/Project/EX-AI-MCP-Server/.env",
         "PYTHONUNBUFFERED": "1",
@@ -25,4 +25,3 @@
     }
   }
 }
-

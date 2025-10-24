@@ -160,6 +160,10 @@ class FileCache:
         # Add to cache (size already checked above)
         self._add_to_cache(cache_key, content, file_path)
 
+        # CRITICAL FIX (2025-10-23): Return the content!
+        # BUG: Method was missing return statement, causing NoneType errors
+        return content
+
     def read_files_parallel(self, file_paths: List[str], max_workers: int = 4) -> Dict[str, str]:
         """
         Day 3.2: Read multiple files in parallel using ThreadPoolExecutor.

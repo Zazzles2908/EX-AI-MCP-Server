@@ -655,7 +655,7 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
         pass
 
     # Default execute method - delegates to workflow
-    async def execute(self, arguments: dict[str, Any]) -> list:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list:
         """Execute the workflow tool with a safety timeout and error logging.
 
         - Wraps execute_workflow() in asyncio.wait_for to prevent hangs

@@ -40,11 +40,8 @@ from typing import Any, Optional
 
 from config import MCP_PROMPT_SIZE_LIMIT
 from utils import check_token_limit
-from utils.conversation.memory import (
-    ConversationTurn,
-    get_conversation_file_list,
-    get_thread,
-)
+from utils.conversation.memory import ConversationTurn, get_conversation_file_list  # Keep model and helper function
+from utils.conversation.global_storage import get_thread
 from utils.file.operations import read_file_content, read_files
 
 logger = logging.getLogger(__name__)

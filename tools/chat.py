@@ -95,9 +95,24 @@ class ChatTool(SimpleTool):
             "- AI responds with insights, suggestions, or explanations\n"
             "- Simple request/response pattern (no multi-step workflow)\n"
             "- Can include files for context (small files only, <5KB)\n\n"
+            "🔧 CAPABILITIES:\n"
+            "- File context: Use 'files' parameter for <5KB files (embeds as text)\n"
+            "- Large files: Use 'kimi_upload_files' tool for >5KB files (saves 70-80% tokens)\n"
+            "- Multi-turn: Use 'continuation_id' to maintain conversation context\n"
+            "- Web search: Enable with 'use_websearch=true' for documentation/best practices\n"
+            "- Model selection: 'glm-4.5-flash' (fast) or 'glm-4.6' (complex analysis)\n\n"
+            "📊 WORKFLOW ESCALATION:\n"
+            "chat → analyze → codereview → debug\n\n"
             "Note: If you're not currently using a top-tier model such as Opus 4 or above, "
             "these tools can provide enhanced capabilities."
         )
+
+    def _get_related_tools(self) -> dict[str, list[str]]:
+        """Return related tools for chat escalation patterns"""
+        return {
+            "escalation": ["analyze", "codereview", "debug", "thinkdeep"],
+            "alternatives": ["planner"]
+        }
 
     def get_system_prompt(self) -> str:
         return CHAT_PROMPT
@@ -276,20 +291,53 @@ class ChatTool(SimpleTool):
                 from utils.conversation.threads import _get_storage_backend
                 storage = _get_storage_backend()
                 if storage:
-                    # Check if this is a first turn (continuation_id was just created in _parse_response)
-                    # by checking if the conversation exists in storage
-                    thread_context = storage.get_thread(request.continuation_id)
-                    if thread_context:
-                        # Existing conversation - save assistant response immediately
-                        storage.add_turn(
-                            request.continuation_id,
-                            "assistant",
-                            str(response),
-                            tool_name="chat"
-                        )
-                    else:
-                        # First turn - store response temporarily for _create_continuation_offer to save
-                        request._assistant_response_to_save = str(response)
+                    # PHASE 1 (2025-10-24): Prepare metadata from model_info
+                    metadata = {}
+                    if model_info and isinstance(model_info, dict):
+                        model_name = model_info.get("model_name")
+                        if model_name:
+                            metadata['model_used'] = model_name
+                        provider = model_info.get("provider")
+                        if provider:
+                            # Extract provider name from class name (e.g., "GLMModelProvider" -> "glm")
+                            provider_class_name = provider.__class__.__name__
+                            if provider_class_name.endswith("ModelProvider"):
+                                provider_name = provider_class_name[:-len("ModelProvider")].lower()
+                            else:
+                                provider_name = provider_class_name.lower()
+                            metadata['provider_used'] = provider_name
+
+                        # FIX (2025-10-24): Extract usage from model_info (not model_metadata)
+                        # Providers return usage at top level: model_info['usage']
+                        usage = model_info.get("usage")
+                        if usage and isinstance(usage, dict):
+                            metadata['token_usage'] = usage
+
+                        model_metadata = model_info.get("metadata")
+                        if model_metadata and isinstance(model_metadata, dict):
+                            if 'thinking_mode' in model_metadata:
+                                metadata['thinking_mode'] = model_metadata['thinking_mode']
+                            if 'ai_response_time_ms' in model_metadata:
+                                metadata['response_time_ms'] = model_metadata['ai_response_time_ms']
+                            metadata['model_metadata'] = model_metadata
+
+                    # CRITICAL FIX (2025-10-24): Removed duplicate add_turn() call
+                    # The base class SimpleTool already handles storing assistant responses
+                    # in tools/simple/base.py:1102-1112. This was causing double storage
+                    # with different metadata structures, resulting in 2x Supabase writes.
+                    #
+                    # Evidence: Messages stored 58ms apart with different idempotency keys
+                    # - Message 1: metadata={'model_used': 'glm-4.6', ...} (from here)
+                    # - Message 2: metadata={'model_provider': 'glm', ...} (from base class)
+                    #
+                    # Fix: Let base class handle all storage for consistency
+                    # The base class has access to complete model_info and handles
+                    # files, images, and metadata correctly.
+
+                    # Store response and metadata for base class to save
+                    # (base class will call add_turn with complete metadata)
+                    request._assistant_response_to_save = str(response)
+                    request._assistant_metadata_to_save = metadata
                 # Capture cache tokens if present in model_info
                 try:
                     if model_info and isinstance(model_info, dict):

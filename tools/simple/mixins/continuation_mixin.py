@@ -139,12 +139,12 @@ class ContinuationMixin:
         continuation_id = self.get_request_continuation_id(request)
 
         try:
-            # CRITICAL FIX: Use cached storage backend to avoid creating 60+ instances
-            from utils.conversation.threads import _get_storage_backend
-            from utils.client_info import get_current_session_fingerprint, get_cached_client_info, format_client_info
+            # CRITICAL FIX: Use global storage singleton to avoid creating multiple instances
+            from utils.conversation.global_storage import get_global_storage
             from utils.conversation.memory import MAX_CONVERSATION_TURNS, create_thread
+            from utils.client_info import get_current_session_fingerprint, get_cached_client_info, format_client_info
 
-            storage = _get_storage_backend()
+            storage = get_global_storage()
             if not storage:
                 logger.warning(f"{self.get_name()}: Storage backend not available for continuation offer")
                 return None
@@ -224,15 +224,20 @@ class ContinuationMixin:
                 # The assistant response is generated BEFORE _create_continuation_offer is called,
                 # so we need to save it here after the conversation is created in Supabase.
                 # For subsequent turns, the assistant response is saved in format_response().
+                # PHASE 1 (2025-10-24): Also save metadata if available
                 if hasattr(request, '_assistant_response_to_save'):
+                    metadata = getattr(request, '_assistant_metadata_to_save', None)
                     storage.add_turn(
                         new_thread_id,
                         "assistant",
                         request._assistant_response_to_save,
+                        metadata=metadata,
                         tool_name=self.get_name()
                     )
-                    # Clean up the temporary attribute
+                    # Clean up the temporary attributes
                     delattr(request, '_assistant_response_to_save')
+                    if hasattr(request, '_assistant_metadata_to_save'):
+                        delattr(request, '_assistant_metadata_to_save')
 
                 note_client = friendly or "You"
                 return {
@@ -342,17 +347,30 @@ class ContinuationMixin:
                 if model_response:
                     model_metadata = {"usage": model_response.usage, "metadata": model_response.metadata}
 
-            # Prepare metadata for storage
+            # PHASE 1 (2025-10-24): Prepare standardized metadata for storage
+            # Use field names that match Supabase schema: model_used, provider_used
             metadata = {}
-            if model_provider:
-                metadata['model_provider'] = model_provider
             if model_name:
-                metadata['model_name'] = model_name
+                metadata['model_used'] = model_name  # Changed from model_name to model_used
+            if model_provider:
+                metadata['provider_used'] = model_provider  # Changed from model_provider to provider_used
             if model_metadata:
-                metadata['model_metadata'] = model_metadata
+                # Extract token usage, thinking mode, and response time if available
+                if isinstance(model_metadata, dict):
+                    if 'token_usage' in model_metadata:
+                        metadata['token_usage'] = model_metadata['token_usage']
+                    if 'thinking_mode' in model_metadata:
+                        metadata['thinking_mode'] = model_metadata['thinking_mode']
+                    if 'ai_response_time_ms' in model_metadata:
+                        metadata['response_time_ms'] = model_metadata['ai_response_time_ms']
+                    # Store full model_metadata for backward compatibility
+                    metadata['model_metadata'] = model_metadata
 
             # Only add the assistant's response to the conversation
             # The user's turn is handled elsewhere (when thread is created/continued)
+            # PHASE 1 DEBUG (2025-10-24): Log metadata before passing to storage
+            logger.info(f"[PHASE1_DEBUG] format_response calling add_turn with metadata={metadata}")
+
             storage.add_turn(
                 continuation_id,
                 "assistant",

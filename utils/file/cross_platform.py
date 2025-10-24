@@ -98,6 +98,7 @@ class CrossPlatformPathHandler:
         Normalize a cross-platform path to Linux format.
 
         PHASE 2.3.2 (2025-10-22): Enhanced with project marker extraction
+        CRITICAL FIX (2025-10-23): Handle double-prefixed paths from workflow tools
 
         Args:
             file_path: Input path in Windows or Linux format
@@ -112,6 +113,16 @@ class CrossPlatformPathHandler:
 
         if not file_path or not isinstance(file_path, str):
             return file_path, False, "Error: Empty or invalid path provided"
+
+        # CRITICAL FIX (2025-10-23): Handle double-prefixed paths
+        # Workflow tools sometimes pass paths like "/app/c:/Project/..." or "/app/c:\Project\..."
+        # which are already partially normalized. Strip the incorrect /app/ prefix to get back to raw Windows path.
+        # UPDATED: Handle both forward slashes (/app/c:/) and backslashes (/app/c:\)
+        if file_path.startswith('/app/c:/') or file_path.startswith('/app/C:/') or \
+           file_path.startswith('/app/c:\\') or file_path.startswith('/app/C:\\'):
+            logger.warning(f"[PATH_FIX] Detected double-prefixed path, stripping /app/ prefix: {file_path}")
+            file_path = file_path[5:]  # Remove '/app/' prefix (5 characters)
+            logger.info(f"[PATH_FIX] Corrected path: {file_path}")
 
         # CRITICAL: Check Windows paths FIRST before os.path.isabs()
         # because os.path.isabs() returns True for Windows paths on Windows,

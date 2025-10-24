@@ -113,7 +113,7 @@ class KimiIntentAnalysisTool(BaseTool):
             data["recommended_provider"] = "GLM"
         return data
 
-    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list[TextContent]:
         import asyncio as _aio
         from mcp.types import TextContent
         result = await _aio.to_thread(self.run, **arguments)

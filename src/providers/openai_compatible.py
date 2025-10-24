@@ -19,8 +19,19 @@ from .base import (
 )
 from .mixins import RetryMixin
 
+# PHASE 3 (2025-10-23): Import monitoring utilities
+from utils.monitoring import record_kimi_event
+from utils.timezone_helper import log_timestamp
+
 # Initialize logger for this module
 logger = logging.getLogger(__name__)
+
+# FIX (2025-10-24): Enable DEBUG logging for OpenAI SDK and httpx to capture retry errors
+# This helps us understand WHY retries are happening (timeout, 5xx, connection error, etc.)
+if os.getenv("OPENAI_DEBUG_LOGGING", "false").lower() == "true":
+    logging.getLogger("openai").setLevel(logging.DEBUG)
+    logging.getLogger("httpx").setLevel(logging.DEBUG)
+    logger.info("OpenAI SDK debug logging enabled (OPENAI_DEBUG_LOGGING=true)")
 
 
 class OpenAICompatibleProvider(RetryMixin, ModelProvider):
@@ -41,13 +52,17 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
         Args:
             api_key: API key for authentication
             base_url: Base URL for the API endpoint
-            **kwargs: Additional configuration options including timeout
+            **kwargs: Additional configuration options including timeout and max_retries
         """
         super().__init__(api_key, **kwargs)
         self._client = None
         self.base_url = base_url
         self.organization = kwargs.get("organization")
         self.allowed_models = self._parse_allowed_models()
+
+        # FIX (2025-10-24): Store max_retries as instance variable for use in client property
+        # Default to 2 retries (same as OpenAI SDK default)
+        self.max_retries = kwargs.get("max_retries", 2)
 
         # Configure timeouts - especially important for custom/local endpoints
         self.timeout_config = self._configure_timeouts(**kwargs)
@@ -242,6 +257,9 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
                 client_kwargs = {
                     "api_key": self.api_key,
                     "http_client": http_client,
+                    # FIX (2025-10-24): Add max_retries to control retry behavior
+                    # Use instance variable set in __init__
+                    "max_retries": self.max_retries,
                 }
 
                 if self.base_url:
@@ -255,7 +273,7 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
                     client_kwargs["default_headers"] = self.DEFAULT_HEADERS.copy()
 
                 logging.debug(
-                    f"OpenAI client initialized with custom httpx client and timeout: {timeout_config}")
+                    f"OpenAI client initialized with custom httpx client, timeout: {timeout_config}, max_retries: {client_kwargs['max_retries']}")
 
                 # Create OpenAI client with custom httpx client
                 self._client = OpenAI(**client_kwargs)
@@ -264,7 +282,12 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
                 # If all else fails, try absolute minimal client without custom httpx
                 logger.warning(f"Failed to create client with custom httpx, falling back to minimal config: {e}", exc_info=True)
                 try:
-                    minimal_kwargs = {"api_key": self.api_key}
+                    minimal_kwargs = {
+                        "api_key": self.api_key,
+                        # FIX (2025-10-24): Also add max_retries to fallback path
+                        # Use instance variable set in __init__
+                        "max_retries": self.max_retries,
+                    }
                     if self.base_url:
                         minimal_kwargs["base_url"] = self.base_url
                     self._client = OpenAI(**minimal_kwargs)
@@ -439,291 +462,360 @@ class OpenAICompatibleProvider(RetryMixin, ModelProvider):
         **kwargs,
     ) -> ModelResponse:
         """Generate content using the OpenAI-compatible API."""
-        # Validate model
-        if not self.validate_model_name(model_name):
-            raise ValueError(
-                f"Model '{model_name}' not in allowed models list. Allowed models: {self.allowed_models}"
-            )
+        # PHASE 3 (2025-10-23): Initialize monitoring context variables for Kimi
+        is_kimi = self.get_provider_type() == ProviderType.KIMI
+        start_time = time.time() if is_kimi else None
+        request_size = len(str(prompt).encode('utf-8')) if is_kimi else 0
+        error = None
+        response_size = 0
+        total_tokens = 0
 
-        # Resolve and compute effective parameters
-        resolved_model = self._resolve_model_name(model_name)
-        effective_temperature = self.get_effective_temperature(resolved_model, temperature)
+        # PHASE 4 (2025-10-23): Extract continuation_id for session tracking (with conversation_id fallback)
+        continuation_id = kwargs.get("continuation_id") or kwargs.get("conversation_id")
+        if continuation_id and not continuation_id.strip():  # Handle empty strings
+            continuation_id = None
 
-        # Only validate if the model supports temperature
-        if effective_temperature is not None:
-            self.validate_parameters(resolved_model, effective_temperature)
-
-        # Build messages
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-
-        # User content: text + optional images/input_file parts
-        user_content = [{"type": "text", "text": prompt}]
-
-        if images and self._supports_vision(resolved_model):
-            for image_path in images:
-                try:
-                    image_content = self._process_image(image_path)
-                    if image_content:
-                        user_content.append(image_content)
-                except Exception as e:
-                    logging.warning(f"Failed to process image {image_path}: {e}")
-        elif images:
-            logging.warning(f"Model {resolved_model} does not support images, ignoring {len(images)} image(s)")
-
-        file_ids = kwargs.get("file_ids") or []
-        if file_ids and bool(kwargs.get("use_input_file_parts", False)):
-            for fid in file_ids:
-                try:
-                    user_content.append({"type": "input_file", "file_id": fid})
-                except Exception as e:
-                    logging.warning(f"Failed to attach file_id {fid}: {e}")
-
-        if len(user_content) == 1:
-            messages.append({"role": "user", "content": prompt})
-        else:
-            messages.append({"role": "user", "content": user_content})
-
-        # Completion params
-        completion_params = {"model": resolved_model, "messages": messages}
-        # Inject provider-specific headers for idempotency and Kimi context caching if available via http client
         try:
-            # Stable idempotency key derived from semantic call key if provided
-            call_key = kwargs.get("_call_key") or kwargs.get("call_key")
-            if call_key:
-                # Use OpenAI client default headers if accessible
-                hdrs = getattr(self.client, "_default_headers", None)
-                if hdrs is not None:
-                    hdrs["Idempotency-Key"] = str(call_key)
-            # Kimi context cache token reuse
-            cache_token = kwargs.get("_kimi_cache_token") or kwargs.get("kimi_cache_token")
-            if cache_token:
-                hdrs = getattr(self.client, "_default_headers", None)
-                if hdrs is not None:
-                    hdrs["Msh-Context-Cache-Token"] = str(cache_token)
-            # Optional tracing for observability
-            hdrs = getattr(self.client, "_default_headers", None)
-            if hdrs is not None:
-                hdrs.setdefault("Msh-Trace-Mode", "on")
-        except Exception as e:
-            logger.debug(f"Failed to set provider-specific headers: {e}")
+            # Validate model
+            if not self.validate_model_name(model_name):
+                raise ValueError(
+                    f"Model '{model_name}' not in allowed models list. Allowed models: {self.allowed_models}"
+                )
 
-        # Log sanitized payload
-        try:
-            import json as _json
+            # Resolve and compute effective parameters
+            resolved_model = self._resolve_model_name(model_name)
+            effective_temperature = self.get_effective_temperature(resolved_model, temperature)
 
-            def _san(v):
-                if isinstance(v, dict):
-                    return {k: _san(v) for k, v in v.items() if k.lower() not in {"api_key", "authorization"}}
-                if isinstance(v, list):
-                    return [_san(x) for x in v]
-                return v
+            # Only validate if the model supports temperature
+            if effective_temperature is not None:
+                self.validate_parameters(resolved_model, effective_temperature)
 
-            logger.info(
-                "chat.completions.create payload (sanitized): %s",
-                _json.dumps(_san(completion_params), ensure_ascii=False),
-            )
-        except Exception as e:
-            logger.debug(f"Failed to log sanitized payload: {e}")
+            # Build messages
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
 
-        # Determine capability support
-        supports_temperature = effective_temperature is not None
-        if supports_temperature:
-            completion_params["temperature"] = effective_temperature
+            # User content: text + optional images/input_file parts
+            user_content = [{"type": "text", "text": prompt}]
 
-        # Max tokens handling - respects ENFORCE_MAX_TOKENS configuration
-        # If max_output_tokens is explicitly provided, always use it
-        # If not provided and ENFORCE_MAX_TOKENS=true, use provider-specific default
-        # If not provided and ENFORCE_MAX_TOKENS=false, don't set max_tokens (let model decide)
-        if supports_temperature:
-            from config import DEFAULT_MAX_OUTPUT_TOKENS, KIMI_MAX_OUTPUT_TOKENS, ENFORCE_MAX_TOKENS
-            from .base import ProviderType
+            if images and self._supports_vision(resolved_model):
+                for image_path in images:
+                    try:
+                        image_content = self._process_image(image_path)
+                        if image_content:
+                            user_content.append(image_content)
+                    except Exception as e:
+                        logging.warning(f"Failed to process image {image_path}: {e}")
+            elif images:
+                logging.warning(f"Model {resolved_model} does not support images, ignoring {len(images)} image(s)")
 
-            if max_output_tokens:
-                # Explicitly provided - always use it
-                completion_params["max_tokens"] = int(max_output_tokens)
-            elif ENFORCE_MAX_TOKENS:
-                # Not provided, but enforcement is enabled - use provider-specific default
-                provider_type = self.get_provider_type()
-                if provider_type == ProviderType.KIMI and KIMI_MAX_OUTPUT_TOKENS > 0:
-                    completion_params["max_tokens"] = int(KIMI_MAX_OUTPUT_TOKENS)
-                    logger.debug(f"Using default max_tokens={KIMI_MAX_OUTPUT_TOKENS} for Kimi (ENFORCE_MAX_TOKENS=true)")
-                elif DEFAULT_MAX_OUTPUT_TOKENS > 0:
-                    completion_params["max_tokens"] = int(DEFAULT_MAX_OUTPUT_TOKENS)
-                    logger.debug(f"Using default max_tokens={DEFAULT_MAX_OUTPUT_TOKENS} (ENFORCE_MAX_TOKENS=true)")
-            # else: Don't set max_tokens, let the model use its default
+            file_ids = kwargs.get("file_ids") or []
+            if file_ids and bool(kwargs.get("use_input_file_parts", False)):
+                for fid in file_ids:
+                    try:
+                        user_content.append({"type": "input_file", "file_id": fid})
+                    except Exception as e:
+                        logging.warning(f"Failed to attach file_id {fid}: {e}")
 
-        # Optional parameters
-        if kwargs.get("tools"):
-            completion_params["tools"] = kwargs["tools"]
-        if "tool_choice" in kwargs:
-            completion_params["tool_choice"] = kwargs["tool_choice"]
-        if "stream" in kwargs:
-            completion_params["stream"] = kwargs["stream"]
-        if isinstance(kwargs.get("extra_headers"), dict):
-            completion_params["extra_headers"] = kwargs["extra_headers"]
-        if isinstance(kwargs.get("extra_body"), dict):
-            completion_params["extra_body"] = kwargs["extra_body"]
-        for key in ["top_p", "frequency_penalty", "presence_penalty", "seed", "stop"]:
-            if key in kwargs:
-                if not supports_temperature and key in ["top_p", "frequency_penalty", "presence_penalty"]:
-                    continue
-                completion_params[key] = kwargs[key]
+            if len(user_content) == 1:
+                messages.append({"role": "user", "content": prompt})
+            else:
+                messages.append({"role": "user", "content": user_content})
 
-        # Special-case o3-pro
-        if resolved_model == "o3-pro":
-            return self._generate_with_responses_endpoint(
-                model_name=resolved_model,
-                messages=messages,
-                temperature=temperature,
-                max_output_tokens=max_output_tokens,
-                **kwargs,
-            )
-
-        # Use RetryMixin to handle retry logic
-        def _execute_chat_request():
-            # Attach idempotency per attempt as well via request_options if SDK supports it
-            req_opts = {}
+            # Completion params
+            completion_params = {"model": resolved_model, "messages": messages}
+            # Inject provider-specific headers for idempotency and Kimi context caching if available via http client
             try:
+                # Stable idempotency key derived from semantic call key if provided
                 call_key = kwargs.get("_call_key") or kwargs.get("call_key")
                 if call_key:
-                    req_opts["idempotency_key"] = str(call_key)
-            except Exception:
-                pass
-
-            response = self.client.chat.completions.create(**completion_params, **req_opts)
-
-            # Capture Kimi context-cache token from response headers if exposed via client
-            try:
-                # Some SDKs expose last response headers; fall back to provider-specific hooks otherwise
-                headers = getattr(response, "response_headers", None) or getattr(self.client, "_last_response_headers", None)
-                token = None
-                if headers:
-                    for k, v in headers.items():
-                        lk = k.lower()
-                        if lk in ("msh-context-cache-token-saved", "msh_context_cache_token_saved"):
-                            token = v
-                            break
-                if token:
-                    # Save on the provider for reuse in this process; upper layers may also persist per session
-                    setattr(self, "_kimi_cache_token", token)
-                    logger.info("Kimi context cache saved token suffix=%s", str(token)[-6:])
+                    # Use OpenAI client default headers if accessible
+                    hdrs = getattr(self.client, "_default_headers", None)
+                    if hdrs is not None:
+                        hdrs["Idempotency-Key"] = str(call_key)
+                # Kimi context cache token reuse
+                cache_token = kwargs.get("_kimi_cache_token") or kwargs.get("kimi_cache_token")
+                if cache_token:
+                    hdrs = getattr(self.client, "_default_headers", None)
+                    if hdrs is not None:
+                        hdrs["Msh-Context-Cache-Token"] = str(cache_token)
+                # Optional tracing for observability
+                hdrs = getattr(self.client, "_default_headers", None)
+                if hdrs is not None:
+                    hdrs.setdefault("Msh-Trace-Mode", "on")
             except Exception as e:
-                logger.debug(f"Failed to capture Kimi cache token: {e}")
+                logger.debug(f"Failed to set provider-specific headers: {e}")
 
-            # Streaming
-            if completion_params.get("stream") is True:
-                content_parts = []
-                actual_model = None
-                response_id = None
-                created_ts = None
+            # Log sanitized payload
+            try:
+                import json as _json
+
+                def _san(v):
+                    if isinstance(v, dict):
+                        return {k: _san(v) for k, v in v.items() if k.lower() not in {"api_key", "authorization"}}
+                    if isinstance(v, list):
+                        return [_san(x) for x in v]
+                    return v
+
+                logger.info(
+                    "chat.completions.create payload (sanitized): %s",
+                    _json.dumps(_san(completion_params), ensure_ascii=False),
+                )
+            except Exception as e:
+                logger.debug(f"Failed to log sanitized payload: {e}")
+
+            # Determine capability support
+            supports_temperature = effective_temperature is not None
+            if supports_temperature:
+                completion_params["temperature"] = effective_temperature
+
+            # Max tokens handling - respects ENFORCE_MAX_TOKENS configuration
+            # If max_output_tokens is explicitly provided, always use it
+            # If not provided and ENFORCE_MAX_TOKENS=true, use provider-specific default
+            # If not provided and ENFORCE_MAX_TOKENS=false, don't set max_tokens (let model decide)
+            if supports_temperature:
+                from config import DEFAULT_MAX_OUTPUT_TOKENS, KIMI_MAX_OUTPUT_TOKENS, ENFORCE_MAX_TOKENS
+                # ProviderType already imported at module level - no need to import again
+
+                if max_output_tokens:
+                    # Explicitly provided - always use it
+                    completion_params["max_tokens"] = int(max_output_tokens)
+                elif ENFORCE_MAX_TOKENS:
+                    # Not provided, but enforcement is enabled - use provider-specific default
+                    provider_type = self.get_provider_type()
+                    if provider_type == ProviderType.KIMI and KIMI_MAX_OUTPUT_TOKENS > 0:
+                        completion_params["max_tokens"] = int(KIMI_MAX_OUTPUT_TOKENS)
+                        logger.debug(f"Using default max_tokens={KIMI_MAX_OUTPUT_TOKENS} for Kimi (ENFORCE_MAX_TOKENS=true)")
+                    elif DEFAULT_MAX_OUTPUT_TOKENS > 0:
+                        completion_params["max_tokens"] = int(DEFAULT_MAX_OUTPUT_TOKENS)
+                        logger.debug(f"Using default max_tokens={DEFAULT_MAX_OUTPUT_TOKENS} (ENFORCE_MAX_TOKENS=true)")
+                # else: Don't set max_tokens, let the model use its default
+
+            # Optional parameters
+            if kwargs.get("tools"):
+                completion_params["tools"] = kwargs["tools"]
+            if "tool_choice" in kwargs:
+                completion_params["tool_choice"] = kwargs["tool_choice"]
+            if "stream" in kwargs:
+                completion_params["stream"] = kwargs["stream"]
+            if isinstance(kwargs.get("extra_headers"), dict):
+                completion_params["extra_headers"] = kwargs["extra_headers"]
+            if isinstance(kwargs.get("extra_body"), dict):
+                completion_params["extra_body"] = kwargs["extra_body"]
+            for key in ["top_p", "frequency_penalty", "presence_penalty", "seed", "stop"]:
+                if key in kwargs:
+                    if not supports_temperature and key in ["top_p", "frequency_penalty", "presence_penalty"]:
+                        continue
+                    completion_params[key] = kwargs[key]
+
+            # Special-case o3-pro
+            if resolved_model == "o3-pro":
+                return self._generate_with_responses_endpoint(
+                    model_name=resolved_model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_output_tokens=max_output_tokens,
+                    **kwargs,
+                )
+
+            # Use RetryMixin to handle retry logic
+            def _execute_chat_request():
+                # Attach idempotency per attempt as well via request_options if SDK supports it
+                req_opts = {}
                 try:
-                    for event in response:
-                        try:
-                            choice = event.choices[0]
-                            delta = getattr(choice, "delta", None)
-                            if delta and getattr(delta, "content", None):
-                                content_parts.append(delta.content)
-                            msg = getattr(choice, "message", None)
-                            if msg and getattr(msg, "content", None):
-                                content_parts.append(msg.content)
-                            if actual_model is None and getattr(event, "model", None):
-                                actual_model = event.model
-                            if response_id is None and getattr(event, "id", None):
-                                response_id = event.id
-                            if created_ts is None and getattr(event, "created", None):
-                                created_ts = event.created
-                        except Exception as e:
-                            logger.debug(f"Failed to process streaming event: {e}")
-                            continue
-                except Exception as stream_err:
-                    raise RuntimeError(f"Streaming failed: {stream_err}") from stream_err
+                    call_key = kwargs.get("_call_key") or kwargs.get("call_key")
+                    if call_key:
+                        req_opts["idempotency_key"] = str(call_key)
+                except Exception:
+                    pass
 
-                content = "".join(content_parts)
+                response = self.client.chat.completions.create(**completion_params, **req_opts)
+
+                # Capture Kimi context-cache token from response headers if exposed via client
+                try:
+                    # Some SDKs expose last response headers; fall back to provider-specific hooks otherwise
+                    headers = getattr(response, "response_headers", None) or getattr(self.client, "_last_response_headers", None)
+                    token = None
+                    if headers:
+                        for k, v in headers.items():
+                            lk = k.lower()
+                            if lk in ("msh-context-cache-token-saved", "msh_context_cache_token_saved"):
+                                token = v
+                                break
+                    if token:
+                        # Save on the provider for reuse in this process; upper layers may also persist per session
+                        setattr(self, "_kimi_cache_token", token)
+                        logger.info("Kimi context cache saved token suffix=%s", str(token)[-6:])
+                except Exception as e:
+                    logger.debug(f"Failed to capture Kimi cache token: {e}")
+
+                # Streaming
+                if completion_params.get("stream") is True:
+                    content_parts = []
+                    actual_model = None
+                    response_id = None
+                    created_ts = None
+
+                    # NEW (2025-10-24): Extract on_chunk callback for progressive streaming
+                    on_chunk_callback = kwargs.get("on_chunk")
+
+                    try:
+                        for event in response:
+                            try:
+                                choice = event.choices[0]
+                                delta = getattr(choice, "delta", None)
+                                if delta and getattr(delta, "content", None):
+                                    chunk_text = delta.content
+                                    content_parts.append(chunk_text)
+
+                                    # NEW (2025-10-24): Forward chunk immediately if callback provided
+                                    if on_chunk_callback:
+                                        from streaming.streaming_adapter import _safe_call_chunk_callback
+                                        _safe_call_chunk_callback(on_chunk_callback, chunk_text)
+
+                                msg = getattr(choice, "message", None)
+                                if msg and getattr(msg, "content", None):
+                                    content_parts.append(msg.content)
+                                if actual_model is None and getattr(event, "model", None):
+                                    actual_model = event.model
+                                if response_id is None and getattr(event, "id", None):
+                                    response_id = event.id
+                                if created_ts is None and getattr(event, "created", None):
+                                    created_ts = event.created
+                            except Exception as e:
+                                logger.debug(f"Failed to process streaming event: {e}")
+                                continue
+                    except Exception as stream_err:
+                        raise RuntimeError(f"Streaming failed: {stream_err}") from stream_err
+
+                    content = "".join(content_parts)
+                    return ModelResponse(
+                        content=content,
+                        usage=None,
+                        model_name=model_name,
+                        friendly_name=self.FRIENDLY_NAME,
+                        provider=self.get_provider_type(),
+                        metadata={
+                            "finish_reason": "stop",
+                            "model": actual_model or model_name,
+                            "id": response_id,
+                            "created": created_ts,
+                            "streamed": True,
+                        },
+                    )
+
+                # Non-streaming
+                choice0 = None
+                try:
+                    choices = getattr(response, "choices", []) or []
+                    choice0 = choices[0] if len(choices) > 0 else None
+                except Exception as e:
+                    logger.debug(f"Failed to extract choices from response: {e}")
+                    choice0 = None
+
+                content = None
+                try:
+                    if choice0 is not None:
+                        msg = getattr(choice0, "message", None)
+                        if msg is not None and getattr(msg, "content", None):
+                            content = msg.content
+                except Exception as e:
+                    logger.debug(f"Failed to extract message content: {e}")
+                if not content and choice0 is not None:
+                    try:
+                        if getattr(choice0, "content", None):
+                            content = choice0.content
+                    except Exception as e:
+                        logger.debug(f"Failed to extract choice content: {e}")
+                if not content and choice0 is not None:
+                    try:
+                        delta = getattr(choice0, "delta", None)
+                        if delta is not None and getattr(delta, "content", None):
+                            content = delta.content
+                    except Exception as e:
+                        logger.debug(f"Failed to extract delta content: {e}")
+                if not content:
+                    content = getattr(response, "content", None) or ""
+
+                usage = self._extract_usage(response)
+
+                # Convert response to dict for metadata storage
+                raw_dict = None
+                try:
+                    if hasattr(response, "model_dump"):
+                        raw_dict = response.model_dump()
+                    elif isinstance(response, dict):
+                        raw_dict = response
+                except Exception as e:
+                    logger.debug(f"Failed to convert response to dict: {e}")
+                    raw_dict = None
+
                 return ModelResponse(
-                    content=content,
-                    usage=None,
-                    model_name=model_name,
+                    content=(content or ""),
+                    usage=(usage or {}),
+                    model_name=(getattr(response, "model", None) or model_name or ""),
                     friendly_name=self.FRIENDLY_NAME,
                     provider=self.get_provider_type(),
                     metadata={
-                        "finish_reason": "stop",
-                        "model": actual_model or model_name,
-                        "id": response_id,
-                        "created": created_ts,
-                        "streamed": True,
+                        "finish_reason": getattr(choice0, "finish_reason", None)
+                        or getattr(getattr(response, "choices", [{}])[0], "finish_reason", None)
+                        or "Unknown",
+                        "model": getattr(response, "model", None) or model_name,
+                        "id": getattr(response, "id", None),
+                        "created": getattr(response, "created", None),
+                        "raw": raw_dict,  # Store raw response for tool_calls extraction
                     },
                 )
 
-            # Non-streaming
-            choice0 = None
-            try:
-                choices = getattr(response, "choices", []) or []
-                choice0 = choices[0] if len(choices) > 0 else None
-            except Exception as e:
-                logger.debug(f"Failed to extract choices from response: {e}")
-                choice0 = None
-
-            content = None
-            try:
-                if choice0 is not None:
-                    msg = getattr(choice0, "message", None)
-                    if msg is not None and getattr(msg, "content", None):
-                        content = msg.content
-            except Exception as e:
-                logger.debug(f"Failed to extract message content: {e}")
-            if not content and choice0 is not None:
-                try:
-                    if getattr(choice0, "content", None):
-                        content = choice0.content
-                except Exception as e:
-                    logger.debug(f"Failed to extract choice content: {e}")
-            if not content and choice0 is not None:
-                try:
-                    delta = getattr(choice0, "delta", None)
-                    if delta is not None and getattr(delta, "content", None):
-                        content = delta.content
-                except Exception as e:
-                    logger.debug(f"Failed to extract delta content: {e}")
-            if not content:
-                content = getattr(response, "content", None) or ""
-
-            usage = self._extract_usage(response)
-
-            # Convert response to dict for metadata storage
-            raw_dict = None
-            try:
-                if hasattr(response, "model_dump"):
-                    raw_dict = response.model_dump()
-                elif isinstance(response, dict):
-                    raw_dict = response
-            except Exception as e:
-                logger.debug(f"Failed to convert response to dict: {e}")
-                raw_dict = None
-
-            return ModelResponse(
-                content=(content or ""),
-                usage=(usage or {}),
-                model_name=(getattr(response, "model", None) or model_name or ""),
-                friendly_name=self.FRIENDLY_NAME,
-                provider=self.get_provider_type(),
-                metadata={
-                    "finish_reason": getattr(choice0, "finish_reason", None)
-                    or getattr(getattr(response, "choices", [{}])[0], "finish_reason", None)
-                    or "Unknown",
-                    "model": getattr(response, "model", None) or model_name,
-                    "id": getattr(response, "id", None),
-                    "created": getattr(response, "created", None),
-                    "raw": raw_dict,  # Store raw response for tool_calls extraction
-                },
+            result = self._execute_with_retry(
+                operation=_execute_chat_request,
+                operation_name=f"{self.FRIENDLY_NAME} chat completion for {model_name}",
+                is_retryable_fn=self._is_error_retryable
             )
 
-        return self._execute_with_retry(
-            operation=_execute_chat_request,
-            operation_name=f"{self.FRIENDLY_NAME} chat completion for {model_name}",
-            is_retryable_fn=self._is_error_retryable
-        )
+            # PHASE 3 (2025-10-23): Update monitoring context variables for Kimi
+            if is_kimi and result:
+                response_size = len(str(result.content).encode('utf-8'))
+                if result.usage:
+                    total_tokens = result.usage.get("total_tokens", 0)
+
+            return result
+        except Exception as e:
+            if is_kimi:
+                error = str(e)
+            raise
+        finally:
+            # PHASE 3 (2025-10-23): ALWAYS record monitoring event for Kimi
+            if is_kimi:
+                logger.info(f"[MONITORING_DEBUG] FINALLY BLOCK ENTERED for Kimi model={model_name}")
+
+                try:
+                    response_time_ms = (time.time() - start_time) * 1000
+
+                    # Determine direction based on error state
+                    direction = "error" if error else "receive"
+
+                    logger.info(f"[MONITORING_DEBUG] About to call record_kimi_event for model={model_name}, tokens={total_tokens}, error={error}")
+
+                    # PHASE 4 (2025-10-23): Include continuation_id for session tracking
+                    metadata = {
+                        "model": model_name,
+                        "tokens": total_tokens,
+                        "timestamp": log_timestamp()
+                    }
+                    if continuation_id:
+                        metadata["continuation_id"] = continuation_id
+
+                    record_kimi_event(
+                        direction=direction,
+                        function_name="openai_compatible.generate_content",
+                        data_size=response_size if not error else request_size,
+                        response_time_ms=response_time_ms,
+                        error=error if error else None,
+                        metadata=metadata
+                    )
+                except Exception as e:
+                    logger.error(f"[MONITORING_DEBUG] FINALLY BLOCK ERROR: {e}", exc_info=True)
 
     def count_tokens(self, text: str, model_name: str) -> int:
         """Count tokens for the given text.

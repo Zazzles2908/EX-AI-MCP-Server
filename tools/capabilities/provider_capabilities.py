@@ -49,7 +49,7 @@ class ProviderCapabilitiesTool(BaseTool):
     def format_response(self, response: str, request: ToolRequest, model_info: dict | None = None) -> str:
         return response
 
-    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list[TextContent]:
         include_tools = bool(arguments.get("include_tools", True))
         show_advanced = bool(arguments.get("show_advanced", False))
         invalidate_cache = bool(arguments.get("invalidate_cache", False))

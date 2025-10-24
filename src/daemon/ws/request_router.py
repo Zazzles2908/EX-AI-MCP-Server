@@ -41,6 +41,9 @@ from src.daemon.middleware.semaphore_tracker import get_global_tracker
 from utils.monitoring import record_websocket_event
 from utils.timezone_helper import log_timestamp
 
+# PHASE 1 (2025-10-24): Import error capture for comprehensive monitoring
+from utils.monitoring.error_capture import capture_errors, extract_tool_context
+
 logger = logging.getLogger(__name__)
 
 # Initialize semaphore tracker for leak detection (EXAI recommendation 2025-10-21)
@@ -268,6 +271,15 @@ class ToolExecutor:
         self.progress_interval = progress_interval
         self.use_per_session_semaphores = use_per_session_semaphores
 
+    @capture_errors(
+        connection_type="websocket",
+        script_name="request_router.py",
+        context_extractor=lambda *args, **kwargs: {
+            "tool_name": args[3] if len(args) > 3 else kwargs.get("name"),
+            "session_id": args[2] if len(args) > 2 else kwargs.get("session_id"),
+            "request_id": args[5] if len(args) > 5 else kwargs.get("req_id"),
+        }
+    )
     async def execute_tool(
         self,
         ws: WebSocketServerProtocol,
@@ -294,104 +306,102 @@ class ToolExecutor:
         provider_name = self._get_provider_for_tool(name)
         provider_sem = self.provider_sems.get(provider_name) if provider_name else None
 
-        # Acquire semaphores manually (global + provider)
-        global_acquired = False
-        provider_acquired = False
-        global_sem_id = None
-        provider_sem_id = None
+        # ARCHITECTURAL FIX (2025-10-23): Use SemaphoreGuard context manager
+        # to prevent double-release bugs where recovery system and finally block
+        # both try to release the same semaphore.
+        #
+        # ROOT CAUSE: Manual acquire/release pattern was error-prone:
+        # 1. Recovery system releases semaphores to fix leaks
+        # 2. Finally block also tries to release same semaphores
+        # 3. Causes "BoundedSemaphore released too many times" error
+        #
+        # FIX: SemaphoreGuard ensures proper acquire/release lifecycle
+        # and handles edge cases like double-release gracefully.
 
-        # Result variables - set these instead of returning early
+        # Result variables
         success = False
         outputs = None
         error_msg = None
 
-        try:
-            # Acquire global semaphore with tracking
-            await self.global_sem.acquire()
-            global_acquired = True
-            global_sem_id = await _semaphore_tracker.track_acquire(
-                f"global_sem_{name}",
-                capture_stack=False  # Disable stack capture for performance
-            )
-
-            # Acquire provider semaphore if needed with tracking
+        # Use context managers for safe semaphore management
+        async with SemaphoreGuard(self.global_sem, f"global_sem_{name}"):
+            # Acquire provider semaphore if needed
             if provider_sem:
-                await provider_sem.acquire()
-                provider_acquired = True
-                provider_sem_id = await _semaphore_tracker.track_acquire(
-                    f"provider_sem_{provider_name}_{name}",
-                    capture_stack=False
-                )
-
-            # Execute tool with timeout and progress updates
-            try:
-                # Start progress task
-                progress_task = asyncio.create_task(
-                    self._send_progress_updates(ws, req_id, resilient_ws_manager)
-                )
-
-                try:
-                    # Execute tool with timeout
-                    result = await asyncio.wait_for(
-                        tool.execute(arguments),
-                        timeout=self.call_timeout
+                async with SemaphoreGuard(provider_sem, f"provider_sem_{provider_name}_{name}"):
+                    # Execute tool with timeout and progress updates
+                    success, outputs, error_msg = await self._execute_tool_with_progress(
+                        tool, arguments, ws, req_id, resilient_ws_manager
                     )
-
-                    # Extract outputs (result is already a list of TextContent)
-                    outputs = normalize_outputs(result)
-                    success = True
-
-                except asyncio.TimeoutError:
-                    error_msg = f"Tool execution timed out after {self.call_timeout}s"
-                    logger.warning(f"[{req_id}] {error_msg}")
-
-                except Exception as e:
-                    error_msg = f"Tool execution failed: {str(e)}"
-                    logger.error(f"[{req_id}] {error_msg}", exc_info=True)
-
-                finally:
-                    # Cancel progress task
-                    progress_task.cancel()
-                    try:
-                        await progress_task
-                    except asyncio.CancelledError:
-                        pass
-
-            except Exception as e:
-                error_msg = f"Semaphore management failed: {str(e)}"
-                logger.error(f"[{req_id}] {error_msg}", exc_info=True)
-
-        finally:
-            # Release semaphores in reverse order with tracking
-            if provider_acquired and provider_sem:
-                try:
-                    provider_sem.release()
-                    if provider_sem_id:
-                        await _semaphore_tracker.track_release(
-                            provider_sem_id,
-                            f"provider_sem_{provider_name}_{name}"
-                        )
-                except ValueError as e:
-                    # Semaphore was already released (likely by recovery system)
-                    logger.warning(f"[{req_id}] Provider semaphore already released (recovery system): {e}")
-                except Exception as e:
-                    logger.error(f"[{req_id}] Failed to release provider semaphore: {e}")
-
-            if global_acquired:
-                try:
-                    self.global_sem.release()
-                    if global_sem_id:
-                        await _semaphore_tracker.track_release(
-                            global_sem_id,
-                            f"global_sem_{name}"
-                        )
-                except ValueError as e:
-                    # Semaphore was already released (likely by recovery system)
-                    logger.warning(f"[{req_id}] Global semaphore already released (recovery system): {e}")
-                except Exception as e:
-                    logger.error(f"[{req_id}] Failed to release global semaphore: {e}")
+            else:
+                # No provider semaphore needed
+                success, outputs, error_msg = await self._execute_tool_with_progress(
+                    tool, arguments, ws, req_id, resilient_ws_manager
+                )
 
         # Return result after semaphores are released
+        return success, outputs, error_msg
+
+    async def _execute_tool_with_progress(
+        self,
+        tool,
+        arguments: dict,
+        ws: WebSocketServerProtocol,
+        req_id: str,
+        resilient_ws_manager
+    ) -> tuple:
+        """
+        Execute tool with timeout and progress updates.
+
+        Extracted from _execute_tool_with_semaphore to work with SemaphoreGuard.
+
+        Returns:
+            Tuple of (success, outputs, error_msg)
+        """
+        success = False
+        outputs = None
+        error_msg = None
+
+        # Start progress task
+        progress_task = asyncio.create_task(
+            self._send_progress_updates(ws, req_id, resilient_ws_manager)
+        )
+
+        try:
+            # NEW (2025-10-24): Create streaming callback for progressive chunk delivery
+            async def on_chunk(chunk: str):
+                """Forward streaming chunks to WebSocket client."""
+                await self._send_stream_chunk(ws, req_id, chunk, resilient_ws_manager)
+
+            # Execute tool with timeout and streaming callback
+            result = await asyncio.wait_for(
+                tool.execute(arguments, on_chunk=on_chunk),
+                timeout=self.call_timeout
+            )
+
+            # Extract outputs (result is already a list of TextContent)
+            outputs = normalize_outputs(result)
+            success = True
+
+            # NEW (2025-10-24): Send completion message after streaming finishes
+            # This signals to the client that streaming is complete
+            await self._send_stream_completion(ws, req_id, resilient_ws_manager)
+
+        except asyncio.TimeoutError:
+            error_msg = f"Tool execution timed out after {self.call_timeout}s"
+            logger.warning(f"[{req_id}] {error_msg}")
+
+        except Exception as e:
+            error_msg = f"Tool execution failed: {str(e)}"
+            logger.error(f"[{req_id}] {error_msg}", exc_info=True)
+
+        finally:
+            # Cancel progress task
+            progress_task.cancel()
+            try:
+                await progress_task
+            except asyncio.CancelledError:
+                pass
+
         return success, outputs, error_msg
 
     async def _send_progress_updates(
@@ -419,6 +429,60 @@ class ToolExecutor:
         except Exception as e:
             logger.debug(f"Progress update failed: {e}")
             # Don't propagate - progress updates are best-effort
+
+    async def _send_stream_chunk(
+        self,
+        ws: WebSocketServerProtocol,
+        req_id: str,
+        chunk: str,
+        resilient_ws_manager=None
+    ) -> None:
+        """
+        Send a streaming chunk to the client.
+
+        NEW (2025-10-24): Progressive streaming support for Z.ai and Moonshot.
+        Sends chunks immediately as they arrive from the AI provider.
+        """
+        try:
+            await _safe_send(
+                ws,
+                {
+                    "op": "stream_chunk",
+                    "request_id": req_id,
+                    "chunk": chunk,
+                    "timestamp": log_timestamp()
+                },
+                resilient_ws_manager=resilient_ws_manager
+            )
+        except Exception as e:
+            logger.debug(f"Stream chunk send failed: {e}")
+            # Don't propagate - streaming is best-effort
+
+    async def _send_stream_completion(
+        self,
+        ws: WebSocketServerProtocol,
+        req_id: str,
+        resilient_ws_manager=None
+    ) -> None:
+        """
+        Send a streaming completion message to the client.
+
+        NEW (2025-10-24): Signals that streaming has finished.
+        This allows clients to know when to stop waiting for chunks.
+        """
+        try:
+            await _safe_send(
+                ws,
+                {
+                    "op": "stream_complete",
+                    "request_id": req_id,
+                    "timestamp": log_timestamp()
+                },
+                resilient_ws_manager=resilient_ws_manager
+            )
+        except Exception as e:
+            logger.debug(f"Stream completion send failed: {e}")
+            # Don't propagate - completion message is best-effort
 
     def _get_provider_for_tool(self, tool_name: str) -> Optional[str]:
         """
@@ -499,6 +563,16 @@ class RequestRouter:
         # Configuration
         self.retry_after_secs = int(validated_env.get("RETRY_AFTER_SECS", 5))
 
+    # PHASE 1 (2025-10-24): Wrap handle_message with error capture to catch validation errors
+    @capture_errors(
+        connection_type="websocket",
+        script_name="request_router.py",
+        context_extractor=lambda *args, **kwargs: {
+            "operation": args[3].get("op") if len(args) > 3 and isinstance(args[3], dict) else kwargs.get("msg", {}).get("op"),
+            "session_id": args[2] if len(args) > 2 else kwargs.get("session_id"),
+            "request_id": args[3].get("request_id") if len(args) > 3 and isinstance(args[3], dict) else kwargs.get("msg", {}).get("request_id"),
+        }
+    )
     async def handle_message(
         self,
         ws: WebSocketServerProtocol,
@@ -624,6 +698,28 @@ class RequestRouter:
             arguments = validate_tool_arguments(name, arguments)
             logger.debug(f"[{req_id}] Arguments validated successfully")
         except InputValidationError as e:
+            # PHASE 1 (2025-10-24): Record validation error in monitoring system
+            import traceback
+            from utils.monitoring import get_monitor
+            get_monitor().record_event(
+                connection_type="websocket",
+                direction="error",
+                script_name="request_router.py",
+                function_name="RequestRouter._handle_call_tool",
+                data_size_bytes=0,
+                error=f"ValidationError: {str(e)}",
+                metadata={
+                    "error_type": "ValidationError",
+                    "error_message": str(e),
+                    "error_traceback": traceback.format_exc(),
+                    "tool_name": name,
+                    "session_id": session_id,
+                    "request_id": req_id,
+                    "field": e.field if hasattr(e, 'field') else None,
+                    "timestamp": log_timestamp()
+                }
+            )
+
             error_response = e.to_response(request_id=req_id)
             log_error(ErrorCode.VALIDATION_ERROR, str(e), request_id=req_id)
             await _safe_send(ws, {

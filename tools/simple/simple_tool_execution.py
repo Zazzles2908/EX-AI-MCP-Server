@@ -36,7 +36,7 @@ class SimpleToolExecutionMixin:
     # Main Execution Flow
     # ================================================================================
     
-    async def execute(self, arguments: dict[str, Any]) -> list:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list:
         """
         Execute the simple tool using the comprehensive flow from old base.py.
         
@@ -133,7 +133,8 @@ class SimpleToolExecutionMixin:
 
                     # Get thread context
                     # BUG FIX #14 (2025-10-20): Removed build_conversation_history import (deleted function)
-                    from utils.conversation.memory import add_turn, get_thread
+                    # CRITICAL FIX (2025-10-24): Use global_storage to prevent 4x Supabase duplication
+                    from utils.conversation.global_storage import add_turn, get_thread
 
                     thread_context = get_thread(continuation_id)
                     

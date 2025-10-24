@@ -71,7 +71,13 @@ async def handle_list_tools() -> list[Tool]:
             continue
         if denylist and nm in denylist:
             continue
-        schema = tool.get_input_schema()
+
+        # Use enhanced schema if available, fallback to base schema for compatibility
+        if hasattr(tool, 'get_enhanced_input_schema'):
+            schema = tool.get_enhanced_input_schema()
+        else:
+            schema = tool.get_input_schema()
+
         tools.append(Tool(name=tool.name, description=tool.description, inputSchema=schema))
 
     # Log cache efficiency info

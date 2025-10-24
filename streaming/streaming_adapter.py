@@ -15,13 +15,70 @@ from typing import Any, Callable, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 
+def _safe_call_chunk_callback(callback: Callable[[str], None], chunk: str) -> None:
+    """
+    Safely call a chunk callback, handling both sync and async callbacks.
+
+    NEW (2025-10-24): Helper function for progressive streaming support.
+
+    Args:
+        callback: Sync or async callback function
+        chunk: Text chunk to forward
+
+    Note:
+        For async callbacks, creates a task in the running event loop.
+        Falls back to asyncio.run() if no loop is running.
+    """
+    import asyncio
+    import inspect
+
+    try:
+        if inspect.iscoroutinefunction(callback):
+            # Async callback - need to run in event loop
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Create task in running loop (don't await - fire and forget)
+                    asyncio.create_task(callback(chunk))
+                else:
+                    # Run in new loop
+                    loop.run_until_complete(callback(chunk))
+            except RuntimeError:
+                # No event loop - create one
+                asyncio.run(callback(chunk))
+        else:
+            # Sync callback
+            callback(chunk)
+    except Exception as e:
+        # Log but don't propagate - streaming is best-effort
+        logger.debug(f"Chunk callback error: {e}")
+
+
 def stream_openai_chat_events(
     *,
     client: Any,
     create_kwargs: dict[str, Any],
     on_delta: Optional[Callable[[str], None]] = None,
+    on_chunk: Optional[Callable[[str], None]] = None,  # NEW (2025-10-24): For WebSocket progressive forwarding
     extract_reasoning: Optional[bool] = None,
 ) -> Tuple[str, List[Any]]:
+    """
+    Stream OpenAI-compatible chat events with optional progressive chunk forwarding.
+
+    Args:
+        client: OpenAI-compatible client instance
+        create_kwargs: Arguments for client.chat.completions.create()
+        on_delta: Optional callback for each content delta (legacy)
+        on_chunk: Optional async callback for progressive WebSocket streaming (NEW)
+        extract_reasoning: Whether to extract reasoning tokens
+
+    Returns:
+        Tuple of (complete_content, reasoning_events)
+
+    Note:
+        on_chunk callback can be sync or async. If async, it will be awaited.
+        This enables real-time progressive streaming to WebSocket clients.
+    """
     """Iterate OpenAI-compatible chat.completions.create(stream=True) events.
 
     Supports both standard content streaming and thinking mode (reasoning_content).
@@ -83,6 +140,8 @@ def stream_openai_chat_events(
                                 # Optionally call on_delta for reasoning too
                                 if on_delta:
                                     on_delta(str(reasoning_piece))
+                                if on_chunk:  # NEW (2025-10-24): Forward reasoning chunks too
+                                    _safe_call_chunk_callback(on_chunk, str(reasoning_piece))
 
                         # Extract regular content
                         piece = getattr(delta, "content", None)
@@ -94,6 +153,8 @@ def stream_openai_chat_events(
                             content_parts.append(s)
                             if on_delta:
                                 on_delta(s)
+                            if on_chunk:  # NEW (2025-10-24): Forward chunk for WebSocket streaming
+                                _safe_call_chunk_callback(on_chunk, s)
             except Exception as e:
                 # Continue on best-effort parsing
                 logger.debug(f"Failed to parse streaming chunk: {e}")

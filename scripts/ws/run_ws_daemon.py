@@ -30,7 +30,7 @@ from src.middleware.correlation import setup_correlation_logging
 
 async def main_with_monitoring():
     """
-    Start WebSocket daemon, monitoring server, health server, and metrics server concurrently.
+    Start WebSocket daemon, monitoring server, health server, metrics server, and AI auditor concurrently.
     Uses asyncio.gather to run all servers in parallel.
 
     PHASE 3 CRITICAL GAPS (2025-10-18):
@@ -38,6 +38,9 @@ async def main_with_monitoring():
     - Added Prometheus metrics server (port 8000)
     - Added correlation ID logging setup
     - Added periodic metrics updates
+
+    PHASE 0.1 (2025-10-24):
+    - Added AI Auditor service for real-time system observation
     """
     # Setup correlation ID logging
     setup_correlation_logging()
@@ -47,6 +50,7 @@ async def main_with_monitoring():
     monitoring_enabled = os.getenv("MONITORING_ENABLED", "true").lower() in ("true", "1", "yes")
     health_enabled = os.getenv("HEALTH_CHECK_ENABLED", "true").lower() in ("true", "1", "yes")
     metrics_enabled = os.getenv("METRICS_ENABLED", "true").lower() in ("true", "1", "yes")
+    auditor_enabled = os.getenv("AUDITOR_ENABLED", "true").lower() in ("true", "1", "yes")
 
     # Setup monitoring broadcast hook if enabled
     if monitoring_enabled:
@@ -83,6 +87,29 @@ async def main_with_monitoring():
     if metrics_enabled:
         servers.append(start_periodic_updates(interval=60))
         logger.info(f"[MAIN] Periodic metrics updates enabled (60s interval)")
+
+    # PHASE 0.1 (2025-10-24): Start AI Auditor service
+    if auditor_enabled:
+        try:
+            from utils.monitoring.ai_auditor import AIAuditor
+
+            # CRITICAL FIX (2025-10-24): Pass environment variables to AIAuditor constructor
+            auditor_model = os.getenv('AUDITOR_MODEL', 'glm-4.5-flash')
+            auditor_batch_size = int(os.getenv('AUDITOR_BATCH_SIZE', '10'))
+            auditor_interval = int(os.getenv('AUDITOR_ANALYSIS_INTERVAL', '5'))
+            auditor_ws_url = os.getenv('AUDITOR_WS_URL', 'ws://localhost:8080/ws')
+
+            auditor = AIAuditor(
+                model=auditor_model,
+                batch_size=auditor_batch_size,
+                analysis_interval=auditor_interval,
+                ws_url=auditor_ws_url
+            )
+            servers.append(auditor.start())
+            logger.info(f"[MAIN] AI Auditor service enabled (model: {auditor_model}, batch_size: {auditor_batch_size})")
+        except Exception as e:
+            logger.error(f"[MAIN] Failed to start AI Auditor: {e}")
+            auditor_enabled = False
 
     logger.info(f"[MAIN] Starting {len(servers)} servers concurrently")
 

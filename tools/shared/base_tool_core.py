@@ -90,15 +90,115 @@ class BaseToolCore(ABC):
     def get_input_schema(self) -> dict[str, Any]:
         """
         Return the JSON Schema that defines this tool's parameters.
-        
+
         This schema is used by MCP clients to validate inputs before
         sending requests. It should match the tool's request model.
-        
+
         Returns:
             dict[str, Any]: JSON Schema object defining required and optional parameters
         """
         pass
-    
+
+    def get_enhanced_input_schema(self) -> dict[str, Any]:
+        """
+        Return an enhanced JSON Schema with capability hints and decision matrices.
+
+        This method extends the base schema with additional metadata to help AI agents
+        discover capabilities without needing external documentation:
+        - x-capability-hints: Usage guidance for complex parameters
+        - x-decision-matrix: Clear decision criteria for parameter choices
+        - x-related-tools: Suggested tool transitions and escalation paths
+        - x-examples: Common usage patterns
+
+        The enhanced schema is backward-compatible with standard JSON Schema validators.
+
+        Returns:
+            dict[str, Any]: Enhanced JSON Schema with capability metadata
+        """
+        # Get base schema from the tool
+        base_schema = self.get_input_schema()
+
+        # Add capability hints to file parameters if present
+        if "properties" in base_schema and "files" in base_schema["properties"]:
+            base_schema["properties"]["files"]["x-capability-hints"] = {
+                "threshold": "5KB",
+                "alternative_tool": "kimi_upload_files",
+                "benefit": "Saves 70-80% tokens for large files",
+                "usage": "Use 'files' parameter for <5KB files, 'kimi_upload_files' tool for >5KB files"
+            }
+            base_schema["properties"]["files"]["x-decision-matrix"] = {
+                "file_size": {
+                    "<5KB": "Use 'files' parameter - embeds content as text in prompt",
+                    ">5KB": "Use 'kimi_upload_files' tool - saves 70-80% tokens, enables persistent reference"
+                }
+            }
+
+        # Add capability hints to continuation_id if present
+        if "properties" in base_schema and "continuation_id" in base_schema["properties"]:
+            base_schema["properties"]["continuation_id"]["x-capability-hints"] = {
+                "usage_pattern": "Multi-turn conversations",
+                "how_it_works": "Automatically retrieves conversation history",
+                "benefit": "Enables coherent multi-turn workflows without repeating context"
+            }
+            base_schema["properties"]["continuation_id"]["x-examples"] = [
+                {
+                    "scenario": "First call",
+                    "returns": "continuation_id='abc123'",
+                    "next_call": "Include continuation_id='abc123' in subsequent calls"
+                }
+            ]
+
+        # Add capability hints to model parameter if present
+        if "properties" in base_schema and "model" in base_schema["properties"]:
+            base_schema["properties"]["model"]["x-capability-hints"] = {
+                "default": "glm-4.5-flash",
+                "recommended": {
+                    "simple_tasks": "glm-4.5-flash (fast, cost-effective)",
+                    "complex_analysis": "glm-4.6 (comprehensive reasoning)",
+                    "vision_tasks": "glm-4.5v (image understanding)"
+                }
+            }
+            base_schema["properties"]["model"]["x-decision-matrix"] = {
+                "task_complexity": {
+                    "simple": "glm-4.5-flash - Quick responses, lower cost",
+                    "moderate": "glm-4.5 - Balanced performance",
+                    "complex": "glm-4.6 - Deep reasoning, comprehensive analysis"
+                }
+            }
+
+        # Add capability hints to use_websearch if present
+        if "properties" in base_schema and "use_websearch" in base_schema["properties"]:
+            base_schema["properties"]["use_websearch"]["x-capability-hints"] = {
+                "when_to_enable": [
+                    "Researching best practices",
+                    "Exploring frameworks/technologies",
+                    "Finding current documentation",
+                    "Architectural design discussions"
+                ],
+                "overhead": "Adds payload size and processing time even when not actively searching",
+                "recommendation": "Enable selectively for tools that benefit from external knowledge"
+            }
+
+        # Add tool relationship metadata (can be overridden by specific tools)
+        base_schema["x-related-tools"] = self._get_related_tools()
+
+        return base_schema
+
+    def _get_related_tools(self) -> dict[str, list[str]]:
+        """
+        Return related tools for escalation and alternatives.
+
+        This method can be overridden by specific tools to provide
+        custom tool relationship metadata.
+
+        Returns:
+            dict: Dictionary with 'escalation' and 'alternatives' keys
+        """
+        return {
+            "escalation": [],
+            "alternatives": []
+        }
+
     @abstractmethod
     def get_system_prompt(self) -> str:
         """

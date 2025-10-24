@@ -160,26 +160,29 @@ class ModelManagementMixin:
     def get_model_provider(self, model_name: str) -> ModelProvider:
         """
         Get the appropriate model provider for the given model name.
-        
+
         This method performs runtime validation to ensure the requested model
         is actually available with the current API key configuration.
-        
+
         Args:
             model_name: Name of the model to get provider for
-        
+
         Returns:
             ModelProvider: The provider instance for the model
-        
+
         Raises:
             ValueError: If the model is not available or provider not found
         """
         try:
+            logger.info(f"TOOL_MODEL_DEBUG: get_model_provider called for model '{model_name}' in tool '{self.name}'")
             provider = ModelProviderRegistry.get_provider_for_model(model_name)
+            logger.info(f"TOOL_MODEL_DEBUG: get_provider_for_model returned: {provider}")
             if not provider:
                 logger.error(f"No provider found for model '{model_name}' in {self.name} tool")
                 available_models = ModelProviderRegistry.get_available_models()
+                logger.error(f"TOOL_MODEL_DEBUG: Available models from registry: {available_models}")
                 raise ValueError(f"Model '{model_name}' is not available. Available models: {available_models}")
-            
+
             return provider
         except Exception as e:
             logger.error(f"Failed to get provider for model '{model_name}' in {self.name} tool: {e}")
