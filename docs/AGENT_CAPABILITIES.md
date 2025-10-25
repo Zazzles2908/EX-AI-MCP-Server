@@ -2,7 +2,9 @@
 
 **Purpose:** Quick reference for AI agents to discover and use system capabilities efficiently.
 
-**Last Updated:** 2025-10-25
+**Last Updated:** 2025-10-25 (Phase 2.3 Enhancements)
+
+**⚠️  CRITICAL UPDATE (2025-10-25):** File size validation now active! Files >5KB will trigger automatic warnings suggesting kimi_upload_files workflow.
 
 ---
 
@@ -10,14 +12,20 @@
 
 ### **1. File Handling Patterns**
 
+**⚠️  AUTOMATIC FILE SIZE VALIDATION (NEW - 2025-10-25):**
+- Files >5KB now trigger automatic warnings in logs
+- System suggests kimi_upload_files workflow for token savings
+- Validation happens transparently during file processing
+- No breaking changes - existing code continues to work
+
 **Decision Matrix:**
 
-| File Size | Method | Tool(s) | Token Savings | Example Use Case |
-|-----------|--------|---------|---------------|------------------|
-| **<5KB** | Direct embed | `chat_EXAI-WS(files=[...])` | 70-80% | Single code file analysis |
-| **>5KB** | Upload workflow | `kimi_upload_files` + `kimi_chat_with_files` | 80-90% | Large documentation |
-| **Multiple files** | Upload workflow | `kimi_upload_files` + `kimi_chat_with_files` | 85-95% | Batch analysis |
-| **Repeated queries** | Upload once, query many | `kimi_upload_files` + multiple `kimi_chat_with_files` | 90-95% | Iterative analysis |
+| File Size | Method | Tool(s) | Token Savings | Auto-Warning | Example Use Case |
+|-----------|--------|---------|---------------|--------------|------------------|
+| **<5KB** | Direct embed | `chat_EXAI-WS(files=[...])` | N/A | ❌ No | Single code file analysis |
+| **>5KB** | Upload workflow | `kimi_upload_files` + `kimi_chat_with_files` | 70-80% | ✅ Yes | Large documentation |
+| **Multiple files** | Upload workflow | `kimi_upload_files` + `kimi_chat_with_files` | 80-90% | ✅ Yes | Batch analysis |
+| **Repeated queries** | Upload once, query many | `kimi_upload_files` + multiple `kimi_chat_with_files` | 90-95% | ✅ Yes | Iterative analysis |
 
 **Examples:**
 
@@ -28,8 +36,9 @@ chat_EXAI-WS(
     files=["c:\\Project\\EX-AI-MCP-Server\\src\\providers\\file_base.py"],
     model="glm-4.6"
 )
+# No warning - file is under 5KB threshold
 
-# ✅ CORRECT - Large file (>5KB)
+# ✅ CORRECT - Large file (>5KB) with upload workflow
 # Step 1: Upload
 upload_result = kimi_upload_files(files=["c:\\Project\\EX-AI-MCP-Server\\large_file.py"])
 # Step 2: Chat
@@ -38,6 +47,16 @@ kimi_chat_with_files(
     file_ids=[upload_result[0]["file_id"]],
     model="kimi-k2-0905-preview"
 )
+# Saves 70-80% tokens compared to direct embedding
+
+# ⚠️  SUBOPTIMAL - Large file with direct embedding (still works but wasteful)
+chat_EXAI-WS(
+    prompt="Review this implementation",
+    files=["c:\\Project\\EX-AI-MCP-Server\\large_file.py"],  # >5KB
+    model="glm-4.6"
+)
+# System will log warning: "⚠️  FILE SIZE WARNING: 1 file(s) exceed 5KB threshold"
+# Recommendation: Use kimi_upload_files workflow for 70-80% token savings
 
 # ❌ WRONG - Manually reading and embedding
 view("large_file.py")  # Don't do this!

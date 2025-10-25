@@ -17,6 +17,107 @@ from typing import Dict
 logger = logging.getLogger(__name__)
 
 
+# PHASE 3 FIX (2025-10-25): Port-based semaphore isolation (EXAI validated)
+# Implements Option B: Port-Based Semaphore Dictionary for clean separation
+class PortSemaphoreManager:
+    """
+    Manages semaphores per WebSocket server port for isolation.
+
+    This ensures that different MCP server instances (e.g., VSCode1 on port 8079,
+    VSCode2 on port 8080) don't compete for the same semaphore slots.
+    """
+
+    def __init__(self):
+        self._semaphores: Dict[int, asyncio.BoundedSemaphore] = {}
+        self._locks: Dict[int, asyncio.Lock] = {}
+        self._limits: Dict[int, int] = {}
+        # EXAI FIX (2025-10-25): Add provider semaphore support for port isolation
+        self._provider_semaphores: Dict[str, asyncio.BoundedSemaphore] = {}
+        self._provider_limits: Dict[str, int] = {}
+        logger.info("[PORT_SEM] PortSemaphoreManager initialized")
+
+    def get_semaphore(self, port: int, limit: int = 5) -> asyncio.BoundedSemaphore:
+        """
+        Get or create a semaphore for the specified port.
+
+        Args:
+            port: WebSocket server port number
+            limit: Maximum concurrent operations for this port
+
+        Returns:
+            BoundedSemaphore instance for this port
+        """
+        if port not in self._semaphores:
+            self._semaphores[port] = asyncio.BoundedSemaphore(limit)
+            self._limits[port] = limit
+            logger.info(f"[PORT_SEM] Created semaphore for port {port} with limit {limit}")
+        return self._semaphores[port]
+
+    def get_lock(self, port: int) -> asyncio.Lock:
+        """
+        Get or create a lock for the specified port.
+
+        Args:
+            port: WebSocket server port number
+
+        Returns:
+            Lock instance for this port
+        """
+        if port not in self._locks:
+            self._locks[port] = asyncio.Lock()
+            logger.debug(f"[PORT_SEM] Created lock for port {port}")
+        return self._locks[port]
+
+    def get_limit(self, port: int) -> int:
+        """Get the configured limit for a port's semaphore."""
+        return self._limits.get(port, 5)
+
+    def get_provider_semaphore(self, port: int, provider: str, limit: int) -> asyncio.BoundedSemaphore:
+        """
+        Get or create a provider-specific semaphore for the specified port.
+
+        EXAI FIX (2025-10-25): Provider semaphores are now port-specific to prevent
+        cross-port blocking. Each port+provider combination gets its own semaphore.
+
+        Args:
+            port: WebSocket server port number
+            provider: Provider name (e.g., "KIMI", "GLM")
+            limit: Maximum concurrent operations for this provider on this port
+
+        Returns:
+            BoundedSemaphore instance for this port+provider combination
+        """
+        key = f"{port}_{provider}"
+        if key not in self._provider_semaphores:
+            self._provider_semaphores[key] = asyncio.BoundedSemaphore(limit)
+            self._provider_limits[key] = limit
+            logger.info(f"[PORT_SEM] Created provider semaphore for port {port}, provider {provider} with limit {limit}")
+        return self._provider_semaphores[key]
+
+    def get_provider_limit(self, port: int, provider: str) -> int:
+        """Get the configured limit for a port+provider semaphore."""
+        key = f"{port}_{provider}"
+        return self._provider_limits.get(key, 5)
+
+
+# Global instance
+_port_semaphore_manager = PortSemaphoreManager()
+
+
+def get_port_semaphore_manager() -> PortSemaphoreManager:
+    """Get the global PortSemaphoreManager instance."""
+    return _port_semaphore_manager
+
+
+def get_global_semaphore(limit: int = 5) -> asyncio.BoundedSemaphore:
+    """
+    Legacy function for backward compatibility.
+
+    Uses port 8079 as default for existing single-port deployments.
+    """
+    return _port_semaphore_manager.get_semaphore(8079, limit)
+
+
 class SemaphoreGuard:
     """
     Context manager for safe semaphore operations with guaranteed release.
@@ -59,15 +160,31 @@ class SemaphoreGuard:
         """Release the semaphore with error handling and state tracking."""
         if self.acquired:
             try:
+                # CRITICAL FIX (2025-10-25): Check if semaphore is already at max before releasing
+                # Prevents "BoundedSemaphore released too many times" error when recovery system
+                # has already released this semaphore
+                if hasattr(self.semaphore, '_value') and hasattr(self.semaphore, '_bound_value'):
+                    if self.semaphore._value >= self.semaphore._bound_value:
+                        logger.warning(f"Semaphore {self.name} already at max value ({self.semaphore._value}/{self.semaphore._bound_value}), skipping release (likely recovered by recovery system)")
+                        self.acquired = False  # CRITICAL: Update state
+                        return False
+
                 self.semaphore.release()
-                self.acquired = False
+                self.acquired = False  # CRITICAL: Update state
                 logger.debug(f"Released semaphore: {self.name} (value: {self.semaphore._value})")
+            except ValueError as e:
+                # This happens when semaphore is already at max (recovery system released it)
+                logger.warning(f"Semaphore {self.name} already released (likely by recovery system): {e}")
+                self.acquired = False  # CRITICAL: Update state
             except Exception as e:
-                logger.error(f"Failed to release semaphore {self.name}: {e}")
+                logger.error(f"Failed to release semaphore {self.name}: {e}", exc_info=True)
+                self.acquired = False  # CRITICAL: Update state even on error
                 # This is a critical error that could lead to deadlocks
                 logger.critical(f"CRITICAL: Semaphore leak detected for {self.name}!")
         else:
             logger.warning(f"Attempted to release non-acquired semaphore: {self.name}")
+
+        return False  # Don't suppress exceptions
 
 
 async def recover_semaphore_leaks(

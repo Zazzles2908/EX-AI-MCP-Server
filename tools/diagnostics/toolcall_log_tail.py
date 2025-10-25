@@ -25,6 +25,9 @@ class ToolcallLogTail(BaseTool):
             },
         }
 
+    def get_system_prompt(self) -> str:
+        return ""
+
     async def prepare_prompt(self, request) -> str:
         return ""
 

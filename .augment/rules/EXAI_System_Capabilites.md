@@ -1,3 +1,8 @@
+---
+type: "agent_requested"
+description: "EXAI-Systems_Capabilities"
+---
+
 # EXAI-MCP Server Capabilities Overview
 
 **READ THIS FIRST** - Essential capabilities for AI agents working with EXAI-MCP Server
@@ -20,18 +25,12 @@
 
 ## 📁 **FILE HANDLING - CRITICAL FOR TOKEN EFFICIENCY**
 
-**🆕 AUTOMATIC FILE SIZE VALIDATION (2025-10-25):**
-- System now automatically detects files >5KB
-- Logs warnings with token savings recommendations
-- Suggests kimi_upload_files workflow automatically
-- No breaking changes - existing code continues to work
-
 ### Decision Matrix:
 
-| File Size | Method | Token Savings | Auto-Warning | When to Use |
-|-----------|--------|---------------|--------------|-------------|
-| **<5KB** | `files` parameter | N/A | ❌ No | Quick, single-use, small files |
-| **>5KB** | `kimi_upload_files` | 70-80% | ✅ Yes | Large files, persistent reference |
+| File Size | Method | Token Savings | When to Use |
+|-----------|--------|---------------|-------------|
+| **<5KB** | `files` parameter | 70-80% | Quick, single-use, small files |
+| **>5KB** | `kimi_upload_files` | 70-80% | Large files, persistent reference |
 
 ### Usage Examples:
 

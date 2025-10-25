@@ -147,9 +147,10 @@ class CacheManager:
         self._results_cache: Dict[str, Dict[str, Any]] = {}  # request_id -> {t, payload}
         self._results_cache_by_key: Dict[str, Dict[str, Any]] = {}  # call_key -> {t, outputs}
         self._inflight_reqs: Dict[str, Dict[str, Any]] = {}  # call_key -> {req_id, expires_at}
-        
-        # Lock for thread-safe operations
-        self._lock = asyncio.Lock()
+
+        # EXAI FIX (2025-10-25): Separate locks for different operations to prevent deadlocks
+        self._lock = asyncio.Lock()  # For inflight request tracking
+        self._cache_lock = asyncio.Lock()  # For result cache operations
     
     async def check_and_set_inflight(self, call_key: str, req_id: str, expires_at: float) -> Tuple[bool, Optional[str]]:
         """
@@ -184,45 +185,74 @@ class CacheManager:
         async with self._lock:
             self._inflight_reqs.pop(call_key, None)
     
-    def store_result(self, req_id: str, payload: Dict[str, Any]) -> None:
-        """Store result by request_id."""
-        self._results_cache[req_id] = {"t": time.time(), "payload": payload}
-        self._gc_results_cache()
-    
-    def get_cached_result(self, req_id: str) -> Optional[Dict[str, Any]]:
-        """Get cached result by request_id."""
-        rec = self._results_cache.get(req_id)
-        if not rec:
-            return None
-        if time.time() - rec.get("t", 0) > self.result_ttl_secs:
-            self._results_cache.pop(req_id, None)
-            return None
-        return rec.get("payload")
-    
-    def store_result_by_key(self, call_key: str, outputs: List[Dict[str, Any]]) -> None:
-        """Store result by call_key."""
-        self._results_cache_by_key[call_key] = {"t": time.time(), "outputs": outputs}
-        self._gc_results_cache()
-    
-    def get_cached_by_key(self, call_key: str) -> Optional[List[Dict[str, Any]]]:
-        """Get cached result by call_key."""
-        rec = self._results_cache_by_key.get(call_key)
-        if not rec:
-            return None
-        if time.time() - rec.get("t", 0) > self.result_ttl_secs:
-            self._results_cache_by_key.pop(call_key, None)
-            return None
-        return rec.get("outputs")
-    
+    async def store_result(self, req_id: str, payload: Dict[str, Any]) -> None:
+        """
+        Store result by request_id with thread safety.
+
+        EXAI FIX (2025-10-25): Added async lock to prevent race conditions
+        during concurrent cache writes.
+        """
+        async with self._cache_lock:
+            self._results_cache[req_id] = {"t": time.time(), "payload": payload}
+            self._gc_results_cache()
+
+    async def get_cached_result(self, req_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get cached result by request_id with thread safety.
+
+        EXAI FIX (2025-10-25): Added async lock to prevent race conditions
+        during concurrent cache read/delete operations.
+        """
+        async with self._cache_lock:
+            rec = self._results_cache.get(req_id)
+            if not rec:
+                return None
+            if time.time() - rec.get("t", 0) > self.result_ttl_secs:
+                self._results_cache.pop(req_id, None)
+                return None
+            return rec.get("payload")
+
+    async def store_result_by_key(self, call_key: str, outputs: List[Dict[str, Any]]) -> None:
+        """
+        Store result by call_key with thread safety.
+
+        EXAI FIX (2025-10-25): Added async lock to prevent race conditions
+        during concurrent cache writes.
+        """
+        async with self._cache_lock:
+            self._results_cache_by_key[call_key] = {"t": time.time(), "outputs": outputs}
+            self._gc_results_cache()
+
+    async def get_cached_by_key(self, call_key: str) -> Optional[List[Dict[str, Any]]]:
+        """
+        Get cached result by call_key with thread safety.
+
+        EXAI FIX (2025-10-25): Added async lock to prevent race conditions
+        during concurrent cache read/delete operations.
+        """
+        async with self._cache_lock:
+            rec = self._results_cache_by_key.get(call_key)
+            if not rec:
+                return None
+            if time.time() - rec.get("t", 0) > self.result_ttl_secs:
+                self._results_cache_by_key.pop(call_key, None)
+                return None
+            return rec.get("outputs")
+
     def _gc_results_cache(self) -> None:
-        """Garbage collect expired cache entries."""
+        """
+        Garbage collect expired cache entries.
+
+        EXAI FIX (2025-10-25): This method is called from within locked sections,
+        so it doesn't need its own lock. It's a synchronous helper method.
+        """
         now = time.time()
-        
+
         # GC results cache
         expired_ids = [k for k, v in self._results_cache.items() if now - v.get("t", 0) > self.result_ttl_secs]
         for k in expired_ids:
             self._results_cache.pop(k, None)
-        
+
         # GC results cache by key
         expired_keys = [k for k, v in self._results_cache_by_key.items() if now - v.get("t", 0) > self.result_ttl_secs]
         for k in expired_keys:
@@ -298,6 +328,10 @@ class ToolExecutor:
             - (True, outputs, None) on success
             - (False, None, error_msg) on failure
         """
+        # PHASE 0 (2025-10-25): Track latency metrics for performance analysis
+        import time
+        start_time = time.perf_counter()
+
         tool = self.server_tools.get(name)
         if not tool:
             return False, None, f"Unknown tool: {name}"
@@ -323,20 +357,69 @@ class ToolExecutor:
         outputs = None
         error_msg = None
 
+        # PHASE 0 (2025-10-25): Track semaphore wait time
+        semaphore_start = time.perf_counter()
+
         # Use context managers for safe semaphore management
         async with SemaphoreGuard(self.global_sem, f"global_sem_{name}"):
+            # Calculate global semaphore wait time
+            global_sem_wait_ms = (time.perf_counter() - semaphore_start) * 1000
+
             # Acquire provider semaphore if needed
             if provider_sem:
+                provider_sem_start = time.perf_counter()
                 async with SemaphoreGuard(provider_sem, f"provider_sem_{provider_name}_{name}"):
+                    # Calculate provider semaphore wait time
+                    provider_sem_wait_ms = (time.perf_counter() - provider_sem_start) * 1000
+
+                    # Track processing time
+                    processing_start = time.perf_counter()
+
                     # Execute tool with timeout and progress updates
                     success, outputs, error_msg = await self._execute_tool_with_progress(
                         tool, arguments, ws, req_id, resilient_ws_manager
                     )
+
+                    processing_ms = (time.perf_counter() - processing_start) * 1000
             else:
                 # No provider semaphore needed
+                provider_sem_wait_ms = 0
+                processing_start = time.perf_counter()
+
                 success, outputs, error_msg = await self._execute_tool_with_progress(
                     tool, arguments, ws, req_id, resilient_ws_manager
                 )
+
+                processing_ms = (time.perf_counter() - processing_start) * 1000
+
+        # Calculate total latency
+        total_latency_ms = (time.perf_counter() - start_time) * 1000
+
+        # PHASE 0 (2025-10-25): Inject latency metrics into outputs metadata
+        # This allows downstream systems (Supabase Edge Function) to store metrics
+        if success and outputs:
+            latency_metrics = {
+                'latency_ms': round(total_latency_ms, 2),
+                'global_sem_wait_ms': round(global_sem_wait_ms, 2),
+                'provider_sem_wait_ms': round(provider_sem_wait_ms, 2),
+                'processing_ms': round(processing_ms, 2),
+                'provider_name': provider_name
+            }
+
+            # DEFENSIVE: Inject metrics into first output's metadata if it exists
+            # Handle edge cases: empty outputs, non-dict outputs, missing metadata
+            try:
+                if outputs and len(outputs) > 0 and isinstance(outputs[0], dict):
+                    if 'metadata' not in outputs[0]:
+                        outputs[0]['metadata'] = {}
+                    outputs[0]['metadata']['latency_metrics'] = latency_metrics
+
+                    logger.debug(f"[LATENCY] {name}: total={total_latency_ms:.2f}ms, "
+                               f"global_sem={global_sem_wait_ms:.2f}ms, "
+                               f"provider_sem={provider_sem_wait_ms:.2f}ms, "
+                               f"processing={processing_ms:.2f}ms")
+            except Exception as e:
+                logger.warning(f"[LATENCY] Failed to inject metrics into outputs: {e}")
 
         # Return result after semaphores are released
         return success, outputs, error_msg
@@ -395,12 +478,18 @@ class ToolExecutor:
             logger.error(f"[{req_id}] {error_msg}", exc_info=True)
 
         finally:
-            # Cancel progress task
+            # EXAI FIX (2025-10-25): Comprehensive cleanup error handling
+            # Ensures progress task is properly cancelled even if exceptions occur
             progress_task.cancel()
             try:
                 await progress_task
             except asyncio.CancelledError:
+                # Expected cancellation - this is normal
                 pass
+            except Exception as cleanup_error:
+                # Unexpected error during cleanup - log at warning level
+                # Don't re-raise - this shouldn't crash the server
+                logger.warning(f"[{req_id}] Unexpected error during progress task cleanup: {cleanup_error}", exc_info=True)
 
         return success, outputs, error_msg
 
@@ -521,7 +610,8 @@ class RequestRouter:
         global_sem: asyncio.Semaphore,
         provider_sems: Dict[str, asyncio.Semaphore],
         validated_env: Dict[str, Any],
-        use_per_session_semaphores: bool = False
+        use_per_session_semaphores: bool = False,
+        port: int = 8079  # PHASE 3 FIX (2025-10-25): Port for semaphore isolation
     ):
         """
         Initialize request router.
@@ -529,7 +619,8 @@ class RequestRouter:
         Args:
             session_manager: Session manager instance
             server_tools: Dictionary of available tools
-            global_sem: Global semaphore for concurrency control
+            global_sem: Global semaphore for concurrency control (port-specific)
+            port: WebSocket server port for semaphore isolation (EXAI validated)
             provider_sems: Provider-specific semaphores
             validated_env: Validated environment variables
             use_per_session_semaphores: Whether to use per-session semaphores
@@ -537,6 +628,10 @@ class RequestRouter:
         self.session_manager = session_manager
         self.server_tools = server_tools
         self.validated_env = validated_env
+        self.port = port  # PHASE 3 FIX (2025-10-25): Store port for logging/debugging
+
+        # EXAI RECOMMENDATION: Log port-specific initialization
+        logger.info(f"[PORT_ISOLATION] RequestRouter initialized for port {self.port}")
 
         # Initialize cache manager
         inflight_ttl = int(validated_env.get("INFLIGHT_TTL_SECS", 300))
@@ -746,7 +841,7 @@ class RequestRouter:
             return
 
         # Check for cached result
-        cached = self.cache_manager.get_cached_result(req_id)
+        cached = await self.cache_manager.get_cached_result(req_id)
         if cached:
             logger.info(f"[{req_id}] Returning cached result")
             await _safe_send(ws, cached, resilient_ws_manager=resilient_ws_manager)
@@ -761,7 +856,7 @@ class RequestRouter:
 
         if is_duplicate:
             # Check if we have cached result from the duplicate
-            cached_outputs = self.cache_manager.get_cached_by_key(call_key)
+            cached_outputs = await self.cache_manager.get_cached_by_key(call_key)
             if cached_outputs:
                 logger.info(f"[{req_id}] Returning cached result from duplicate request {existing_req_id}")
                 response = {
@@ -770,7 +865,7 @@ class RequestRouter:
                     "ok": True,
                     "outputs": cached_outputs
                 }
-                self.cache_manager.store_result(req_id, response)
+                await self.cache_manager.store_result(req_id, response)
                 await _safe_send(ws, response, resilient_ws_manager=resilient_ws_manager)
                 return
             else:
@@ -818,8 +913,8 @@ class RequestRouter:
                     "ok": True,
                     "outputs": outputs
                 }
-                self.cache_manager.store_result(req_id, response)
-                self.cache_manager.store_result_by_key(call_key, outputs)
+                await self.cache_manager.store_result(req_id, response)
+                await self.cache_manager.store_result_by_key(call_key, outputs)
                 await _safe_send(ws, response, resilient_ws_manager=resilient_ws_manager)
             else:
                 # Error response
