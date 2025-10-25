@@ -370,7 +370,7 @@ class ConcurrentSessionManager:
                 if not result_container['completed']:
                     # Timeout occurred
                     session.timeout()
-                    log_request_timeout(session.request_id, session.timeout_seconds, session_id=session.session_id)
+                    log_request_timeout(session.request_id, timeout_seconds=session.timeout_seconds, session_id=session.session_id)
                     raise TimeoutError(
                         f"{provider} provider timeout after {session.timeout_seconds}s "
                         f"(session: {session.session_id})"
