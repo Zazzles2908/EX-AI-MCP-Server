@@ -74,6 +74,31 @@ ADVANCED_TOOLS = [
 
 ALL_TOOLS = CORE_TOOLS + ADVANCED_TOOLS
 
+# Path translation for Windows host to Docker container
+def translate_to_container_path(windows_path: str) -> str:
+    """
+    Translate Windows host paths to Docker container paths.
+
+    Args:
+        windows_path: Path on Windows host (e.g., C:\\Project\\EX-AI-MCP-Server\\...)
+
+    Returns:
+        Container path (e.g., /app/...)
+    """
+    # Normalize path separators
+    normalized_path = str(windows_path).replace("\\", "/")
+
+    # Define project root mapping
+    project_root = "C:/Project/EX-AI-MCP-Server"
+    container_root = "/app"
+
+    # Replace project root with container root
+    if normalized_path.startswith(project_root):
+        return normalized_path.replace(project_root, container_root, 1)
+
+    # If path doesn't start with project root, return as-is
+    return normalized_path
+
 # Test parameters for each tool tier
 TIER_1_TOOLS = ["status", "version", "health", "listmodels", "provider_capabilities", "self-check"]
 TIER_2_TOOLS = ["chat", "challenge", "activity", "toolcall_log_tail"]
@@ -103,6 +128,7 @@ class BaselineCollector:
         self.start_time = time.time()
         self.use_real_mcp = use_real_mcp
         self.mcp_client: Optional[MCPWebSocketClient] = None
+        self.tools_to_test: List[str] = ALL_TOOLS  # Default to all tools
 
     def initialize_supabase(self):
         """Initialize Supabase client."""
@@ -164,15 +190,17 @@ class BaselineCollector:
         # Tier 3: File-dependent
         if tool_name in TIER_3_TOOLS:
             test_file_path = str(Path(__file__).parent / "test_files" / "sample_text.txt")
+            # Translate Windows path to container path for Docker environment
+            container_path = translate_to_container_path(test_file_path)
 
             if tool_name == "kimi_upload_files":
-                return {"files": [test_file_path]}
+                return {"files": [container_path]}
             elif tool_name == "kimi_chat_with_files":
                 # Note: This requires file_ids from kimi_upload_files
                 # For baseline, we'll skip this and handle it separately
                 return {"_skip": True, "reason": "Requires file_ids from kimi_upload_files"}
             elif tool_name == "glm_upload_file":
-                return {"file": test_file_path}
+                return {"file": container_path}
 
         # Tier 4: Complex workflow parameters
         if tool_name in TIER_4_TOOLS:
@@ -292,7 +320,7 @@ class BaselineCollector:
     async def collect_sequential(self):
         """Collect baseline data sequentially with connection management."""
         print(f"\n🔄 Starting sequential baseline collection...")
-        print(f"📊 Testing {len(ALL_TOOLS)} tools × {ITERATIONS_PER_TOOL} iterations = {len(ALL_TOOLS) * ITERATIONS_PER_TOOL} total executions")
+        print(f"📊 Testing {len(self.tools_to_test)} tools × {ITERATIONS_PER_TOOL} iterations = {len(self.tools_to_test) * ITERATIONS_PER_TOOL} total executions")
         print(f"🔌 Mode: {'REAL MCP' if self.use_real_mcp else 'SIMULATED'}\n")
 
         try:
@@ -301,8 +329,8 @@ class BaselineCollector:
                 await self.connect_mcp()
 
             # Run baseline collection
-            for tool_idx, tool_name in enumerate(ALL_TOOLS, 1):
-                print(f"[{tool_idx}/{len(ALL_TOOLS)}] Testing {tool_name}...")
+            for tool_idx, tool_name in enumerate(self.tools_to_test, 1):
+                print(f"[{tool_idx}/{len(self.tools_to_test)}] Testing {tool_name}...")
 
                 for iteration in range(1, ITERATIONS_PER_TOOL + 1):
                     result = await self.test_tool(tool_name, iteration)
@@ -397,12 +425,30 @@ async def main():
         action="store_true",
         help="Use simulated execution instead of real MCP calls"
     )
+    parser.add_argument(
+        "--tools",
+        nargs="+",
+        help="Specific tools to test (e.g., --tools toolcall_log_tail glm_upload_file)"
+    )
     args = parser.parse_args()
 
     # Determine execution mode (default to real MCP)
     use_real_mcp = not args.simulated
 
+    # Filter tools if specified
+    tools_to_test = ALL_TOOLS
+    if args.tools:
+        # Validate tool names
+        invalid_tools = [t for t in args.tools if t not in ALL_TOOLS]
+        if invalid_tools:
+            print(f"❌ Invalid tool names: {', '.join(invalid_tools)}")
+            print(f"Available tools: {', '.join(ALL_TOOLS)}")
+            return
+        tools_to_test = args.tools
+        print(f"🎯 Targeted testing: {len(tools_to_test)} tools")
+
     collector = BaselineCollector(use_real_mcp=use_real_mcp)
+    collector.tools_to_test = tools_to_test  # Set filtered tools
     collector.initialize_supabase()
 
     try:

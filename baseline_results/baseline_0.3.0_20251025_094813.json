@@ -1,0 +1,188 @@
+{
+  "baseline_version": "0.3.0",
+  "timestamp": "2025-10-24T22:48:13.012622+00:00",
+  "total_executions": 20,
+  "duration_seconds": 0.07380914688110352,
+  "results": [
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 1.45,
+      "timestamp": "2025-10-24T22:48:13.020473+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 0.99,
+      "timestamp": "2025-10-24T22:48:13.021589+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 0.97,
+      "timestamp": "2025-10-24T22:48:13.022632+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 0.73,
+      "timestamp": "2025-10-24T22:48:13.023422+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 0.97,
+      "timestamp": "2025-10-24T22:48:13.024465+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 0.76,
+      "timestamp": "2025-10-24T22:48:13.025303+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 0.79,
+      "timestamp": "2025-10-24T22:48:13.026158+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 0.92,
+      "timestamp": "2025-10-24T22:48:13.027138+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 0.78,
+      "timestamp": "2025-10-24T22:48:13.027984+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 0.82,
+      "timestamp": "2025-10-24T22:48:13.028869+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 5.07,
+      "timestamp": "2025-10-24T22:48:13.034159+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: /app/scripts/baseline_collection/test_files/sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 5.06,
+      "timestamp": "2025-10-24T22:48:13.039324+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: /app/scripts/baseline_collection/test_files/sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 5.9,
+      "timestamp": "2025-10-24T22:48:13.045321+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: /app/scripts/baseline_collection/test_files/sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 6.79,
+      "timestamp": "2025-10-24T22:48:13.052240+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: /app/scripts/baseline_collection/test_files/sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 5.23,
+      "timestamp": "2025-10-24T22:48:13.057591+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: /app/scripts/baseline_collection/test_files/sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 6.59,
+      "timestamp": "2025-10-24T22:48:13.064293+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: /app/scripts/baseline_collection/test_files/sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 5.22,
+      "timestamp": "2025-10-24T22:48:13.069634+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: /app/scripts/baseline_collection/test_files/sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 5.26,
+      "timestamp": "2025-10-24T22:48:13.075033+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: /app/scripts/baseline_collection/test_files/sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 6.47,
+      "timestamp": "2025-10-24T22:48:13.081611+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: /app/scripts/baseline_collection/test_files/sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 6.41,
+      "timestamp": "2025-10-24T22:48:13.088146+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: /app/scripts/baseline_collection/test_files/sample_text.txt'}"
+    }
+  ]
+}

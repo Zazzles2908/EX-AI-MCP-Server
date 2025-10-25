@@ -311,8 +311,10 @@ class TimeoutConfig:
     EXPERT_ANALYSIS_TIMEOUT_SECS = int(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", "60"))
 
     # Provider timeouts
+    # PHASE 2.3 FIX (2025-10-25): Increased Kimi timeout from 30s to 40s
+    # Root cause: Connection pool exhaustion + timeout too aggressive for non-cached requests
     GLM_TIMEOUT_SECS = int(os.getenv("GLM_TIMEOUT_SECS", "30"))
-    KIMI_TIMEOUT_SECS = int(os.getenv("KIMI_TIMEOUT_SECS", "30"))
+    KIMI_TIMEOUT_SECS = int(os.getenv("KIMI_TIMEOUT_SECS", "40"))  # Increased from 30s to 40s
     KIMI_WEB_SEARCH_TIMEOUT_SECS = int(os.getenv("KIMI_WEB_SEARCH_TIMEOUT_SECS", "30"))
 
     # EXAI INSIGHT (2025-10-21): Model-specific timeout multipliers

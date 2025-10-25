@@ -43,6 +43,7 @@ from utils import check_token_limit
 from utils.conversation.memory import ConversationTurn, get_conversation_file_list  # Keep model and helper function
 from utils.conversation.global_storage import get_thread
 from utils.file.operations import read_file_content, read_files
+from utils.file.size_validator import validate_and_warn  # PHASE 2.3 ENHANCEMENT (2025-10-25)
 
 logger = logging.getLogger(__name__)
 
@@ -433,6 +434,14 @@ class FileHandlingMixin:
         """
         if not request_files:
             return "", []
+
+        # PHASE 2.3 ENHANCEMENT (2025-10-25): Validate file sizes and warn if >5KB
+        # This helps agents discover kimi_upload_files workflow for token savings
+        size_warning = validate_and_warn(request_files, tool_name=self.name)
+        if size_warning:
+            logger.info(f"[FILE_SIZE] {self.name}: {size_warning}")
+            # Note: Warning is logged but not returned to avoid breaking existing behavior
+            # Future enhancement: Include warning in tool response metadata
 
         # Extract remaining budget from arguments if available
         if remaining_budget is None:

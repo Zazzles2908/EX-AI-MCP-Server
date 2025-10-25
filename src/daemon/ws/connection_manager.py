@@ -197,6 +197,10 @@ async def serve_connection(
             logger.debug(f"Failed to close rejected connection: {e}")
         return
 
+    # Initialize session variable to prevent UnboundLocalError in exception handlers
+    # PHASE 2.3 FIX (2025-10-25): Variable scope fix for sess
+    sess = None
+
     # Generate unique connection ID for tracking
     # Week 2 Fix #11 (2025-10-21): Use cryptographically secure connection IDs
     connection_id = secrets.token_urlsafe(32)  # 256 bits of entropy
@@ -261,7 +265,7 @@ async def serve_connection(
             return
 
         # Authenticate token
-        token = hello.get("token", "")
+        token = hello.get("token", "") or ""  # PHASE 2.3 FIX (2025-10-25): Handle None token
         current_auth_token = await auth_token_manager.get()
         if current_auth_token and token != current_auth_token:
             # Enhanced logging for auth debugging (show first 10 chars only for security)
@@ -411,9 +415,11 @@ async def serve_connection(
         except Exception as e:
             logger.warning(f"Failed to unregister connection {connection_id}: {e}")
 
-        # Clean up session
-        try:
-            await session_manager.remove(sess.session_id)
-        except Exception as e:
-            logger.warning(f"Failed to remove session {sess.session_id}: {e}")
+        # Clean up session (only if session was created)
+        # PHASE 2.3 FIX (2025-10-25): Add null check for sess
+        if sess is not None:
+            try:
+                await session_manager.remove(sess.session_id)
+            except Exception as e:
+                logger.warning(f"Failed to remove session {sess.session_id}: {e}")
 

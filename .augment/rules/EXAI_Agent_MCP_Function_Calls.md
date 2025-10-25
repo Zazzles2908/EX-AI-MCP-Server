@@ -1,6 +1,6 @@
 ---
 type: "agent_requested"
-description: "Function Calls with EXAI-WS MCP"
+description: "Guide to Function Calls with EXAI-WS MCP"
 ---
 
 # EXAI-MCP Agent Capabilities Guide

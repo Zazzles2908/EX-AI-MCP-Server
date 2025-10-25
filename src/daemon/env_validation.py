@@ -551,15 +551,16 @@ def register_critical_variables() -> None:
         )
     )
 
-    # 8. EXAI_WS_PING_TIMEOUT (timeout: positive, max 60)
+    # 8. EXAI_WS_PING_TIMEOUT (timeout: positive, max 300)
+    # PHASE 2.3 FIX (2025-10-25): Increased max to 300s for AI operations (EXAI validated)
     validation_framework.register_validator(
         TimeoutValidator(
             name="EXAI_WS_PING_TIMEOUT",
             default=10,
             min_value=1,
-            max_value=60,
+            max_value=300,  # AI operations can take 30-90s + network overhead
             severity=ValidationSeverity.WARNING,
-            description="WebSocket ping timeout in seconds (max 60)"
+            description="WebSocket ping timeout in seconds (max 300s for AI operations)"
         )
     )
 

@@ -12,7 +12,7 @@
         "PYTHONIOENCODING": "utf-8",
         "LOG_LEVEL": "INFO",
         "EXAI_WS_HOST": "127.0.0.1",
-        "EXAI_WS_PORT": "8079",
+        "EXAI_WS_PORT": "8080",
         "EXAI_SESSION_ID": "vscode-instance-2",
         "MCP_SERVER_ID": "exai-ws-vscode2"
       }

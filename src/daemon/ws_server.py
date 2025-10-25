@@ -325,11 +325,19 @@ def _is_health_fresh(max_age_s: float = 20.0) -> bool:
 
 _sessions = SessionManager()
 
-# Semaphores for concurrency control
-_global_sem = asyncio.BoundedSemaphore(GLOBAL_MAX_INFLIGHT)
+# PHASE 3 FIX (2025-10-25): Port-based semaphore isolation (EXAI validated)
+# Import the port semaphore manager for per-port isolation
+from src.daemon.middleware.semaphores import get_port_semaphore_manager
+
+# Get port-specific semaphores (will be initialized per port in serve_connection)
+_port_sem_manager = get_port_semaphore_manager()
+
+# EXAI FIX (2025-10-25): Port-based semaphores for both global and provider
+# This ensures complete isolation between different MCP server instances
+_global_sem = _port_sem_manager.get_semaphore(EXAI_WS_PORT, GLOBAL_MAX_INFLIGHT)
 _provider_sems: dict[str, asyncio.BoundedSemaphore] = {
-    "KIMI": asyncio.BoundedSemaphore(KIMI_MAX_INFLIGHT),
-    "GLM": asyncio.BoundedSemaphore(GLM_MAX_INFLIGHT),
+    "KIMI": _port_sem_manager.get_provider_semaphore(EXAI_WS_PORT, "KIMI", KIMI_MAX_INFLIGHT),
+    "GLM": _port_sem_manager.get_provider_semaphore(EXAI_WS_PORT, "GLM", GLM_MAX_INFLIGHT),
 }
 
 # Atomic cache instances to prevent race conditions
@@ -677,13 +685,15 @@ async def main_async() -> None:
     )
 
     # Initialize RequestRouter
+    # PHASE 3 FIX (2025-10-25): Pass port for semaphore isolation (EXAI validated)
     request_router = RequestRouter(
         session_manager=_sessions,
         server_tools=SERVER_TOOLS,
         global_sem=_global_sem,
         provider_sems=_provider_sems,
         validated_env=_validated_env,
-        use_per_session_semaphores=USE_PER_SESSION_SEMAPHORES
+        use_per_session_semaphores=USE_PER_SESSION_SEMAPHORES,
+        port=EXAI_WS_PORT  # Port-specific semaphore isolation
     )
 
     logger.info("WebSocket modules initialized successfully")

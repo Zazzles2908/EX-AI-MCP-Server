@@ -36,8 +36,16 @@ CHAT_FIELD_DESCRIPTIONS = {
     ),
     "files": (
         "Optional files for context - EMBEDS CONTENT AS TEXT in prompt (not uploaded to platform). "
-        "Use for small files (<5KB). For large files or persistent reference, use kimi_upload_and_extract tool instead. "
-        "(must be FULL absolute paths to real files / folders - DO NOT SHORTEN)"
+        "Use for small files (<5KB). For large files or persistent reference, use kimi_upload_files tool instead. "
+        "(must be FULL absolute paths to real files / folders - DO NOT SHORTEN)\n\n"
+        "⚠️  FILE SIZE WARNING: Files >5KB will trigger automatic warnings suggesting kimi_upload_files workflow for 70-80% token savings.\n\n"
+        "📋 FILE HANDLING DECISION MATRIX:\n"
+        "- <5KB, single-use: Use 'files' parameter (this tool)\n"
+        "- >5KB or multi-turn: Use kimi_upload_files + kimi_chat_with_files\n"
+        "- Multiple large files: Upload once, query many times\n\n"
+        "Example for large files:\n"
+        "  upload_result = kimi_upload_files(files=['large_file.py'])\n"
+        "  kimi_chat_with_files(prompt='...', file_ids=upload_result['file_ids'])"
     ),
     "images": (
         "Optional images for visual context. Useful for UI discussions, diagrams, visual problems, "

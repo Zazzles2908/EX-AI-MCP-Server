@@ -35,6 +35,7 @@ services:
       - ./tools:/app/tools
       - ./scripts/ws:/app/scripts/ws
       - ./scripts/runtime:/app/scripts/runtime
+      - ./scripts/baseline_collection:/app/scripts/baseline_collection  # FIX: Mount baseline test files
       - ./systemprompts:/app/systemprompts  # FIX: Enable hot reload for prompt changes
       - ./streaming:/app/streaming          # FIX: Enable hot reload for streaming changes
       - ./static:/app/static                # FIX: Enable hot reload for static file changes
