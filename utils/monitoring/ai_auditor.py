@@ -244,7 +244,60 @@ class AIAuditor:
                 )
         
         return "\n".join(context_parts)
-    
+
+    def _parse_ai_response_safely(self, response_text: str) -> Optional[List[Dict]]:
+        """
+        Parse AI response with robust validation and fallback strategies.
+        Returns None if parsing fails completely.
+        """
+        import re
+
+        if not response_text or not response_text.strip():
+            logger.warning(f"[AI_AUDITOR] Empty response received")
+            return None
+
+        # Strategy 1: Try direct JSON parse
+        try:
+            return json.loads(response_text)
+        except json.JSONDecodeError:
+            pass
+
+        # Strategy 2: Extract from markdown code blocks
+        if "```json" in response_text:
+            try:
+                content = response_text.split("```json")[1].split("```")[0].strip()
+                return json.loads(content)
+            except (IndexError, json.JSONDecodeError):
+                pass
+
+        if "```" in response_text:
+            try:
+                content = response_text.split("```")[1].split("```")[0].strip()
+                return json.loads(content)
+            except (IndexError, json.JSONDecodeError):
+                pass
+
+        # Strategy 3: Extract JSON array/object using regex
+        try:
+            # Try to find JSON array first
+            json_match = re.search(r'\[.*\]', response_text, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group())
+
+            # Try to find JSON object
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                parsed = json.loads(json_match.group())
+                # If it's a single object, wrap in array
+                return [parsed] if isinstance(parsed, dict) else parsed
+        except json.JSONDecodeError:
+            pass
+
+        # All strategies failed - log for debugging
+        logger.error(f"[AI_AUDITOR] All parsing strategies failed")
+        logger.error(f"[AI_AUDITOR] Raw Response (first 1000 chars): {response_text[:1000]}...")
+        return None
+
     async def _get_ai_analysis(self, context: str, events: List[Dict]) -> List[Dict]:
         """Get AI analysis of events"""
         prompt = f"""You are an AI auditor monitoring a system testing process.
@@ -298,24 +351,24 @@ If nothing significant, return an empty array: []
                 )
 
             content = response.choices[0].message.content.strip()
-            
-            # Parse JSON response
-            if content.startswith("```json"):
-                content = content.split("```json")[1].split("```")[0].strip()
-            elif content.startswith("```"):
-                content = content.split("```")[1].split("```")[0].strip()
-            
-            observations = json.loads(content)
-            
+
+            # Parse JSON response with robust validation
+            observations = self._parse_ai_response_safely(content)
+
+            if observations is None:
+                logger.warning(f"[AI_AUDITOR] Failed to parse response, returning empty list")
+                return []
+
             # Add event IDs to each observation
             event_ids = [e.get("id", str(i)) for i, e in enumerate(events)]
             for obs in observations:
                 obs["event_ids"] = event_ids
-            
+
             return observations
-            
+
         except json.JSONDecodeError as e:
             logger.error(f"[AI_AUDITOR] Failed to parse AI response as JSON: {e}")
+            logger.error(f"[AI_AUDITOR] Raw Response (first 500 chars): {content[:500] if 'content' in locals() else 'N/A'}...")
             return []
         except Exception as e:
             logger.error(f"[AI_AUDITOR] AI analysis failed: {e}")

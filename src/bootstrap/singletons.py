@@ -195,27 +195,40 @@ def ensure_provider_tools_registered(tools_dict: Dict[str, Any]) -> None:
 
             for name, (module_path, class_name) in kimi_tools:
                 try:
+                    logger.info(f"[PROVIDER_TOOLS] Attempting to import {name} from {module_path}.{class_name}")
                     mod = importlib.import_module(module_path)
                     cls = getattr(mod, class_name)
                     if name not in tools_dict:
                         prov_tools[name] = cls()
+                        logger.info(f"[PROVIDER_TOOLS] Successfully registered {name}")
+                    else:
+                        logger.info(f"[PROVIDER_TOOLS] Skipping {name} - already in registry")
                 except Exception as e:
-                    logger.debug(f"Provider tool import failed: {name} from {module_path} ({e})")
+                    logger.error(f"[PROVIDER_TOOLS] Provider tool import failed: {name} from {module_path} ({e})")
+                    import traceback
+                    logger.error(f"[PROVIDER_TOOLS] Traceback: {traceback.format_exc()}")
 
             # GLM provider tools (lenient registration)
             # NOTE: glm_web_search is INTERNAL ONLY - auto-injected via build_websearch_provider_kwargs()
             glm_tools = [
                 ("glm_upload_file", ("tools.providers.glm.glm_files", "GLMUploadFileTool")),
+                ("glm_multi_file_chat", ("tools.providers.glm.glm_files", "GLMMultiFileChatTool")),  # Added 2025-10-27 for feature parity with Kimi
             ]
 
             for name, (module_path, class_name) in glm_tools:
                 try:
+                    logger.info(f"[PROVIDER_TOOLS] Attempting to import {name} from {module_path}.{class_name}")
                     mod = importlib.import_module(module_path)
                     cls = getattr(mod, class_name)
                     if name not in tools_dict:
                         prov_tools[name] = cls()
+                        logger.info(f"[PROVIDER_TOOLS] Successfully registered {name}")
+                    else:
+                        logger.info(f"[PROVIDER_TOOLS] Skipping {name} - already in registry")
                 except Exception as e:
-                    logger.debug(f"Provider tool import failed: {name} from {module_path} ({e})")
+                    logger.error(f"[PROVIDER_TOOLS] Provider tool import failed: {name} from {module_path} ({e})")
+                    import traceback
+                    logger.error(f"[PROVIDER_TOOLS] Traceback: {traceback.format_exc()}")
 
             if prov_tools:
                 logger.info(f"Registering provider-specific tools: {sorted(prov_tools.keys())}")

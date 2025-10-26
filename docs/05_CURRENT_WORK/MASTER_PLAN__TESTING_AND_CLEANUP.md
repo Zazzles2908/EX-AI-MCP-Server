@@ -844,9 +844,85 @@ CREATE INDEX idx_error_investigations_created_at ON error_investigations(created
 
 ---
 
-**Last Updated:** 2025-10-26 16:30 AEDT
-**Next Review:** After Task 2 planning (WebSocket stability & cleanup utility)
+**Last Updated:** 2025-10-27 16:45 AEDT
+**Next Review:** After project cleanup and Phase 2 JWT implementation
 **Owner:** AI Agent (with EXAI consultation)
+
+---
+
+## 📝 **RECENT UPDATES (2025-10-27)**
+
+### **Critical Fixes Before Docker Rebuild** ✅ COMPLETE (2025-10-27)
+
+**EXAI Consultation:** Continuation ID `5be79d08-1552-4467-a446-da24c8019a16` (GLM-4.6, high thinking mode)
+
+**Problem Identified:**
+- Kimi `kimi_chat_with_files` timing out after 60 seconds
+- `RuntimeError: no running event loop` in monitoring system
+- AI auditor JSON parsing failures
+
+**Fixes Implemented:**
+
+1. **Event Loop Error** ✅ FIXED
+   - **File**: `src/daemon/monitoring_endpoint.py` (lines 849-885)
+   - **Solution**: Thread-safe broadcast wrapper with automatic context detection
+   - **Impact**: Monitoring works from both sync and async contexts
+
+2. **AI Auditor JSON Parsing** ✅ FIXED
+   - **File**: `utils/monitoring/ai_auditor.py` (lines 246-301, 300-319)
+   - **Solution**: Robust parsing with 3 fallback strategies (direct JSON, markdown extraction, regex)
+   - **Impact**: Auditor observations work reliably with all GLM response formats
+
+3. **Kimi Timeout** ✅ FIXED
+   - **File**: `tools/providers/kimi/kimi_files.py` (lines 604-618)
+   - **Solution**: Read timeout from `KIMI_MF_CHAT_TIMEOUT_SECS` environment variable (180s)
+   - **Impact**: Large file operations have adequate time to complete
+
+**Docker Container:** ✅ REBUILT
+- Build completed successfully (35 seconds)
+- All services started without errors
+- No RuntimeError or JSON parsing errors in logs
+- Monitoring dashboard connected
+- AI auditor connected
+
+**Documentation Created:**
+- `docs/05_CURRENT_WORK/2025-10-27/KIMI_TIMEOUT_FIX.md`
+- `docs/05_CURRENT_WORK/2025-10-27/CRITICAL_FIXES_BEFORE_REBUILD.md`
+
+**Status:** ✅ COMPLETE - System stable and ready for Phase 2 JWT implementation
+
+---
+
+### **Phase 2 JWT Implementation Preparation** 🔄 IN PROGRESS (2025-10-27)
+
+**EXAI Consultation:** Continuation ID `5be79d08-1552-4467-a446-da24c8019a16` (ongoing)
+
+**Strategic Decision:** Hybrid "Clean Foundation, Parallel Documentation" Approach
+- **Step 1**: Foundation cleanup (1-2 days) - Use EXAI analyze for comprehensive assessment
+- **Step 2**: JWT implementation + live documentation (2-3 days)
+- **Step 3**: Integration testing & polish (1 day)
+- **Step 4**: Merge & master plan update
+
+**Current Phase:** Step 1 - Foundation Cleanup (IN PROGRESS)
+
+**Cleanup Objectives:**
+1. Remove dead code and archive directories
+2. Consolidate documentation (merge redundant markdown files)
+3. Organize scripts (remove overlapping functionality)
+4. Clean up test suite (remove outdated tests)
+5. Optimize configuration files
+
+**Files Modified:**
+- Multi-user session manager created (`src/daemon/multi_user_session_manager.py`)
+- Test users created (Jazeel, Michelle)
+- Database schema updated (expires_at, version columns, 7 indexes, cleanup function)
+
+**Git Operations:**
+- Committed security fixes and multi-user foundation
+- Merged to main
+- Created new branch: `feat/jwt-authentication`
+
+**Status:** 🔄 IN PROGRESS - Cleanup analysis underway with EXAI
 
 ---
 

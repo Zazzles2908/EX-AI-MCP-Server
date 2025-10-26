@@ -38,9 +38,10 @@
 | File Size | Method | Tool(s) | Token Savings | Deduplication | Auto-Warning | Example Use Case |
 |-----------|--------|---------|---------------|---------------|--------------|------------------|
 | **<5KB** | Direct embed | `chat_EXAI-WS(files=[...])` | N/A | ✅ SHA256 | ❌ No | Single code file analysis |
-| **>5KB** | Upload workflow | `kimi_upload_files` + `kimi_chat_with_files` | 70-80% | ✅ SHA256 | ✅ Yes | Large documentation |
-| **Multiple files** | Upload workflow | `kimi_upload_files` + `kimi_chat_with_files` | 80-90% | ✅ SHA256 | ✅ Yes | Batch analysis |
-| **Repeated queries** | Upload once, query many | `kimi_upload_files` + multiple `kimi_chat_with_files` | 90-95% | ✅ SHA256 | ✅ Yes | Iterative analysis |
+| **>5KB (Kimi)** | Kimi upload | `kimi_upload_files` + `kimi_chat_with_files` | 70-80% | ✅ SHA256 | ✅ Yes | Large docs with Kimi |
+| **>5KB (GLM)** | GLM upload | `glm_multi_file_chat` | 70-80% | ✅ SHA256 | ✅ Yes | Large docs with GLM |
+| **Multiple files** | Upload workflow | Kimi or GLM upload tools | 80-90% | ✅ SHA256 | ✅ Yes | Batch analysis |
+| **Repeated queries** | Upload once, query many | Upload + multiple chats | 90-95% | ✅ SHA256 | ✅ Yes | Iterative analysis |
 
 **🆕 Deduplication Benefits (2025-10-26):**
 - **Automatic SHA256 Detection** - All uploads calculate SHA256 hashes automatically
@@ -60,7 +61,7 @@ chat_EXAI-WS(
 )
 # No warning - file is under 5KB threshold
 
-# ✅ CORRECT - Large file (>5KB) with upload workflow
+# ✅ CORRECT - Large file (>5KB) with Kimi upload workflow
 # Step 1: Upload
 upload_result = kimi_upload_files(files=["c:\\Project\\EX-AI-MCP-Server\\large_file.py"])
 # Step 2: Chat
@@ -68,6 +69,14 @@ kimi_chat_with_files(
     prompt="Review this implementation",
     file_ids=[upload_result[0]["file_id"]],
     model="kimi-k2-0905-preview"
+)
+# Saves 70-80% tokens compared to direct embedding
+
+# ✅ CORRECT - Large file (>5KB) with GLM upload workflow
+glm_multi_file_chat(
+    files=["c:\\Project\\EX-AI-MCP-Server\\large_file.py"],
+    prompt="Review this implementation",
+    model="glm-4.6"
 )
 # Saves 70-80% tokens compared to direct embedding
 
@@ -417,10 +426,11 @@ def track_consultation_chain(initial_prompt):
 
 | Tool | Primary Use | Key Parameters | When to Use |
 |------|-------------|----------------|-------------|
-| `kimi_upload_files` | Upload files to Kimi | `files`, `purpose` | Large files (>5KB) |
-| `kimi_chat_with_files` | Chat with uploaded files | `prompt`, `file_ids`, `model` | After uploading files |
-| `kimi_manage_files` | Manage uploaded files | `operation`, `file_id` | Cleanup, list files |
-| `glm_upload_file` | Upload file to GLM | `file`, `purpose` | GLM-specific file handling |
+| `kimi_upload_files` | Upload files to Kimi | `files`, `purpose` | Large files (>5KB) with Kimi models |
+| `kimi_chat_with_files` | Chat with uploaded files | `prompt`, `file_ids`, `model` | After uploading to Kimi |
+| `kimi_manage_files` | Manage uploaded files | `operation`, `file_id` | Cleanup, list Kimi files |
+| `glm_upload_file` | Upload file to GLM | `file`, `purpose` | GLM-specific file upload |
+| `glm_multi_file_chat` | Upload and chat with GLM | `files`, `prompt`, `model` | Large files (>5KB) with GLM models |
 
 ### **Utility Tools**
 

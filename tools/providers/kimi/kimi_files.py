@@ -602,6 +602,8 @@ class KimiChatWithFilesTool(BaseTool):
         send_progress(f"Analyzing {len(file_ids)} file(s) with Kimi ({model})...")
 
         # Chat completion with timeout wrapper
+        # Use environment variable for timeout (default: 180s for multi-file operations)
+        timeout_secs = float(os.getenv("KIMI_MF_CHAT_TIMEOUT_SECS", "180"))
         try:
             resp = await asyncio.wait_for(
                 asyncio.to_thread(
@@ -610,10 +612,10 @@ class KimiChatWithFilesTool(BaseTool):
                     messages=messages,
                     temperature=temperature
                 ),
-                timeout=60.0
+                timeout=timeout_secs
             )
         except asyncio.TimeoutError:
-            raise TimeoutError("Kimi chat analysis timed out after 60s")
+            raise TimeoutError(f"Kimi chat analysis timed out after {int(timeout_secs)}s")
 
         content = (resp or {}).get("content", "")
         return {"model": model, "content": content}
