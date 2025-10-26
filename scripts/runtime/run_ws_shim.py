@@ -30,15 +30,112 @@ from mcp.types import Tool, TextContent
 
 from mcp.server.models import InitializationOptions
 from mcp.server.stdio import stdio_server
+from contextlib import asynccontextmanager
 
-# Setup logging
-logger = setup_logging("ws_shim", log_file=str(get_repo_root() / "logs" / "ws_shim.log"))
-logger.debug(f"EX WS Shim starting pid={os.getpid()} py={sys.executable} repo={get_repo_root()}")
+# Windows-safe stdio server wrapper with retry logic
+@asynccontextmanager
+async def safe_stdio_server():
+    """
+    Windows-safe stdio server with error handling and retry logic.
 
+    Handles OSError [Errno 22] which occurs on Windows when:
+    - Multiple VSCode instances start simultaneously
+    - Parent process (VSCode) closes/reopens stdio handles
+    - Race conditions in handle initialization
+
+    This wrapper implements retry logic to handle transient stdio errors gracefully.
+    """
+    max_retries = 3
+    retry_delay = 0.1
+
+    for attempt in range(max_retries):
+        try:
+            async with stdio_server() as (read_stream, write_stream):
+                logger.info(f"[STDIO] Successfully initialized stdio server (attempt {attempt + 1}/{max_retries})")
+                yield read_stream, write_stream
+                return
+
+        except OSError as e:
+            if e.errno == 22:  # Invalid argument - Windows stdio issue
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        f"[STDIO] Windows stdio error (errno 22) on attempt {attempt + 1}/{max_retries}, "
+                        f"retrying in {retry_delay}s... Session: {os.getenv('EXAI_SESSION_ID', 'unknown')}"
+                    )
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                    continue
+                else:
+                    logger.error(
+                        f"[STDIO] Max retries ({max_retries}) reached for stdio initialization. "
+                        f"Session: {os.getenv('EXAI_SESSION_ID', 'unknown')}"
+                    )
+                    raise
+            else:
+                # Different OSError - don't retry
+                logger.error(f"[STDIO] Unexpected OSError (errno {e.errno}): {e}")
+                raise
+
+# Windows-specific stdio handling for multi-instance support
+# SOLUTION: Make stdio handles non-inheritable to prevent sharing between processes
+# This allows multiple VSCode instances to run simultaneously with sequential execution
+if sys.platform == "win32":
+    try:
+        import msvcrt
+
+        # CRITICAL FIX: Make stdio handles non-inheritable
+        # This prevents handle sharing violations when multiple shim processes start
+        # Each process gets its own isolated stdio handles
+        stdin_handle = msvcrt.get_osfhandle(sys.stdin.fileno())
+        stdout_handle = msvcrt.get_osfhandle(sys.stdout.fileno())
+        stderr_handle = msvcrt.get_osfhandle(sys.stderr.fileno())
+
+        # Set handles to non-inheritable
+        os.set_handle_inheritable(stdin_handle, False)
+        os.set_handle_inheritable(stdout_handle, False)
+        os.set_handle_inheritable(stderr_handle, False)
+
+    except Exception as e:
+        # If this fails, log to file only (can't use stdout)
+        import logging
+        logging.basicConfig(filename=str(get_repo_root() / "logs" / "ws_shim_startup_error.log"), level=logging.ERROR)
+        logging.error(f"Failed to set stdio handle isolation: {e}")
+
+# Get session configuration BEFORE logging setup (needed for log file naming)
+SESSION_ID = os.getenv("EXAI_SESSION_ID", str(uuid.uuid4()))
 EXAI_WS_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
 EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8079"))
 EXAI_WS_TOKEN = os.getenv("EXAI_WS_TOKEN", "")
-SESSION_ID = os.getenv("EXAI_SESSION_ID", str(uuid.uuid4()))
+
+# Setup logging with instance-specific log file
+# CRITICAL FIX (2025-10-27): Each MCP instance needs its own log file to prevent race conditions
+# When multiple instances write to the same log file, their logs get interleaved causing confusion
+mcp_server_id = os.getenv("MCP_SERVER_ID", "unknown")
+log_prefix = os.getenv("EXAI_LOG_PREFIX", "unknown")
+
+# Use log_prefix if available, otherwise fall back to session_id
+log_identifier = log_prefix if log_prefix != "unknown" else SESSION_ID.replace("vscode-instance-", "vscode")
+log_file_path = get_repo_root() / "logs" / f"ws_shim_{log_identifier}.log"
+
+logger = setup_logging(f"ws_shim_{log_identifier}", log_file=str(log_file_path))
+logger.debug(f"EX WS Shim starting pid={os.getpid()} py={sys.executable} repo={get_repo_root()}")
+logger.info(f"[INSTANCE] Log file: {log_file_path}")
+if sys.platform == "win32":
+    logger.info("[WINDOWS] Multi-instance support enabled via stdio handle isolation")
+
+# CRITICAL DEBUG: Log shim startup with all environment details
+logger.info(f"=" * 80)
+logger.info(f"[SHIM_STARTUP] Session ID: {SESSION_ID}")
+logger.info(f"[SHIM_STARTUP] MCP Server ID: {os.getenv('MCP_SERVER_ID', 'unknown')}")
+logger.info(f"[SHIM_STARTUP] Shim ID: {os.getenv('EXAI_SHIM_ID', 'unknown')}")
+logger.info(f"[SHIM_STARTUP] Log Prefix: {os.getenv('EXAI_LOG_PREFIX', 'unknown')}")
+logger.info(f"[SHIM_STARTUP] WS Host: {EXAI_WS_HOST}")
+logger.info(f"[SHIM_STARTUP] WS Port: {EXAI_WS_PORT}")
+logger.info(f"[SHIM_STARTUP] Process ID: {os.getpid()}")
+logger.info(f"[SHIM_STARTUP] Python: {sys.executable}")
+logger.info(f"[SHIM_STARTUP] Script: {__file__}")
+logger.info(f"[SHIM_STARTUP] Repo Root: {get_repo_root()}")
+logger.info(f"=" * 80)
 
 # CRITICAL: Validate auth token configuration
 if EXAI_WS_TOKEN:
@@ -49,8 +146,12 @@ else:
                    "Set EXAI_WS_TOKEN in .env file to match daemon's token.")
 MAX_MSG_BYTES = int(os.getenv("EXAI_WS_MAX_BYTES", str(32 * 1024 * 1024)))
 PING_INTERVAL = int(os.getenv("EXAI_WS_PING_INTERVAL", "45"))
-PING_TIMEOUT = int(os.getenv("EXAI_WS_PING_TIMEOUT", "30"))
-EXAI_WS_AUTOSTART = os.getenv("EXAI_WS_AUTOSTART", "true").strip().lower() == "true"
+# CRITICAL FIX (2025-10-27): Changed default from 30 to 240 to match .env.docker
+# This was causing connections to timeout after 30s instead of 240s!
+PING_TIMEOUT = int(os.getenv("EXAI_WS_PING_TIMEOUT", "240"))
+# CRITICAL FIX (2025-10-27): Disable autostart by default when daemon runs in Docker
+# Autostart tries to launch a local daemon which conflicts with Docker daemon
+EXAI_WS_AUTOSTART = os.getenv("EXAI_WS_AUTOSTART", "false").strip().lower() == "true"
 EXAI_WS_CONNECT_TIMEOUT = float(os.getenv("EXAI_WS_CONNECT_TIMEOUT", "30"))  # Use config value (30s default) for reliable Docker daemon connection
 EXAI_WS_HANDSHAKE_TIMEOUT = float(os.getenv("EXAI_WS_HANDSHAKE_TIMEOUT", "15"))
 EXAI_SHIM_ACK_GRACE_SECS = float(os.getenv("EXAI_SHIM_ACK_GRACE_SECS", "120"))
@@ -392,15 +493,27 @@ async def _ensure_ws():
 
 @server.list_tools()
 async def handle_list_tools() -> List[Tool]:
+    logger.info(f"[LIST_TOOLS] VSCode requested tool list for session: {SESSION_ID}")
+    logger.info(f"[LIST_TOOLS] MCP Server ID: {os.getenv('MCP_SERVER_ID', 'unknown')}")
+
     ws = await _ensure_ws()
+    logger.info(f"[LIST_TOOLS] Sending list_tools request to daemon")
     await ws.send(json.dumps({"op": "list_tools"}))
+
+    logger.info(f"[LIST_TOOLS] Waiting for daemon response...")
     raw = await ws.recv()
     msg = json.loads(raw)
+
     if msg.get("op") != "list_tools_res":
+        logger.error(f"[LIST_TOOLS] Unexpected reply from daemon: {msg}")
         raise RuntimeError(f"Unexpected reply from daemon: {msg}")
+
     tools = []
     for t in msg.get("tools", []):
         tools.append(Tool(name=t.get("name"), description=t.get("description"), inputSchema=t.get("inputSchema") or {"type": "object"}))
+
+    logger.info(f"[LIST_TOOLS] Received {len(tools)} tools from daemon")
+    logger.info(f"[LIST_TOOLS] Tool names: {[t.name for t in tools[:5]]}{'...' if len(tools) > 5 else ''}")
     return tools
 
 
@@ -482,11 +595,18 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextCon
 
 def main() -> None:
     global _health_monitor_task, _stdin_monitor_task, _shutdown_event
+
+    logger.info(f"[MAIN] ========== SHIM MAIN STARTING ==========")
+    logger.info(f"[MAIN] Session: {SESSION_ID}")
+    logger.info(f"[MAIN] MCP Server ID: {os.getenv('MCP_SERVER_ID', 'unknown')}")
+    logger.info(f"[MAIN] Process ID: {os.getpid()}")
+
     init_opts = server.create_initialization_options()
     try:
-        from mcp.server.stdio import stdio_server as _stdio_server
         async def _runner():
             global _shutdown_event, _stdin_monitor_task, _health_monitor_task
+
+            logger.info(f"[MAIN] Async runner started for session: {SESSION_ID}")
 
             # Create shutdown event
             _shutdown_event = asyncio.Event()
@@ -501,7 +621,9 @@ def main() -> None:
             logger.info("[MAIN] Started connection health monitor for auto-reconnection")
 
             try:
-                async with _stdio_server() as (read_stream, write_stream):
+                # CRITICAL FIX (2025-10-26): Use safe_stdio_server wrapper with retry logic
+                # This handles Windows OSError [Errno 22] when multiple VSCode instances start
+                async with safe_stdio_server() as (read_stream, write_stream):
                     # Run server with shutdown monitoring
                     server_task = asyncio.create_task(server.run(read_stream, write_stream, init_opts))
                     shutdown_task = asyncio.create_task(_shutdown_event.wait())
@@ -528,6 +650,10 @@ def main() -> None:
                             await task
                         except asyncio.CancelledError:
                             pass
+            except Exception as e:
+                # OSError handling is now done in safe_stdio_server wrapper
+                logger.error(f"[STDIO] Unexpected error in stdio_server: {e}")
+                raise
 
             finally:
                 # Cleanup monitor tasks

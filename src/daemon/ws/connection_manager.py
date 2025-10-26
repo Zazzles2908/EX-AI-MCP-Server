@@ -84,7 +84,10 @@ async def _safe_send(
     # PHASE 4 (2025-10-19): Use ResilientWebSocketManager if available
     if resilient_ws_manager is not None:
         try:
+            # CRITICAL DEBUG (2025-10-27): Log EVERY send attempt via ResilientWebSocketManager
+            logger.info(f"[SAFE_SEND_RESILIENT] Attempting to send op={payload.get('op')} size={data_size} bytes")
             success = await resilient_ws_manager.send(ws, payload, critical=critical)
+            logger.info(f"[SAFE_SEND_RESILIENT] Send result: success={success} op={payload.get('op')}")
 
             # Monitor successful sends (sample 1 in 10 for performance)
             if success and hash(payload.get("request_id", "")) % 10 == 0:
@@ -104,7 +107,10 @@ async def _safe_send(
 
     # Legacy fallback (if ResilientWebSocketManager not initialized or failed)
     try:
+        # CRITICAL DEBUG (2025-10-27): Log EVERY send attempt
+        logger.info(f"[SAFE_SEND] Attempting to send op={payload.get('op')} size={data_size} bytes")
         await ws.send(message_json)
+        logger.info(f"[SAFE_SEND] Successfully sent op={payload.get('op')}")
 
         # PHASE 3 (2025-10-18): Monitor successful sends (sample 1 in 10 for performance)
         if hash(payload.get("request_id", "")) % 10 == 0:
@@ -284,9 +290,30 @@ async def serve_connection(
             return
 
         # Create session
-        # Always assign a fresh daemon-side session id for isolation
-        # Week 2 Fix #11 (2025-10-21): Use cryptographically secure session IDs
-        session_id = secrets.token_urlsafe(32)  # 256 bits of entropy
+        # MULTI-INSTANCE FIX (2025-10-26): Use client's session_id if provided and valid
+        # This allows multiple VSCode instances to maintain unique session identities
+        client_session_id = hello.get("session_id")
+
+        def _is_valid_session_id(sid: str) -> bool:
+            """Validate client-provided session ID format and length"""
+            if not sid or not isinstance(sid, str):
+                return False
+            # Allow reasonable length (3-64 chars) and safe characters (alphanumeric, dash, underscore)
+            return (3 <= len(sid) <= 64 and
+                    sid.replace("-", "").replace("_", "").isalnum())
+
+        if client_session_id and _is_valid_session_id(client_session_id):
+            session_id = client_session_id
+            logger.info(f"[SESSION] Using client-provided session ID: {session_id}")
+        else:
+            # Fallback to random if client doesn't provide one or it's invalid
+            # Week 2 Fix #11 (2025-10-21): Use cryptographically secure session IDs
+            session_id = secrets.token_urlsafe(32)  # 256 bits of entropy
+            if client_session_id:
+                logger.warning(f"[SESSION] Client provided invalid session ID, using random: {session_id[:8]}...")
+            else:
+                logger.debug(f"[SESSION] No client session ID provided, using random: {session_id[:8]}...")
+
         sess = await session_manager.ensure(session_id)
         
         # Send hello acknowledgment
@@ -301,8 +328,11 @@ async def serve_connection(
         # Message processing loop
         try:
             async for raw in ws:
+                # CRITICAL DEBUG (2025-10-27): Log ALL incoming messages
+                logger.info(f"[MSG_LOOP] Received raw message from {sess.session_id}: {raw[:200]}...")
                 try:
                     msg = json.loads(raw)
+                    logger.info(f"[MSG_LOOP] Parsed message op={msg.get('op')} for session={sess.session_id}")
                 except Exception as e:
                     logger.warning(f"Failed to parse JSON message from client (session: {sess.session_id}): {e}")
 

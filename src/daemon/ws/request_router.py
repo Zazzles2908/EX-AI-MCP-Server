@@ -719,8 +719,14 @@ class RequestRouter:
         # Route based on operation
         op = msg.get("op")
 
+        # CRITICAL DEBUG: Log all incoming operations
+        logger.info(f"[ROUTER_DEBUG] Received operation: {op} for session: {session_id}")
+        logger.info(f"[ROUTER_DEBUG] Message: {msg}")
+
         if op == "list_tools":
+            logger.info(f"[ROUTER_DEBUG] Routing to _handle_list_tools for session: {session_id}")
             await self._handle_list_tools(ws, resilient_ws_manager)
+            logger.info(f"[ROUTER_DEBUG] _handle_list_tools completed for session: {session_id}")
         elif op == "call_tool":
             await self._handle_call_tool(ws, session_id, msg, resilient_ws_manager)
         else:
@@ -740,27 +746,45 @@ class RequestRouter:
         resilient_ws_manager=None
     ) -> None:
         """Handle list_tools operation."""
-        tools = []
-        for name, tool in self.server_tools.items():
-            try:
-                tools.append({
-                    "name": tool.name,
-                    "description": tool.description,
-                    "inputSchema": tool.get_input_schema(),
-                })
-            except Exception as e:
-                logger.warning(f"Failed to get full schema for tool '{name}': {e}")
-                # Fallback to minimal descriptor
-                tools.append({
-                    "name": name,
-                    "description": getattr(tool, "description", name),
-                    "inputSchema": {"type": "object"}
-                })
+        try:
+            logger.info(f"[LIST_TOOLS_HANDLER] Starting list_tools handler")
+            logger.info(f"[LIST_TOOLS_HANDLER] server_tools count: {len(self.server_tools)}")
 
-        await _safe_send(ws, {
-            "op": "list_tools_res",
-            "tools": tools
-        }, resilient_ws_manager=resilient_ws_manager)
+            tools = []
+            for name, tool in self.server_tools.items():
+                try:
+                    tools.append({
+                        "name": tool.name,
+                        "description": tool.description,
+                        "inputSchema": tool.get_input_schema(),
+                    })
+                except Exception as e:
+                    logger.warning(f"Failed to get full schema for tool '{name}': {e}")
+                    # Fallback to minimal descriptor
+                    tools.append({
+                        "name": name,
+                        "description": getattr(tool, "description", name),
+                        "inputSchema": {"type": "object"}
+                    })
+
+            logger.info(f"[LIST_TOOLS_HANDLER] Prepared {len(tools)} tools")
+            logger.info(f"[LIST_TOOLS_HANDLER] Sending list_tools_res to client")
+
+            # CRITICAL FIX (2025-10-27): Add timestamp with microsecond precision to prevent message deduplication
+            # The ResilientWebSocketManager deduplicates messages with identical content.
+            # log_timestamp() only has second precision, so two messages sent within the same second
+            # would have the same hash. Using time.time() gives microsecond precision.
+            import time
+            await _safe_send(ws, {
+                "op": "list_tools_res",
+                "tools": tools,
+                "timestamp": time.time()  # Microsecond precision to make each response unique
+            }, resilient_ws_manager=resilient_ws_manager)
+
+            logger.info(f"[LIST_TOOLS_HANDLER] list_tools_res sent successfully")
+        except Exception as e:
+            logger.error(f"[LIST_TOOLS_HANDLER] CRITICAL ERROR: {e}", exc_info=True)
+            raise
 
     async def _handle_call_tool(
         self,

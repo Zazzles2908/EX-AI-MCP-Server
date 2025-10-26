@@ -560,6 +560,12 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback:
                     provider_kwargs["on_chunk"] = self._on_chunk_callback
 
+                # CRITICAL FIX (2025-10-26): Add logging to verify actual API calls
+                # This helps identify when semantic cache or mock mode is being used
+                import time as _time
+                logger.info(f"[{self.get_name()}] CALLING PROVIDER: {prov.__class__.__name__} with prompt length {len(prompt)}")
+                call_start = _time.time()
+
                 result = prov.generate_content(
                     prompt=prompt,
                     model_name=_model_name,
@@ -569,6 +575,12 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     images=images if images else None,
                     **provider_kwargs,
                 )
+
+                # Log response time to verify real API calls (should be >100ms for real AI)
+                call_duration_ms = (_time.time() - call_start) * 1000
+                response_length = len(getattr(result, 'content', ''))
+                logger.info(f"[{self.get_name()}] PROVIDER RESPONSE: {response_length} chars in {call_duration_ms:.1f}ms")
+
                 return result
 
             # Honor explicit model first; only use fallback chain when model=='auto' or on failure if enabled

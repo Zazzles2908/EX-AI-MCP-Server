@@ -1,23 +1,49 @@
 """File size validation and recommendations for optimal file handling.
 
-PHASE 2.3 ENHANCEMENT (2025-10-25): EXAI Recommendation #1
+PHASE 2.4 ENHANCEMENT (2025-10-26): EXAI Comprehensive Recommendation
 Implements file size validation with automatic suggestions for optimal file handling.
 
+Based on EXAI consultation with kimi-thinking-preview (high thinking mode, web search enabled)
+Continuation ID: c90cdeec-48bb-4d10-b075-925ebbf39c8a
+
 Rationale:
-- Files >5KB should use kimi_upload_files workflow for 70-80% token savings
-- Files <5KB can use files parameter for direct embedding
+- Files <50KB should use files parameter for direct embedding (updated from 5KB)
+- Files 0.5MB-10MB should use kimi_upload_files for 70-80% token savings
+- Files 0.5MB-5MB can use glm_upload_file for GLM-specific workflows
+- Files >10MB should use Supabase storage for large file handling
 - Automatic warnings prevent token waste and improve agent usability
 """
 
 import logging
 import os
-from typing import Optional
+from typing import Optional, Dict
 
 logger = logging.getLogger(__name__)
 
-# File size threshold for upload recommendation (5KB)
-FILE_SIZE_THRESHOLD_KB = 5
-FILE_SIZE_THRESHOLD_BYTES = FILE_SIZE_THRESHOLD_KB * 1024
+# PHASE 2.4 FIX (2025-10-26): EXAI COMPREHENSIVE FIX - Updated file size thresholds
+# Based on EXAI consultation with kimi-thinking-preview
+# Rationale: Optimize upload method selection for different file sizes
+
+# File size thresholds (EXAI-recommended)
+FILE_SIZE_EMBEDDING_KB = 50  # < 50KB: Use embedding (direct in prompt)
+FILE_SIZE_EMBEDDING_BYTES = FILE_SIZE_EMBEDDING_KB * 1024
+
+FILE_SIZE_KIMI_MIN_MB = 0.5  # 0.5MB-10MB: Use Kimi upload
+FILE_SIZE_KIMI_MAX_MB = 10
+FILE_SIZE_KIMI_MIN_BYTES = int(FILE_SIZE_KIMI_MIN_MB * 1024 * 1024)
+FILE_SIZE_KIMI_MAX_BYTES = int(FILE_SIZE_KIMI_MAX_MB * 1024 * 1024)
+
+FILE_SIZE_GLM_MIN_MB = 0.5  # 0.5MB-5MB: Use GLM upload
+FILE_SIZE_GLM_MAX_MB = 5
+FILE_SIZE_GLM_MIN_BYTES = int(FILE_SIZE_GLM_MIN_MB * 1024 * 1024)
+FILE_SIZE_GLM_MAX_BYTES = int(FILE_SIZE_GLM_MAX_MB * 1024 * 1024)
+
+FILE_SIZE_SUPABASE_MIN_MB = 10  # >10MB: Use Supabase storage
+FILE_SIZE_SUPABASE_MIN_BYTES = int(FILE_SIZE_SUPABASE_MIN_MB * 1024 * 1024)
+
+# Legacy threshold for backward compatibility
+FILE_SIZE_THRESHOLD_KB = FILE_SIZE_EMBEDDING_KB
+FILE_SIZE_THRESHOLD_BYTES = FILE_SIZE_EMBEDDING_BYTES
 
 
 def get_file_size(file_path: str) -> Optional[int]:
@@ -100,29 +126,29 @@ def check_file_sizes(file_paths: list[str]) -> dict:
             f"  - {os.path.basename(f['path'])}: {f['size_formatted']}"
             for f in large_files
         ])
-        
+
         result["warning_message"] = (
             f"⚠️  FILE SIZE WARNING: {len(large_files)} file(s) exceed {FILE_SIZE_THRESHOLD_KB}KB threshold:\n"
             f"{file_list}\n"
             f"Total size: {result['total_size_formatted']}"
         )
-        
+
         result["recommendation"] = (
-            f"💡 RECOMMENDATION: Use kimi_upload_files workflow for 70-80% token savings:\n"
+            f"💡 RECOMMENDATION: Use appropriate upload method based on file size:\n"
             f"\n"
-            f"# Step 1: Upload files\n"
-            f"upload_result = kimi_upload_files(files=[\n"
-            f"    # Your {len(large_files)} large file(s)\n"
-            f"])\n"
+            f"For files 0.5MB-10MB (recommended):\n"
+            f"  1. upload_result = kimi_upload_files(files=[...])\n"
+            f"  2. kimi_chat_with_files(prompt='...', file_ids=upload_result['file_ids'])\n"
+            f"  → Saves 70-80% tokens\n"
             f"\n"
-            f"# Step 2: Chat with uploaded files\n"
-            f"kimi_chat_with_files(\n"
-            f"    prompt=\"Your question here\",\n"
-            f"    file_ids=upload_result['file_ids'],\n"
-            f"    model=\"kimi-k2-0905-preview\"\n"
-            f")\n"
+            f"For files 0.5MB-5MB (GLM workflows):\n"
+            f"  file_id = glm_upload_file(file='...')\n"
+            f"  → Alternative for GLM-specific use cases\n"
             f"\n"
-            f"This approach saves tokens and enables multi-turn file analysis."
+            f"For files >10MB:\n"
+            f"  → Use Supabase storage (contact administrator)\n"
+            f"\n"
+            f"Use select_upload_method(file_path) to get specific recommendations."
         )
     
     return result
@@ -162,10 +188,10 @@ def validate_and_warn(file_paths: list[str], tool_name: str = "unknown") -> Opti
 
 def should_recommend_upload(file_paths: list[str]) -> bool:
     """Check if file upload workflow should be recommended.
-    
+
     Args:
         file_paths: List of file paths to check
-        
+
     Returns:
         True if any file exceeds threshold, False otherwise
     """
@@ -174,6 +200,162 @@ def should_recommend_upload(file_paths: list[str]) -> bool:
         if size and size > FILE_SIZE_THRESHOLD_BYTES:
             return True
     return False
+
+
+def select_upload_method(file_path: str) -> Dict[str, any]:
+    """
+    Select optimal upload method based on file size.
+
+    PHASE 2.4 ENHANCEMENT (2025-10-26): EXAI-recommended upload method selection
+
+    This function helps AI agents understand which upload method to use based on file size.
+    It provides clear guidance and rationale for the selection.
+
+    Args:
+        file_path: Path to file
+
+    Returns:
+        Dictionary with:
+        - method: str - 'embedding', 'kimi_upload', 'glm_upload', 'supabase_storage', or 'error'
+        - reason: str - Explanation for selection
+        - size: int - File size in bytes
+        - size_formatted: str - Human-readable size
+        - recommendation: str - Detailed recommendation for agents
+
+    Example:
+        >>> result = select_upload_method("large_file.pdf")
+        >>> print(result['method'])  # 'kimi_upload'
+        >>> print(result['reason'])  # 'File size (2.5 MB) in range 0.5MB-10MB...'
+        >>> print(result['recommendation'])  # 'Use kimi_upload_files tool...'
+    """
+    size = get_file_size(file_path)
+    if size is None:
+        return {
+            'method': 'error',
+            'reason': 'File not found or inaccessible',
+            'size': 0,
+            'size_formatted': '0 B',
+            'recommendation': 'Check file path and permissions'
+        }
+
+    size_formatted = format_file_size(size)
+
+    # < 50KB: Use embedding
+    if size < FILE_SIZE_EMBEDDING_BYTES:
+        return {
+            'method': 'embedding',
+            'reason': f'File size ({size_formatted}) < 50KB - optimal for direct embedding',
+            'size': size,
+            'size_formatted': size_formatted,
+            'recommendation': (
+                f"Use the 'files' parameter to embed this file directly in your prompt:\n"
+                f"  files=['{file_path}']\n"
+                f"This is the most efficient method for small files."
+            )
+        }
+
+    # 5-20MB: Use Supabase gateway for GLM (pre-signed URLs)
+    if 5 * 1024 * 1024 <= size <= 20 * 1024 * 1024:
+        return {
+            'method': 'supabase_gateway_glm',
+            'reason': f'File size ({size_formatted}) in range 5-20MB - use Supabase gateway with pre-signed URLs for GLM',
+            'size': size,
+            'size_formatted': size_formatted,
+            'recommendation': (
+                f"Use Supabase gateway approach for GLM (EXAI-validated):\n"
+                f"  from tools.providers.glm.glm_files import upload_via_supabase_gateway_glm\n"
+                f"  from src.storage.supabase_client import get_storage_manager\n"
+                f"  \n"
+                f"  storage = get_storage_manager()\n"
+                f"  result = await upload_via_supabase_gateway_glm('{file_path}', storage)\n"
+                f"  glm_file_id = result['glm_file_id']\n"
+                f"  \n"
+                f"This approach:\n"
+                f"  1. Uploads to Supabase Storage first\n"
+                f"  2. Generates pre-signed URL (60s expiration)\n"
+                f"  3. Downloads and uploads to GLM API\n"
+                f"  4. Centralized tracking in Supabase\n"
+                f"  \n"
+                f"Source: EXAI Consultation c90cdeec-48bb-4d10-b075-925ebbf39c8a"
+            )
+        }
+
+    # 5-100MB: Use Supabase gateway for Kimi (direct URL extraction)
+    if 5 * 1024 * 1024 <= size <= 100 * 1024 * 1024:
+        return {
+            'method': 'supabase_gateway_kimi',
+            'reason': f'File size ({size_formatted}) in range 5-100MB - use Supabase gateway with direct URL extraction for Kimi',
+            'size': size,
+            'size_formatted': size_formatted,
+            'recommendation': (
+                f"Use Supabase gateway approach for Kimi (EXAI-validated):\n"
+                f"  from tools.providers.kimi.kimi_files import upload_via_supabase_gateway_kimi\n"
+                f"  from src.storage.supabase_client import get_storage_manager\n"
+                f"  \n"
+                f"  storage = get_storage_manager()\n"
+                f"  result = await upload_via_supabase_gateway_kimi('{file_path}', storage)\n"
+                f"  kimi_file_id = result['kimi_file_id']\n"
+                f"  \n"
+                f"This approach:\n"
+                f"  1. Uploads to Supabase Storage first\n"
+                f"  2. Gets public URL from Supabase\n"
+                f"  3. Kimi extracts file directly from URL (no download needed)\n"
+                f"  4. Centralized tracking in Supabase\n"
+                f"  \n"
+                f"Kimi API endpoint: https://api.moonshot.cn/api/v1/files/upload_url\n"
+                f"Source: EXAI Consultation c90cdeec-48bb-4d10-b075-925ebbf39c8a"
+            )
+        }
+
+    # 0.5MB-5MB: Use direct upload (current approach - fast)
+    if FILE_SIZE_KIMI_MIN_BYTES <= size <= FILE_SIZE_GLM_MAX_BYTES:
+        return {
+            'method': 'direct_upload',
+            'reason': f'File size ({size_formatted}) in range 0.5-5MB - use direct upload (fastest)',
+            'size': size,
+            'size_formatted': size_formatted,
+            'recommendation': (
+                f"Use direct upload for optimal speed:\n"
+                f"  \n"
+                f"For Kimi:\n"
+                f"  upload_result = kimi_upload_files(files=['{file_path}'])\n"
+                f"  kimi_chat_with_files(prompt='...', file_ids=upload_result['file_ids'])\n"
+                f"  → Saves 70-80% tokens\n"
+                f"  \n"
+                f"For GLM:\n"
+                f"  file_id = glm_upload_file(file='{file_path}')\n"
+                f"  → Alternative for GLM-specific workflows\n"
+                f"  \n"
+                f"Note: For 5-20MB files, consider Supabase gateway for centralized tracking."
+            )
+        }
+
+    # >10MB: Use Supabase storage
+    if size > FILE_SIZE_SUPABASE_MIN_BYTES:
+        return {
+            'method': 'supabase_storage',
+            'reason': f'File size ({size_formatted}) > 10MB - use Supabase storage for large files',
+            'size': size,
+            'size_formatted': size_formatted,
+            'recommendation': (
+                f"Use Supabase storage for large file handling:\n"
+                f"  This file exceeds API upload limits.\n"
+                f"  Contact system administrator for large file handling."
+            )
+        }
+
+    # Fallback: embedding (for files between 50KB and 0.5MB)
+    return {
+        'method': 'embedding',
+        'reason': f'File size ({size_formatted}) - using embedding as fallback',
+        'size': size,
+        'size_formatted': size_formatted,
+        'recommendation': (
+            f"Use the 'files' parameter to embed this file:\n"
+            f"  files=['{file_path}']\n"
+            f"Note: File is larger than optimal embedding size but smaller than upload threshold."
+        )
+    }
 
 
 # Example usage

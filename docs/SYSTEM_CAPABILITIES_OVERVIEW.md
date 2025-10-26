@@ -2,6 +2,8 @@
 
 **READ THIS FIRST** - Essential capabilities for AI agents working with EXAI-MCP Server
 
+**Last Updated:** 2025-10-26 (Phase 2.4 - File Deduplication Complete)
+
 ---
 
 ## 🚀 **QUICK START FOR NEW AI AGENTS**
@@ -20,18 +22,16 @@
 
 ## 📁 **FILE HANDLING - CRITICAL FOR TOKEN EFFICIENCY**
 
-**🆕 AUTOMATIC FILE SIZE VALIDATION (2025-10-25):**
-- System now automatically detects files >5KB
-- Logs warnings with token savings recommendations
-- Suggests kimi_upload_files workflow automatically
-- No breaking changes - existing code continues to work
+**🆕 CRITICAL UPDATES:**
+- **2025-10-26:** SHA256-based file deduplication production-ready! Automatic duplicate detection and storage savings.
+- **2025-10-25:** Automatic file size validation active! Files >5KB trigger warnings suggesting kimi_upload_files workflow.
 
 ### Decision Matrix:
 
-| File Size | Method | Token Savings | Auto-Warning | When to Use |
-|-----------|--------|---------------|--------------|-------------|
-| **<5KB** | `files` parameter | N/A | ❌ No | Quick, single-use, small files |
-| **>5KB** | `kimi_upload_files` | 70-80% | ✅ Yes | Large files, persistent reference |
+| File Size | Method | Token Savings | Deduplication | Auto-Warning | When to Use |
+|-----------|--------|---------------|---------------|--------------|-------------|
+| **<5KB** | `files` parameter | N/A | ✅ SHA256 | ❌ No | Quick, single-use, small files |
+| **>5KB** | `kimi_upload_files` | 70-80% | ✅ SHA256 | ✅ Yes | Large files, persistent reference |
 
 ### Usage Examples:
 
@@ -68,6 +68,15 @@ kimi_chat_with_files(
 - **Cost Savings:** Significant reduction in API costs
 - **Performance:** Faster processing for large files
 - **Persistence:** Uploaded files can be referenced across multiple conversations
+- **Deduplication:** SHA256-based duplicate detection prevents redundant storage
+- **Storage Savings:** Automatic reference counting and cleanup
+
+### Deduplication Benefits (NEW - 2025-10-26):
+- **Automatic SHA256 Detection** - All uploads calculate hashes automatically
+- **Reference Counting** - Tracks file usage across providers
+- **Storage Savings** - Prevents duplicate storage in Supabase and AI providers
+- **Cache Performance** - Instant duplicate detection via in-memory cache
+- **Monitoring** - Built-in metrics track cache hit rates and storage savings
 
 ---
 
@@ -167,11 +176,19 @@ response2 = chat_EXAI-WS(
 
 ### How Workflow Tools Work:
 
+**⚠️ CRITICAL: "YOU Investigate First" Pattern**
+
 1. **YOU investigate first** using view/codebase-retrieval tools
 2. **YOU call workflow tool** with your findings
 3. **Tool auto-executes** internally (no AI calls during steps 2-N)
 4. **Tool calls expert analysis** at END (one AI call for validation)
 5. **You receive** comprehensive analysis with recommendations
+
+**Why This Matters:**
+- ✅ **Efficiency** - Tools validate YOUR findings, not discover them
+- ✅ **Quality** - Expert analysis validates your investigation
+- ✅ **Cost** - Single AI call at end, not during investigation
+- ✅ **Transparency** - Clear separation between investigation and validation
 
 **Example:**
 ```python
@@ -188,7 +205,16 @@ debug_EXAI-WS(
     findings="Found that JWT validation is missing expiry check",
     hypothesis="Authentication bypass due to missing token expiration validation",
     relevant_files=["c:\\Project\\src\\auth.py"],
-    confidence="high"
+    confidence="exploring"  # Start with exploring, progress to certain
+)
+```
+
+**Common Mistake:**
+```python
+# ❌ WRONG - Expecting tool to investigate for you
+debug_EXAI-WS(
+    step="Investigate authentication bug",
+    findings="Please investigate the auth system",  # Tool won't investigate!
 )
 ```
 
@@ -229,15 +255,21 @@ chat_EXAI-WS(
 - Upload files instead of pasting content in prompts
 - Use continuation_id for multi-step workflows
 - Choose appropriate model for task type
-- Investigate first, then use workflow tools
+- **Investigate first, then use workflow tools** (critical!)
 - Enable web search for documentation/best practices
+- Let system handle file deduplication automatically
+- Progress confidence levels appropriately (exploring → certain)
+- Extract and track continuation_id from responses
 
 ### ❌ DON'T:
 - Paste large code snippets in prompts (use files parameter)
-- Call workflow tools expecting them to investigate for you
+- **Call workflow tools expecting them to investigate for you** (critical!)
 - Use continuation_id for unrelated queries
+- Reuse continuation_id across different conversation topics
 - Assume all models have same context window
 - Enable web search for code analysis tasks
+- Manually check for duplicate files (system handles it)
+- Set confidence="certain" prematurely in workflow tools
 
 ---
 

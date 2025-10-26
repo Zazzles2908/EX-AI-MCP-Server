@@ -2,9 +2,24 @@
 
 **Purpose:** Quick reference for AI agents to discover and use system capabilities efficiently.
 
-**Last Updated:** 2025-10-25 (Phase 2.3 Enhancements)
+**Last Updated:** 2025-10-26 (Phase 2.4 - File Deduplication Complete)
 
-**⚠️  CRITICAL UPDATE (2025-10-25):** File size validation now active! Files >5KB will trigger automatic warnings suggesting kimi_upload_files workflow.
+**⚠️  CRITICAL UPDATES:**
+- **2025-10-26:** SHA256-based file deduplication now production-ready! Automatic duplicate detection and storage savings.
+- **2025-10-25:** File size validation active! Files >5KB trigger automatic warnings suggesting kimi_upload_files workflow.
+
+---
+
+## 🚀 **QUICK PATTERN REFERENCE**
+
+| Need | Pattern | Tool | Key Point |
+|------|---------|------|-----------|
+| Quick question | Direct chat | `chat_EXAI-WS` | Use for simple queries |
+| Analyze code | **YOU investigate first** → analyze | `analyze_EXAI-WS` | Tool validates YOUR findings |
+| Debug issue | **YOU investigate** → debug | `debug_EXAI-WS` | Progress confidence: exploring → certain |
+| Large file | Upload workflow | `kimi_upload_files` | ✅ SHA256 deduplication automatic |
+| Continue conversation | Use continuation_id | Any tool | Extract from `continuation_offer` |
+| Track consultation | Log metadata | Any tool | Monitor consultation_id and tokens |
 
 ---
 
@@ -20,12 +35,19 @@
 
 **Decision Matrix:**
 
-| File Size | Method | Tool(s) | Token Savings | Auto-Warning | Example Use Case |
-|-----------|--------|---------|---------------|--------------|------------------|
-| **<5KB** | Direct embed | `chat_EXAI-WS(files=[...])` | N/A | ❌ No | Single code file analysis |
-| **>5KB** | Upload workflow | `kimi_upload_files` + `kimi_chat_with_files` | 70-80% | ✅ Yes | Large documentation |
-| **Multiple files** | Upload workflow | `kimi_upload_files` + `kimi_chat_with_files` | 80-90% | ✅ Yes | Batch analysis |
-| **Repeated queries** | Upload once, query many | `kimi_upload_files` + multiple `kimi_chat_with_files` | 90-95% | ✅ Yes | Iterative analysis |
+| File Size | Method | Tool(s) | Token Savings | Deduplication | Auto-Warning | Example Use Case |
+|-----------|--------|---------|---------------|---------------|--------------|------------------|
+| **<5KB** | Direct embed | `chat_EXAI-WS(files=[...])` | N/A | ✅ SHA256 | ❌ No | Single code file analysis |
+| **>5KB** | Upload workflow | `kimi_upload_files` + `kimi_chat_with_files` | 70-80% | ✅ SHA256 | ✅ Yes | Large documentation |
+| **Multiple files** | Upload workflow | `kimi_upload_files` + `kimi_chat_with_files` | 80-90% | ✅ SHA256 | ✅ Yes | Batch analysis |
+| **Repeated queries** | Upload once, query many | `kimi_upload_files` + multiple `kimi_chat_with_files` | 90-95% | ✅ SHA256 | ✅ Yes | Iterative analysis |
+
+**🆕 Deduplication Benefits (2025-10-26):**
+- **Automatic SHA256 Detection** - All uploads calculate SHA256 hashes automatically
+- **Reference Counting** - Tracks how many times each file is referenced
+- **Storage Savings** - Prevents duplicate storage in Supabase and AI providers
+- **Performance Benefits** - Cache hits provide instant duplicate detection
+- **Monitoring** - Built-in metrics track cache hit rates and storage savings
 
 **Examples:**
 
@@ -61,6 +83,123 @@ chat_EXAI-WS(
 # ❌ WRONG - Manually reading and embedding
 view("large_file.py")  # Don't do this!
 chat_EXAI-WS(prompt="Here's the code: [pasted content]")  # Wastes tokens!
+```
+
+**Deduplication Best Practices (NEW - 2025-10-26):**
+
+✅ **DO:**
+- Let the system handle deduplication automatically
+- Upload the same file multiple times - system will detect duplicates
+- Monitor deduplication metrics with `get_dedup_metrics()`
+- Use async upload for files >100MB
+
+❌ **DON'T:**
+- Manually check for duplicates before uploading
+- Implement client-side deduplication (system handles it)
+- Worry about uploading the same file to different providers
+
+---
+
+## 🎯 **EXAI TOOL USAGE PHILOSOPHY**
+
+### **Core Principle: "YOU Investigate First"**
+
+EXAI workflow tools follow a specific pattern where **YOU (the agent) must investigate first**, then call the tool with your findings. This ensures:
+
+1. **Efficiency** - Tools don't waste time investigating what you already know
+2. **Quality** - Expert analysis validates YOUR findings, not discovers them
+3. **Transparency** - Clear separation between investigation and validation
+4. **Cost** - Single AI call at the end for validation, not during investigation
+
+### **Pattern Breakdown:**
+
+```
+Step 1: YOU investigate (using view, codebase-retrieval, etc.)
+Step 2: YOU call workflow tool with YOUR findings
+Step 3: Tool auto-executes internally (no AI calls)
+Step 4: Tool calls expert analysis at END (one AI call)
+Step 5: You receive comprehensive analysis with recommendations
+```
+
+### **Example - Proper Usage:**
+
+```python
+# Step 1: YOU investigate first
+view(path="src/server.py", type="file")
+codebase-retrieval(information_request="How is authentication handled?")
+
+# Step 2: Call workflow tool with YOUR findings
+debug_EXAI-WS(
+    step="Investigating authentication bug",
+    findings="Found that JWT validation is missing expiry check in validate_token()",
+    hypothesis="Authentication bypass due to missing token expiration validation",
+    relevant_files=["c:\\Project\\src\\auth.py"],
+    confidence="exploring"  # Start with exploring, not certain
+)
+```
+
+### **Example - Improper Usage:**
+
+```python
+# ❌ WRONG - Expecting tool to investigate for you
+debug_EXAI-WS(
+    step="Investigate authentication bug",
+    findings="Please investigate the auth system",  # Tool won't investigate!
+    confidence="exploring"
+)
+```
+
+### **Confidence Level Progression**
+
+**Understanding the Journey:**
+
+1. **"exploring"** - Initial investigation phase
+   - Use when: Starting analysis, forming hypotheses
+   - Indicates: "I'm investigating, not yet certain"
+   - Example: "Exploring potential causes of the memory leak"
+
+2. **"low"** - Early evidence gathering
+   - Use when: Found initial clues, need more validation
+   - Indicates: "I have some leads but need confirmation"
+   - Example: "Low confidence: Possible race condition in session manager"
+
+3. **"medium"** - Building evidence
+   - Use when: Multiple data points support conclusion
+   - Indicates: "Evidence suggests this direction"
+   - Example: "Medium confidence: Pattern indicates database connection leak"
+
+4. **"high"** - Strong evidence gathered
+   - Use when: Substantial evidence supports conclusion
+   - Indicates: "Evidence strongly suggests this is the issue"
+   - Example: "High confidence: Missing null check in user service"
+
+5. **"very_high"** - Near certainty
+   - Use when: Overwhelming evidence, minimal doubt
+   - Indicates: "Almost certain this is the issue"
+   - Example: "Very high confidence: Buffer overflow confirmed in parse_config()"
+
+6. **"certain"** - Definitive conclusion
+   - Use when: Evidence is conclusive, no reasonable doubt
+   - Indicates: "This is definitively the issue"
+   - Example: "Certain: Root cause verified with test case at line 142"
+
+**Progression Example:**
+
+```python
+# Initial investigation
+debug_EXAI-WS(step="Initial investigation", confidence="exploring")
+
+# After finding evidence
+debug_EXAI-WS(step="Found evidence in logs", confidence="low")
+
+# After confirming pattern
+debug_EXAI-WS(step="Pattern confirmed across multiple instances", confidence="medium")
+
+# After substantial validation
+debug_EXAI-WS(step="Validated with test cases", confidence="high")
+
+# After definitive proof
+debug_EXAI-WS(step="Root cause verified and fix tested", confidence="certain")
 ```
 
 ---
@@ -117,6 +256,136 @@ response2 = chat_EXAI-WS(
 - ✅ Conversation history automatically embedded
 - ✅ No need to repeat context
 - ✅ More coherent multi-turn discussions
+
+### **Continuation ID Lifecycle Management**
+
+**Continuation ID Rules:**
+
+1. **Creation** - Offered in response when conversation can continue
+2. **Extraction** - Extract from `response['continuation_offer']['continuation_id']`
+3. **Usage** - Pass to next call to maintain context
+4. **Scope** - Valid for the specific conversation chain only
+5. **Expiration** - Varies by provider (typically 30-60 minutes)
+
+**Critical Rules:**
+
+✅ **DO:**
+- Extract continuation_id immediately after receiving response
+- Use continuation_id for follow-up questions in same context
+- Maintain continuation_id across multiple related calls
+- Handle missing continuation_offer gracefully
+
+❌ **DON'T:**
+- Reuse continuation_id across different conversations
+- Assume continuation_id will always be present
+- Store continuation_id for long-term use
+- Share continuation_id between different agents
+
+**Tracking Pattern:**
+
+```python
+# Recommended tracking pattern
+class ConversationTracker:
+    def __init__(self):
+        self.current_continuation_id = None
+        self.conversation_history = []
+
+    def make_call(self, prompt, **kwargs):
+        # Add continuation_id if available
+        if self.current_continuation_id:
+            kwargs['continuation_id'] = self.current_continuation_id
+
+        # Make the call
+        response = chat_EXAI-WS(prompt=prompt, **kwargs)
+
+        # Update continuation_id
+        if 'continuation_offer' in response:
+            self.current_continuation_id = response['continuation_offer']['continuation_id']
+
+        # Track the conversation
+        self.conversation_history.append({
+            'prompt': prompt,
+            'response': response,
+            'continuation_id': self.current_continuation_id
+        })
+
+        return response
+```
+
+---
+
+## 🔍 **TRANSPARENCY & VISIBILITY**
+
+### **Tracking EXAI Consultations**
+
+**Why Track?**
+- Debug conversation issues
+- Analyze tool usage patterns
+- Monitor token consumption
+- Identify optimization opportunities
+
+### **Built-in Tracking Features:**
+
+1. **Continuation ID Tracking** - Each consultation offers continuation_id for chain tracking
+2. **Response Metadata** - Includes model used, token counts, timing
+3. **Activity Logs** - Access via `activity_EXAI-WS` tool
+4. **Deduplication Metrics** - Track cache hit rates and storage savings
+
+### **Tracking Best Practices:**
+
+```python
+# Track consultation metadata
+response = chat_EXAI-WS(prompt="Analyze this code", files=["file.py"])
+
+# Extract tracking information
+model_used = response.get('metadata', {}).get('model_used')
+continuation_id = response.get('continuation_offer', {}).get('continuation_id')
+
+# Log for visibility
+logger.info(f"EXAI Consultation: Model={model_used}, ContinuationID={continuation_id}")
+```
+
+### **Metrics to Monitor:**
+
+1. **Token Efficiency** - Files uploaded vs tokens saved
+2. **Deduplication Rate** - Cache hit percentage
+3. **Tool Usage Patterns** - Which tools used most frequently
+4. **Response Quality** - Confidence level progression
+5. **Conversation Length** - Average calls per consultation
+
+### **Visibility Tools:**
+
+```python
+# Check system activity
+activity_EXAI-WS(lines=50, filter="EXAI", source="all")
+
+# Monitor deduplication
+from utils.file.deduplication import get_dedup_metrics
+metrics = get_dedup_metrics()
+print(f"Cache hit rate: {metrics['cache_hit_rate']}%")
+print(f"Storage saved: {metrics['storage_saved_bytes']:,} bytes")
+
+# Track consultation chains
+def track_consultation_chain(initial_prompt):
+    continuation_id = None
+    call_count = 0
+
+    while True:
+        call_count += 1
+        response = chat_EXAI-WS(
+            prompt=initial_prompt if call_count == 1 else input("Next prompt: "),
+            continuation_id=continuation_id
+        )
+
+        print(f"Call {call_count}: {response['metadata']['model_used']}")
+
+        if 'continuation_offer' in response:
+            continuation_id = response['continuation_offer']['continuation_id']
+        else:
+            break
+
+    return call_count
+```
 
 ---
 
@@ -181,11 +450,12 @@ response2 = chat_EXAI-WS(
    chat_EXAI-WS(files=["large_file.py"])  # File is 50KB
    ```
 
-3. **Uploading files multiple times:**
+3. **Manually checking for duplicates (system handles it):**
    ```python
-   # ❌ WRONG
-   kimi_upload_files(files=["doc.md"])
-   kimi_upload_files(files=["doc.md"])  # Duplicate upload!
+   # ❌ WRONG - Manual deduplication
+   existing_files = kimi_manage_files(operation="list")
+   if "doc.pdf" not in existing_files:
+       kimi_upload_files(files=["doc.pdf"])
    ```
 
 4. **Not using continuation_id for multi-turn:**
@@ -195,12 +465,34 @@ response2 = chat_EXAI-WS(
    chat_EXAI-WS(prompt="How does that relate to Y?")  # Lost context!
    ```
 
-5. **Setting confidence="certain" prematurely:**
+5. **Reusing continuation_id across different contexts:**
+   ```python
+   # ❌ WRONG - Reusing across different topics
+   response1 = chat_EXAI-WS(prompt="Analyze React code")
+   continuation_id = response1['continuation_offer']['continuation_id']
+
+   # Different topic - shouldn't reuse!
+   response2 = chat_EXAI-WS(
+       prompt="Explain Python decorators",
+       continuation_id=continuation_id  # Wrong context!
+   )
+   ```
+
+6. **Setting confidence="certain" prematurely:**
    ```python
    # ❌ WRONG
    debug_EXAI-WS(
        step="Initial investigation",
        confidence="certain"  # Too early!
+   )
+   ```
+
+7. **Expecting workflow tools to investigate for you:**
+   ```python
+   # ❌ WRONG - Investigation reversal
+   analyze_EXAI-WS(
+       step="Please analyze the codebase architecture",
+       findings="Need you to investigate"  # Tool won't investigate!
    )
    ```
 
@@ -225,29 +517,36 @@ response2 = chat_EXAI-WS(
    )
    ```
 
-3. **Reuse uploaded files:**
+3. **Let system handle deduplication:**
    ```python
-   # ✅ CORRECT
-   upload_result = kimi_upload_files(files=["doc.md"])
-   file_id = upload_result[0]["file_id"]
-   
-   kimi_chat_with_files(prompt="Question 1?", file_ids=[file_id])
-   kimi_chat_with_files(prompt="Question 2?", file_ids=[file_id])
+   # ✅ CORRECT - System detects duplicates automatically
+   kimi_upload_files(files=["doc.pdf"])  # Upload freely
+   kimi_upload_files(files=["doc.pdf"])  # System deduplicates automatically
    ```
 
-4. **Use continuation_id:**
+4. **Use continuation_id for related queries:**
    ```python
    # ✅ CORRECT
    response1 = chat_EXAI-WS(prompt="Explain X")
    continuation_id = response1["continuation_offer"]["continuation_id"]
-   
+
    response2 = chat_EXAI-WS(
        prompt="How does that relate to Y?",
        continuation_id=continuation_id
    )
    ```
 
-5. **Use appropriate confidence levels:**
+5. **Create new continuation_id for different topics:**
+   ```python
+   # ✅ CORRECT - Fresh start for new topic
+   response1 = chat_EXAI-WS(prompt="Analyze React code")
+   # ... conversation about React ...
+
+   # New topic - start fresh
+   response2 = chat_EXAI-WS(prompt="Explain Python decorators")
+   ```
+
+6. **Use appropriate confidence levels:**
    ```python
    # ✅ CORRECT
    debug_EXAI-WS(
@@ -258,6 +557,18 @@ response2 = chat_EXAI-WS(
    debug_EXAI-WS(
        step="Root cause identified",
        confidence="certain"  # Only when truly certain
+   )
+   ```
+
+7. **Investigate first, then use workflow tools:**
+   ```python
+   # ✅ CORRECT - YOU investigate first
+   view(path="src/main.py")
+   codebase-retrieval(information_request="How is routing handled?")
+
+   analyze_EXAI-WS(
+       step="Architecture analysis",
+       findings="Found modular structure with clear separation of concerns"
    )
    ```
 

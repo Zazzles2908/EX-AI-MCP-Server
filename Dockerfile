@@ -46,6 +46,7 @@ COPY src/ ./src/
 COPY tools/ ./tools/
 COPY utils/ ./utils/
 COPY systemprompts/ ./systemprompts/
+COPY configurations/ ./configurations/
 COPY streaming/ ./streaming/
 COPY scripts/ws/ ./scripts/ws/
 COPY scripts/runtime/ ./scripts/runtime/

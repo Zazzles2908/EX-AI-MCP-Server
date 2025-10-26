@@ -214,3 +214,43 @@ supabase/supabase_mcp/supabase_mcp_config.json
 # MCP Configuration - DO NOT COMMIT
 # Contains MCP server configuration with access tokens
 config/mcp_config.json
+
+# Test Output Directories (Added 2025-10-27)
+# Created by pytest tests for model routing system
+docs/System_layout/_raw/synthesis_hop_test_out/
+docs/System_layout/_raw/routeplan_budget_test_out/
+docs/System_layout/_raw/routeplan_test_out/
+docs/System_layout/_raw/ws_probe_*.json
+
+# Baseline Collection Results
+baseline_results/
+scripts/baseline_collection/results/
+
+# Monitoring and Health Files
+logs/ws_daemon.health.json
+logs/mcp_server.log
+logs/ws_shim*.log
+logs/mcp_activity.log
+
+# Daemon PID Files
+*.pid
+daemon.pid
+
+# Temporary Upload Files
+temp/
+uploads/
+
+# Generated Documentation (if auto-generated)
+docs/generated/
+
+# Node modules (if any JavaScript tooling)
+node_modules/
+package-lock.json
+
+# Docker volumes and data
+docker-data/
+.docker/
+
+# Conversation History (contains sensitive data)
+Fixed_monitoring_errors*.json
+*conversation_history*.json

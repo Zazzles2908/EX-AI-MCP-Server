@@ -404,6 +404,66 @@ async def memory_health_handler(request: web.Request) -> web.Response:
         }, status=500)
 
 
+async def websocket_health_handler(request: web.Request) -> web.Response:
+    """
+    WebSocket health endpoint.
+    Added 2025-10-26 per EXAI Task 2 Week 1 recommendations.
+
+    Returns detailed WebSocket connection status including:
+    - Connection counts (total, active, failed)
+    - Message metrics (sent, queued, failed, expired)
+    - Queue statistics
+    - Retry statistics
+    - Circuit breaker state
+    - Connection health
+    """
+    try:
+        # Import WebSocket manager (lazy import to avoid circular dependencies)
+        from src.daemon.ws_server import get_websocket_manager
+
+        ws_manager = get_websocket_manager()
+        if ws_manager is None:
+            return web.json_response({
+                "status": "unavailable",
+                "message": "WebSocket manager not initialized",
+                "timestamp_utc": utc_now_iso()
+            }, status=503)
+
+        # Get WebSocket statistics
+        stats = ws_manager.get_stats()
+
+        # Get metrics if available
+        metrics = {}
+        if hasattr(ws_manager, 'metrics'):
+            metrics = ws_manager.metrics.to_dict()
+
+        # Determine health status
+        status = "healthy"
+        if stats.get("disconnected", 0) > stats.get("connected", 0):
+            status = "degraded"
+        if stats.get("total_connections", 0) == 0:
+            status = "warning"
+
+        response = {
+            "status": status,
+            "timestamp_utc": utc_now_iso(),
+            "timestamp_melbourne": melbourne_now_iso(),
+            "connections": stats,
+            "metrics": metrics
+        }
+
+        http_status = 200 if status == "healthy" else 503
+        return web.json_response(response, status=http_status)
+
+    except Exception as e:
+        logger.error(f"WebSocket health check failed: {e}")
+        return web.json_response({
+            "status": "error",
+            "error": str(e),
+            "timestamp_utc": utc_now_iso()
+        }, status=503)
+
+
 async def start_health_server(host: str = "0.0.0.0", port: int = 8081) -> None:
     """
     Start health check HTTP server.
@@ -431,6 +491,7 @@ async def start_health_server(host: str = "0.0.0.0", port: int = 8081) -> None:
     app.router.add_get('/health/ready', health_check_handler)  # Readiness probe
     app.router.add_get('/health/semaphores', semaphore_health_handler)  # Semaphore-specific health (added 2025-10-21)
     app.router.add_get('/health/memory', memory_health_handler)  # Memory-specific health (Week 3 Fix #13, 2025-10-21)
+    app.router.add_get('/health/websocket', websocket_health_handler)  # WebSocket-specific health (Task 2 Week 1, 2025-10-26)
 
     runner = web.AppRunner(app)
     await runner.setup()
@@ -439,6 +500,7 @@ async def start_health_server(host: str = "0.0.0.0", port: int = 8081) -> None:
     await site.start()
 
     logger.info(f"[HEALTH] Health check server running on http://{host}:{port}/health")
+    logger.info(f"[HEALTH] WebSocket health endpoint: http://{host}:{port}/health/websocket")
 
     # Keep running
     await asyncio.Future()

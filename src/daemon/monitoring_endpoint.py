@@ -20,11 +20,105 @@ from collections import defaultdict
 
 from utils.monitoring import get_monitor
 from utils.timezone_helper import log_timestamp
+from src.daemon.middleware.semaphores import get_port_semaphore_manager
+import time
 
 logger = logging.getLogger(__name__)
 
 # Connected dashboard clients
 _dashboard_clients: Set[web.WebSocketResponse] = set()
+
+# PHASE 2.4 ENHANCEMENT (2025-10-26): WebSocket health tracking
+class WebSocketHealthTracker:
+    """
+    Track WebSocket connection health metrics for monitoring dashboard.
+
+    Tracks:
+    - Ping/pong latency
+    - Connection uptime
+    - Reconnection events
+    - Timeout warnings
+    """
+
+    def __init__(self):
+        self.connections: Dict[int, Dict] = {}  # port -> connection metrics
+
+    def register_connection(self, port: int) -> None:
+        """Register a new WebSocket connection"""
+        self.connections[port] = {
+            'connected_at': time.time(),
+            'last_ping': None,
+            'ping_latency_ms': 0,
+            'ping_latencies': [],  # Last 10 pings
+            'reconnection_count': 0,
+            'timeout_warnings': 0
+        }
+
+    def record_ping(self, port: int, latency_ms: float) -> None:
+        """Record a ping/pong latency measurement"""
+        if port not in self.connections:
+            self.register_connection(port)
+
+        conn = self.connections[port]
+        conn['last_ping'] = time.time()
+        conn['ping_latency_ms'] = latency_ms
+
+        # Keep last 10 latencies for statistics
+        conn['ping_latencies'].append(latency_ms)
+        if len(conn['ping_latencies']) > 10:
+            conn['ping_latencies'].pop(0)
+
+    def record_reconnection(self, port: int) -> None:
+        """Record a reconnection event"""
+        if port not in self.connections:
+            self.register_connection(port)
+        self.connections[port]['reconnection_count'] += 1
+
+    def record_timeout_warning(self, port: int) -> None:
+        """Record a timeout warning"""
+        if port not in self.connections:
+            self.register_connection(port)
+        self.connections[port]['timeout_warnings'] += 1
+
+    def get_metrics(self) -> dict:
+        """
+        Get WebSocket health metrics for monitoring dashboard.
+
+        Returns:
+            Dictionary with WebSocket health metrics
+        """
+        metrics = {}
+
+        for port, conn in self.connections.items():
+            uptime_seconds = time.time() - conn['connected_at']
+            latencies = conn['ping_latencies']
+
+            # Calculate statistics
+            avg_latency = sum(latencies) / len(latencies) if latencies else 0
+            p95_latency = sorted(latencies)[int(len(latencies) * 0.95)] if len(latencies) >= 2 else avg_latency
+
+            metrics[port] = {
+                'uptime_seconds': int(uptime_seconds),
+                'uptime_formatted': self._format_uptime(uptime_seconds),
+                'current_ping_ms': conn['ping_latency_ms'],
+                'avg_ping_ms': round(avg_latency, 2),
+                'p95_ping_ms': round(p95_latency, 2),
+                'reconnection_count': conn['reconnection_count'],
+                'timeout_warnings': conn['timeout_warnings'],
+                'status': 'connected' if conn['last_ping'] and (time.time() - conn['last_ping']) < 60 else 'stale'
+            }
+
+        return metrics
+
+    def _format_uptime(self, seconds: float) -> str:
+        """Format uptime in human-readable format"""
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        return f"{hours}h {minutes}m"
+
+
+# Global instances
+_ws_health_tracker = WebSocketHealthTracker()
 
 
 # PHASE 3.5 (2025-10-23): Session Tracking for Conversation Metrics
@@ -176,6 +270,55 @@ async def _broadcast_session_metrics(metrics: dict) -> None:
             logger.debug(f"Failed to send session metrics to client: {e}")
 
 
+async def _broadcast_semaphore_metrics() -> None:
+    """
+    Broadcast semaphore health metrics to all connected dashboard clients.
+
+    PHASE 2.4 ENHANCEMENT (2025-10-26): EXAI-recommended semaphore monitoring
+    """
+    if not _dashboard_clients:
+        return
+
+    semaphore_manager = get_port_semaphore_manager()
+    metrics = semaphore_manager.get_metrics()
+
+    event = {
+        "type": "semaphore_metrics",
+        "data": metrics,
+        "timestamp": log_timestamp()
+    }
+
+    for client in _dashboard_clients:
+        try:
+            await client.send_str(json.dumps(event))
+        except Exception as e:
+            logger.debug(f"Failed to send semaphore metrics to dashboard client: {e}")
+
+
+async def _broadcast_websocket_health() -> None:
+    """
+    Broadcast WebSocket health metrics to all connected dashboard clients.
+
+    PHASE 2.4 ENHANCEMENT (2025-10-26): EXAI-recommended WebSocket health monitoring
+    """
+    if not _dashboard_clients:
+        return
+
+    metrics = _ws_health_tracker.get_metrics()
+
+    event = {
+        "type": "websocket_health",
+        "data": metrics,
+        "timestamp": log_timestamp()
+    }
+
+    for client in _dashboard_clients:
+        try:
+            await client.send_str(json.dumps(event))
+        except Exception as e:
+            logger.debug(f"Failed to send WebSocket health to dashboard client: {e}")
+
+
 def _should_broadcast_metrics_change(current: dict, last: Optional[dict]) -> bool:
     """
     Determine if session metrics have changed enough to warrant broadcasting.
@@ -315,6 +458,11 @@ async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
         # PHASE 3.5 (2025-10-23): Get session/conversation metrics from tracker
         session_metrics = _session_tracker.get_metrics()
 
+        # PHASE 2.4 (2025-10-26): Get semaphore and WebSocket health metrics
+        semaphore_manager = get_port_semaphore_manager()
+        semaphore_metrics = semaphore_manager.get_metrics()
+        websocket_health = _ws_health_tracker.get_metrics()
+
         initial_stats = {
             "type": "initial_stats",
             "stats": {
@@ -325,6 +473,8 @@ async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
                 "glm": prepare_stats_for_dashboard(monitor.get_stats("glm")),
             },
             "session_metrics": session_metrics,
+            "semaphore_metrics": semaphore_metrics,
+            "websocket_health": websocket_health,
             "recent_events": monitor.get_recent_events(limit=50),
             "timestamp": log_timestamp(),
         }
@@ -594,6 +744,28 @@ async def get_current_metrics(request: web.Request) -> web.Response:
         }, status=500)
 
 
+async def periodic_metrics_broadcast():
+    """
+    Periodically broadcast semaphore and WebSocket health metrics to dashboard.
+
+    PHASE 2.4 ENHANCEMENT (2025-10-26): EXAI-recommended periodic monitoring
+    Broadcasts every 5 seconds to keep dashboard updated with latest metrics.
+    """
+    while True:
+        try:
+            await asyncio.sleep(5)  # Broadcast every 5 seconds
+
+            if _dashboard_clients:
+                # Broadcast semaphore metrics
+                await _broadcast_semaphore_metrics()
+
+                # Broadcast WebSocket health
+                await _broadcast_websocket_health()
+
+        except Exception as e:
+            logger.error(f"Error in periodic metrics broadcast: {e}")
+
+
 async def start_monitoring_server(host: str = "0.0.0.0", port: int = 8080) -> None:
     """
     Start monitoring server with both WebSocket and HTTP file serving.
@@ -652,8 +824,15 @@ async def start_monitoring_server(host: str = "0.0.0.0", port: int = 8080) -> No
     logger.info(f"[MONITORING] 🔍 Semaphore Monitor: http://{host}:{port}/semaphore_monitor.html")
     logger.info(f"[MONITORING] 📊 Full Dashboard: http://{host}:{port}/monitoring_dashboard.html")
 
+    # PHASE 2.4 (2025-10-26): Start periodic metrics broadcast task
+    broadcast_task = asyncio.create_task(periodic_metrics_broadcast())
+    logger.info(f"[MONITORING] Started periodic metrics broadcast (every 5s)")
+
     # Keep running
-    await asyncio.Future()
+    try:
+        await asyncio.Future()
+    finally:
+        broadcast_task.cancel()
 
 
 # Hook for monitoring system to broadcast events

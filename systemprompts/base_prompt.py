@@ -8,20 +8,20 @@ This module implements a 4-tier architecture for system prompts:
 - Tier 3: Provider-specific optimizations (Kimi vs GLM)
 
 For chat-specific components, see chat_components.py
+
+IMPORTANT: File handling guidance moved to configurations/file_handling_guidance.py
+to avoid duplication when storing conversations (2025-10-26)
 """
+
+# Import centralized file handling guidance
+from configurations.file_handling_guidance import FILE_PATH_GUIDANCE, FILE_UPLOAD_GUIDANCE
 
 # ============================================================================
 # TIER 1: CORE COMPONENTS (100% usage - ALL AI tools)
 # ============================================================================
 
-# Common file path instructions
-FILE_PATH_GUIDANCE = """
-FILE PATH REQUIREMENTS
-• Use FULL ABSOLUTE paths for all file references (e.g., 'c:\\Project\\file.py', not relative paths)
-• When referring to code in prompts, use the files parameter to pass relevant files
-• Only include function/method names or very small code snippets in text prompts when absolutely necessary
-• Do NOT pass large code blocks in text prompts - use file parameters instead
-"""
+# FILE_PATH_GUIDANCE now imported from configurations/file_handling_guidance.py
+# FILE_UPLOAD_GUIDANCE now imported from configurations/file_handling_guidance.py
 
 # Common response quality guidelines
 RESPONSE_QUALITY = """

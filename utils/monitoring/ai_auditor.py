@@ -135,7 +135,14 @@ class AIAuditor:
     
     async def _connect_and_watch(self):
         """Connect to WebSocket and watch events"""
-        async with websockets.connect(self.ws_url) as websocket:
+        # PHASE 2.4 FIX (2025-10-26): EXAI COMPREHENSIVE FIX - Apply same ping timeout as main WebSocket
+        # Root cause: AI Auditor WebSocket experiencing same keepalive timeout issues
+        # EXAI recommended: Use same timeout values as main WebSocket (45s interval, 240s timeout)
+        async with websockets.connect(
+            self.ws_url,
+            ping_interval=45,  # Increased from default 20s per EXAI recommendation
+            ping_timeout=240   # Increased from default 20s per EXAI recommendation
+        ) as websocket:
             logger.info("[AI_AUDITOR] Connected to monitoring WebSocket")
             
             async for message in websocket:

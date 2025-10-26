@@ -75,14 +75,18 @@ class FileHandler:
                 logger.info(f"Path converted: {file_path} -> {normalized_path}")
 
             # Check if file exists using normalized path
+            # PHASE 2.4 FIX (2025-10-26): Make file handler more lenient for external applications
+            # Files from other applications may not be mounted in Docker - this is expected behavior
+            # Only log at DEBUG level instead of WARNING to reduce log noise
             if not os.path.exists(normalized_path):
-                logger.warning(f"File not found after normalization: {normalized_path} (original: {file_path})")
+                logger.debug(f"File not accessible in container: {normalized_path} (original: {file_path})")
+                logger.debug("This is expected for files from external applications not mounted in Docker")
                 processed_files.append({
                     'original_path': file_path,
                     'normalized_path': normalized_path,
                     'storage_path': None,
                     'file_id': None,
-                    'error': 'File not found after path normalization'
+                    'error': 'File not accessible in container (not mounted)'
                 })
                 continue
 
