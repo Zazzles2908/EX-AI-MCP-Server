@@ -14,7 +14,7 @@ Key Features:
 
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from mcp.types import TextContent
 
@@ -254,9 +254,9 @@ class OrchestrationMixin:
                         logger.error(f"[SERIALIZATION_DEBUG] Non-serializable key '{key}': type={type(value)}, error={key_err}")
                 raise
 
-            logger.info(f"[SERIALIZATION_DEBUG] About to create TextContent and return")
+            logger.info("[SERIALIZATION_DEBUG] About to create TextContent and return")
             result = [TextContent(type="text", text=json_str)]
-            logger.info(f"[SERIALIZATION_DEBUG] TextContent created, about to return")
+            logger.info("[SERIALIZATION_DEBUG] TextContent created, about to return")
             return result
         
         except Exception as e:
@@ -476,7 +476,23 @@ class OrchestrationMixin:
         self._update_consolidated_findings(step_data)
 
         # Check if we should continue or complete
-        if self._should_continue_execution(next_request):
+        # BUG FIX #10 CORRECTED (2025-10-20): Catch circuit breaker exception
+        try:
+            should_continue = self._should_continue_execution(next_request)
+        except RuntimeError as e:
+            # Circuit breaker aborted - return error response without expert analysis
+            logger.error(f"{self.get_name()}: Circuit breaker aborted execution: {e}")
+            response_data["status"] = "circuit_breaker_abort"
+            response_data["error"] = str(e)
+            response_data["step_number"] = next_step_number
+            response_data["confidence"] = self.get_request_confidence(next_request)
+            response_data["message"] = (
+                "Auto-execution aborted due to confidence stagnation. "
+                "Please provide more context or break the task into smaller steps."
+            )
+            return response_data
+
+        if should_continue:
             # Recursively continue auto-execution
             logger.info(f"{self.get_name()}: Continuing auto-execution (step {next_step_number})")
             response_data["status"] = f"{self.get_name()}_auto_executing"
@@ -513,6 +529,11 @@ class OrchestrationMixin:
             for file_path in relevant_files:
                 try:
                     content = cache.read_file(file_path)
+                    # CRITICAL FIX (2025-10-23): Handle None content from read_file
+                    # BUG: read_file can return None in some error paths, causing "NoneType has no len()" error
+                    if content is None:
+                        raise Exception("read_file returned None (file may not exist or be unreadable)")
+
                     file_contents[file_path] = content
                     logger.debug(f"{self.get_name()}: Read file {file_path} ({len(content)} chars)")
                     # Reset failure counter on success
@@ -617,16 +638,20 @@ class OrchestrationMixin:
             if len(set(recent_confidences)) == 1:
                 stagnant_confidence = recent_confidences[0]
                 if stagnant_confidence in ['exploring', 'low', 'medium']:
-                    # BUG FIX #10 (2025-10-19): Circuit breaker must ABORT, not just log
-                    # Previous behavior: logged warning but continued, causing infinite loops
-                    # New behavior: abort auto-execution to prevent resource waste
-                    logger.warning(
-                        f"{self.get_name()}: Circuit breaker triggered - Confidence stagnant at "
-                        f"'{stagnant_confidence}' for 3 steps. Aborting auto-execution to prevent infinite loop. "
-                        f"Consider: (1) providing more context/files, (2) breaking task into smaller steps, "
-                        f"(3) using chat_EXAI-WS for manual guidance."
+                    # BUG FIX #10 CORRECTED (2025-10-20): Circuit breaker must RAISE EXCEPTION to truly abort
+                    # Previous behavior: returned False but caller still triggered expert analysis
+                    # New behavior: raise exception to force immediate abort without expert analysis
+                    error_msg = (
+                        f"{self.get_name()}: Circuit breaker ABORT - Confidence stagnant at "
+                        f"'{stagnant_confidence}' for 3 consecutive steps. Auto-execution stopped to prevent infinite loop.\n\n"
+                        f"Suggestions:\n"
+                        f"  1. Provide more context or relevant files\n"
+                        f"  2. Break task into smaller, more specific steps\n"
+                        f"  3. Use chat_EXAI-WS for manual guidance\n"
+                        f"  4. Increase thinking_mode for deeper analysis"
                     )
-                    return False  # ABORT: Stop auto-execution
+                    logger.error(error_msg)
+                    raise RuntimeError(error_msg)
                 elif stagnant_confidence in ['high', 'very_high', 'certain']:
                     logger.debug(f"{self.get_name()}: Confidence stable at '{stagnant_confidence}' - legitimately confident")
                     # This is good - high confidence is stable, not stuck
@@ -742,7 +767,6 @@ class OrchestrationMixin:
         - Hypothesis validation status
         """
         confidence = self.get_request_confidence(request)
-        findings = getattr(request, 'findings', '')
 
         # Base instructions from required actions
         base_instructions = ', '.join(required_actions)

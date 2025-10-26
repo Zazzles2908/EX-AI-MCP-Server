@@ -1,0 +1,37 @@
+{
+  "name": "Sample Data",
+  "version": "1.0.0",
+  "description": "Sample JSON file for testing file upload functionality",
+  "data": {
+    "users": [
+      {
+        "id": 1,
+        "name": "Alice",
+        "email": "alice@example.com",
+        "active": true
+      },
+      {
+        "id": 2,
+        "name": "Bob",
+        "email": "bob@example.com",
+        "active": false
+      },
+      {
+        "id": 3,
+        "name": "Charlie",
+        "email": "charlie@example.com",
+        "active": true
+      }
+    ],
+    "settings": {
+      "theme": "dark",
+      "language": "en",
+      "notifications": true
+    }
+  },
+  "metadata": {
+    "created": "2025-10-24",
+    "purpose": "baseline_testing"
+  }
+}
+

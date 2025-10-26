@@ -87,6 +87,9 @@ class InMemoryStorage:
         """Retrieve value if not expired"""
         start_time = time.time()
 
+        # PHASE 3 (2025-10-23): Calculate request size for monitoring
+        request_size = len(key.encode('utf-8'))
+
         with self._lock:
             if key in self._store:
                 value, expires_at = self._store[key]
@@ -96,12 +99,21 @@ class InMemoryStorage:
                     # PHASE 3 (2025-10-18): Monitor READ operations (sample 1 in 5)
                     if hash(key) % 5 == 0:
                         response_time_ms = (time.time() - start_time) * 1000
+                        response_size = len(value.encode('utf-8')) if value else 0
+                        # Use response size if available, otherwise use request size
+                        data_size = response_size if response_size > 0 else request_size
                         record_redis_event(
                             direction="receive",
                             function_name="InMemoryStorage.get",
-                            data_size=len(value.encode('utf-8')) if value else 0,
+                            data_size=data_size,
                             response_time_ms=response_time_ms,
-                            metadata={"key": key, "hit": True, "timestamp": log_timestamp()}
+                            metadata={
+                                "key": key,
+                                "hit": True,
+                                "request_size": request_size,
+                                "response_size": response_size,
+                                "timestamp": log_timestamp()
+                            }
                         )
 
                     return value
@@ -110,15 +122,21 @@ class InMemoryStorage:
                     del self._store[key]
                     logger.debug(f"Key {key} expired and removed")
 
-        # PHASE 3 (2025-10-18): Monitor cache misses (sample 1 in 5)
+        # PHASE 3 (2025-10-23): Monitor cache misses (sample 1 in 5) - use request size
         if hash(key) % 5 == 0:
             response_time_ms = (time.time() - start_time) * 1000
             record_redis_event(
                 direction="receive",
                 function_name="InMemoryStorage.get",
-                data_size=0,
+                data_size=request_size,  # Use request size for cache misses
                 response_time_ms=response_time_ms,
-                metadata={"key": key, "hit": False, "timestamp": log_timestamp()}
+                metadata={
+                    "key": key,
+                    "hit": False,
+                    "request_size": request_size,
+                    "response_size": 0,
+                    "timestamp": log_timestamp()
+                }
             )
 
         return None
@@ -210,19 +228,31 @@ class RedisStorage:
     def get(self, key: str):
         start_time = time.time()
 
+        # PHASE 3 (2025-10-23): Calculate request size for monitoring
+        request_size = len(key.encode('utf-8'))
+
         try:
             # PHASE 1 (2025-10-18): Circuit breaker protected operation
             value = self._breaker.call(self._client.get, key)
 
-            # PHASE 3 (2025-10-18): Monitor READ operations (sample 1 in 5)
+            # PHASE 3 (2025-10-23): Monitor READ operations (sample 1 in 5)
             if hash(key) % 5 == 0:
                 response_time_ms = (time.time() - start_time) * 1000
+                response_size = len(value.encode('utf-8')) if value else 0
+                # Use response size if available, otherwise use request size
+                data_size = response_size if response_size > 0 else request_size
                 record_redis_event(
                     direction="receive",
                     function_name="RedisStorage.get",
-                    data_size=len(value.encode('utf-8')) if value else 0,
+                    data_size=data_size,
                     response_time_ms=response_time_ms,
-                    metadata={"key": key, "hit": value is not None, "timestamp": log_timestamp()}
+                    metadata={
+                        "key": key,
+                        "hit": value is not None,
+                        "request_size": request_size,
+                        "response_size": response_size,
+                        "timestamp": log_timestamp()
+                    }
                 )
 
             return value
@@ -233,20 +263,29 @@ class RedisStorage:
             record_redis_event(
                 direction="error",
                 function_name="RedisStorage.get",
-                data_size=0,
+                data_size=request_size,  # Use request size for errors
                 error=f"Circuit breaker {breaker_state}",
-                metadata={"key": key, "breaker_state": breaker_state, "timestamp": log_timestamp()}
+                metadata={
+                    "key": key,
+                    "breaker_state": breaker_state,
+                    "request_size": request_size,
+                    "timestamp": log_timestamp()
+                }
             )
             # Graceful degradation: Return None (cache miss)
             return None
         except Exception as e:
-            # PHASE 3 (2025-10-18): Monitor errors
+            # PHASE 3 (2025-10-23): Monitor errors - use request size
             record_redis_event(
                 direction="error",
                 function_name="RedisStorage.get",
-                data_size=0,
+                data_size=request_size,  # Use request size for errors
                 error=str(e),
-                metadata={"key": key, "timestamp": log_timestamp()}
+                metadata={
+                    "key": key,
+                    "request_size": request_size,
+                    "timestamp": log_timestamp()
+                }
             )
             raise
 

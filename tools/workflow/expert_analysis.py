@@ -25,13 +25,21 @@ from utils.progress import send_progress
 # Import TimeoutConfig for coordinated timeout hierarchy
 from config import TimeoutConfig
 
+# Import PerformanceProfiler for bottleneck identification (EXAI recommendation 2025-10-21)
+from src.utils.performance_profiler import PerformanceProfiler
+
 logger = logging.getLogger(__name__)
 
 # Global cache for expert validation results (shared across all tool instances)
 # This prevents duplicate calls even if the tool is instantiated multiple times
-_expert_validation_cache: Dict[str, dict] = {}
+# EXAI Fix #6 (2025-10-21): Added TTL and size limits for cache management
+_expert_validation_cache: Dict[str, tuple[dict, float]] = {}  # (result, timestamp)
 _expert_validation_in_progress: Set[str] = set()
 _expert_validation_lock = asyncio.Lock()
+
+# Cache configuration (EXAI Fix #6 - 2025-10-21)
+_CACHE_TTL_SECS = 3600  # 1 hour TTL
+_CACHE_MAX_SIZE = 100  # Maximum 100 cached results
 
 
 class ExpertAnalysisMixin:
@@ -88,7 +96,49 @@ class ExpertAnalysisMixin:
             or len(consolidated_findings.findings) >= 2
             or len(consolidated_findings.issues_found) > 0
         )
-    
+
+    def should_use_message_arrays(self) -> bool:
+        """
+        Check if message arrays should be used instead of text prompts.
+
+        Phase 2 Migration: Feature flag to enable SDK-native message arrays.
+        Set USE_MESSAGE_ARRAYS=true in .env to enable.
+        """
+        import os
+        use_message_arrays = os.getenv("USE_MESSAGE_ARRAYS", "false").strip().lower()
+        return use_message_arrays in ("true", "1", "yes")
+
+    def prepare_messages_for_expert_analysis(
+        self,
+        system_prompt: str,
+        expert_context: str,
+        consolidated_findings: ConsolidatedFindings
+    ) -> list[dict[str, str]]:
+        """
+        Prepare message array for expert analysis (Phase 2 Migration).
+
+        Builds SDK-native message array format:
+        [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}]
+
+        Args:
+            system_prompt: System prompt for expert analysis
+            expert_context: Context prepared from consolidated findings
+            consolidated_findings: All findings from workflow steps
+
+        Returns:
+            List of message dicts in SDK-native format
+        """
+        messages = []
+
+        # Add system message if provided
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+
+        # Add user message with expert context
+        messages.append({"role": "user", "content": expert_context})
+
+        return messages
+
     def prepare_expert_analysis_context(self, consolidated_findings: ConsolidatedFindings) -> str:
         """
         Prepare context for external model call.
@@ -174,7 +224,7 @@ class ExpertAnalysisMixin:
 
         # Map provider types to their thinking-capable models
         THINKING_MODELS = {
-            ProviderType.GLM: 'glm-4.6',  # Upgrade from glm-4.5-flash (glm-4.6 is flagship with 200K context)
+            ProviderType.GLM: 'glm-4.5-flash',  # Fast model to prevent Augment Code timeout (was glm-4.6)
             ProviderType.KIMI: 'kimi-thinking-preview',  # Upgrade from kimi-k2-0905-preview
         }
 
@@ -266,6 +316,10 @@ class ExpertAnalysisMixin:
         CRITICAL FIX: Implements duplicate call prevention using global cache and in-progress tracking.
         This prevents the duplicate expert analysis calls that were causing 300+ second timeouts.
         """
+        # EXAI Recommendation (2025-10-21): Performance profiling to identify bottlenecks
+        profiler = PerformanceProfiler(f"expert_analysis_{self.get_name()}")
+        profiler.checkpoint("start")
+
         # CRITICAL DIAGNOSTIC: Log entry IMMEDIATELY
         import sys
         print(f"[EXPERT_ENTRY] ========== ENTERED _call_expert_analysis ==========", file=sys.stderr, flush=True)
@@ -280,11 +334,14 @@ class ExpertAnalysisMixin:
         # CRITICAL FIX: Duplicate call prevention
         # Create cache key from request_id and consolidated findings content
         # This ensures we don't call expert analysis twice for the same content
+        # EXAI Fix #6 (2025-10-21): Use deterministic hash (hashlib.md5) instead of hash()
         print(f"[EXPERT_ENTRY] Getting request_id from arguments")
         request_id = arguments.get("request_id", "unknown")
         print(f"[EXPERT_ENTRY] request_id={request_id}")
         print(f"[EXPERT_ENTRY] About to hash findings")
-        findings_hash = hash(str(self.consolidated_findings.findings))  # type: ignore
+        import hashlib
+        findings_str = str(self.consolidated_findings.findings)  # type: ignore
+        findings_hash = hashlib.md5(findings_str.encode('utf-8')).hexdigest()[:16]  # First 16 chars
         print(f"[EXPERT_ENTRY] findings_hash={findings_hash}")
         print(f"[EXPERT_ENTRY] Creating cache_key string")
         cache_key = f"{self.get_name()}:{request_id}:{findings_hash}"
@@ -294,47 +351,46 @@ class ExpertAnalysisMixin:
         logger.info(f"[EXPERT_DEDUP] Cache size: {len(_expert_validation_cache)}")
         logger.info(f"[EXPERT_DEDUP] In-progress size: {len(_expert_validation_in_progress)}")
 
-        # Check cache first (outside lock for performance)
-        if cache_key in _expert_validation_cache:
-            logger.info(f"Using cached expert validation for {cache_key}")
-            return _expert_validation_cache[cache_key]
-
-        # Acquire lock to check/set in-progress status
-        logger.info(f"[EXPERT_DEDUP] About to acquire lock for {cache_key}")
+        # SIMPLIFIED DUPLICATE PREVENTION (EXAI Fix #4 - 2025-10-21)
+        # Single lock acquisition to check cache and mark in-progress
+        # Removed duplicate lock handling that was causing complexity
         async with _expert_validation_lock:
-            logger.info(f"[EXPERT_DEDUP] Lock acquired for {cache_key}")
-            # Double-check cache after acquiring lock
+            # EXAI Fix #6 (2025-10-21): Clean up expired cache entries
+            now = time.time()
+            expired_keys = [k for k, (_, ts) in _expert_validation_cache.items() if now - ts > _CACHE_TTL_SECS]
+            for k in expired_keys:
+                _expert_validation_cache.pop(k, None)
+            if expired_keys:
+                logger.info(f"[EXPERT_CACHE] Cleaned up {len(expired_keys)} expired entries")
+
+            # EXAI Fix #6 (2025-10-21): Enforce cache size limit (LRU eviction)
+            if len(_expert_validation_cache) >= _CACHE_MAX_SIZE:
+                # Remove oldest entry (first in dict)
+                oldest_key = next(iter(_expert_validation_cache))
+                _expert_validation_cache.pop(oldest_key, None)
+                logger.info(f"[EXPERT_CACHE] Evicted oldest entry {oldest_key} (cache full)")
+
+            # Check cache first (with TTL validation)
             if cache_key in _expert_validation_cache:
-                logger.info(f"[EXPERT_DEDUP] Using cached expert validation (after lock) for {cache_key}")
-                return _expert_validation_cache[cache_key]
+                result, timestamp = _expert_validation_cache[cache_key]
+                if now - timestamp <= _CACHE_TTL_SECS:
+                    logger.info(f"[EXPERT_DEDUP] Using cached result for {cache_key} (age: {now - timestamp:.1f}s)")
+                    return result
+                else:
+                    # Expired, remove it
+                    _expert_validation_cache.pop(cache_key, None)
+                    logger.info(f"[EXPERT_CACHE] Removed expired entry {cache_key}")
 
-            # Check if already in progress
+            # Check if already in progress - return error instead of waiting
             if cache_key in _expert_validation_in_progress:
-                logger.warning(f"Expert validation already in progress for {cache_key}, waiting...")
-            logger.info(f"[EXPERT_DEDUP] About to release lock for {cache_key}")
+                logger.warning(f"[EXPERT_DEDUP] Duplicate call detected for {cache_key}, returning error")
+                return {
+                    "error": "Expert analysis already in progress for this request",
+                    "status": "duplicate_request",
+                    "raw_analysis": ""
+                }
 
-        # Wait for in-progress validation to complete (outside lock to allow progress)
-        if cache_key in _expert_validation_in_progress:
-            max_wait = 120  # Maximum 2 minutes wait
-            wait_interval = 0.5
-            waited = 0.0
-            while cache_key in _expert_validation_in_progress and waited < max_wait:
-                await asyncio.sleep(wait_interval)
-                waited += wait_interval
-                if waited % 5 == 0:  # Log every 5 seconds
-                    logger.info(f"[EXPERT_DEDUP] Still waiting for in-progress validation ({waited:.1f}s)")
-
-            # Check cache again after waiting
-            if cache_key in _expert_validation_cache:
-                logger.info(f"[EXPERT_DEDUP] Using cached result after waiting {waited:.1f}s")
-                return _expert_validation_cache[cache_key]
-
-            # If still in progress after max wait, log warning and proceed anyway
-            if cache_key in _expert_validation_in_progress:
-                logger.error(f"[EXPERT_DEDUP] In-progress validation timed out after {waited:.1f}s, proceeding anyway")
-
-        # Mark as in progress
-        async with _expert_validation_lock:
+            # Mark as in progress
             _expert_validation_in_progress.add(cache_key)
             logger.info(f"[EXPERT_DEDUP] Marked {cache_key} as in-progress")
 
@@ -424,13 +480,60 @@ class ExpertAnalysisMixin:
             base_system_prompt = self.get_system_prompt()
             language_instruction = self.get_language_instruction()
             system_prompt = language_instruction + base_system_prompt
-            
+
+            # CRITICAL FIX (2025-10-21): Strengthen JSON enforcement with explicit schema
+            # EXAI INSIGHT: Previous enforcement was too weak - models still returned conversational text
+            # Solution: Provide explicit JSON schema and examples
+            json_enforcement = (
+                "\n\n" + "="*80 + "\n"
+                "CRITICAL OUTPUT FORMAT REQUIREMENT - READ CAREFULLY\n"
+                "="*80 + "\n\n"
+                "You MUST respond with ONLY a valid JSON object. No other text is allowed.\n\n"
+                "REQUIRED JSON SCHEMA:\n"
+                "{\n"
+                '  "analysis": "Your detailed analysis here",\n'
+                '  "key_findings": ["Finding 1", "Finding 2", "Finding 3"],\n'
+                '  "recommendations": ["Recommendation 1", "Recommendation 2"],\n'
+                '  "confidence": "high|medium|low",\n'
+                '  "needs_more_info": false,\n'
+                '  "additional_context": "Optional: what additional info would help"\n'
+                "}\n\n"
+                "STRICT RULES:\n"
+                "1. Output ONLY the JSON object - no markdown code blocks (no ```json)\n"
+                "2. No explanatory text before or after the JSON\n"
+                "3. No conversational responses like 'I need more information...'\n"
+                "4. If you need files, set needs_more_info=true and specify in additional_context\n"
+                "5. All text must be inside the JSON structure\n\n"
+                "EXAMPLE VALID OUTPUT:\n"
+                '{"analysis": "The code shows...", "key_findings": ["Issue 1", "Issue 2"], '
+                '"recommendations": ["Fix 1", "Fix 2"], "confidence": "high", "needs_more_info": false}\n\n'
+                "EXAMPLE INVALID OUTPUT (DO NOT DO THIS):\n"
+                "I need more information to continue... ❌ WRONG\n"
+                "```json\\n{...}\\n``` ❌ WRONG\n"
+                "Let me analyze this... ❌ WRONG\n"
+            )
+
             # Check if tool wants system prompt embedded in main prompt
             if self.should_embed_system_prompt():
-                prompt = f"{system_prompt}\n\n{expert_context}\n\n{self.get_expert_analysis_instruction()}"
+                prompt = f"{system_prompt}{json_enforcement}\n\n{expert_context}\n\n{self.get_expert_analysis_instruction()}"
                 system_prompt = ""  # Clear it since we embedded it
             else:
                 prompt = expert_context
+
+            # CRITICAL: Monitor prompt size for unpredictability diagnosis (EXAI Fix #3 - 2025-10-21)
+            prompt_size = len(prompt)
+            prompt_tokens_estimate = prompt_size // 4  # Rough estimate: 1 token ≈ 4 chars
+            if prompt_tokens_estimate > 100000:  # Warn if approaching 128k limit
+                logger.warning(
+                    f"⚠️ [PROMPT_SIZE] Tool: {self.get_name()}, "
+                    f"Prompt size: {prompt_size:,} chars (~{prompt_tokens_estimate:,} tokens), "
+                    f"Approaching token limit! May cause truncation."
+                )
+            else:
+                logger.info(
+                    f"📏 [PROMPT_SIZE] Tool: {self.get_name()}, "
+                    f"Prompt size: {prompt_size:,} chars (~{prompt_tokens_estimate:,} tokens)"
+                )
 
             # Optional micro-step draft phase: return early to avoid long expert blocking
             try:
@@ -507,6 +610,16 @@ class ExpertAnalysisMixin:
             start_time = time.time()
             max_wait = timeout_secs  # Use configured timeout (480s for expert analysis)
 
+            # CRITICAL: Log final model selection for unpredictability diagnosis (EXAI Fix #1 - 2025-10-21)
+            logger.warning(
+                f"🎯 [MODEL_SELECTION] Tool: {self.get_name()}, "
+                f"Model: {model_name}, "
+                f"Provider: {provider.get_provider_type().value if provider else 'None'}, "
+                f"Thinking Mode: {expert_thinking_mode}, "
+                f"Temperature: {validated_temperature}, "
+                f"Timeout: {max_wait}s"
+            )
+
             if use_async_providers:
                 # PHASE 2: Native async provider path (no run_in_executor)
                 logger.info(f"[EXPERT_DEBUG] Using ASYNC providers for {self.get_name()}")
@@ -545,23 +658,60 @@ class ExpertAnalysisMixin:
                     try:
                         # Use async context manager for proper resource cleanup
                         async with async_provider:
-                            logger.info(f"[EXPERT_DEBUG] Calling async provider.generate_content()")
+                            # PHASE 2 MIGRATION: Use message arrays when feature flag enabled
+                            if self.should_use_message_arrays():
+                                logger.info(f"[EXPERT_DEBUG] Using MESSAGE ARRAYS for async provider call")
 
-                            # CRITICAL: Native async call with timeout wrapper
-                            model_response = await asyncio.wait_for(
-                                async_provider.generate_content(
-                                    prompt=prompt,
-                                    model_name=model_name,
+                                # Prepare message array
+                                messages = self.prepare_messages_for_expert_analysis(
                                     system_prompt=system_prompt,
-                                    temperature=validated_temperature,
-                                    thinking_mode=expert_thinking_mode,
-                                    images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
-                                    **provider_kwargs,
-                                ),
-                                timeout=max_wait
-                            )
+                                    expert_context=expert_context,
+                                    consolidated_findings=self.consolidated_findings
+                                )
 
-                            logger.info(f"[EXPERT_DEBUG] Async provider.generate_content() returned successfully")
+                                logger.info(f"[EXPERT_DEBUG] Calling async provider.chat_completions_create() with {len(messages)} messages")
+
+                                # CRITICAL: Native async call with timeout wrapper
+                                raw_response = await asyncio.wait_for(
+                                    async_provider.chat_completions_create(
+                                        model=model_name,
+                                        messages=messages,
+                                        temperature=validated_temperature,
+                                        thinking_mode=expert_thinking_mode,
+                                        **provider_kwargs,
+                                    ),
+                                    timeout=max_wait
+                                )
+
+                                # Convert dict response to ModelResponse-like object for compatibility
+                                from types import SimpleNamespace
+                                model_response = SimpleNamespace(
+                                    content=raw_response.get('content', ''),
+                                    model=raw_response.get('model', model_name),
+                                    usage=raw_response.get('usage', {})
+                                )
+
+                                logger.info(f"[EXPERT_DEBUG] Async provider.chat_completions_create() returned successfully (MESSAGE ARRAYS)")
+                            else:
+                                logger.info(f"[EXPERT_DEBUG] Using LEGACY TEXT PROMPTS for async provider call")
+                                logger.info(f"[EXPERT_DEBUG] Calling async provider.generate_content()")
+
+                                # LEGACY PATH: Use text-based prompts
+                                model_response = await asyncio.wait_for(
+                                    async_provider.generate_content(
+                                        prompt=prompt,
+                                        model_name=model_name,
+                                        system_prompt=system_prompt,
+                                        temperature=validated_temperature,
+                                        thinking_mode=expert_thinking_mode,
+                                        images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
+                                        **provider_kwargs,
+                                    ),
+                                    timeout=max_wait
+                                )
+
+                                logger.info(f"[EXPERT_DEBUG] Async provider.generate_content() returned successfully (LEGACY)")
+
                             duration = time.time() - start_time
                             logger.warning(f"🔥 [EXPERT_ANALYSIS_COMPLETE] Tool: {self.get_name()}, Duration: {duration:.2f}s (ASYNC)")
 
@@ -582,30 +732,76 @@ class ExpertAnalysisMixin:
             if not use_async_providers:
                 # PHASE 1: Sync provider path with run_in_executor (backward compatible)
                 logger.info(f"[EXPERT_DEBUG] Using SYNC providers for {self.get_name()}")
-                logger.info(
-                    f"[EXPERT_DEBUG] About to call provider.generate_content() for {self.get_name()}: "
-                    f"prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}, "
-                    f"thinking_mode={expert_thinking_mode}"
-                )
-                logger.debug(f"Calling provider.generate_content() for {self.get_name()}: prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}")
-                loop = asyncio.get_running_loop()
-                def _invoke_provider():
-                    logger.info(f"[EXPERT_DEBUG] Inside _invoke_provider thread, about to call provider.generate_content()")
-                    logger.debug(f"Inside _invoke_provider, calling provider.generate_content()")
-                    result = provider.generate_content(
-                        prompt=prompt,
-                        model_name=model_name,
+
+                # PHASE 2 MIGRATION: Use message arrays when feature flag enabled
+                if self.should_use_message_arrays():
+                    logger.info(f"[EXPERT_DEBUG] Using MESSAGE ARRAYS for sync provider call")
+
+                    # Prepare message array
+                    messages = self.prepare_messages_for_expert_analysis(
                         system_prompt=system_prompt,
-                        temperature=validated_temperature,
-                        thinking_mode=expert_thinking_mode,  # Use pre-fetched thinking mode
-                        images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
-                        **provider_kwargs,  # CRITICAL: Use adapter-validated kwargs instead of raw use_websearch
+                        expert_context=expert_context,
+                        consolidated_findings=self.consolidated_findings
                     )
-                    logger.info(f"[EXPERT_DEBUG] provider.generate_content() returned successfully")
-                    return result
-                logger.info(f"[EXPERT_DEBUG] About to submit _invoke_provider to executor")
-                task = loop.run_in_executor(None, _invoke_provider)
-                logger.info(f"[EXPERT_DEBUG] Task submitted to executor, using asyncio.wait_for for timeout")
+
+                    logger.info(
+                        f"[EXPERT_DEBUG] About to call provider.chat_completions_create() for {self.get_name()}: "
+                        f"messages={len(messages)}, model={model_name}, temp={validated_temperature}, "
+                        f"thinking_mode={expert_thinking_mode}"
+                    )
+
+                    loop = asyncio.get_running_loop()
+                    def _invoke_provider():
+                        logger.info(f"[EXPERT_DEBUG] Inside _invoke_provider thread, about to call provider.chat_completions_create()")
+                        raw_response = provider.chat_completions_create(
+                            model=model_name,
+                            messages=messages,
+                            temperature=validated_temperature,
+                            thinking_mode=expert_thinking_mode,
+                            **provider_kwargs,
+                        )
+
+                        # Convert dict response to ModelResponse-like object for compatibility
+                        from types import SimpleNamespace
+                        result = SimpleNamespace(
+                            content=raw_response.get('content', ''),
+                            model=raw_response.get('model', model_name),
+                            usage=raw_response.get('usage', {})
+                        )
+                        logger.info(f"[EXPERT_DEBUG] provider.chat_completions_create() returned successfully (MESSAGE ARRAYS)")
+                        return result
+
+                    logger.info(f"[EXPERT_DEBUG] About to submit _invoke_provider to executor")
+                    task = loop.run_in_executor(None, _invoke_provider)
+                    logger.info(f"[EXPERT_DEBUG] Task submitted to executor, using asyncio.wait_for for timeout")
+                else:
+                    logger.info(f"[EXPERT_DEBUG] Using LEGACY TEXT PROMPTS for sync provider call")
+                    logger.info(
+                        f"[EXPERT_DEBUG] About to call provider.generate_content() for {self.get_name()}: "
+                        f"prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}, "
+                        f"thinking_mode={expert_thinking_mode}"
+                    )
+                    logger.debug(f"Calling provider.generate_content() for {self.get_name()}: prompt={len(prompt)} chars, model={model_name}, temp={validated_temperature}")
+
+                    loop = asyncio.get_running_loop()
+                    def _invoke_provider():
+                        logger.info(f"[EXPERT_DEBUG] Inside _invoke_provider thread, about to call provider.generate_content()")
+                        logger.debug(f"Inside _invoke_provider, calling provider.generate_content()")
+                        result = provider.generate_content(
+                            prompt=prompt,
+                            model_name=model_name,
+                            system_prompt=system_prompt,
+                            temperature=validated_temperature,
+                            thinking_mode=expert_thinking_mode,  # Use pre-fetched thinking mode
+                            images=list(set(self.consolidated_findings.images)) if self.consolidated_findings.images else None,  # type: ignore
+                            **provider_kwargs,  # CRITICAL: Use adapter-validated kwargs instead of raw use_websearch
+                        )
+                        logger.info(f"[EXPERT_DEBUG] provider.generate_content() returned successfully (LEGACY)")
+                        return result
+
+                    logger.info(f"[EXPERT_DEBUG] About to submit _invoke_provider to executor")
+                    task = loop.run_in_executor(None, _invoke_provider)
+                    logger.info(f"[EXPERT_DEBUG] Task submitted to executor, using asyncio.wait_for for timeout")
 
                 try:
                     # Single async call with timeout - no polling needed!
@@ -655,8 +851,31 @@ class ExpertAnalysisMixin:
                     response_preview = model_response.content[:500] if len(model_response.content) > 500 else model_response.content
                     logger.debug(f"[EXPERT_ANALYSIS_DEBUG] Raw response preview (first 500 chars): {response_preview}")
 
-                    analysis_result = json.loads(model_response.content.strip())
-                    logger.info(f"Successfully parsed JSON response, caching and returning analysis_result")
+                    # EXAI INSIGHT (2025-10-21): Try to extract JSON even if wrapped in markdown
+                    content = model_response.content.strip()
+
+                    # Try direct parse first
+                    try:
+                        analysis_result = json.loads(content)
+                        logger.info(f"Successfully parsed JSON response (direct parse)")
+                    except json.JSONDecodeError:
+                        # Try to extract JSON from markdown code blocks
+                        import re
+                        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
+                        if json_match:
+                            logger.info(f"Found JSON wrapped in markdown, extracting...")
+                            analysis_result = json.loads(json_match.group(1))
+                            logger.info(f"Successfully parsed JSON response (extracted from markdown)")
+                        else:
+                            # Try to find any JSON object in the response
+                            json_match = re.search(r'\{.*\}', content, re.DOTALL)
+                            if json_match:
+                                logger.info(f"Found JSON object in response, extracting...")
+                                analysis_result = json.loads(json_match.group(0))
+                                logger.info(f"Successfully parsed JSON response (extracted from text)")
+                            else:
+                                raise json.JSONDecodeError("No JSON found in response", content, 0)
+
                     result = analysis_result
                 except json.JSONDecodeError as json_err:
                     # Enhanced logging for JSON parse errors
@@ -685,11 +904,11 @@ class ExpertAnalysisMixin:
                 _expert_validation_in_progress.discard(cache_key)
                 logger.info(f"[EXPERT_DEDUP] Removed {cache_key} from in-progress")
 
-                # Cache the result if we have one
+                # Cache the result if we have one (EXAI Fix #6 - 2025-10-21: with timestamp)
                 if result is not None:
-                    _expert_validation_cache[cache_key] = result
+                    _expert_validation_cache[cache_key] = (result, time.time())
                     logger.info(f"[EXPERT_DEDUP] Cached result for {cache_key}")
-                    logger.info(f"[EXPERT_DEDUP] Cache size now: {len(_expert_validation_cache)}")
+                    logger.info(f"[EXPERT_DEDUP] Cache size now: {len(_expert_validation_cache)}/{_CACHE_MAX_SIZE}")
 
         # CRITICAL FIX: Ensure we ALWAYS return a dict, never None
         if result is None:

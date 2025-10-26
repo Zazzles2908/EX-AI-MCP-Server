@@ -16,7 +16,52 @@ from utils.timezone_helper import log_timestamp
 from src.resilience.circuit_breaker_manager import circuit_breaker_manager
 import pybreaker
 
+# PHASE 2.2.3 (2025-10-21): Import concurrent session manager
+from src.utils.concurrent_session_manager import get_session_manager
+
+# PHASE 1 (2025-10-24): Import error capture for comprehensive monitoring
+from utils.monitoring.error_capture import capture_errors, extract_provider_context
+
 logger = logging.getLogger(__name__)
+
+
+def _process_tool_calls_in_text(text: str, context: str = "unknown") -> tuple[str, bool]:
+    """
+    Process tool calls embedded in text response.
+
+    This helper function handles cases where GLM returns tool calls as text
+    instead of structured tool_calls array. This commonly happens in streaming
+    mode where tool calls get embedded in the content stream.
+
+    Args:
+        text: The response text that may contain tool calls
+        context: Context string for logging (e.g., "SDK streaming", "HTTP non-streaming")
+
+    Returns:
+        tuple: (processed_text, success_flag)
+            - processed_text: Text with tool calls executed and results appended
+            - success_flag: True if tool call was found and executed successfully
+    """
+    from src.providers.text_format_handler import (
+        has_text_format_tool_call,
+        parse_and_execute_web_search
+    )
+
+    if not has_text_format_tool_call(text):
+        return text, True
+
+    logger.warning(f"GLM returned tool call as TEXT ({context}): {text[:200]}...")
+
+    try:
+        processed_text, success = parse_and_execute_web_search(text)
+        if success:
+            logger.info(f"GLM web_search executed successfully via text format handler ({context})")
+        else:
+            logger.warning(f"Web search execution failed ({context})")
+        return processed_text, success
+    except Exception as e:
+        logger.error(f"Tool call processing failed ({context}): {e}")
+        return text, False
 
 
 def build_payload(
@@ -55,18 +100,20 @@ def build_payload(
     if temperature is not None:
         payload["temperature"] = temperature
 
-    # Max tokens handling - respects ENFORCE_MAX_TOKENS configuration
-    # If max_output_tokens is explicitly provided, always use it
-    # If not provided and ENFORCE_MAX_TOKENS=true, use GLM_MAX_OUTPUT_TOKENS default
-    # If not provided and ENFORCE_MAX_TOKENS=false, don't set max_tokens (let model decide)
-    from config import GLM_MAX_OUTPUT_TOKENS, ENFORCE_MAX_TOKENS
-    if max_output_tokens:
-        # Explicitly provided - always use it
-        payload["max_tokens"] = int(max_output_tokens)
-    elif ENFORCE_MAX_TOKENS and GLM_MAX_OUTPUT_TOKENS > 0:
-        # Not provided, but enforcement is enabled - use default
-        payload["max_tokens"] = int(GLM_MAX_OUTPUT_TOKENS)
-        logger.debug(f"Using default max_tokens={GLM_MAX_OUTPUT_TOKENS} for GLM (ENFORCE_MAX_TOKENS=true)")
+    # PHASE 2.1.1.1 (2025-10-21): Model-aware max_tokens handling
+    from config import ENFORCE_MAX_TOKENS
+    from .model_config import validate_max_tokens
+
+    validated_max_tokens = validate_max_tokens(
+        model_name=model_name,
+        requested_max_tokens=max_output_tokens,
+        input_tokens=0,  # TODO: Add token counting for input
+        enforce_limits=ENFORCE_MAX_TOKENS
+    )
+
+    if validated_max_tokens is not None:
+        payload["max_tokens"] = validated_max_tokens
+        logger.debug(f"GLM API: Using max_tokens={validated_max_tokens} for model {model_name}")
     # else: Don't set max_tokens, let the model use its default
     
     # GLM Thinking Mode Support (glm-4.6 and later)
@@ -100,7 +147,7 @@ def build_payload(
             tool_choice = kwargs.get("tool_choice")
             if not tool_choice and model_name == "glm-4.6":
                 payload["tool_choice"] = "auto"
-                logger.debug(f"GLM-4.6: Auto-setting tool_choice='auto' for function calling (Bug #3 fix)")
+                logger.debug("GLM-4.6: Auto-setting tool_choice='auto' for function calling (Bug #3 fix)")
             elif tool_choice:
                 payload["tool_choice"] = tool_choice
 
@@ -112,7 +159,7 @@ def build_payload(
                 tool_stream_enabled = _os.getenv("GLM_TOOL_STREAM_ENABLED", "true").strip().lower() == "true"
                 if tool_stream_enabled:
                     payload["tool_stream"] = True
-                    logger.debug(f"GLM-4.6: Enabled tool_stream=True for streaming tool calls")
+                    logger.debug("GLM-4.6: Enabled tool_stream=True for streaming tool calls")
     except Exception as e:
         logger.warning(f"Failed to add tools/tool_choice to GLM payload (model: {model_name}): {e}")
         # Continue - payload will be sent without tools, API may reject if tools were required
@@ -121,6 +168,16 @@ def build_payload(
     return payload
 
 
+@capture_errors(
+    connection_type="glm",
+    script_name="glm_chat.py",
+    context_extractor=lambda *args, **kwargs: {
+        "model": args[3] if len(args) > 3 else kwargs.get("model_name"),
+        "stream": kwargs.get("stream", False),
+        "use_sdk": args[7] if len(args) > 7 else kwargs.get("use_sdk"),
+        "continuation_id": kwargs.get("continuation_id") or kwargs.get("conversation_id"),
+    }
+)
 def generate_content(
     sdk_client: Any,
     http_client: Any,
@@ -154,8 +211,16 @@ def generate_content(
     Raises:
         RuntimeError: If generation fails
     """
+    # DIAGNOSTIC (2025-10-23): Entry point logging
+    logger.info(f"[MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model={model_name}")
+
     # Log kwargs for debugging (use logger.debug, not print)
     logger.debug(f"GLM generate_content called with kwargs keys: {list(kwargs.keys())}")
+
+    # PHASE 4 (2025-10-23): Extract continuation_id for session tracking (with conversation_id fallback)
+    continuation_id = kwargs.get("continuation_id") or kwargs.get("conversation_id")
+    if continuation_id and not continuation_id.strip():  # Handle empty strings
+        continuation_id = None
 
     payload = build_payload(prompt, system_prompt, model_name, temperature, max_output_tokens, **kwargs)
 
@@ -163,6 +228,10 @@ def generate_content(
     start_time = time.time()
     request_size = len(str(payload).encode('utf-8'))
     error = None
+    response_size = 0
+    text = ""
+    usage = {}
+    stream_mode = False
 
     # PHASE 1 (2025-10-18): Apply circuit breaker protection
     breaker = circuit_breaker_manager.get_breaker('glm')
@@ -213,9 +282,13 @@ def generate_content(
             if stream:
                 # Aggregate streamed chunks from SDK iterator
                 content_parts = []
+                tool_calls_list = []  # CRITICAL FIX (2025-10-23): Collect tool calls from stream
                 actual_model = None
                 response_id = None
                 created_ts = None
+
+                # NEW (2025-10-24): Extract on_chunk callback for progressive streaming
+                on_chunk_callback = kwargs.get("on_chunk")
 
                 # CRITICAL FIX (2025-10-15): Add streaming timeout to prevent 6+ hour hangs
                 # Get timeout from env (default 5 minutes for GLM)
@@ -238,8 +311,22 @@ def generate_content(
                             choice = getattr(event, "choices", [None])[0]
                             if choice is not None:
                                 delta = getattr(choice, "delta", None)
-                                if delta and getattr(delta, "content", None):
-                                    content_parts.append(delta.content)
+                                if delta:
+                                    # CRITICAL FIX (2025-10-23): Extract tool_calls from delta
+                                    # This is what we were missing - GLM sends tool calls in delta.tool_calls
+                                    if getattr(delta, "tool_calls", None):
+                                        tool_calls_list.extend(delta.tool_calls)
+                                        logger.debug(f"[WEBSEARCH_FIX] Captured tool_calls from streaming delta: {len(delta.tool_calls)} calls")
+
+                                    if getattr(delta, "content", None):
+                                        chunk_text = delta.content
+                                        content_parts.append(chunk_text)
+
+                                        # NEW (2025-10-24): Forward chunk immediately if callback provided
+                                        if on_chunk_callback:
+                                            from streaming.streaming_adapter import _safe_call_chunk_callback
+                                            _safe_call_chunk_callback(on_chunk_callback, chunk_text)
+
                                 msg = getattr(choice, "message", None)
                                 if msg and getattr(msg, "content", None):
                                     content_parts.append(msg.content)
@@ -258,10 +345,42 @@ def generate_content(
                     raise RuntimeError(f"GLM SDK streaming timeout: {timeout_err}") from timeout_err
                 except Exception as stream_err:
                     raise RuntimeError(f"GLM SDK streaming failed: {stream_err}") from stream_err
-                
+
+                # Capture monitoring data before return
                 text = "".join(content_parts)
+
+                # CRITICAL FIX (2025-10-23): Execute web_search tool calls from streaming
+                # GLM sends tool calls in delta.tool_calls during streaming - execute them now
+                if tool_calls_list:
+                    logger.info(f"[WEBSEARCH_FIX] Processing {len(tool_calls_list)} tool calls from SDK streaming")
+                    for tc in tool_calls_list:
+                        if hasattr(tc, 'function') and tc.function:
+                            func = tc.function
+                            if func.name == "web_search":
+                                try:
+                                    import json as _json
+                                    args = func.arguments if hasattr(func, 'arguments') else "{}"
+                                    if isinstance(args, str):
+                                        search_data = _json.loads(args)
+                                    else:
+                                        search_data = args
+                                    if search_data:
+                                        text = text + "\n\n[Web Search Results]\n" + _json.dumps(search_data, indent=2, ensure_ascii=False)
+                                        logger.info("[WEBSEARCH_FIX] GLM web_search executed successfully via SDK streaming tool_calls")
+                                except Exception as e:
+                                    logger.error(f"[WEBSEARCH_FIX] Failed to parse web_search tool call: {e}")
+                else:
+                    # Fallback: Check for text-embedded tool calls (legacy format)
+                    text, _ = _process_tool_calls_in_text(text, context="SDK streaming")
+
                 raw = None
                 usage = {}
+                stream_mode = True
+                response_size = len(str(text).encode('utf-8'))
+
+                # PHASE 1 (2025-10-24): Calculate response time for metadata
+                ai_response_time_ms = int((time.time() - start_time) * 1000)
+
                 return ModelResponse(
                     content=text or "",
                     usage=usage or None,
@@ -275,6 +394,7 @@ def generate_content(
                         "created": created_ts,
                         "tools": payload.get("tools"),
                         "tool_choice": payload.get("tool_choice"),
+                        "ai_response_time_ms": ai_response_time_ms,
                     },
                 )
             else:
@@ -287,17 +407,6 @@ def generate_content(
                 # CRITICAL FIX: Check for tool_calls (web_search results)
                 # When GLM executes web_search, results are in message.tool_calls
                 tool_calls = message.get("tool_calls")
-
-                # Import text format handler
-                from src.providers.text_format_handler import (
-                    has_text_format_tool_call,
-                    parse_and_execute_web_search
-                )
-
-                # DEBUG: Log response format to diagnose inconsistent behavior
-                has_tool_calls_array = bool(tool_calls and isinstance(tool_calls, list))
-                has_tool_call_text = has_text_format_tool_call(text)
-                logger.debug(f"GLM response format: tool_calls_array={has_tool_calls_array}, tool_call_text={has_tool_call_text}, model={model_name}")
 
                 if tool_calls and isinstance(tool_calls, list):
                     # Web search was executed - extract results from tool calls
@@ -316,17 +425,12 @@ def generate_content(
                                     # Append search results to content
                                     if search_data:
                                         text = text + "\n\n[Web Search Results]\n" + _json.dumps(search_data, indent=2, ensure_ascii=False)
-                                        logger.info(f"GLM web_search executed successfully via tool_calls array")
+                                        logger.info("GLM web_search executed successfully via tool_calls array (SDK non-streaming)")
                                 except Exception as e:
                                     logger.debug(f"Failed to parse web_search tool call: {e}")
-                elif has_tool_call_text:
-                    # GLM returned tool call as TEXT - parse and execute it
-                    logger.warning(f"GLM returned tool call as TEXT: {text[:200]}")
-                    text, success = parse_and_execute_web_search(text)
-                    if success:
-                        logger.info(f"GLM web_search executed successfully via text format handler")
-                    else:
-                        logger.warning(f"Failed to execute web_search from text format")
+                else:
+                    # No structured tool_calls - check for text-embedded tool calls
+                    text, _ = _process_tool_calls_in_text(text, context="SDK non-streaming")
 
                 usage = raw.get("usage", {})
         else:
@@ -374,9 +478,18 @@ def generate_content(
                 except Exception as stream_err:
                     raise RuntimeError(f"GLM HTTP streaming failed: {stream_err}") from stream_err
                 
+                # Capture monitoring data before return
                 text = "".join(content_parts)
+
+                # CRITICAL FIX (2025-10-23): Process tool calls in streaming responses
+                # GLM may return tool calls as text in streaming mode - execute them
+                text, _ = _process_tool_calls_in_text(text, context="HTTP streaming")
+
                 raw = None
                 usage = {}
+                stream_mode = True
+                response_size = len(str(text).encode('utf-8'))
+
                 return ModelResponse(
                     content=text or "",
                     usage=usage or None,
@@ -406,14 +519,6 @@ def generate_content(
                 # CRITICAL FIX: Check for tool_calls (web_search results) in HTTP path
                 tool_calls = message.get("tool_calls")
 
-                # Import text format handler (same as SDK path)
-                from src.providers.text_format_handler import (
-                    has_text_format_tool_call,
-                    parse_and_execute_web_search
-                )
-
-                has_tool_call_text = has_text_format_tool_call(text)
-
                 if tool_calls and isinstance(tool_calls, list):
                     for tc in tool_calls:
                         if isinstance(tc, dict):
@@ -428,41 +533,55 @@ def generate_content(
                                         search_data = args
                                     if search_data:
                                         text = text + "\n\n[Web Search Results]\n" + _json.dumps(search_data, indent=2, ensure_ascii=False)
-                                        logger.info(f"GLM web_search executed successfully via tool_calls array (HTTP path)")
+                                        logger.info("GLM web_search executed successfully via tool_calls array (HTTP non-streaming)")
                                 except Exception as e:
                                     logger.debug(f"Failed to parse web_search tool call: {e}")
-                elif has_tool_call_text:
-                    # GLM returned tool call as TEXT - parse and execute it (HTTP path)
-                    logger.warning(f"GLM returned tool call as TEXT (HTTP path): {text[:200]}")
-                    text, success = parse_and_execute_web_search(text)
-                    if success:
-                        logger.info(f"GLM web_search executed successfully via text format handler (HTTP path)")
-                    else:
-                        logger.warning(f"Failed to execute web_search from text format (HTTP path)")
+                else:
+                    # No structured tool_calls - check for text-embedded tool calls
+                    text, _ = _process_tool_calls_in_text(text, context="HTTP non-streaming")
 
                 usage = raw.get("usage", {})
-        
-        # PHASE 3 (2025-10-18): Monitor successful API call
-        response_time_ms = (time.time() - start_time) * 1000
+
+        # PHASE 2.1.2 (2025-10-21): Check for truncation and log to Supabase
+        try:
+            from src.utils.truncation_detector import (
+                check_truncation,
+                should_log_truncation,
+                format_truncation_event,
+                log_truncation_to_supabase_sync
+            )
+
+            # Check for truncation in the response
+            if raw and isinstance(raw, dict):
+                truncation_info = check_truncation(raw, model_name)
+
+                if truncation_info.get('is_truncated'):
+                    logger.warning(f"⚠️ Truncated response detected for {model_name} (finish_reason=length)")
+
+                    # Log to Supabase for monitoring (backup/recovery - non-blocking)
+                    if should_log_truncation(truncation_info):
+                        # Extract tool_name and conversation_id from context if available
+                        tool_name = kwargs.get('tool_name')
+                        conversation_id = kwargs.get('continuation_id')
+
+                        # Format event for Supabase
+                        truncation_event = format_truncation_event(
+                            truncation_info,
+                            tool_name=tool_name,
+                            conversation_id=conversation_id
+                        )
+
+                        # Log synchronously (non-blocking, failures are acceptable)
+                        log_truncation_to_supabase_sync(truncation_event)
+        except Exception as trunc_err:
+            logger.debug(f"Truncation check error (non-critical): {trunc_err}")
+
+        # Capture monitoring data for non-streaming path
         response_size = len(str(text).encode('utf-8'))
+        stream_mode = stream
 
-        # Extract token usage for monitoring
-        total_tokens = 0
-        if usage:
-            total_tokens = usage.get("total_tokens", 0)
-
-        record_glm_event(
-            direction="receive",
-            function_name="glm_chat.generate_content",
-            data_size=response_size,
-            response_time_ms=response_time_ms,
-            metadata={
-                "model": model_name,
-                "tokens": total_tokens,
-                "streamed": stream,
-                "timestamp": log_timestamp()
-            }
-        )
+        # PHASE 1 (2025-10-24): Calculate response time for metadata
+        ai_response_time_ms = int((time.time() - start_time) * 1000)
 
         return ModelResponse(
             content=text or "",
@@ -479,25 +598,13 @@ def generate_content(
                 "streamed": bool(stream),
                 "tools": payload.get("tools"),
                 "tool_choice": payload.get("tool_choice"),
+                "ai_response_time_ms": ai_response_time_ms,
             },
         )
     except pybreaker.CircuitBreakerError:
         # PHASE 1 (2025-10-18): Circuit breaker is OPEN - GLM API is unavailable
         logger.error("GLM circuit breaker OPEN - API unavailable")
         error = "Circuit breaker OPEN - GLM API unavailable"
-
-        # Record monitoring event
-        response_time_ms = (time.time() - start_time) * 1000
-        record_glm_event(
-            direction="error",
-            function_name="glm_chat.generate_content",
-            data_size=request_size,
-            error=error,
-            metadata={
-                "model": model_name,
-                "timestamp": log_timestamp()
-            }
-        )
 
         # Return error response (graceful degradation)
         return ModelResponse(
@@ -514,21 +621,483 @@ def generate_content(
     except Exception as e:
         logger.error("GLM generate_content failed: %s", e)
         error = str(e)
+        raise
+    finally:
+        # PHASE 3 (2025-10-23): ALWAYS record monitoring event (streaming and non-streaming)
+        # This finally block ensures monitoring is recorded regardless of return path
+        logger.info(f"[MONITORING_DEBUG] FINALLY BLOCK ENTERED for model={model_name}")
 
-        # PHASE 3 (2025-10-18): Monitor API call failure
-        response_time_ms = (time.time() - start_time) * 1000
-        record_glm_event(
-            direction="error",
-            function_name="glm_chat.generate_content",
-            data_size=request_size,
-            error=error,
-            metadata={
+        try:
+            response_time_ms = (time.time() - start_time) * 1000
+
+            # Extract token usage for monitoring
+            total_tokens = 0
+            if usage:
+                total_tokens = usage.get("total_tokens", 0)
+
+            # Determine direction based on error state
+            direction = "error" if error else "receive"
+
+            # DIAGNOSTIC (2025-10-23): Debug logging to verify monitoring execution
+            logger.info(f"[MONITORING_DEBUG] About to call record_glm_event for model={model_name}, tokens={total_tokens}, stream={stream_mode}, error={error}")
+
+            # PHASE 4 (2025-10-23): Include continuation_id for session tracking
+            metadata = {
                 "model": model_name,
+                "tokens": total_tokens,
+                "streamed": stream_mode,
                 "timestamp": log_timestamp()
             }
+            if continuation_id:
+                metadata["continuation_id"] = continuation_id
+
+            record_glm_event(
+                direction=direction,
+                function_name="glm_chat.generate_content",
+                data_size=response_size if not error else request_size,
+                response_time_ms=response_time_ms,
+                error=error if error else None,
+                metadata=metadata
+            )
+            logger.info(f"[MONITORING_DEBUG] Successfully called record_glm_event")
+        except Exception as e:
+            logger.error(f"[MONITORING_DEBUG] FINALLY BLOCK ERROR: {e}", exc_info=True)
+
+
+def chat_completions_create(
+    sdk_client: Any,
+    *,
+    model: str,
+    messages: list[dict[str, Any]],
+    tools: Optional[list[Any]] = None,
+    tool_choice: Optional[Any] = None,
+    temperature: float = 0.3,
+    **kwargs
+) -> dict:
+    """
+    SDK-native chat completions method for GLM provider.
+
+    This method accepts pre-built message arrays (SDK-native format) instead of
+    building messages from text prompts. This is the preferred method for tools
+    and workflow systems that manage conversation history.
+
+    Args:
+        sdk_client: ZhipuAI SDK client instance
+        model: Model name (already resolved)
+        messages: Pre-built message array in OpenAI format
+        tools: Optional list of tools for function calling
+        tool_choice: Optional tool choice directive
+        temperature: Temperature value (default: 0.3)
+        **kwargs: Additional parameters (stream, thinking_mode, etc.)
+
+    Returns:
+        Normalized dict with provider, model, content, usage, metadata
+
+    Example:
+        >>> messages = [
+        ...     {"role": "system", "content": "You are a helpful assistant"},
+        ...     {"role": "user", "content": "Hello"}
+        ... ]
+        >>> result = chat_completions_create(
+        ...     sdk_client=client,
+        ...     model="glm-4.6",
+        ...     messages=messages,
+        ...     temperature=0.5
+        ... )
+    """
+    # Build payload with messages instead of prompt
+    # Extract system message if present
+    system_prompt = None
+    user_messages = []
+
+    for msg in messages:
+        role = msg.get("role", "")
+        content = msg.get("content", "")
+
+        if role == "system":
+            # Combine multiple system messages if present
+            if system_prompt:
+                system_prompt += "\n\n" + content
+            else:
+                system_prompt = content
+        else:
+            # Keep user and assistant messages
+            user_messages.append(msg)
+
+    # Build payload using the messages array
+    payload = {
+        "model": model,
+        "messages": messages,  # Use full message array (SDK handles it)
+        "stream": bool(kwargs.get("stream", False)),
+    }
+
+    if temperature is not None:
+        payload["temperature"] = temperature
+
+    # Max tokens handling
+    max_output_tokens = kwargs.get("max_output_tokens") or kwargs.get("max_tokens")
+    if max_output_tokens:
+        payload["max_tokens"] = int(max_output_tokens)
+
+    # Thinking mode support
+    if kwargs.get("thinking_mode"):
+        from .glm_config import get_capabilities, SUPPORTED_MODELS, resolve_model_name_for_glm
+        caps = get_capabilities(model, SUPPORTED_MODELS, resolve_model_name_for_glm)
+        if caps.supports_extended_thinking:
+            payload["thinking"] = {"type": "enabled"}
+            logger.debug(f"Enabled thinking mode for GLM model {model}")
+
+    # Tools and tool_choice
+    if tools:
+        payload["tools"] = tools
+        if tool_choice:
+            payload["tool_choice"] = tool_choice
+        elif model == "glm-4.6":
+            # glm-4.6 requires explicit tool_choice="auto"
+            payload["tool_choice"] = "auto"
+            logger.debug("GLM-4.6: Auto-setting tool_choice='auto' for function calling")
+
+    # Call SDK
+    stream = payload.get("stream", False)
+
+    try:
+        if stream:
+            # Streaming not yet implemented for chat_completions_create
+            # Fall back to non-streaming
+            logger.warning("Streaming not yet supported in chat_completions_create, using non-streaming")
+            payload["stream"] = False
+            stream = False
+
+        # Apply circuit breaker
+        breaker = circuit_breaker_manager.get_breaker('glm')
+
+        @breaker
+        def _glm_sdk_call():
+            return sdk_client.chat.completions.create(**payload)
+
+        resp = _glm_sdk_call()
+
+        # Extract response
+        choice0 = resp.choices[0] if resp.choices else None
+        message = choice0.message if choice0 else None
+        content_text = message.content if message else ""
+        finish_reason = choice0.finish_reason if choice0 else "unknown"
+
+        # Extract usage
+        usage_dict = {}
+        if hasattr(resp, "usage") and resp.usage:
+            usage_dict = {
+                "prompt_tokens": getattr(resp.usage, "prompt_tokens", 0),
+                "completion_tokens": getattr(resp.usage, "completion_tokens", 0),
+                "total_tokens": getattr(resp.usage, "total_tokens", 0),
+            }
+
+        # Return normalized dict (same format as Kimi)
+        return {
+            "provider": "GLM",
+            "model": model,
+            "content": content_text or "",
+            "tool_calls": None,  # TODO: Extract tool calls if present
+            "usage": usage_dict,
+            "raw": resp.model_dump() if hasattr(resp, "model_dump") else {},
+            "metadata": {
+                "finish_reason": finish_reason,
+            },
+        }
+
+    except Exception as e:
+        logger.error(f"GLM chat_completions_create failed: {e}", exc_info=True)
+        raise RuntimeError(f"GLM chat completion failed: {e}")
+
+
+def chat_completions_create_with_continuation(
+    sdk_client: Any,
+    *,
+    model: str,
+    messages: list[dict[str, Any]],
+    tools: Optional[list[Any]] = None,
+    tool_choice: Optional[Any] = None,
+    temperature: float = 0.3,
+    max_output_tokens: Optional[int] = None,
+    use_websearch: bool = False,
+    enable_continuation: bool = True,
+    max_continuation_attempts: int = 3,
+    max_total_tokens: int = 32000,
+    **kwargs
+) -> dict:
+    """
+    Wrapper for chat_completions_create with automatic continuation support.
+
+    PHASE 2.1.3 (2025-10-21): Automatic Continuation
+
+    This function automatically detects truncated responses and continues them
+    until completion or max attempts reached.
+
+    Args:
+        sdk_client: ZhipuAI SDK client instance
+        model: Model name
+        messages: List of message dictionaries
+        tools: Optional list of tools
+        tool_choice: Optional tool choice
+        temperature: Temperature value
+        max_output_tokens: Maximum output tokens per request
+        use_websearch: Whether to enable web search
+        enable_continuation: Whether to enable automatic continuation (default: True)
+        max_continuation_attempts: Maximum continuation attempts (default: 3)
+        max_total_tokens: Maximum cumulative tokens across continuations (default: 32000)
+        **kwargs: Additional parameters
+
+    Returns:
+        Dictionary with provider, model, content, tool_calls, usage, raw, and metadata
+    """
+    # Call the base function
+    initial_response = chat_completions_create(
+        sdk_client,
+        model=model,
+        messages=messages,
+        tools=tools,
+        tool_choice=tool_choice,
+        temperature=temperature,
+        max_output_tokens=max_output_tokens,
+        use_websearch=use_websearch,
+        **kwargs
+    )
+
+    # If continuation is disabled, return as-is
+    if not enable_continuation:
+        return initial_response
+
+    # Check if response was truncated
+    try:
+        from src.utils.truncation_detector import check_truncation
+        from src.utils.continuation_manager import get_continuation_manager
+
+        # Check for truncation
+        truncation_info = check_truncation(initial_response.get('raw', {}), model)
+
+        if not truncation_info.get('is_truncated'):
+            # Not truncated, return as-is
+            return initial_response
+
+        logger.info(f"🔄 Truncated response detected for {model}, starting continuation...")
+
+        # Get continuation manager
+        continuation_manager = get_continuation_manager()
+
+        # Prepare provider callable
+        def provider_callable(cont_messages, **cont_kwargs):
+            return chat_completions_create(
+                sdk_client,
+                model=model,
+                messages=cont_messages,
+                tools=tools,
+                tool_choice=tool_choice,
+                temperature=temperature,
+                max_output_tokens=max_output_tokens,
+                use_websearch=use_websearch,
+                **cont_kwargs
+            )
+
+        # Continue the response
+        continuation_result = continuation_manager.continue_response_sync(
+            original_messages=messages,
+            initial_response=initial_response.get('raw', {}),
+            provider_callable=provider_callable,
+            model=model,
+            max_continuation_attempts=max_continuation_attempts,
+            max_total_tokens=max_total_tokens,
+            **kwargs
         )
-        raise
+
+        # Merge the continuation result back into the response format
+        if continuation_result.complete_response:
+            initial_response['content'] = continuation_result.complete_response
+            initial_response['metadata']['continuation'] = {
+                'enabled': True,
+                'attempts': continuation_result.attempts_made,
+                'total_tokens': continuation_result.total_tokens_used,
+                'is_complete': continuation_result.is_complete,
+                'was_truncated': continuation_result.was_truncated,
+                'error': continuation_result.error_message
+            }
+            logger.info(
+                f"✅ Continuation complete: {continuation_result.attempts_made} attempts, "
+                f"{continuation_result.total_tokens_used} tokens"
+            )
+
+        return initial_response
+
+    except Exception as cont_err:
+        logger.warning(f"Continuation failed (non-critical): {cont_err}")
+        # Return original response if continuation fails
+        return initial_response
 
 
-__all__ = ["build_payload", "generate_content"]
+def chat_completions_create_with_session(
+    prompt: str,
+    *,
+    system_prompt: Optional[str] = None,
+    model: str = "glm-4.5-flash",
+    temperature: float = 0.3,
+    max_output_tokens: Optional[int] = None,
+    tools: Optional[list[dict]] = None,
+    tool_choice: Optional[str | dict] = None,
+    use_websearch: bool = False,
+    enable_continuation: bool = True,
+    max_continuation_attempts: int = 3,
+    max_total_tokens: int = 32000,
+    timeout_seconds: Optional[float] = None,
+    request_id: Optional[str] = None,
+    **kwargs
+) -> dict:
+    """
+    Session-managed wrapper for GLM chat with automatic continuation support.
+
+    PHASE 2.2.3 (2025-10-21): Concurrent Request Handling
+    Refactored to use execute_with_session() helper per EXAI recommendation.
+
+    PHASE 0.3 (2025-10-24): Added timeout enforcement to prevent provider hangs
+    Uses GLM_SESSION_TIMEOUT env var (default: 30s) with active enforcement
+
+    This function wraps chat_completions_create_with_continuation in a managed session
+    to enable concurrent request handling without blocking. Each request gets its own
+    isolated session with timeout handling and lifecycle tracking.
+
+    Args:
+        prompt: User prompt
+        system_prompt: Optional system prompt
+        model: Model name (default: glm-4.5-flash)
+        temperature: Temperature value
+        max_output_tokens: Maximum output tokens
+        tools: Optional list of tools
+        tool_choice: Optional tool choice
+        use_websearch: Whether to enable web search
+        enable_continuation: Whether to enable automatic continuation
+        max_continuation_attempts: Maximum continuation attempts
+        max_total_tokens: Maximum total tokens across continuations
+        timeout_seconds: Optional timeout override (default: GLM_SESSION_TIMEOUT env var)
+        request_id: Optional request ID (generated if not provided)
+        **kwargs: Additional parameters
+
+    Returns:
+        Dictionary with provider, model, content, tool_calls, usage, raw, metadata,
+        and session context (session_id, request_id, duration_seconds)
+    """
+    # PHASE 0.3 (2025-10-24): Use GLM_SESSION_TIMEOUT from environment
+    default_timeout = float(os.getenv("GLM_SESSION_TIMEOUT", "30"))
+    enforce_timeout = os.getenv("ENFORCE_SESSION_TIMEOUT", "true").lower() == "true"
+
+    session_manager = get_session_manager(default_timeout=timeout_seconds or default_timeout)
+
+    def _execute_glm_chat():
+        """Internal function to execute GLM chat within session."""
+        return chat_completions_create_with_continuation(
+            prompt,
+            system_prompt=system_prompt,
+            model=model,
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            tools=tools,
+            tool_choice=tool_choice,
+            use_websearch=use_websearch,
+            enable_continuation=enable_continuation,
+            max_continuation_attempts=max_continuation_attempts,
+            max_total_tokens=max_total_tokens,
+            **kwargs
+        )
+
+    # Execute within managed session with automatic session context addition
+    # PHASE 0.3 (2025-10-24): Enable timeout enforcement to prevent hangs
+    return session_manager.execute_with_session(
+        provider="glm",
+        model=model,
+        func=_execute_glm_chat,
+        request_id=request_id,
+        timeout_seconds=timeout_seconds,
+        add_session_context=True,
+        enforce_timeout=enforce_timeout
+    )
+
+
+def chat_completions_create_messages_with_session(
+    sdk_client: Any,
+    *,
+    model: str,
+    messages: list[dict[str, Any]],
+    tools: Optional[list[Any]] = None,
+    tool_choice: Optional[Any] = None,
+    temperature: float = 0.3,
+    timeout_seconds: Optional[float] = None,
+    request_id: Optional[str] = None,
+    **kwargs
+) -> dict:
+    """
+    Session-managed wrapper for GLM chat completions (message-based).
+
+    PHASE 2.2.4 (2025-10-21): Concurrent Request Handling
+    Provides session management for message-based chat completions.
+
+    PHASE 0.3 (2025-10-24): Added timeout enforcement to prevent provider hangs
+    Uses GLM_SESSION_TIMEOUT env var (default: 30s) with active enforcement
+
+    This function wraps chat_completions_create in a managed session
+    to enable concurrent request handling without blocking. Each request gets its own
+    isolated session with timeout handling and lifecycle tracking.
+
+    Args:
+        sdk_client: ZhipuAI SDK client instance
+        model: Model name (already resolved)
+        messages: Pre-built message array in OpenAI format
+        tools: Optional list of tools for function calling
+        tool_choice: Optional tool choice directive
+        temperature: Temperature value (default: 0.3)
+        timeout_seconds: Optional timeout override (default: GLM_SESSION_TIMEOUT env var)
+        request_id: Optional request ID (generated if not provided)
+        **kwargs: Additional parameters (stream, thinking_mode, etc.)
+
+    Returns:
+        Dictionary with provider, model, content, tool_calls, usage, raw, metadata,
+        and session context (session_id, request_id, duration_seconds)
+    """
+    from src.utils.concurrent_session_manager import get_session_manager
+
+    # PHASE 0.3 (2025-10-24): Use GLM_SESSION_TIMEOUT from environment
+    default_timeout = float(os.getenv("GLM_SESSION_TIMEOUT", "30"))
+    enforce_timeout = os.getenv("ENFORCE_SESSION_TIMEOUT", "true").lower() == "true"
+
+    session_manager = get_session_manager(default_timeout=timeout_seconds or default_timeout)
+
+    def _execute_glm_chat():
+        """Internal function to execute GLM chat within session."""
+        return chat_completions_create(
+            sdk_client,
+            model=model,
+            messages=messages,
+            tools=tools,
+            tool_choice=tool_choice,
+            temperature=temperature,
+            **kwargs
+        )
+
+    # Execute within managed session with automatic session context addition
+    # PHASE 0.3 (2025-10-24): Enable timeout enforcement to prevent hangs
+    return session_manager.execute_with_session(
+        provider="glm",
+        model=model,
+        func=_execute_glm_chat,
+        request_id=request_id,
+        timeout_seconds=timeout_seconds,
+        add_session_context=True,
+        enforce_timeout=enforce_timeout
+    )
+
+
+__all__ = [
+    "build_payload",
+    "generate_content",
+    "chat_completions_create",
+    "chat_completions_create_with_continuation",
+    "chat_completions_create_with_session",
+    "chat_completions_create_messages_with_session"
+]
 

@@ -177,6 +177,30 @@ SEMAPHORE_ACQUISITION_FAILURES = Counter(
     ['semaphore_type', 'provider']
 )
 
+SEMAPHORE_QUEUE_DEPTH = Gauge(
+    'mcp_semaphore_queue_depth',
+    'Number of requests waiting for semaphore acquisition',
+    ['semaphore_type', 'provider']
+)
+
+SEMAPHORE_ACQUISITIONS = Counter(
+    'mcp_semaphore_acquisitions_total',
+    'Total semaphore acquisitions',
+    ['semaphore_type', 'provider']
+)
+
+SEMAPHORE_RELEASES = Counter(
+    'mcp_semaphore_releases_total',
+    'Total semaphore releases',
+    ['semaphore_type', 'provider']
+)
+
+SEMAPHORE_EXHAUSTION_EVENTS = Counter(
+    'mcp_semaphore_exhaustion_events_total',
+    'Total semaphore exhaustion events (0 permits available)',
+    ['semaphore_type', 'provider']
+)
+
 # ============================================================================
 # ERROR METRICS
 # ============================================================================
@@ -305,6 +329,27 @@ def record_semaphore_acquisition_failure(semaphore_type: str, provider: str) -> 
 def update_concurrent_requests(provider: str, count: int) -> None:
     """Update current concurrent request count"""
     CONCURRENT_REQUESTS.labels(provider=provider).set(count)
+
+
+def update_semaphore_queue_depth(semaphore_type: str, provider: str, depth: int) -> None:
+    """Update semaphore queue depth (number of waiting requests)"""
+    SEMAPHORE_QUEUE_DEPTH.labels(semaphore_type=semaphore_type, provider=provider).set(depth)
+
+
+def record_semaphore_acquisition(semaphore_type: str, provider: str) -> None:
+    """Record a semaphore acquisition"""
+    SEMAPHORE_ACQUISITIONS.labels(semaphore_type=semaphore_type, provider=provider).inc()
+
+
+def record_semaphore_release(semaphore_type: str, provider: str) -> None:
+    """Record a semaphore release"""
+    SEMAPHORE_RELEASES.labels(semaphore_type=semaphore_type, provider=provider).inc()
+
+
+def record_semaphore_exhaustion(semaphore_type: str, provider: str) -> None:
+    """Record a semaphore exhaustion event (0 permits available)"""
+    SEMAPHORE_EXHAUSTION_EVENTS.labels(semaphore_type=semaphore_type, provider=provider).inc()
+    logger.critical(f"ALERT: Semaphore exhausted! {semaphore_type} provider={provider} - Immediate attention required")
 
 
 def update_system_metrics() -> None:

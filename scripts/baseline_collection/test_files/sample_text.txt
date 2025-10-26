@@ -1,0 +1,11 @@
+This is a sample text file for testing file upload functionality.
+
+It contains multiple lines of text to ensure the file has some content.
+
+This file will be used to test:
+- kimi_upload_files tool
+- kimi_chat_with_files tool
+- glm_upload_file tool
+
+The content is simple and straightforward for baseline testing purposes.
+

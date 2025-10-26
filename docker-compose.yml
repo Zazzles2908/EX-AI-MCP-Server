@@ -27,12 +27,18 @@ services:
 
     # Volume mounts for logs, documentation, and source code (development)
     # REBUILD (2025-10-19): Added all source directories for complete hot reload
+    # ARCHITECTURAL FIX (2025-10-21): Added missing directories for complete hot reload
     volumes:
       # Source code (development mode - hot reload)
       - ./src:/app/src
       - ./utils:/app/utils
       - ./tools:/app/tools
-      - ./scripts:/app/scripts
+      - ./scripts/ws:/app/scripts/ws
+      - ./scripts/runtime:/app/scripts/runtime
+      - ./scripts/baseline_collection:/app/scripts/baseline_collection  # FIX: Mount baseline test files
+      - ./systemprompts:/app/systemprompts  # FIX: Enable hot reload for prompt changes
+      - ./streaming:/app/streaming          # FIX: Enable hot reload for streaming changes
+      - ./static:/app/static                # FIX: Enable hot reload for static file changes
 
       # Data directories
       - ./logs:/app/logs

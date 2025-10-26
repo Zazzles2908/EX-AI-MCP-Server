@@ -217,8 +217,14 @@ async def get_session_semaphore_manager() -> SessionSemaphoreManager:
     if _session_semaphore_manager is None:
         # Import here to avoid circular dependency
         import os
-        
-        max_concurrent = int(os.getenv("SESSION_MAX_CONCURRENT", "1"))
+
+        # CRITICAL FIX (2025-10-26): Use correct environment variable for per-conversation concurrency
+        # IMPORTANT: Use SESSION_MAX_CONCURRENT_PER_CONVERSATION (not SESSION_MAX_CONCURRENT)
+        # - SESSION_MAX_CONCURRENT = global limit for total sessions across all conversations (used by SessionManager)
+        # - SESSION_MAX_CONCURRENT_PER_CONVERSATION = limit per individual conversation (used here)
+        # Previous bug: Was reading SESSION_MAX_CONCURRENT=10, allowing 10 concurrent requests per conversation
+        # This caused concurrent connection issues when multiple VSCode instances tried to connect
+        max_concurrent = int(os.getenv("SESSION_MAX_CONCURRENT_PER_CONVERSATION", "1"))
         cleanup_interval = int(os.getenv("SESSION_CLEANUP_INTERVAL", "300"))
         inactive_timeout = int(os.getenv("SESSION_INACTIVE_TIMEOUT", "300"))
         

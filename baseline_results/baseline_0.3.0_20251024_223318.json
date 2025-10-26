@@ -1,0 +1,2278 @@
+{
+  "baseline_version": "0.3.0",
+  "timestamp": "2025-10-24T11:33:07.744191+00:00",
+  "total_executions": 310,
+  "duration_seconds": 10.624414682388306,
+  "results": [
+    {
+      "tool_name": "chat",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 101.97710990905762,
+      "timestamp": "2025-10-24T11:33:07.847317+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 103.87444496154785,
+      "timestamp": "2025-10-24T11:33:07.951314+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 101.58705711364746,
+      "timestamp": "2025-10-24T11:33:08.053017+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 111.59348487854004,
+      "timestamp": "2025-10-24T11:33:08.164721+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 106.29987716674805,
+      "timestamp": "2025-10-24T11:33:08.271189+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 100.84080696105957,
+      "timestamp": "2025-10-24T11:33:08.372147+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 102.63991355895996,
+      "timestamp": "2025-10-24T11:33:08.474914+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 101.18913650512695,
+      "timestamp": "2025-10-24T11:33:08.576218+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 105.25131225585938,
+      "timestamp": "2025-10-24T11:33:08.681585+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 102.53405570983887,
+      "timestamp": "2025-10-24T11:33:08.784237+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.784441+00:00"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.784503+00:00"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.784562+00:00"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.784623+00:00"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.784679+00:00"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.784745+00:00"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.784809+00:00"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.784872+00:00"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.784927+00:00"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.784980+00:00"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785121+00:00"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785156+00:00"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785197+00:00"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785241+00:00"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785282+00:00"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785388+00:00"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785443+00:00"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785484+00:00"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785536+00:00"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785586+00:00"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785717+00:00"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785772+00:00"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785822+00:00"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785864+00:00"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785897+00:00"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785943+00:00"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.785985+00:00"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786030+00:00"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786081+00:00"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786132+00:00"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786231+00:00"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786280+00:00"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786327+00:00"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786366+00:00"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786412+00:00"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786453+00:00"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786490+00:00"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786522+00:00"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786567+00:00"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786621+00:00"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786742+00:00"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786790+00:00"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786844+00:00"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786892+00:00"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786941+00:00"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.786980+00:00"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787025+00:00"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787070+00:00"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787117+00:00"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787156+00:00"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787292+00:00"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787342+00:00"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787386+00:00"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787425+00:00"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787474+00:00"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787526+00:00"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787578+00:00"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787624+00:00"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787662+00:00"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787709+00:00"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787832+00:00"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787872+00:00"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787922+00:00"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.787972+00:00"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.788020+00:00"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.788066+00:00"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.788112+00:00"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.788145+00:00"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.788186+00:00"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:08.788232+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:08.788355+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:08.788404+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:08.788452+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:08.788504+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:08.788557+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:08.788603+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:08.788644+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:08.788693+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:08.788732+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:08.788782+00:00"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 104.98452186584473,
+      "timestamp": "2025-10-24T11:33:08.893901+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 100.72922706604004,
+      "timestamp": "2025-10-24T11:33:08.994766+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 103.19185256958008,
+      "timestamp": "2025-10-24T11:33:09.098070+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 100.70180892944336,
+      "timestamp": "2025-10-24T11:33:09.198888+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 106.15825653076172,
+      "timestamp": "2025-10-24T11:33:09.305154+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 101.77350044250488,
+      "timestamp": "2025-10-24T11:33:09.407045+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 101.06372833251953,
+      "timestamp": "2025-10-24T11:33:09.508220+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 103.67608070373535,
+      "timestamp": "2025-10-24T11:33:09.612009+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 108.24084281921387,
+      "timestamp": "2025-10-24T11:33:09.720356+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 105.11493682861328,
+      "timestamp": "2025-10-24T11:33:09.825599+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.825850+00:00"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.825959+00:00"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826048+00:00"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826129+00:00"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826193+00:00"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826232+00:00"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826266+00:00"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826315+00:00"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826358+00:00"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826449+00:00"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826538+00:00"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826570+00:00"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826615+00:00"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826657+00:00"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826702+00:00"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826737+00:00"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826770+00:00"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826806+00:00"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826846+00:00"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826874+00:00"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.826972+00:00"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827010+00:00"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827043+00:00"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827091+00:00"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827137+00:00"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827189+00:00"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827231+00:00"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827263+00:00"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827307+00:00"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827346+00:00"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827450+00:00"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827491+00:00"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827534+00:00"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827579+00:00"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827615+00:00"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827651+00:00"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827693+00:00"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827730+00:00"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827765+00:00"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827800+00:00"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827903+00:00"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827942+00:00"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.827975+00:00"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.828007+00:00"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.828042+00:00"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.828079+00:00"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.828113+00:00"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.828150+00:00"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.828187+00:00"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires complex parameters",
+      "timestamp": "2025-10-24T11:33:09.828224+00:00"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 101.43351554870605,
+      "timestamp": "2025-10-24T11:33:09.929756+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 100.80242156982422,
+      "timestamp": "2025-10-24T11:33:10.030688+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 101.78017616271973,
+      "timestamp": "2025-10-24T11:33:10.132604+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 102.5385856628418,
+      "timestamp": "2025-10-24T11:33:10.235257+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 112.85948753356934,
+      "timestamp": "2025-10-24T11:33:10.348280+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 112.14852333068848,
+      "timestamp": "2025-10-24T11:33:10.460563+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 101.02295875549316,
+      "timestamp": "2025-10-24T11:33:10.561735+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 111.04130744934082,
+      "timestamp": "2025-10-24T11:33:10.672912+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 107.24115371704102,
+      "timestamp": "2025-10-24T11:33:10.780295+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 103.5912036895752,
+      "timestamp": "2025-10-24T11:33:10.884020+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.884189+00:00"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.884225+00:00"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.884261+00:00"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.884308+00:00"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.884358+00:00"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.884400+00:00"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.884433+00:00"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.884480+00:00"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.884509+00:00"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.884543+00:00"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.884619+00:00"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.884644+00:00"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.884668+00:00"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.884708+00:00"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.884742+00:00"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.884781+00:00"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.884811+00:00"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.884840+00:00"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.884871+00:00"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.884904+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885018+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885055+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885085+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885110+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885138+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885171+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885216+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885257+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885290+00:00"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885331+00:00"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885420+00:00"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885454+00:00"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885499+00:00"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885548+00:00"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885592+00:00"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885639+00:00"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885692+00:00"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885733+00:00"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885769+00:00"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885817+00:00"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885910+00:00"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.885955+00:00"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886002+00:00"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886045+00:00"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886074+00:00"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886105+00:00"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886152+00:00"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886189+00:00"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886228+00:00"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886256+00:00"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.886368+00:00"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.886408+00:00"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.886465+00:00"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.886508+00:00"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.886546+00:00"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.886583+00:00"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.886623+00:00"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.886656+00:00"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.886687+00:00"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires test files",
+      "timestamp": "2025-10-24T11:33:10.886714+00:00"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886795+00:00"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886828+00:00"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886861+00:00"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886892+00:00"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886933+00:00"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.886966+00:00"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887002+00:00"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887035+00:00"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887075+00:00"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887113+00:00"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887207+00:00"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887244+00:00"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887278+00:00"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887309+00:00"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887341+00:00"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887373+00:00"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887411+00:00"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887446+00:00"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887485+00:00"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T11:33:10.887521+00:00"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 104.74920272827148,
+      "timestamp": "2025-10-24T11:33:10.992362+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 102.67138481140137,
+      "timestamp": "2025-10-24T11:33:11.095164+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 100.38948059082031,
+      "timestamp": "2025-10-24T11:33:11.195692+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 102.05650329589844,
+      "timestamp": "2025-10-24T11:33:11.297891+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 107.01608657836914,
+      "timestamp": "2025-10-24T11:33:11.405062+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 107.879638671875,
+      "timestamp": "2025-10-24T11:33:11.513084+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 100.71086883544922,
+      "timestamp": "2025-10-24T11:33:11.613941+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 104.17652130126953,
+      "timestamp": "2025-10-24T11:33:11.718241+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 110.21161079406738,
+      "timestamp": "2025-10-24T11:33:11.828580+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 104.34103012084961,
+      "timestamp": "2025-10-24T11:33:11.933050+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 102.79989242553711,
+      "timestamp": "2025-10-24T11:33:12.036086+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 112.86020278930664,
+      "timestamp": "2025-10-24T11:33:12.149085+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 108.48093032836914,
+      "timestamp": "2025-10-24T11:33:12.257723+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 113.19923400878906,
+      "timestamp": "2025-10-24T11:33:12.371033+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 100.33321380615234,
+      "timestamp": "2025-10-24T11:33:12.471513+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 104.68840599060059,
+      "timestamp": "2025-10-24T11:33:12.576332+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 105.29661178588867,
+      "timestamp": "2025-10-24T11:33:12.681805+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 111.42396926879883,
+      "timestamp": "2025-10-24T11:33:12.793349+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 105.3006649017334,
+      "timestamp": "2025-10-24T11:33:12.898797+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 113.55328559875488,
+      "timestamp": "2025-10-24T11:33:13.012518+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 100.36826133728027,
+      "timestamp": "2025-10-24T11:33:13.113107+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 113.06500434875488,
+      "timestamp": "2025-10-24T11:33:13.226283+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 101.84311866760254,
+      "timestamp": "2025-10-24T11:33:13.328260+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 111.87434196472168,
+      "timestamp": "2025-10-24T11:33:13.440255+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 114.21537399291992,
+      "timestamp": "2025-10-24T11:33:13.554614+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 112.84995079040527,
+      "timestamp": "2025-10-24T11:33:13.667604+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 109.35521125793457,
+      "timestamp": "2025-10-24T11:33:13.777079+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 112.56051063537598,
+      "timestamp": "2025-10-24T11:33:13.889771+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 111.26089096069336,
+      "timestamp": "2025-10-24T11:33:14.001142+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 102.25892066955566,
+      "timestamp": "2025-10-24T11:33:14.103560+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 112.95819282531738,
+      "timestamp": "2025-10-24T11:33:14.216755+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 103.19042205810547,
+      "timestamp": "2025-10-24T11:33:14.320226+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 102.55193710327148,
+      "timestamp": "2025-10-24T11:33:14.422890+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 108.72817039489746,
+      "timestamp": "2025-10-24T11:33:14.531764+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 106.3079833984375,
+      "timestamp": "2025-10-24T11:33:14.638207+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 111.69695854187012,
+      "timestamp": "2025-10-24T11:33:14.750037+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 100.1729965209961,
+      "timestamp": "2025-10-24T11:33:14.850349+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 109.32493209838867,
+      "timestamp": "2025-10-24T11:33:14.959830+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 108.7198257446289,
+      "timestamp": "2025-10-24T11:33:15.068686+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 103.70087623596191,
+      "timestamp": "2025-10-24T11:33:15.172539+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 104.74634170532227,
+      "timestamp": "2025-10-24T11:33:15.277530+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 100.72016716003418,
+      "timestamp": "2025-10-24T11:33:15.378372+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 100.28243064880371,
+      "timestamp": "2025-10-24T11:33:15.478766+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 104.64358329772949,
+      "timestamp": "2025-10-24T11:33:15.583547+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 110.63003540039062,
+      "timestamp": "2025-10-24T11:33:15.694347+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 109.23600196838379,
+      "timestamp": "2025-10-24T11:33:15.803774+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 105.13687133789062,
+      "timestamp": "2025-10-24T11:33:15.909044+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 100.76403617858887,
+      "timestamp": "2025-10-24T11:33:16.009954+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 110.8100414276123,
+      "timestamp": "2025-10-24T11:33:16.120930+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 106.15062713623047,
+      "timestamp": "2025-10-24T11:33:16.227210+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 109.81154441833496,
+      "timestamp": "2025-10-24T11:33:16.337250+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 114.94088172912598,
+      "timestamp": "2025-10-24T11:33:16.452310+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 104.00080680847168,
+      "timestamp": "2025-10-24T11:33:16.556419+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 112.72287368774414,
+      "timestamp": "2025-10-24T11:33:16.669266+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 101.08733177185059,
+      "timestamp": "2025-10-24T11:33:16.770486+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 113.27314376831055,
+      "timestamp": "2025-10-24T11:33:16.883873+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 113.69514465332031,
+      "timestamp": "2025-10-24T11:33:16.997717+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 105.03172874450684,
+      "timestamp": "2025-10-24T11:33:17.102858+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 101.93467140197754,
+      "timestamp": "2025-10-24T11:33:17.204906+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 112.14637756347656,
+      "timestamp": "2025-10-24T11:33:17.317169+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 106.09555244445801,
+      "timestamp": "2025-10-24T11:33:17.423487+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 101.86195373535156,
+      "timestamp": "2025-10-24T11:33:17.525497+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 101.67503356933594,
+      "timestamp": "2025-10-24T11:33:17.627308+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 105.1790714263916,
+      "timestamp": "2025-10-24T11:33:17.732591+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 101.18436813354492,
+      "timestamp": "2025-10-24T11:33:17.833885+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 109.75360870361328,
+      "timestamp": "2025-10-24T11:33:17.943740+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 105.37075996398926,
+      "timestamp": "2025-10-24T11:33:18.049246+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 113.94453048706055,
+      "timestamp": "2025-10-24T11:33:18.163294+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 100.43692588806152,
+      "timestamp": "2025-10-24T11:33:18.263863+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 104.89940643310547,
+      "timestamp": "2025-10-24T11:33:18.368890+00:00",
+      "baseline_version": "0.3.0"
+    }
+  ]
+}

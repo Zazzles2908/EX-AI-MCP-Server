@@ -15,17 +15,24 @@ Each connection point reports:
 - Connected script/function names (for debugging)
 
 Created: 2025-10-18
-Purpose: Centralized monitoring for easier bug fixing
+Updated: 2025-10-23 - Added Redis persistence with dual-write pattern
+Updated: 2025-10-23 - Added Melbourne/Australia timezone support
+Purpose: Centralized monitoring for easier bug fixing with persistent storage
 """
 
 import time
 import logging
-from typing import Dict, List, Optional, Any
+import os
+import threading
+import queue
+from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field, asdict
-from datetime import datetime
-from collections import deque
+from datetime import datetime, timedelta
+from collections import deque, defaultdict
 from threading import Lock
 import json
+
+from utils.timezone_helper import melbourne_now_iso, to_aedt, UTC_TZ
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +51,15 @@ class ConnectionEvent:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for JSON serialization"""
+        """Convert to dictionary for JSON serialization with Melbourne/Australia timezone"""
+        # PHASE 3.1 (2025-10-23): Convert timestamp to Melbourne timezone for display
+        # Create UTC datetime from timestamp, then convert to Melbourne
+        utc_dt = datetime.fromtimestamp(self.timestamp, tz=UTC_TZ)
+        melb_dt = to_aedt(utc_dt)
+
         return {
             "timestamp": self.timestamp,
-            "datetime": datetime.fromtimestamp(self.timestamp).isoformat(),
+            "datetime": melb_dt.isoformat(),  # Melbourne timezone ISO format
             "connection_type": self.connection_type,
             "direction": self.direction,
             "script": self.script_name,
@@ -74,15 +86,22 @@ class ConnectionStats:
 
 class ConnectionMonitor:
     """
-    Centralized connection monitoring system
-    
+    Centralized connection monitoring system with Redis persistence
+
     Thread-safe singleton that tracks all connection events across the system.
     Provides real-time metrics and historical data for debugging.
+
+    Features:
+    - Dual-write pattern: In-memory (fast) + Redis (persistent)
+    - Background worker with batching (5s or 100 events)
+    - Graceful degradation if Redis fails
+    - Historical data recovery on startup
+    - Circuit breaker pattern for resilience
     """
-    
+
     _instance = None
     _lock = Lock()
-    
+
     def __new__(cls):
         if cls._instance is None:
             with cls._lock:
@@ -90,19 +109,278 @@ class ConnectionMonitor:
                     cls._instance = super().__new__(cls)
                     cls._instance._initialized = False
         return cls._instance
-    
+
     def __init__(self):
         if self._initialized:
             return
-            
+
         self._initialized = True
+
+        # In-memory storage (fast access)
         self._events: deque = deque(maxlen=10000)  # Keep last 10k events
         self._stats: Dict[str, ConnectionStats] = {}
         self._active_connections: Dict[str, int] = {}
         self._event_lock = Lock()
-        
-        logger.info("[CONNECTION_MONITOR] Initialized with 10k event buffer")
-    
+
+        # Redis persistence configuration
+        self._redis_enabled = os.getenv('REDIS_PERSISTENCE_ENABLED', 'true').lower() == 'true'
+        self._redis_batch_size = int(os.getenv('REDIS_BATCH_SIZE', '100'))
+        self._redis_flush_interval = int(os.getenv('REDIS_FLUSH_INTERVAL', '5'))
+        self._redis_queue_size = int(os.getenv('REDIS_QUEUE_SIZE', '1000'))
+        self._redis_retention_hours = int(os.getenv('REDIS_RETENTION_HOURS', '24'))
+
+        # Redis persistence components
+        self._redis_queue: queue.Queue = queue.Queue(maxsize=self._redis_queue_size)
+        self._redis_worker: Optional[threading.Thread] = None
+        self._redis_shutdown = threading.Event()
+        self._redis_storage = None
+
+        # Circuit breaker for Redis failures
+        self._redis_circuit_breaker = {
+            'failures': 0,
+            'last_failure': 0,
+            'state': 'closed',  # closed, open, half-open
+            'recovery_timer': None
+        }
+
+        logger.info(f"[CONNECTION_MONITOR] Initialized with 10k event buffer (Redis persistence: {self._redis_enabled})")
+
+        # Initialize Redis persistence if enabled
+        if self._redis_enabled:
+            self._initialize_redis_persistence()
+
+    def _initialize_redis_persistence(self) -> None:
+        """Initialize Redis persistence components"""
+        try:
+            # Use direct Redis connection to avoid circular import with StorageBackend
+            import redis
+
+            # Get Redis configuration from environment
+            # Try REDIS_URL first (includes password), then fall back to individual settings
+            redis_url = os.getenv('REDIS_URL')
+
+            if redis_url:
+                # Parse Redis URL (format: redis://:password@host:port/db)
+                self._redis_storage = redis.from_url(
+                    redis_url,
+                    decode_responses=True,
+                    socket_connect_timeout=5,
+                    socket_timeout=5
+                )
+            else:
+                # Fall back to individual settings
+                redis_host = os.getenv('REDIS_HOST', 'redis')
+                redis_port = int(os.getenv('REDIS_PORT', '6379'))
+                redis_password = os.getenv('REDIS_PASSWORD', '')
+                redis_db = int(os.getenv('REDIS_DB', '0'))
+
+                self._redis_storage = redis.Redis(
+                    host=redis_host,
+                    port=redis_port,
+                    password=redis_password if redis_password else None,
+                    db=redis_db,
+                    decode_responses=True,
+                    socket_connect_timeout=5,
+                    socket_timeout=5
+                )
+
+            # Test Redis connection
+            self._redis_storage.ping()
+            logger.info("[CONNECTION_MONITOR] Redis connection established")
+
+            # Start background worker
+            self._start_redis_worker()
+
+            # Load historical data
+            self._load_historical_data()
+
+        except Exception as e:
+            logger.error(f"[CONNECTION_MONITOR] Failed to initialize Redis persistence: {e}")
+            self._redis_enabled = False
+            self._redis_storage = None
+
+    def _start_redis_worker(self) -> None:
+        """Start background worker thread for Redis writes"""
+        self._redis_worker = threading.Thread(
+            target=self._redis_worker_loop,
+            daemon=True,
+            name="ConnectionMonitor-RedisWorker"
+        )
+        self._redis_worker.start()
+        logger.info("[CONNECTION_MONITOR] Redis worker thread started")
+
+    def _redis_worker_loop(self) -> None:
+        """Background worker that batches Redis writes"""
+        batch: List[Tuple[str, Dict[str, Any]]] = []
+        last_flush = time.time()
+
+        while not self._redis_shutdown.is_set():
+            try:
+                # Try to get event from queue with timeout
+                try:
+                    event_data = self._redis_queue.get(timeout=1.0)
+                    batch.append(event_data)
+                except queue.Empty:
+                    pass
+
+                # Flush if batch is full or time interval passed
+                current_time = time.time()
+                should_flush = (
+                    len(batch) >= self._redis_batch_size or
+                    (batch and current_time - last_flush >= self._redis_flush_interval)
+                )
+
+                if should_flush:
+                    self._flush_to_redis(batch)
+                    batch = []
+                    last_flush = current_time
+
+            except Exception as e:
+                logger.error(f"[CONNECTION_MONITOR] Redis worker error: {e}")
+                time.sleep(1)  # Back off on error
+
+        # Flush remaining events on shutdown
+        if batch:
+            logger.info(f"[CONNECTION_MONITOR] Flushing {len(batch)} events on shutdown")
+            self._flush_to_redis(batch)
+
+    def _flush_to_redis(self, batch: List[Tuple[str, Dict[str, Any]]]) -> None:
+        """Write batch of events to Redis"""
+        if not self._redis_enabled or not batch or not self._redis_storage:
+            return
+
+        # Check circuit breaker
+        if self._redis_circuit_breaker['state'] == 'open':
+            logger.debug("[CONNECTION_MONITOR] Circuit breaker open - skipping Redis write")
+            return
+
+        try:
+            pipe = self._redis_storage.pipeline()
+            retention_seconds = self._redis_retention_hours * 3600
+
+            for connection_type, event_data in batch:
+                # Store event in sorted set (score = timestamp)
+                event_key = f"connection_monitor:{connection_type}:events"
+                score = event_data['timestamp']
+                value = json.dumps(event_data)
+                pipe.zadd(event_key, {value: score})
+                pipe.expire(event_key, retention_seconds)
+
+                # Update stats hash
+                stats_key = f"connection_monitor:{connection_type}:stats"
+                if 'stats' in event_data:
+                    pipe.hset(stats_key, mapping=event_data['stats'])
+                    pipe.expire(stats_key, retention_seconds)
+
+            pipe.execute()
+
+            # Reset circuit breaker on success
+            if self._redis_circuit_breaker['failures'] > 0:
+                logger.info("[CONNECTION_MONITOR] Redis connection recovered")
+                self._redis_circuit_breaker['failures'] = 0
+                self._redis_circuit_breaker['state'] = 'closed'
+
+        except Exception as e:
+            logger.error(f"[CONNECTION_MONITOR] Failed to write to Redis: {e}")
+            self._handle_redis_error(e)
+
+    def _handle_redis_error(self, error: Exception) -> None:
+        """Handle Redis errors with circuit breaker pattern"""
+        cb = self._redis_circuit_breaker
+        cb['failures'] += 1
+        cb['last_failure'] = time.time()
+
+        if cb['failures'] >= 5:
+            cb['state'] = 'open'
+            logger.warning(f"[CONNECTION_MONITOR] Circuit breaker opened after {cb['failures']} failures")
+
+            # Schedule recovery attempt
+            if cb['recovery_timer']:
+                cb['recovery_timer'].cancel()
+            cb['recovery_timer'] = threading.Timer(30.0, self._attempt_redis_recovery)
+            cb['recovery_timer'].daemon = True
+            cb['recovery_timer'].start()
+
+    def _attempt_redis_recovery(self) -> None:
+        """Attempt to recover Redis connection"""
+        try:
+            if self._redis_storage:
+                self._redis_storage.ping()
+                self._redis_circuit_breaker['state'] = 'closed'
+                self._redis_circuit_breaker['failures'] = 0
+                logger.info("[CONNECTION_MONITOR] Redis connection recovered - circuit breaker closed")
+        except Exception as e:
+            logger.debug(f"[CONNECTION_MONITOR] Redis recovery failed: {e} - will retry later")
+            # Schedule another retry
+            timer = threading.Timer(30.0, self._attempt_redis_recovery)
+            timer.daemon = True
+            timer.start()
+            self._redis_circuit_breaker['recovery_timer'] = timer
+
+    def _load_historical_data(self) -> None:
+        """Load last 24 hours of data from Redis on startup"""
+        if not self._redis_enabled or not self._redis_storage:
+            return
+
+        try:
+            cutoff_time = time.time() - (self._redis_retention_hours * 3600)
+            loaded_count = 0
+
+            for connection_type in ['websocket', 'redis', 'supabase', 'kimi', 'glm']:
+                event_key = f"connection_monitor:{connection_type}:events"
+
+                # Get events from last N hours
+                events = self._redis_storage.zrangebyscore(
+                    event_key, cutoff_time, '+inf', withscores=True
+                )
+
+                for event_json, timestamp in events:
+                    try:
+                        event_data = json.loads(event_json)
+                        # Reconstruct ConnectionEvent object
+                        event = ConnectionEvent(
+                            timestamp=event_data.get('timestamp', timestamp),
+                            connection_type=event_data.get('connection_type', connection_type),
+                            direction=event_data.get('direction', 'unknown'),
+                            script_name=event_data.get('script', 'unknown'),
+                            function_name=event_data.get('function', 'unknown'),
+                            data_size_bytes=event_data.get('data_size_bytes', 0),
+                            response_time_ms=event_data.get('response_time_ms'),
+                            error=event_data.get('error'),
+                            metadata=event_data.get('metadata', {})
+                        )
+
+                        with self._event_lock:
+                            self._events.append(event)
+                            self._update_stats(event)
+
+                        loaded_count += 1
+                    except (json.JSONDecodeError, KeyError) as e:
+                        logger.debug(f"[CONNECTION_MONITOR] Skipping invalid event: {e}")
+                        continue
+
+            logger.info(f"[CONNECTION_MONITOR] Loaded {loaded_count} historical events from Redis")
+
+        except Exception as e:
+            logger.error(f"[CONNECTION_MONITOR] Failed to load historical data: {e}")
+
+    def _queue_for_redis(self, connection_type: str, event_data: Dict[str, Any]) -> None:
+        """Queue event for Redis persistence"""
+        if not self._redis_enabled:
+            return
+
+        try:
+            # Add current stats to event data for Redis storage
+            with self._event_lock:
+                if connection_type in self._stats:
+                    event_data['stats'] = asdict(self._stats[connection_type])
+
+            self._redis_queue.put_nowait((connection_type, event_data))
+        except queue.Full:
+            logger.warning("[CONNECTION_MONITOR] Redis queue full - dropping event")
+        except Exception as e:
+            logger.error(f"[CONNECTION_MONITOR] Failed to queue event for Redis: {e}")
+
     def record_event(
         self,
         connection_type: str,
@@ -115,8 +393,8 @@ class ConnectionMonitor:
         metadata: Optional[Dict[str, Any]] = None
     ) -> None:
         """
-        Record a connection event
-        
+        Record a connection event with dual-write to memory and Redis
+
         Args:
             connection_type: Type of connection (websocket, redis, supabase, kimi, glm)
             direction: Direction of data flow (send, receive, error)
@@ -138,11 +416,15 @@ class ConnectionMonitor:
             error=error,
             metadata=metadata or {}
         )
-        
+
+        # Write to in-memory storage (fast)
         with self._event_lock:
             self._events.append(event)
             self._update_stats(event)
-        
+
+        # Queue for Redis persistence (async)
+        self._queue_for_redis(connection_type, event.to_dict())
+
         # Log the event for real-time monitoring
         if error:
             logger.error(
@@ -263,9 +545,151 @@ class ConnectionMonitor:
                 "stats": self.get_stats(),
                 "active_connections": dict(self._active_connections),
                 "buffer_size": self._events.maxlen,
-                "buffer_usage": len(self._events)
+                "buffer_usage": len(self._events),
+                "redis_enabled": self._redis_enabled,
+                "redis_queue_size": self._redis_queue.qsize() if self._redis_enabled else 0,
+                "redis_circuit_breaker": self._redis_circuit_breaker['state']
             }
-    
+
+    def get_historical_data(
+        self,
+        connection_type: str = None,
+        hours: int = 24
+    ) -> List[Dict[str, Any]]:
+        """
+        Get historical data from Redis for a specific connection type or all types
+
+        Args:
+            connection_type: Type of connection to query (None = all types)
+            hours: Number of hours of history to retrieve
+
+        Returns:
+            List of event dictionaries
+        """
+        if not self._redis_enabled or not self._redis_storage:
+            logger.debug("[CONNECTION_MONITOR] Redis not enabled - returning empty historical data")
+            return []
+
+        try:
+            cutoff_time = time.time() - (hours * 3600)
+
+            # PHASE 3.1 (2025-10-23): Support connection_type=None for all services
+            if connection_type is None:
+                # Get events from all connection types
+                all_events = []
+                for conn_type in ['websocket', 'redis', 'supabase', 'kimi', 'glm']:
+                    event_key = f"connection_monitor:{conn_type}:events"
+                    events = self._redis_storage.zrangebyscore(
+                        event_key, cutoff_time, '+inf', withscores=True
+                    )
+                    for event_json, timestamp in events:
+                        try:
+                            event_data = json.loads(event_json)
+                            all_events.append(event_data)
+                        except json.JSONDecodeError:
+                            continue
+                return all_events
+            else:
+                # Get events for specific connection type
+                event_key = f"connection_monitor:{connection_type}:events"
+                events = self._redis_storage.zrangebyscore(
+                    event_key, cutoff_time, '+inf', withscores=True
+                )
+
+                result = []
+                for event_json, timestamp in events:
+                    try:
+                        event_data = json.loads(event_json)
+                        result.append(event_data)
+                    except json.JSONDecodeError:
+                        continue
+
+                return result
+
+        except Exception as e:
+            logger.error(f"[CONNECTION_MONITOR] Failed to get historical data: {e}")
+            return []
+
+    def get_time_series_data(
+        self,
+        connection_type: str,
+        interval_minutes: int = 5,
+        hours: int = 24
+    ) -> Dict[str, Dict[str, int]]:
+        """
+        Get time-series aggregated data for charts
+
+        Args:
+            connection_type: Type of connection to query
+            interval_minutes: Time bucket size in minutes
+            hours: Number of hours of history to retrieve
+
+        Returns:
+            Dictionary mapping timestamps to aggregated metrics
+        """
+        if not self._redis_enabled or not self._redis_storage:
+            logger.debug("[CONNECTION_MONITOR] Redis not enabled - returning empty time-series data")
+            return {}
+
+        try:
+            cutoff_time = time.time() - (hours * 3600)
+            event_key = f"connection_monitor:{connection_type}:events"
+
+            events = self._redis_storage.zrangebyscore(
+                event_key, cutoff_time, '+inf', withscores=True
+            )
+
+            # Aggregate by time interval
+            buckets = defaultdict(lambda: {
+                'count': 0,
+                'errors': 0,
+                'total_bytes': 0,
+                'avg_response_time': 0.0,
+                'response_times': []
+            })
+
+            interval_seconds = interval_minutes * 60
+
+            for event_json, timestamp in events:
+                try:
+                    event_data = json.loads(event_json)
+                    bucket_time = int(timestamp // interval_seconds) * interval_seconds
+                    bucket = buckets[bucket_time]
+
+                    bucket['count'] += 1
+                    bucket['total_bytes'] += event_data.get('data_size_bytes', 0)
+
+                    if event_data.get('error'):
+                        bucket['errors'] += 1
+
+                    if event_data.get('response_time_ms') is not None:
+                        bucket['response_times'].append(event_data['response_time_ms'])
+
+                except json.JSONDecodeError:
+                    continue
+
+            # Calculate averages
+            result = {}
+            for bucket_time, bucket in buckets.items():
+                if bucket['response_times']:
+                    bucket['avg_response_time'] = sum(bucket['response_times']) / len(bucket['response_times'])
+                del bucket['response_times']  # Remove raw data
+                result[str(bucket_time)] = bucket
+
+            return result
+
+        except Exception as e:
+            logger.error(f"[CONNECTION_MONITOR] Failed to get time-series data: {e}")
+            return {}
+
+    def shutdown(self) -> None:
+        """Graceful shutdown - flush pending events and stop worker"""
+        if self._redis_enabled and self._redis_worker:
+            logger.info("[CONNECTION_MONITOR] Shutting down Redis worker...")
+            self._redis_shutdown.set()
+            self._redis_worker.join(timeout=10)
+            logger.info("[CONNECTION_MONITOR] Redis worker stopped")
+
     def export_json(self, filepath: str) -> None:
         """Export monitoring data to JSON file"""
         try:

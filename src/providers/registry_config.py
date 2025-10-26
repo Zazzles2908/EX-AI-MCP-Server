@@ -315,10 +315,23 @@ class HealthWrappedProvider(ModelProvider):
                     record_provider_call(self._ptype.value, model_name, False, None)
                 except Exception:
                     pass
-                # Simple backoff before retrying
+                # Simple backoff before retrying (EXAI Fix #5 - 2025-10-21: Add retry logging)
                 if i < attempts - 1:
-                    time.sleep(min(delay, _backoff_max()))
+                    backoff_time = min(delay, _backoff_max())
+                    logger.warning(
+                        f"🔄 [PROVIDER_RETRY] Provider: {self._ptype.value}, "
+                        f"Attempt: {i + 1}/{attempts}, "
+                        f"Error: {str(e)[:100]}, "
+                        f"Retrying in {backoff_time:.1f}s..."
+                    )
+                    time.sleep(backoff_time)
                     delay *= 2
+                else:
+                    logger.error(
+                        f"❌ [PROVIDER_RETRY_EXHAUSTED] Provider: {self._ptype.value}, "
+                        f"Failed after {attempts} attempts, "
+                        f"Final error: {str(e)[:100]}"
+                    )
         # Exceeded retries
         raise last_exc
 

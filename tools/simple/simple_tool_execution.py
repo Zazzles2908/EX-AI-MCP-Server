@@ -36,7 +36,7 @@ class SimpleToolExecutionMixin:
     # Main Execution Flow
     # ================================================================================
     
-    async def execute(self, arguments: dict[str, Any]) -> list:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list:
         """
         Execute the simple tool using the comprehensive flow from old base.py.
         
@@ -130,10 +130,12 @@ class SimpleToolExecutionMixin:
                 else:
                     # No embedded history - reconstruct it (for in-process calls)
                     tool_logger.debug(f"{self.get_name()}: No embedded history found, reconstructing conversation")
-                    
+
                     # Get thread context
-                    from utils.conversation.memory import add_turn, build_conversation_history, get_thread
-                    
+                    # BUG FIX #14 (2025-10-20): Removed build_conversation_history import (deleted function)
+                    # CRITICAL FIX (2025-10-24): Use global_storage to prevent 4x Supabase duplication
+                    from utils.conversation.global_storage import add_turn, get_thread
+
                     thread_context = get_thread(continuation_id)
                     
                     if thread_context:
@@ -149,19 +151,15 @@ class SimpleToolExecutionMixin:
                                 f"{self.get_name()}: Retrieved updated thread with {len(thread_context.turns)} turns"
                             )
                         
-                        # Build conversation history with updated thread context
-                        conversation_history, conversation_tokens = build_conversation_history(
-                            thread_context, self._model_context
-                        )
-                        
+                        # BUG FIX #14 (2025-10-20): No longer build text-based conversation history
+                        # Modern approach: Request handler provides _messages parameter to SDK providers
+                        # Tools receive conversation context via message arrays, not text strings
+
                         # Get the base prompt from the tool
                         base_prompt = await self.prepare_prompt(request)
-                        
-                        # Combine with conversation history
-                        if conversation_history:
-                            prompt = f"{conversation_history}\n\n=== NEW USER INPUT ===\n{base_prompt}"
-                        else:
-                            prompt = base_prompt
+
+                        # Use base prompt directly - conversation history is handled via _messages
+                        prompt = base_prompt
                     else:
                         # Thread not found, prepare normally
                         tool_logger.warning(f"Thread {continuation_id} not found, preparing prompt normally")

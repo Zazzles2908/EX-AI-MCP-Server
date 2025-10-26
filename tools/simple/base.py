@@ -296,7 +296,11 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         except AttributeError:
             return []
 
-    async def execute(self, arguments: dict[str, Any]) -> list:
+    async def execute(
+        self,
+        arguments: dict[str, Any],
+        on_chunk: Optional[Any] = None  # NEW: Streaming callback
+    ) -> list:
         """
         Execute the simple tool using the comprehensive flow from old base.py.
 
@@ -309,12 +313,17 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         from tools.models import ToolOutput
 
         logger = logging.getLogger(f"tools.{self.get_name()}")
+        logger.info(f"TOOL_EXEC_DEBUG: execute() method ENTERED for tool '{self.get_name()}'")
 
         try:
             # Store arguments for access by helper methods
             self._current_arguments = arguments
 
+            # NEW (2025-10-24): Store streaming callback for provider access
+            self._on_chunk_callback = on_chunk
+
             logger.info(f"{self.get_name()} tool called with arguments: {list(arguments.keys())}")
+            logger.info(f"TOOL_EXEC_DEBUG: Arguments stored, about to send progress")
             try:
                 from utils.progress import send_progress
                 send_progress(f"{self.get_name()}: Starting execution")
@@ -370,7 +379,9 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     self._model_context = ModelContext(seed)
                     logger.debug(f"{self.get_name()}: Auto-mode seed context created for {seed}")
                 else:
+                    logger.info(f"TOOL_EXEC_DEBUG: About to create ModelContext for model '{model_name}'")
                     self._model_context = ModelContext(model_name)
+                    logger.info(f"TOOL_EXEC_DEBUG: ModelContext created successfully for {model_name}")
                     logger.debug(f"{self.get_name()}: Created model context for {model_name}")
 
             try:
@@ -396,7 +407,9 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     logger.debug(f"{self.get_name()}: No embedded history found, reconstructing conversation")
 
                     # Get thread context
-                    from utils.conversation.memory import add_turn, build_conversation_history, get_thread
+                    # BUG FIX #14 (2025-10-20): Removed build_conversation_history import (deleted function)
+                    # CRITICAL FIX (2025-10-24): Use global_storage to prevent 4x Supabase duplication
+                    from utils.conversation.global_storage import add_turn, get_thread
 
                     thread_context = get_thread(continuation_id)
 
@@ -411,19 +424,15 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                             f"{self.get_name()}: Using thread context with {len(thread_context.turns)} turns"
                         )
 
-                        # Build conversation history with updated thread context
-                        conversation_history, conversation_tokens = build_conversation_history(
-                            thread_context, self._model_context
-                        )
+                        # BUG FIX #14 (2025-10-20): No longer build text-based conversation history
+                        # Modern approach: Request handler provides _messages parameter to SDK providers
+                        # Tools receive conversation context via message arrays, not text strings
 
                         # Get the base prompt from the tool
                         base_prompt = await self.prepare_prompt(request)
 
-                        # Combine with conversation history
-                        if conversation_history:
-                            prompt = f"{conversation_history}\n\n=== NEW USER INPUT ===\n{base_prompt}"
-                        else:
-                            prompt = base_prompt
+                        # Use base prompt directly - conversation history is handled via _messages
+                        prompt = base_prompt
                     else:
                         # Thread not found, prepare normally
                         logger.warning(f"Thread {continuation_id} not found, preparing prompt normally")
@@ -459,7 +468,10 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 thinking_mode = self.get_default_thinking_mode()
 
             # Get the provider from model context (clean OOP - no re-fetching)
+            logger.info(f"TOOL_EXEC_DEBUG: About to access provider property for model '{self._current_model_name}'")
+            logger.info(f"TOOL_EXEC_DEBUG: Model context object: {self._model_context}")
             provider = self._model_context.provider
+            logger.info(f"TOOL_EXEC_DEBUG: Provider obtained: {provider}")
 
             # Get system prompt for this tool
             base_system_prompt = self.get_system_prompt()
@@ -531,6 +543,12 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                             pass
                 except Exception:
                     web_event = None
+
+                # PHASE 4 (2025-10-23): Add continuation_id to provider_kwargs for session tracking
+                # CRITICAL: Must be AFTER build_websearch_provider_kwargs to avoid being overwritten
+                continuation_id = self.get_request_continuation_id(request)
+                if continuation_id:
+                    provider_kwargs["continuation_id"] = continuation_id
                 # Streaming enablement centralized
                 try:
                     from src.providers.orchestration.streaming_flags import is_streaming_enabled
@@ -538,6 +556,16 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                         provider_kwargs["stream"] = True
                 except Exception:
                     pass
+                # NEW (2025-10-24): Pass streaming callback to provider
+                if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback:
+                    provider_kwargs["on_chunk"] = self._on_chunk_callback
+
+                # CRITICAL FIX (2025-10-26): Add logging to verify actual API calls
+                # This helps identify when semantic cache or mock mode is being used
+                import time as _time
+                logger.info(f"[{self.get_name()}] CALLING PROVIDER: {prov.__class__.__name__} with prompt length {len(prompt)}")
+                call_start = _time.time()
+
                 result = prov.generate_content(
                     prompt=prompt,
                     model_name=_model_name,
@@ -547,6 +575,12 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     images=images if images else None,
                     **provider_kwargs,
                 )
+
+                # Log response time to verify real API calls (should be >100ms for real AI)
+                call_duration_ms = (_time.time() - call_start) * 1000
+                response_length = len(getattr(result, 'content', ''))
+                logger.info(f"[{self.get_name()}] PROVIDER RESPONSE: {response_length} chars in {call_duration_ms:.1f}ms")
+
                 return result
 
             # Honor explicit model first; only use fallback chain when model=='auto' or on failure if enabled
@@ -580,6 +614,16 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                             provider_kwargs["stream"] = True
                     except Exception:
                         pass
+
+                    # PHASE 4 (2025-10-23): Add continuation_id to provider_kwargs for session tracking
+                    # CRITICAL: This is the DIRECT CALL PATH (non-fallback) - must add continuation_id here too
+                    continuation_id = self.get_request_continuation_id(request)
+                    if continuation_id:
+                        provider_kwargs["continuation_id"] = continuation_id
+
+                    # NEW (2025-10-24): Pass streaming callback to provider (direct call path)
+                    if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback:
+                        provider_kwargs["on_chunk"] = self._on_chunk_callback
 
                     # Try semantic cache first
                     from utils.infrastructure.semantic_cache import get_semantic_cache
@@ -932,6 +976,8 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 raw_text = model_response.content
 
                 # Create model info for conversation tracking
+                # FIX (2025-10-24): Extract usage and metadata from model_response
+                # so they're available to format_response() for metadata storage
                 model_info = {
                     "provider": provider,
                     "model_name": self._current_model_name,
@@ -939,6 +985,17 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     "tool_calls": tool_call_metadata if 'tool_call_metadata' in locals() else [],
                     "effective_prompt": prompt,
                 }
+
+                # Extract usage and metadata from model_response
+                if hasattr(model_response, "usage"):
+                    model_info["usage"] = model_response.usage
+                elif isinstance(model_response, dict) and "usage" in model_response:
+                    model_info["usage"] = model_response["usage"]
+
+                if hasattr(model_response, "metadata"):
+                    model_info["metadata"] = model_response.metadata
+                elif isinstance(model_response, dict) and "metadata" in model_response:
+                    model_info["metadata"] = model_response["metadata"]
 
                 # Parse response using the same logic as old base.py
                 tool_output = self._parse_response(raw_text, request, model_info)
@@ -1027,7 +1084,8 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         continuation_id = self.get_request_continuation_id(request)
         if continuation_id:
             # Add turn to conversation memory
-            from utils.conversation.memory import add_turn
+            # CRITICAL FIX (2025-10-24): Use global_storage to prevent 4x Supabase duplication
+            from utils.conversation.global_storage import add_turn
 
             # Extract model metadata for conversation tracking
             model_provider = None

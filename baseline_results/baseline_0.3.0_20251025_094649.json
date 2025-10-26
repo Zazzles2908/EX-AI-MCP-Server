@@ -1,0 +1,188 @@
+{
+  "baseline_version": "0.3.0",
+  "timestamp": "2025-10-24T22:46:49.635042+00:00",
+  "total_executions": 20,
+  "duration_seconds": 0.0743563175201416,
+  "results": [
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 1.33,
+      "timestamp": "2025-10-24T22:46:49.642254+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 1.0,
+      "timestamp": "2025-10-24T22:46:49.643348+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 0.8,
+      "timestamp": "2025-10-24T22:46:49.644213+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 0.7,
+      "timestamp": "2025-10-24T22:46:49.644969+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 1.19,
+      "timestamp": "2025-10-24T22:46:49.646218+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 1.42,
+      "timestamp": "2025-10-24T22:46:49.647713+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 0.67,
+      "timestamp": "2025-10-24T22:46:49.648449+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 0.99,
+      "timestamp": "2025-10-24T22:46:49.649500+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 0.72,
+      "timestamp": "2025-10-24T22:46:49.650291+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 0.84,
+      "timestamp": "2025-10-24T22:46:49.651191+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 9.86,
+      "timestamp": "2025-10-24T22:46:49.661201+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 5.82,
+      "timestamp": "2025-10-24T22:46:49.667150+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 5.33,
+      "timestamp": "2025-10-24T22:46:49.672595+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 5.49,
+      "timestamp": "2025-10-24T22:46:49.678197+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 4.82,
+      "timestamp": "2025-10-24T22:46:49.683150+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 4.88,
+      "timestamp": "2025-10-24T22:46:49.688114+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 5.47,
+      "timestamp": "2025-10-24T22:46:49.693696+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 5.59,
+      "timestamp": "2025-10-24T22:46:49.699404+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 5.12,
+      "timestamp": "2025-10-24T22:46:49.704652+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 5.53,
+      "timestamp": "2025-10-24T22:46:49.710312+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    }
+  ]
+}

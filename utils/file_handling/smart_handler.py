@@ -153,46 +153,36 @@ class SmartFileHandler:
     
     def _normalize_path(self, file_path: str) -> str:
         """
-        Normalize path and determine the best access method.
-        
+        Normalize path using the canonical CrossPlatformPathHandler.
+
+        PHASE 2.3.2 (2025-10-22): Migrated to use centralized path normalization
+
         Handles:
-        - Windows paths (C:\\...) → Docker paths (/mnt/c/...)
+        - Windows paths (C:\\...) → Docker/WSL paths (/app/... or /mnt/c/...)
         - Relative paths → Absolute paths
         - Path validation
-        
+
         Args:
             file_path: Original file path
-            
+
         Returns:
             Normalized absolute path
         """
-        # Try to resolve path in current environment first
-        if os.path.exists(file_path):
-            return os.path.abspath(file_path)
-        
-        # Handle Windows path conversion for Docker
-        if ':\\' in file_path or file_path.startswith('C:'):
-            # Convert Windows path to WSL/Docker path
-            # C:\Project\file.txt → /mnt/c/Project/file.txt
-            wsl_path = file_path.replace('\\', '/')
-            
-            # Handle drive letter conversion
-            if ':' in wsl_path:
-                drive_letter = wsl_path[0].lower()
-                wsl_path = f"/mnt/{drive_letter}{wsl_path[2:]}"
-            
-            if os.path.exists(wsl_path):
-                logger.debug(f"[PATH_NORMALIZE] Windows → Docker: {file_path} → {wsl_path}")
-                return wsl_path
-        
-        # Try as relative path from current directory
-        abs_path = os.path.abspath(file_path)
-        if os.path.exists(abs_path):
-            return abs_path
-        
-        # Return original path if no conversion found
-        logger.warning(f"[PATH_NORMALIZE] Could not normalize: {file_path}")
-        return file_path
+        from utils.file.cross_platform import get_path_handler
+
+        # Use the canonical path handler
+        handler = get_path_handler()
+        normalized_path, was_converted, error = handler.normalize_path(file_path)
+
+        if error:
+            logger.warning(f"[PATH_NORMALIZE] {error}")
+            # Fall back to original path if normalization fails
+            return file_path
+
+        if was_converted:
+            logger.debug(f"[PATH_NORMALIZE] Converted: {file_path} → {normalized_path}")
+
+        return normalized_path
     
     def _decide_strategy(self, file_path: str) -> str:
         """

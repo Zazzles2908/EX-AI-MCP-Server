@@ -112,7 +112,11 @@ MODULE ORGANIZATION:
 This module has been refactored into focused sub-modules for maintainability:
 - conversation_models: Data structures and configuration
 - conversation_threads: Thread lifecycle management
-- conversation_history: History building and formatting
+
+BUG FIX #14 (2025-10-20): Removed legacy text-based history building
+- DELETED: conversation_history module (build_conversation_history)
+- Modern approach: Use message arrays via storage_factory.get_messages_array()
+- SDK providers (Kimi/GLM) receive native message format, not text strings
 
 All public APIs are re-exported from this module for backward compatibility.
 """
@@ -133,7 +137,6 @@ from utils.conversation.threads import (
     get_thread,
     get_thread_chain,
 )
-from utils.conversation.history import build_conversation_history
 
 # Context Engineering imports
 from utils.conversation.history_detection import HistoryDetector, DetectionMode
@@ -158,8 +161,6 @@ __all__ = [
     # File/Image Collection
     "get_conversation_file_list",
     "get_conversation_image_list",
-    # History Building
-    "build_conversation_history",
     # Storage
     "get_storage",
     # Class-based interface for storage factory
@@ -361,20 +362,7 @@ class InMemoryConversation:
             # Return original content if stripping fails (graceful degradation)
             return content
 
-    def build_conversation_history(
-        self,
-        continuation_id: str,
-        model_context=None
-    ):
-        """
-        Build conversation history string
-
-        Args:
-            continuation_id: Unique conversation identifier
-            model_context: Optional model context for token counting
-
-        Returns:
-            Tuple of (history_string, token_count)
-        """
-        return build_conversation_history(continuation_id, model_context)
+    # BUG FIX #14 (2025-10-20): DELETED build_conversation_history
+    # Legacy text-based history building is no longer used.
+    # Modern approach: Use get_messages_array() for SDK-native message format.
 

@@ -480,9 +480,25 @@ class DocgenTool(WorkflowTool):
         Calculates total_steps dynamically based on number of files to document:
         - Step 1: Discovery phase
         - Steps 2+: One step per file to document
+
+        CRITICAL: Also validates counters BEFORE completion check to prevent race condition.
         """
-        # Calculate dynamic total_steps based on files to document
+        # CRITICAL FIX: Validate counters BEFORE completion check
+        # This prevents the race condition where next_step_required=false is checked
+        # before handle_work_completion validates the counters
+        num_files_documented = self.get_request_num_files_documented(request)
         total_files_to_document = self.get_request_total_files_to_document(request)
+
+        if total_files_to_document > 0 and num_files_documented < total_files_to_document:
+            # FORCE CONTINUATION: Override next_step_required if counters don't match
+            if not request.next_step_required:
+                logger.warning(
+                    f"[DOCGEN_COUNTER_FIX] Forcing continuation: {num_files_documented}/{total_files_to_document} files documented"
+                )
+                # Override the request to force continuation
+                request.next_step_required = True
+
+        # Calculate dynamic total_steps based on files to document
         if total_files_to_document > 0:
             # Discovery step (1) + one step per file
             calculated_total_steps = 1 + total_files_to_document

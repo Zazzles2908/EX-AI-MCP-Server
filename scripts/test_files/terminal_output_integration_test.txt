@@ -1,0 +1,85 @@
+================================================================================
+REAL INTEGRATION TEST - TERMINAL OUTPUT
+================================================================================
+
+ISSUE 1: Raw file content visible in DEBUG output
+-------------------------------------------------
+DEBUG:openai._base_client:Request options: {'method': 'post', 'url': '/files', 'headers': {'Content-Type': 'multipart/form-data'}, 'files': [('file', ('test_large.txt', b'This is a large test file for Supabase gateway.\r\nThis is a large test file for Supabase gateway.\r\n... [7MB of repeated text] ...
+
+This shows the ENTIRE 7MB file content in the debug output, which means:
+- EXAI would see the raw file content instead of just the file reference
+- Terminal output is polluted with massive file content
+- Not suitable for production logging
+
+ISSUE 2: Database tracking failures
+------------------------------------
+INFO:httpx:HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/provider_file_uploads "HTTP/2 400 Bad Request"
+WARNING:tools.providers.kimi.kimi_files:⚠️  Failed to track in database: {'message': "Could not find the 'upload_method' column of 'provider_file_uploads' in the schema cache", 'code': 'PGRST204', 'hint': None, 'details': None}
+
+INFO:httpx:HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/provider_file_uploads?select=%2A&provider_file_id=eq.d3ukl8737oq66hg4970g "HTTP/2 200 OK"
+⚠️  Not found in database
+
+INFO:httpx:HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/provider_file_uploads "HTTP/2 400 Bad Request"
+WARNING:tools.providers.glm.glm_files:⚠️  Failed to track in database: {'message': "Could not find the 'upload_method' column of 'provider_file_uploads' in the schema cache", 'code': 'PGRST204', 'hint': None, 'details': None}
+
+This shows:
+- Database inserts are failing (400 Bad Request)
+- Missing 'upload_method' column in schema
+- Files are uploaded but not tracked in database
+- Verification queries return empty results
+
+ISSUE 3: File deduplication/overwrite logic missing
+----------------------------------------------------
+User question: "How are you countering the fact of the double up file upload of the same file, but also noting that if there is an update to that file, how would it know to overwrite it instead of either rejecting it or just creating another file, which causes the other past file to be a waste of space"
+
+Current implementation:
+- No deduplication logic
+- No overwrite detection
+- Each upload creates new files in both Supabase and provider
+- Old files remain, wasting storage space
+
+QUESTIONS FOR EXAI:
+===================
+
+1. DEBUG OUTPUT POLLUTION
+   - How to prevent raw file content from appearing in debug logs?
+   - Should we disable OpenAI SDK debug logging for file uploads?
+   - Is there a way to suppress file content in HTTP request logs?
+
+2. DATABASE TRACKING
+   - Schema is missing 'upload_method' column
+   - Should we add the column or remove the field from inserts?
+   - What's the proper schema for provider_file_uploads table?
+
+3. FILE DEDUPLICATION
+   - How to detect if a file already exists before uploading?
+   - Should we use file hash (SHA256) for deduplication?
+   - Should we overwrite existing files or create new versions?
+   - How to clean up old files when new versions are uploaded?
+
+4. ARCHITECTURE CONCERNS
+   - Is dual-upload (Supabase + Provider) creating unnecessary duplication?
+   - Should we implement a file versioning system?
+   - How to handle file updates vs new files?
+   - What's the best practice for file lifecycle management?
+
+EXPECTED BEHAVIOR:
+==================
+
+1. Clean logging (no raw file content in output)
+2. Successful database tracking
+3. File deduplication (don't upload same file twice)
+4. File versioning or overwrite logic
+5. Automatic cleanup of old/unused files
+
+CURRENT STATUS:
+===============
+
+✅ Files upload successfully to both providers
+✅ Supabase storage works
+❌ Debug output shows raw file content
+❌ Database tracking fails
+❌ No deduplication logic
+❌ No overwrite/versioning logic
+❌ Storage waste from duplicate files
+

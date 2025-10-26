@@ -48,22 +48,23 @@ A production-ready MCP (Model Context Protocol) server with intelligent routing 
 
 | I want to... | Go to... |
 |--------------|----------|
-| **Get started quickly** | [Installation](#-installation) → [Quick Start](#quick-start) |
-| **Understand the system** | [docs/system-reference/01-system-overview.md](docs/system-reference/01-system-overview.md) |
-| **Use the tools** | [docs/system-reference/03-tool-ecosystem.md](docs/system-reference/03-tool-ecosystem.md) |
-| **Configure features** | [docs/system-reference/04-features-and-capabilities.md](docs/system-reference/04-features-and-capabilities.md) |
-| **Deploy to production** | [docs/system-reference/06-deployment-guide.md](docs/system-reference/06-deployment-guide.md) |
-| **Troubleshoot issues** | [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) |
-| **Track project progress** | [docs/consolidated_checklist/GOD_CHECKLIST_CONSOLIDATED.md](docs/consolidated_checklist/GOD_CHECKLIST_CONSOLIDATED.md) |
-| **See what's been fixed** | [Phase A Summary](docs/consolidated_checklist/evidence/) → [Phase B Summary](docs/consolidated_checklist/PHASE_B_CLEANUP_SUMMARY.md) |
+| **Get started quickly** | [docs/00_START_HERE.md](docs/00_START_HERE.md) → [Installation](#-installation) |
+| **Understand the system** | [docs/01_Core_Architecture/01_System_Overview.md](docs/01_Core_Architecture/01_System_Overview.md) |
+| **Use the tools** | [docs/02_Service_Components/EXAI_TOOL_DECISION_GUIDE.md](docs/02_Service_Components/EXAI_TOOL_DECISION_GUIDE.md) |
+| **Configure features** | [docs/01_Core_Architecture/02_SDK_Integration.md](docs/01_Core_Architecture/02_SDK_Integration.md) |
+| **Deploy to production** | [docs/02_Service_Components/02_Docker.md](docs/02_Service_Components/02_Docker.md) |
+| **Troubleshoot issues** | [docs/guides/](docs/guides/) |
+| **Track current work** | [docs/fix_implementation/WEEKLY_FIX_ROADMAP_2025-10-20.md](docs/fix_implementation/WEEKLY_FIX_ROADMAP_2025-10-20.md) |
+| **See what's been fixed** | [docs/fix_implementation/](docs/fix_implementation/) |
 
 ### 📖 Documentation Structure
 
-- **[docs/system-reference/](docs/system-reference/)** - Definitive system documentation (architecture, tools, features, API)
-- **[docs/guides/](docs/guides/)** - User guides (tool selection, parameters, examples, troubleshooting)
-- **[docs/consolidated_checklist/](docs/consolidated_checklist/)** - Project roadmap and phase tracking (A/B/C/D)
-- **[docs/architecture/](docs/architecture/)** - Detailed architecture documentation and investigations
-- **[docs/maintenance/](docs/maintenance/)** - Documentation maintenance and archiving guidelines
+- **[docs/00_START_HERE.md](docs/00_START_HERE.md)** - **START HERE** - Entry point for new users and AI agents
+- **[docs/01_Core_Architecture/](docs/01_Core_Architecture/)** - System overview, SDK integration, Supabase audit trail
+- **[docs/02_Service_Components/](docs/02_Service_Components/)** - Daemon, Docker, MCP server, testing, UI, EXAI tools
+- **[docs/03_Data_Management/](docs/03_Data_Management/)** - User auth, tools/functions, file storage
+- **[docs/fix_implementation/](docs/fix_implementation/)** - Current work, fixes, roadmaps, progress tracking
+- **[docs/guides/](docs/guides/)** - How-to guides and best practices
 
 ---
 
@@ -163,8 +164,19 @@ ENABLE_FALLBACK=true
 ## 🏃 Quick Start
 
 ### Run the Server
+
+**Option 1: Direct Python (Simple)**
 ```bash
 python server.py
+```
+
+**Option 2: Setup Script (Recommended for first-time setup)**
+```bash
+# Windows
+.\scripts\dev\run-server.ps1
+
+# Linux/macOS
+./scripts/dev/run-server.sh
 ```
 
 ### WebSocket Mode (Optional)

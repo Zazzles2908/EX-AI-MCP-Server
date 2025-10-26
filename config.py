@@ -9,7 +9,10 @@ Configuration values can be overridden by environment variables where appropriat
 """
 
 import os
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_bool_env(key: str, default: str = "true") -> bool:
@@ -297,6 +300,9 @@ class TimeoutConfig:
 
     TRACK 2 FIX (2025-10-16): Updated defaults to 30s for MCP tools to prevent indefinite hangs.
     Previous defaults (90-150s) were too high and caused poor user experience.
+
+    EXAI INSIGHT (2025-10-21): Adaptive timeouts based on model complexity.
+    Different models have different processing speeds and thinking depths.
     """
 
     # Tool-level timeouts (primary)
@@ -305,9 +311,55 @@ class TimeoutConfig:
     EXPERT_ANALYSIS_TIMEOUT_SECS = int(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", "60"))
 
     # Provider timeouts
+    # PHASE 2.3 FIX (2025-10-25): Increased Kimi timeout from 30s to 40s
+    # Root cause: Connection pool exhaustion + timeout too aggressive for non-cached requests
     GLM_TIMEOUT_SECS = int(os.getenv("GLM_TIMEOUT_SECS", "30"))
-    KIMI_TIMEOUT_SECS = int(os.getenv("KIMI_TIMEOUT_SECS", "30"))
+    KIMI_TIMEOUT_SECS = int(os.getenv("KIMI_TIMEOUT_SECS", "40"))  # Increased from 30s to 40s
     KIMI_WEB_SEARCH_TIMEOUT_SECS = int(os.getenv("KIMI_WEB_SEARCH_TIMEOUT_SECS", "30"))
+
+    # EXAI INSIGHT (2025-10-21): Model-specific timeout multipliers
+    # Based on observed performance during comprehensive testing
+    MODEL_TIMEOUT_MULTIPLIERS = {
+        # Thinking models need more time for deep reasoning
+        "kimi-thinking-preview": 1.5,
+        "glm-4.6": 1.3,
+        "kimi-k2-0905-preview": 1.2,
+
+        # Fast models can use less time
+        "glm-4.5-flash": 0.7,
+        "kimi-k2-turbo-preview": 0.8,
+        "glm-4.5-air": 0.6,
+
+        # Standard models use base timeout
+        "glm-4.5": 1.0,
+        "moonshot-v1-128k": 1.0,
+        "moonshot-v1-32k": 1.0,
+        "moonshot-v1-8k": 1.0,
+    }
+
+    @classmethod
+    def get_model_timeout(cls, model_name: str, base_timeout: float) -> float:
+        """
+        Get adaptive timeout for a specific model.
+
+        EXAI INSIGHT (2025-10-21): Different models need different timeouts.
+        Thinking models need more time, fast models can use less.
+
+        Args:
+            model_name: Name of the model
+            base_timeout: Base timeout in seconds
+
+        Returns:
+            Adjusted timeout based on model complexity
+
+        Example:
+            >>> TimeoutConfig.get_model_timeout("glm-4.6", 300)
+            390.0  # 300 * 1.3 multiplier
+            >>> TimeoutConfig.get_model_timeout("glm-4.5-flash", 300)
+            210.0  # 300 * 0.7 multiplier
+        """
+        multiplier = cls.MODEL_TIMEOUT_MULTIPLIERS.get(model_name, 1.0)
+        return base_timeout * multiplier
 
     @classmethod
     def get_daemon_timeout(cls) -> int:
@@ -338,6 +390,77 @@ class TimeoutConfig:
             int: Client timeout in seconds (default: 300s)
         """
         return int(cls.WORKFLOW_TOOL_TIMEOUT_SECS * 2.5)
+
+    @classmethod
+    def validate_all(cls) -> None:
+        """
+        Comprehensive timeout validation.
+        Week 2 Fix #7 (2025-10-21): Validate all timeout configuration at startup.
+
+        Validates:
+        1. All timeout values are positive and reasonable
+        2. Timeout hierarchy is maintained
+        3. Provider timeouts are reasonable
+
+        Raises:
+            ValueError: If any validation fails
+        """
+        # 1. Validate individual timeout values
+        cls._validate_timeout_values()
+
+        # 2. Validate timeout hierarchy
+        cls.validate_hierarchy()
+
+        # 3. Log configuration for debugging
+        cls._log_timeout_config()
+
+    @classmethod
+    def _validate_timeout_values(cls) -> None:
+        """
+        Validate individual timeout values are within reasonable bounds.
+        Week 2 Fix #7 (2025-10-21): Ensure all timeouts are positive and reasonable.
+        """
+        timeouts = {
+            "SIMPLE_TOOL_TIMEOUT_SECS": cls.SIMPLE_TOOL_TIMEOUT_SECS,
+            "WORKFLOW_TOOL_TIMEOUT_SECS": cls.WORKFLOW_TOOL_TIMEOUT_SECS,
+            "EXPERT_ANALYSIS_TIMEOUT_SECS": cls.EXPERT_ANALYSIS_TIMEOUT_SECS,
+            "GLM_TIMEOUT_SECS": cls.GLM_TIMEOUT_SECS,
+            "KIMI_TIMEOUT_SECS": cls.KIMI_TIMEOUT_SECS,
+            "KIMI_WEB_SEARCH_TIMEOUT_SECS": cls.KIMI_WEB_SEARCH_TIMEOUT_SECS,
+        }
+
+        for name, value in timeouts.items():
+            if value <= 0:
+                raise ValueError(f"Timeout {name} must be positive, got {value}")
+
+            # Set reasonable upper bounds (1 hour max for any timeout)
+            if value > 3600:
+                raise ValueError(f"Timeout {name} seems too large: {value} seconds (max: 3600)")
+
+            # Warn about very short timeouts (< 5 seconds)
+            if value < 5:
+                logger.warning(f"Timeout {name} is very short: {value} seconds - may cause premature failures")
+
+    @classmethod
+    def _log_timeout_config(cls) -> None:
+        """
+        Log timeout configuration for debugging.
+        Week 2 Fix #7 (2025-10-21): Log all timeout values at startup.
+        """
+        logger.info("=== TIMEOUT CONFIGURATION ===")
+        logger.info(f"Tool Timeouts:")
+        logger.info(f"  Simple Tool: {cls.SIMPLE_TOOL_TIMEOUT_SECS}s")
+        logger.info(f"  Workflow Tool: {cls.WORKFLOW_TOOL_TIMEOUT_SECS}s")
+        logger.info(f"  Expert Analysis: {cls.EXPERT_ANALYSIS_TIMEOUT_SECS}s")
+        logger.info(f"Provider Timeouts:")
+        logger.info(f"  GLM: {cls.GLM_TIMEOUT_SECS}s")
+        logger.info(f"  Kimi: {cls.KIMI_TIMEOUT_SECS}s")
+        logger.info(f"  Kimi Web Search: {cls.KIMI_WEB_SEARCH_TIMEOUT_SECS}s")
+        logger.info(f"Calculated Timeouts:")
+        logger.info(f"  Daemon: {cls.get_daemon_timeout()}s (1.5x workflow)")
+        logger.info(f"  Shim: {cls.get_shim_timeout()}s (2.0x workflow)")
+        logger.info(f"  Client: {cls.get_client_timeout()}s (2.5x workflow)")
+        logger.info("=== END TIMEOUT CONFIGURATION ===")
 
     @classmethod
     def validate_hierarchy(cls) -> bool:
@@ -436,4 +559,242 @@ except ValueError as e:
     import logging
     logger = logging.getLogger(__name__)
     logger.warning(f"Timeout hierarchy validation failed: {e}")
+    # Don't raise - allow module to load but log the warning
+
+
+# ============================================================================
+# FILE MANAGEMENT MIGRATION CONFIGURATION
+# ============================================================================
+# Configuration for gradual migration from legacy file handlers to UnifiedFileManager
+# Reference: EXAI consultation (Continuation: 9222d725-b6cd-44f1-8406-274e5a3b3389)
+# Date: 2025-10-22
+
+class MigrationConfig:
+    """
+    Configuration for file management migration.
+
+    This class controls the gradual rollout of the UnifiedFileManager,
+    allowing safe migration from legacy file handlers with feature flags
+    and percentage-based rollout.
+
+    Rollout Strategy:
+    - Shadow Mode: Run both implementations, compare results
+    - 1%: Initial validation, monitor for errors
+    - 10%: Expand to more users, gather performance data
+    - 50%: Majority rollout, focus on edge cases
+    - 100%: Full migration, decommission legacy
+    """
+
+    # ========================================================================
+    # GLOBAL CONTROLS
+    # ========================================================================
+
+    # Master switch for unified file management
+    # Set to False for emergency rollback to legacy handlers
+    ENABLE_UNIFIED_MANAGER: bool = _parse_bool_env("ENABLE_UNIFIED_MANAGER", "false")
+
+    # Enable automatic fallback to legacy on errors
+    # Recommended: True during migration, False after full rollout
+    ENABLE_FALLBACK_TO_LEGACY: bool = _parse_bool_env("ENABLE_FALLBACK_TO_LEGACY", "true")
+
+    # Enable shadow mode (run both implementations and compare results)
+    # Recommended: True during initial validation, False after confidence is established
+    ENABLE_SHADOW_MODE: bool = _parse_bool_env("ENABLE_SHADOW_MODE", "false")
+
+    # Shadow mode sampling rate (0.0 to 1.0)
+    # 0.1 = 10% of operations run shadow mode comparison
+    # Prevents overwhelming systems during high load
+    SHADOW_MODE_SAMPLE_RATE: float = float(os.getenv("SHADOW_MODE_SAMPLE_RATE", "0.1"))
+
+    # Shadow mode error threshold (0.0 to 1.0)
+    # If shadow mode error rate exceeds this, auto-disable shadow mode
+    # 0.05 = 5% error rate triggers circuit breaker
+    SHADOW_MODE_ERROR_THRESHOLD: float = float(os.getenv("SHADOW_MODE_ERROR_THRESHOLD", "0.05"))
+
+    # Minimum samples before evaluating error threshold
+    # Prevents premature circuit breaker activation on small sample sizes
+    SHADOW_MODE_MIN_SAMPLES: int = int(os.getenv("SHADOW_MODE_MIN_SAMPLES", "50"))
+
+    # Maximum shadow mode operations per minute (rate limiting)
+    # Prevents resource exhaustion during high load
+    SHADOW_MODE_MAX_SAMPLES_PER_MINUTE: int = int(os.getenv("SHADOW_MODE_MAX_SAMPLES_PER_MINUTE", "100"))
+
+    # Shadow mode duration limit in minutes (0 = unlimited)
+    # Auto-disable shadow mode after this duration for safety
+    SHADOW_MODE_DURATION_MINUTES: int = int(os.getenv("SHADOW_MODE_DURATION_MINUTES", "0"))
+
+    # Cooldown period in minutes before shadow mode can be re-enabled
+    # Prevents rapid on/off cycling
+    SHADOW_MODE_COOLDOWN_MINUTES: int = int(os.getenv("SHADOW_MODE_COOLDOWN_MINUTES", "30"))
+
+    # Include timing information in shadow mode comparisons
+    # Useful for performance analysis
+    SHADOW_MODE_INCLUDE_TIMING: bool = _parse_bool_env("SHADOW_MODE_INCLUDE_TIMING", "true")
+
+    # Maximum retry attempts before giving up
+    MAX_RETRY_ATTEMPTS: int = int(os.getenv("MAX_RETRY_ATTEMPTS", "3"))
+
+    # ========================================================================
+    # PER-TOOL MIGRATION FLAGS
+    # ========================================================================
+
+    # Enable migration for KimiUploadFilesTool
+    # This is the first tool to migrate (lowest risk)
+    ENABLE_KIMI_MIGRATION: bool = _parse_bool_env("ENABLE_KIMI_MIGRATION", "false")
+
+    # Enable migration for SmartFileHandler
+    # Migrate after Kimi is stable (medium risk)
+    ENABLE_SMART_HANDLER_MIGRATION: bool = _parse_bool_env("ENABLE_SMART_HANDLER_MIGRATION", "false")
+
+    # Enable migration for SupabaseFileHandler
+    # Migrate last (highest risk due to database integration)
+    ENABLE_SUPABASE_MIGRATION: bool = _parse_bool_env("ENABLE_SUPABASE_MIGRATION", "false")
+
+    # ========================================================================
+    # ROLLOUT PERCENTAGES (0-100)
+    # ========================================================================
+
+    # Percentage of Kimi uploads to route through UnifiedFileManager
+    # Start at 1%, increase gradually: 1 → 10 → 50 → 100
+    KIMI_ROLLOUT_PERCENTAGE: int = int(os.getenv("KIMI_ROLLOUT_PERCENTAGE", "0"))
+
+    # Percentage of SmartFileHandler operations to route through UnifiedFileManager
+    SMART_HANDLER_ROLLOUT_PERCENTAGE: int = int(os.getenv("SMART_HANDLER_ROLLOUT_PERCENTAGE", "0"))
+
+    # Percentage of Supabase operations to route through UnifiedFileManager
+    SUPABASE_ROLLOUT_PERCENTAGE: int = int(os.getenv("SUPABASE_ROLLOUT_PERCENTAGE", "0"))
+
+    # ========================================================================
+    # MONITORING AND LOGGING
+    # ========================================================================
+
+    # Enable detailed logging for migration operations
+    # Recommended: True during migration for debugging
+    ENABLE_DETAILED_LOGGING: bool = _parse_bool_env("ENABLE_DETAILED_LOGGING", "true")
+
+    # Sample rate for metrics collection (0.0 to 1.0)
+    # 0.1 = 10% of operations are sampled for detailed metrics
+    METRICS_SAMPLE_RATE: float = float(os.getenv("METRICS_SAMPLE_RATE", "0.1"))
+
+    @classmethod
+    def get_status(cls) -> dict:
+        """
+        Get current migration status.
+
+        Returns:
+            Dictionary with all migration configuration values
+        """
+        return {
+            "global": {
+                "unified_enabled": cls.ENABLE_UNIFIED_MANAGER,
+                "fallback_enabled": cls.ENABLE_FALLBACK_TO_LEGACY,
+                "shadow_mode_enabled": cls.ENABLE_SHADOW_MODE,
+                "shadow_mode_sample_rate": cls.SHADOW_MODE_SAMPLE_RATE,
+                "shadow_mode_error_threshold": cls.SHADOW_MODE_ERROR_THRESHOLD,
+                "max_retries": cls.MAX_RETRY_ATTEMPTS
+            },
+            "per_tool_flags": {
+                "kimi": cls.ENABLE_KIMI_MIGRATION,
+                "smart_handler": cls.ENABLE_SMART_HANDLER_MIGRATION,
+                "supabase": cls.ENABLE_SUPABASE_MIGRATION
+            },
+            "rollout_percentages": {
+                "kimi": cls.KIMI_ROLLOUT_PERCENTAGE,
+                "smart_handler": cls.SMART_HANDLER_ROLLOUT_PERCENTAGE,
+                "supabase": cls.SUPABASE_ROLLOUT_PERCENTAGE
+            },
+            "monitoring": {
+                "detailed_logging": cls.ENABLE_DETAILED_LOGGING,
+                "metrics_sample_rate": cls.METRICS_SAMPLE_RATE
+            }
+        }
+
+    @classmethod
+    def validate_rollout_percentages(cls) -> bool:
+        """
+        Validate that all rollout percentages are within valid range (0-100).
+
+        Returns:
+            bool: True if all percentages are valid
+
+        Raises:
+            ValueError: If any percentage is out of range
+        """
+        percentages = {
+            "KIMI_ROLLOUT_PERCENTAGE": cls.KIMI_ROLLOUT_PERCENTAGE,
+            "SMART_HANDLER_ROLLOUT_PERCENTAGE": cls.SMART_HANDLER_ROLLOUT_PERCENTAGE,
+            "SUPABASE_ROLLOUT_PERCENTAGE": cls.SUPABASE_ROLLOUT_PERCENTAGE
+        }
+
+        for name, value in percentages.items():
+            if not (0 <= value <= 100):
+                raise ValueError(
+                    f"Invalid rollout percentage {name}={value}. "
+                    f"Must be between 0 and 100."
+                )
+
+        return True
+
+    @classmethod
+    def validate_shadow_mode_config(cls) -> bool:
+        """
+        Validate shadow mode configuration parameters.
+
+        Returns:
+            bool: True if all shadow mode config is valid
+
+        Raises:
+            ValueError: If any configuration is invalid
+        """
+        # Validate sample rate (0.0 to 1.0)
+        if not (0.0 <= cls.SHADOW_MODE_SAMPLE_RATE <= 1.0):
+            raise ValueError(
+                f"Invalid SHADOW_MODE_SAMPLE_RATE={cls.SHADOW_MODE_SAMPLE_RATE}. "
+                f"Must be between 0.0 and 1.0."
+            )
+
+        # Validate error threshold (0.0 to 1.0)
+        if not (0.0 <= cls.SHADOW_MODE_ERROR_THRESHOLD <= 1.0):
+            raise ValueError(
+                f"Invalid SHADOW_MODE_ERROR_THRESHOLD={cls.SHADOW_MODE_ERROR_THRESHOLD}. "
+                f"Must be between 0.0 and 1.0."
+            )
+
+        # Validate minimum samples (must be positive)
+        if cls.SHADOW_MODE_MIN_SAMPLES < 1:
+            raise ValueError(
+                f"Invalid SHADOW_MODE_MIN_SAMPLES={cls.SHADOW_MODE_MIN_SAMPLES}. "
+                f"Must be at least 1."
+            )
+
+        # Validate max samples per minute (must be positive)
+        if cls.SHADOW_MODE_MAX_SAMPLES_PER_MINUTE < 1:
+            raise ValueError(
+                f"Invalid SHADOW_MODE_MAX_SAMPLES_PER_MINUTE={cls.SHADOW_MODE_MAX_SAMPLES_PER_MINUTE}. "
+                f"Must be at least 1."
+            )
+
+        # Validate duration (must be non-negative, 0 = unlimited)
+        if cls.SHADOW_MODE_DURATION_MINUTES < 0:
+            raise ValueError(
+                f"Invalid SHADOW_MODE_DURATION_MINUTES={cls.SHADOW_MODE_DURATION_MINUTES}. "
+                f"Must be non-negative (0 = unlimited)."
+            )
+
+        # Validate cooldown (must be non-negative)
+        if cls.SHADOW_MODE_COOLDOWN_MINUTES < 0:
+            raise ValueError(
+                f"Invalid SHADOW_MODE_COOLDOWN_MINUTES={cls.SHADOW_MODE_COOLDOWN_MINUTES}. "
+                f"Must be non-negative."
+            )
+
+        return True
+
+
+# Validate migration configuration on module import
+try:
+    MigrationConfig.validate_rollout_percentages()
+    MigrationConfig.validate_shadow_mode_config()
+except ValueError as e:
+    logger.warning(f"Migration configuration validation failed: {e}")
     # Don't raise - allow module to load but log the warning

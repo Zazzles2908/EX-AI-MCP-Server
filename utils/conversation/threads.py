@@ -63,24 +63,26 @@ def _get_storage_factory():
 
 def _get_storage_backend():
     """
-    Get cached storage backend instance to avoid creating multiple instances.
+    Get global storage backend instance to avoid creating multiple instances.
 
-    CRITICAL: This prevents creating 60+ storage instances per request!
-    The storage factory was being created for EVERY get_thread() call,
-    causing massive performance overhead and Supabase query spam.
+    CRITICAL FIX (2025-10-24): Use global_storage to prevent 4x Supabase duplication!
+    Previously this created a SEPARATE singleton instance from global_storage.py,
+    causing different code paths to use different caches.
+
+    Now delegates to global_storage.py to ensure ALL code paths use the SAME instance.
 
     Returns:
-        Cached storage backend instance or None if not available
+        Global storage backend instance or None if not available
     """
-    global _storage_backend_instance
-
-    if _storage_backend_instance is None:
-        get_conversation_storage = _get_storage_factory()
-        if get_conversation_storage:
-            _storage_backend_instance = get_conversation_storage()
-            logger.info("[STORAGE_INTEGRATION] Created cached storage backend instance")
-
-    return _storage_backend_instance
+    # CRITICAL FIX: Use global storage instead of creating separate instance
+    try:
+        from utils.conversation.global_storage import get_global_storage
+        storage = get_global_storage()
+        logger.debug(f"[STORAGE_INTEGRATION] Using global storage instance (id={id(storage)})")
+        return storage
+    except ImportError as e:
+        logger.warning(f"[STORAGE_INTEGRATION] Global storage not available: {e}")
+        return None
 
 
 # ================================================================================
@@ -355,13 +357,35 @@ def add_turn(
         storage_backend = _get_storage_backend()
         if storage_backend:
             try:
+                # PHASE 1 (2025-10-24): Construct standardized metadata for storage
+                # Combine model_provider, model_name, and model_metadata into single dict
+                storage_metadata = {}
+                if model_name:
+                    storage_metadata['model_used'] = model_name
+                if model_provider:
+                    storage_metadata['provider_used'] = model_provider
+                if model_metadata:
+                    # Extract token usage, thinking mode, and response time if available
+                    if isinstance(model_metadata, dict):
+                        if 'usage' in model_metadata:
+                            storage_metadata['token_usage'] = model_metadata['usage']
+                        if 'thinking_mode' in model_metadata:
+                            storage_metadata['thinking_mode'] = model_metadata['thinking_mode']
+                        if 'ai_response_time_ms' in model_metadata:
+                            storage_metadata['response_time_ms'] = model_metadata['ai_response_time_ms']
+                        # Store full model_metadata for backward compatibility
+                        storage_metadata['model_metadata'] = model_metadata
+
+                # PHASE 1 DEBUG (2025-10-24): Log metadata being passed to storage
+                logger.info(f"[PHASE1_METADATA] thread_id={thread_id}, storage_metadata={storage_metadata}")
+
                 success = storage_backend.add_turn(
                     thread_id,
                     role,
                     content,
                     files=files,
                     images=images,
-                    metadata=model_metadata,
+                    metadata=storage_metadata,
                     tool_name=tool_name
                 )
                 if success:

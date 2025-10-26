@@ -102,11 +102,12 @@ Start-Process "web_ui\index.html"
 
 ### **Supabase Credentials**
 
-The UI is pre-configured with your Supabase credentials:
+The UI requires Supabase credentials to be configured:
 
 ```javascript
-const SUPABASE_URL = 'https://mxaazuhlqewmkweewyaz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+// See .env.docker for actual credentials (not committed to git)
+const SUPABASE_URL = 'https://your-project.supabase.co';
+const SUPABASE_ANON_KEY = 'your_anon_key_here';
 ```
 
 ### **Edge Function Timeout**

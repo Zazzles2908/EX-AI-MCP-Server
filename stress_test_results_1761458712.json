@@ -1,0 +1,213 @@
+{
+  "connection_pool": [
+    {
+      "batch_size": 10,
+      "cycle": 1,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.04659891128540039,
+      "memory_mb": 30.4296875,
+      "memory_growth_mb": 3.390625,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 10,
+      "cycle": 2,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.028026580810546875,
+      "memory_mb": 31.51953125,
+      "memory_growth_mb": 4.48046875,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 10,
+      "cycle": 3,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.03388166427612305,
+      "memory_mb": 31.375,
+      "memory_growth_mb": 4.3359375,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 10,
+      "cycle": 4,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.0263214111328125,
+      "memory_mb": 32.18359375,
+      "memory_growth_mb": 5.14453125,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 10,
+      "cycle": 5,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.0298612117767334,
+      "memory_mb": 33.203125,
+      "memory_growth_mb": 6.1640625,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 25,
+      "cycle": 1,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.06061148643493652,
+      "memory_mb": 33.47265625,
+      "memory_growth_mb": 6.43359375,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 25,
+      "cycle": 2,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.059691429138183594,
+      "memory_mb": 34.16796875,
+      "memory_growth_mb": 7.12890625,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 25,
+      "cycle": 3,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.062455177307128906,
+      "memory_mb": 34.78515625,
+      "memory_growth_mb": 7.74609375,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 25,
+      "cycle": 4,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.06801939010620117,
+      "memory_mb": 31.69140625,
+      "memory_growth_mb": 4.65234375,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 25,
+      "cycle": 5,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.05412864685058594,
+      "memory_mb": 32.46484375,
+      "memory_growth_mb": 5.42578125,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 50,
+      "cycle": 1,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.12327814102172852,
+      "memory_mb": 34.234375,
+      "memory_growth_mb": 7.1953125,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 50,
+      "cycle": 2,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.11750388145446777,
+      "memory_mb": 35.00390625,
+      "memory_growth_mb": 7.96484375,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 50,
+      "cycle": 3,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.14522910118103027,
+      "memory_mb": 37.00390625,
+      "memory_growth_mb": 9.96484375,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 50,
+      "cycle": 4,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.10612654685974121,
+      "memory_mb": 38.0625,
+      "memory_growth_mb": 11.0234375,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    },
+    {
+      "batch_size": 50,
+      "cycle": 5,
+      "connected": 7,
+      "successful_sends": 7,
+      "cycle_time": 0.11170411109924316,
+      "memory_mb": 37.39453125,
+      "memory_growth_mb": 10.35546875,
+      "file_descriptors": 0,
+      "fd_growth": 0
+    }
+  ],
+  "heavy_tools": [
+    {
+      "test": "Small prompt (100 chars)",
+      "prompt_size": 100,
+      "avg_latency_ms": 0.820000966389974,
+      "samples": 3
+    },
+    {
+      "test": "Medium prompt (500 chars)",
+      "prompt_size": 500,
+      "avg_latency_ms": 0.6380081176757812,
+      "samples": 3
+    },
+    {
+      "test": "Large prompt (1KB)",
+      "prompt_size": 1000,
+      "avg_latency_ms": 0.6328423817952474,
+      "samples": 3
+    }
+  ],
+  "concurrent_scaling": [
+    {
+      "num_clients": 5,
+      "connected": 5,
+      "total_sent": 50,
+      "total_received": 50,
+      "total_errors": 0,
+      "test_time": 0.1735522747039795,
+      "throughput": 288.0976356275526,
+      "avg_latency": 1.8094205856323242,
+      "p95_latency": 2.7580618858337402
+    },
+    {
+      "num_clients": 10,
+      "connected": 7,
+      "total_sent": 70,
+      "total_received": 70,
+      "total_errors": 30,
+      "test_time": 0.17615461349487305,
+      "throughput": 397.3781816508447,
+      "avg_latency": 3.33733218056815,
+      "p95_latency": 8.006417751312256
+    }
+  ]
+}

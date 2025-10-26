@@ -19,6 +19,8 @@ import time as _t
 from typing import Any, Optional, TYPE_CHECKING
 
 from src.providers.base import ModelProvider, ProviderType
+
+logger = logging.getLogger(__name__)
 from src.providers.registry_config import _apply_cost_aware, _apply_free_first
 from src.router.routing_cache import get_routing_cache
 

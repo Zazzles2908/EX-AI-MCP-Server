@@ -1,0 +1,2728 @@
+{
+  "baseline_version": "0.3.0",
+  "timestamp": "2025-10-24T21:26:09.995957+00:00",
+  "total_executions": 310,
+  "duration_seconds": 799.2557671070099,
+  "results": [
+    {
+      "tool_name": "chat",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 3565.35,
+      "timestamp": "2025-10-24T21:26:13.567257+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 360.37,
+      "timestamp": "2025-10-24T21:26:13.927731+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 327.73,
+      "timestamp": "2025-10-24T21:26:14.255598+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 330.95,
+      "timestamp": "2025-10-24T21:26:14.586659+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 311.53,
+      "timestamp": "2025-10-24T21:26:14.898303+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 331.14,
+      "timestamp": "2025-10-24T21:26:15.229555+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 279.13,
+      "timestamp": "2025-10-24T21:26:15.508793+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 298.69,
+      "timestamp": "2025-10-24T21:26:15.807598+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 330.07,
+      "timestamp": "2025-10-24T21:26:16.137772+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 414.09,
+      "timestamp": "2025-10-24T21:26:16.551979+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 29773.45,
+      "timestamp": "2025-10-24T21:26:46.325665+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 234688.14,
+      "timestamp": "2025-10-24T21:30:41.013945+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 73741.54,
+      "timestamp": "2025-10-24T21:31:54.755572+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 46092.73,
+      "timestamp": "2025-10-24T21:32:40.848402+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 68891.51,
+      "timestamp": "2025-10-24T21:33:49.739995+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 85836.43,
+      "timestamp": "2025-10-24T21:35:15.576517+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 148330.51,
+      "timestamp": "2025-10-24T21:37:43.907120+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 28436.28,
+      "timestamp": "2025-10-24T21:38:12.343513+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 11505.18,
+      "timestamp": "2025-10-24T21:38:23.848796+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 11443.13,
+      "timestamp": "2025-10-24T21:38:35.292023+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 7.08,
+      "timestamp": "2025-10-24T21:38:35.299239+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 2.2,
+      "timestamp": "2025-10-24T21:38:35.301521+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 2.2,
+      "timestamp": "2025-10-24T21:38:35.303816+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 2.42,
+      "timestamp": "2025-10-24T21:38:35.306309+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 2.53,
+      "timestamp": "2025-10-24T21:38:35.308916+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 2.42,
+      "timestamp": "2025-10-24T21:38:35.311445+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 2.13,
+      "timestamp": "2025-10-24T21:38:35.313656+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 1.95,
+      "timestamp": "2025-10-24T21:38:35.315679+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 2.14,
+      "timestamp": "2025-10-24T21:38:35.317881+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 2.23,
+      "timestamp": "2025-10-24T21:38:35.320197+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 186.26,
+      "timestamp": "2025-10-24T21:38:35.506616+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 222.88,
+      "timestamp": "2025-10-24T21:38:35.729596+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 228.31,
+      "timestamp": "2025-10-24T21:38:35.958024+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 244.94,
+      "timestamp": "2025-10-24T21:38:36.203092+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 239.44,
+      "timestamp": "2025-10-24T21:38:36.442644+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 218.03,
+      "timestamp": "2025-10-24T21:38:36.660796+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 226.46,
+      "timestamp": "2025-10-24T21:38:36.887365+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 225.62,
+      "timestamp": "2025-10-24T21:38:37.113109+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 219.52,
+      "timestamp": "2025-10-24T21:38:37.332738+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 249.92,
+      "timestamp": "2025-10-24T21:38:37.582772+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 251.76,
+      "timestamp": "2025-10-24T21:38:37.834745+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 224.65,
+      "timestamp": "2025-10-24T21:38:38.059522+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 231.98,
+      "timestamp": "2025-10-24T21:38:38.291621+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 220.08,
+      "timestamp": "2025-10-24T21:38:38.511808+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 213.34,
+      "timestamp": "2025-10-24T21:38:38.725273+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 221.9,
+      "timestamp": "2025-10-24T21:38:38.947286+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 227.02,
+      "timestamp": "2025-10-24T21:38:39.174433+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 214.69,
+      "timestamp": "2025-10-24T21:38:39.389256+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 229.88,
+      "timestamp": "2025-10-24T21:38:39.619254+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 246.95,
+      "timestamp": "2025-10-24T21:38:39.866326+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 2.53,
+      "timestamp": "2025-10-24T21:38:39.869053+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 1.99,
+      "timestamp": "2025-10-24T21:38:39.871107+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 2.18,
+      "timestamp": "2025-10-24T21:38:39.873348+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 2.22,
+      "timestamp": "2025-10-24T21:38:39.875645+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 2.12,
+      "timestamp": "2025-10-24T21:38:39.877851+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 2.02,
+      "timestamp": "2025-10-24T21:38:39.879952+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 2.15,
+      "timestamp": "2025-10-24T21:38:39.882177+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 2.54,
+      "timestamp": "2025-10-24T21:38:39.884790+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 1.91,
+      "timestamp": "2025-10-24T21:38:39.886769+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 2.52,
+      "timestamp": "2025-10-24T21:38:39.889373+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 188.34,
+      "timestamp": "2025-10-24T21:38:40.077935+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 189.46,
+      "timestamp": "2025-10-24T21:38:40.267508+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 189.42,
+      "timestamp": "2025-10-24T21:38:40.457043+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 177.7,
+      "timestamp": "2025-10-24T21:38:40.634869+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 190.05,
+      "timestamp": "2025-10-24T21:38:40.825044+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 192.09,
+      "timestamp": "2025-10-24T21:38:41.017364+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 210.6,
+      "timestamp": "2025-10-24T21:38:41.228071+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 192.41,
+      "timestamp": "2025-10-24T21:38:41.420593+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 227.09,
+      "timestamp": "2025-10-24T21:38:41.647794+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 417.43,
+      "timestamp": "2025-10-24T21:38:42.065361+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 261.66,
+      "timestamp": "2025-10-24T21:38:42.327279+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 228.3,
+      "timestamp": "2025-10-24T21:38:42.555796+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 216.29,
+      "timestamp": "2025-10-24T21:38:42.772204+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 221.35,
+      "timestamp": "2025-10-24T21:38:42.993666+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 230.5,
+      "timestamp": "2025-10-24T21:38:43.224271+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 210.12,
+      "timestamp": "2025-10-24T21:38:43.434503+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 219.25,
+      "timestamp": "2025-10-24T21:38:43.653871+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 230.56,
+      "timestamp": "2025-10-24T21:38:43.884560+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 213.67,
+      "timestamp": "2025-10-24T21:38:44.098366+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 214.76,
+      "timestamp": "2025-10-24T21:38:44.313248+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T21:38:44.313473+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T21:38:44.313551+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T21:38:44.313617+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T21:38:44.313682+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T21:38:44.313753+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T21:38:44.313831+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T21:38:44.313889+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T21:38:44.313955+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T21:38:44.314036+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T21:38:44.314103+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 22.41,
+      "timestamp": "2025-10-24T21:38:44.336631+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "status",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 17.95,
+      "timestamp": "2025-10-24T21:38:44.354681+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "status",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 17.1,
+      "timestamp": "2025-10-24T21:38:44.371880+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "status",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 16.57,
+      "timestamp": "2025-10-24T21:38:44.388546+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "status",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 16.34,
+      "timestamp": "2025-10-24T21:38:44.404982+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "status",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 17.91,
+      "timestamp": "2025-10-24T21:38:44.422978+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "status",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 17.26,
+      "timestamp": "2025-10-24T21:38:44.440342+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "status",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 17.22,
+      "timestamp": "2025-10-24T21:38:44.457683+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "status",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 17.54,
+      "timestamp": "2025-10-24T21:38:44.475341+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "status",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 17.76,
+      "timestamp": "2025-10-24T21:38:44.493221+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 197.48,
+      "timestamp": "2025-10-24T21:38:44.690973+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 231.19,
+      "timestamp": "2025-10-24T21:38:44.922278+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 235.76,
+      "timestamp": "2025-10-24T21:38:45.158163+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 222.84,
+      "timestamp": "2025-10-24T21:38:45.381137+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 224.32,
+      "timestamp": "2025-10-24T21:38:45.605583+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 245.64,
+      "timestamp": "2025-10-24T21:38:45.851346+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 214.1,
+      "timestamp": "2025-10-24T21:38:46.065563+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 254.26,
+      "timestamp": "2025-10-24T21:38:46.319933+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 221.08,
+      "timestamp": "2025-10-24T21:38:46.541119+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 228.57,
+      "timestamp": "2025-10-24T21:38:46.769796+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 181.34,
+      "timestamp": "2025-10-24T21:38:46.951361+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 188.68,
+      "timestamp": "2025-10-24T21:38:47.140172+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 188.74,
+      "timestamp": "2025-10-24T21:38:47.329035+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 206.4,
+      "timestamp": "2025-10-24T21:38:47.535562+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 201.64,
+      "timestamp": "2025-10-24T21:38:47.737322+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 184.31,
+      "timestamp": "2025-10-24T21:38:47.921748+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 193.75,
+      "timestamp": "2025-10-24T21:38:48.115613+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 191.39,
+      "timestamp": "2025-10-24T21:38:48.307197+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 189.73,
+      "timestamp": "2025-10-24T21:38:48.497091+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 182.41,
+      "timestamp": "2025-10-24T21:38:48.679632+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 5.67,
+      "timestamp": "2025-10-24T21:38:48.685513+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 3.82,
+      "timestamp": "2025-10-24T21:38:48.689404+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 3.58,
+      "timestamp": "2025-10-24T21:38:48.693088+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 3.5,
+      "timestamp": "2025-10-24T21:38:48.696674+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 3.1,
+      "timestamp": "2025-10-24T21:38:48.699870+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 3.24,
+      "timestamp": "2025-10-24T21:38:48.703213+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 3.3,
+      "timestamp": "2025-10-24T21:38:48.706577+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 3.52,
+      "timestamp": "2025-10-24T21:38:48.710180+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 3.31,
+      "timestamp": "2025-10-24T21:38:48.713586+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 3.36,
+      "timestamp": "2025-10-24T21:38:48.717024+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 177.59,
+      "timestamp": "2025-10-24T21:38:48.894772+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 200.67,
+      "timestamp": "2025-10-24T21:38:49.095574+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 197.72,
+      "timestamp": "2025-10-24T21:38:49.293405+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 187.01,
+      "timestamp": "2025-10-24T21:38:49.480521+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 187.37,
+      "timestamp": "2025-10-24T21:38:49.668010+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 198.95,
+      "timestamp": "2025-10-24T21:38:49.867089+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 211.09,
+      "timestamp": "2025-10-24T21:38:50.078286+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 194.18,
+      "timestamp": "2025-10-24T21:38:50.272598+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 176.46,
+      "timestamp": "2025-10-24T21:38:50.449191+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 189.06,
+      "timestamp": "2025-10-24T21:38:50.638383+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 186.34,
+      "timestamp": "2025-10-24T21:38:50.824935+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 226.18,
+      "timestamp": "2025-10-24T21:38:51.051257+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 219.04,
+      "timestamp": "2025-10-24T21:38:51.270427+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 212.82,
+      "timestamp": "2025-10-24T21:38:51.483387+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 253.51,
+      "timestamp": "2025-10-24T21:38:51.737081+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 221.83,
+      "timestamp": "2025-10-24T21:38:51.959038+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 216.67,
+      "timestamp": "2025-10-24T21:38:52.175825+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 220.65,
+      "timestamp": "2025-10-24T21:38:52.396597+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 218.3,
+      "timestamp": "2025-10-24T21:38:52.615020+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 235.17,
+      "timestamp": "2025-10-24T21:38:52.850320+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 178.25,
+      "timestamp": "2025-10-24T21:38:53.028806+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 179.28,
+      "timestamp": "2025-10-24T21:38:53.208186+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 203.08,
+      "timestamp": "2025-10-24T21:38:53.411379+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 205.93,
+      "timestamp": "2025-10-24T21:38:53.617436+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 182.44,
+      "timestamp": "2025-10-24T21:38:53.800138+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 183.03,
+      "timestamp": "2025-10-24T21:38:53.983277+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 185.49,
+      "timestamp": "2025-10-24T21:38:54.168871+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 187.46,
+      "timestamp": "2025-10-24T21:38:54.356457+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 204.76,
+      "timestamp": "2025-10-24T21:38:54.561349+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 187.69,
+      "timestamp": "2025-10-24T21:38:54.749165+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 15.56,
+      "timestamp": "2025-10-24T21:38:54.765069+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 1.83,
+      "timestamp": "2025-10-24T21:38:54.767054+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 2.31,
+      "timestamp": "2025-10-24T21:38:54.769487+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 2.83,
+      "timestamp": "2025-10-24T21:38:54.772443+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 2.12,
+      "timestamp": "2025-10-24T21:38:54.774706+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 1.55,
+      "timestamp": "2025-10-24T21:38:54.776368+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 2.21,
+      "timestamp": "2025-10-24T21:38:54.778701+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 1.68,
+      "timestamp": "2025-10-24T21:38:54.780531+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 1.72,
+      "timestamp": "2025-10-24T21:38:54.782400+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 2.88,
+      "timestamp": "2025-10-24T21:38:54.785413+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.785607+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.785645+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.785670+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.785699+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.785736+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.785789+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.785839+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.785895+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.785942+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.785976+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786115+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786243+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786300+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786348+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786395+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786442+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786490+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786537+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786588+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786631+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786727+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786769+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786810+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786848+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786890+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.786931+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787102+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787149+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787198+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787244+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787411+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787464+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787508+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787541+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787584+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787621+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787652+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787680+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787703+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:38:54.787729+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 9.74,
+      "timestamp": "2025-10-24T21:38:54.797600+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 5.64,
+      "timestamp": "2025-10-24T21:38:54.803368+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 5.49,
+      "timestamp": "2025-10-24T21:38:54.808978+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 6.19,
+      "timestamp": "2025-10-24T21:38:54.815508+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 5.27,
+      "timestamp": "2025-10-24T21:38:54.820881+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 5.03,
+      "timestamp": "2025-10-24T21:38:54.826034+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 5.73,
+      "timestamp": "2025-10-24T21:38:54.831929+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 30004.85,
+      "timestamp": "2025-10-24T21:39:24.836877+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Tool execution timeout after 30.0s"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 6.11,
+      "timestamp": "2025-10-24T21:39:24.843076+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 6.99,
+      "timestamp": "2025-10-24T21:39:24.850174+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'INTERNAL_ERROR', 'message': 'Tool execution failed: File not found: C:\\\\Project\\\\EX-AI-MCP-Server\\\\scripts\\\\baseline_collection\\\\test_files\\\\sample_text.txt'}"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.850352+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.850417+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.850482+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.850538+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.850610+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.850665+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.850719+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.850765+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.850828+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.850878+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.851012+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.851070+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.851127+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.851197+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.851257+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.851313+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.851365+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.851412+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.851460+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T21:39:24.851520+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 1.59,
+      "timestamp": "2025-10-24T21:39:24.853243+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 0.95,
+      "timestamp": "2025-10-24T21:39:24.854251+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 1.09,
+      "timestamp": "2025-10-24T21:39:24.855400+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 1.31,
+      "timestamp": "2025-10-24T21:39:24.856781+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 0.93,
+      "timestamp": "2025-10-24T21:39:24.857780+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 1.73,
+      "timestamp": "2025-10-24T21:39:24.859583+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 1.09,
+      "timestamp": "2025-10-24T21:39:24.860750+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 1.11,
+      "timestamp": "2025-10-24T21:39:24.861928+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 1.56,
+      "timestamp": "2025-10-24T21:39:24.863555+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 1.11,
+      "timestamp": "2025-10-24T21:39:24.864749+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 19.18,
+      "timestamp": "2025-10-24T21:39:24.884111+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 15.64,
+      "timestamp": "2025-10-24T21:39:24.899865+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 16.41,
+      "timestamp": "2025-10-24T21:39:24.916389+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 15.29,
+      "timestamp": "2025-10-24T21:39:24.931791+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 15.04,
+      "timestamp": "2025-10-24T21:39:24.946939+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 16.16,
+      "timestamp": "2025-10-24T21:39:24.963206+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 14.99,
+      "timestamp": "2025-10-24T21:39:24.978289+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 15.46,
+      "timestamp": "2025-10-24T21:39:24.993859+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 15.99,
+      "timestamp": "2025-10-24T21:39:25.009953+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 14.57,
+      "timestamp": "2025-10-24T21:39:25.024609+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 603.1,
+      "timestamp": "2025-10-24T21:39:25.627957+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 358.72,
+      "timestamp": "2025-10-24T21:39:25.986783+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 369.34,
+      "timestamp": "2025-10-24T21:39:26.356224+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 364.1,
+      "timestamp": "2025-10-24T21:39:26.720429+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 365.13,
+      "timestamp": "2025-10-24T21:39:27.085671+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 363.98,
+      "timestamp": "2025-10-24T21:39:27.449743+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 371.23,
+      "timestamp": "2025-10-24T21:39:27.821083+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 364.16,
+      "timestamp": "2025-10-24T21:39:28.185370+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 362.29,
+      "timestamp": "2025-10-24T21:39:28.547764+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 362.91,
+      "timestamp": "2025-10-24T21:39:28.910772+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "version",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 17.04,
+      "timestamp": "2025-10-24T21:39:28.927970+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "version",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 14.0,
+      "timestamp": "2025-10-24T21:39:28.942064+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "version",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 15.54,
+      "timestamp": "2025-10-24T21:39:28.957725+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "version",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 15.91,
+      "timestamp": "2025-10-24T21:39:28.973744+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "version",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 15.28,
+      "timestamp": "2025-10-24T21:39:28.989136+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "version",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 16.62,
+      "timestamp": "2025-10-24T21:39:29.005873+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "version",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 15.83,
+      "timestamp": "2025-10-24T21:39:29.021989+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "version",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 14.75,
+      "timestamp": "2025-10-24T21:39:29.036857+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "version",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 15.06,
+      "timestamp": "2025-10-24T21:39:29.052016+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "version",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 14.33,
+      "timestamp": "2025-10-24T21:39:29.066454+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 1.13,
+      "timestamp": "2025-10-24T21:39:29.067812+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.89,
+      "timestamp": "2025-10-24T21:39:29.068778+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.83,
+      "timestamp": "2025-10-24T21:39:29.069669+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.9,
+      "timestamp": "2025-10-24T21:39:29.070632+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.82,
+      "timestamp": "2025-10-24T21:39:29.071510+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.81,
+      "timestamp": "2025-10-24T21:39:29.072385+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.79,
+      "timestamp": "2025-10-24T21:39:29.073231+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.71,
+      "timestamp": "2025-10-24T21:39:29.073999+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.8,
+      "timestamp": "2025-10-24T21:39:29.074856+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.78,
+      "timestamp": "2025-10-24T21:39:29.075700+00:00",
+      "baseline_version": "0.3.0",
+      "error": "{'code': 'TOOL_NOT_FOUND', 'message': 'Unknown tool: toolcall_log_tail', 'details': {'requested_tool': 'toolcall_log_tail'}}"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 16.2,
+      "timestamp": "2025-10-24T21:39:29.092042+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "health",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 16.8,
+      "timestamp": "2025-10-24T21:39:29.108980+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "health",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 15.87,
+      "timestamp": "2025-10-24T21:39:29.124973+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "health",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 16.91,
+      "timestamp": "2025-10-24T21:39:29.142001+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "health",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 15.56,
+      "timestamp": "2025-10-24T21:39:29.157693+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "health",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 16.23,
+      "timestamp": "2025-10-24T21:39:29.174033+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "health",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 16.24,
+      "timestamp": "2025-10-24T21:39:29.190398+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "health",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 16.0,
+      "timestamp": "2025-10-24T21:39:29.206522+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "health",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 16.06,
+      "timestamp": "2025-10-24T21:39:29.222685+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "health",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 15.71,
+      "timestamp": "2025-10-24T21:39:29.238492+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 1.68,
+      "timestamp": "2025-10-24T21:39:29.240418+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 1.37,
+      "timestamp": "2025-10-24T21:39:29.241866+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 1.31,
+      "timestamp": "2025-10-24T21:39:29.243238+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 1.29,
+      "timestamp": "2025-10-24T21:39:29.244605+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 1.6,
+      "timestamp": "2025-10-24T21:39:29.246292+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 1.59,
+      "timestamp": "2025-10-24T21:39:29.247967+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 1.35,
+      "timestamp": "2025-10-24T21:39:29.249390+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 1.35,
+      "timestamp": "2025-10-24T21:39:29.250813+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 0.97,
+      "timestamp": "2025-10-24T21:39:29.251851+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 1.28,
+      "timestamp": "2025-10-24T21:39:29.253190+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    }
+  ]
+}

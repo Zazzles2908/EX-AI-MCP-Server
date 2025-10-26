@@ -63,36 +63,81 @@ serve(async (req) => {
       // Save to database
       const supabase = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''  // Use service role for database writes
       )
 
-      // Save user message
-      await supabase.from('exai_messages').insert({
-        session_id,
+      // DEDUPLICATION FIX (2025-10-22): Generate idempotency keys to prevent duplicates
+      const generateIdempotencyKey = (conversationId: string, role: string, content: string, timestamp: string): string => {
+        const keyString = `${conversationId}:${role}:${content.trim()}:${timestamp}`;
+        const encoder = new TextEncoder();
+        const data = encoder.encode(keyString);
+        return crypto.subtle.digest('SHA-256', data)
+          .then(hash => Array.from(new Uint8Array(hash))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join(''));
+      };
+
+      const timestamp = new Date().toISOString();
+
+      // Get or create conversation
+      let conversation = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('session_id', session_id)
+        .single();
+
+      let conversationId: string;
+      if (!conversation.data) {
+        // Create new conversation
+        const newConv = await supabase
+          .from('conversations')
+          .insert({
+            session_id: session_id,
+            continuation_id: session_id,  // Use session_id as continuation_id
+            title: `EXAI Chat ${new Date().toLocaleDateString()}`,
+            metadata: { tool_name, created_via: 'edge_function' }
+          })
+          .select('id')
+          .single();
+        conversationId = newConv.data.id;
+      } else {
+        conversationId = conversation.data.id;
+      }
+
+      // Save user message with idempotency key
+      const userIdempotencyKey = await generateIdempotencyKey(conversationId, 'user', prompt, timestamp);
+      await supabase.from('messages').insert({
+        conversation_id: conversationId,
         role: 'user',
         content: prompt,
-        tool_name,
-      })
+        metadata: { tool_name },
+        idempotency_key: userIdempotencyKey
+      });
 
-      // Save assistant response
-      await supabase.from('exai_messages').insert({
-        session_id,
+      // Save assistant response with idempotency key
+      const assistantTimestamp = new Date().toISOString();
+      const assistantContent = result.content || 'No response';
+      const assistantIdempotencyKey = await generateIdempotencyKey(conversationId, 'assistant', assistantContent, assistantTimestamp);
+      await supabase.from('messages').insert({
+        conversation_id: conversationId,
         role: 'assistant',
-        content: result.content || 'No response',
-        tool_name,
-        tool_result: result,
-        model_used: result.metadata?.model_used,
-        provider_used: result.metadata?.provider_used,
-        tokens_in: result.metadata?.tokens_in,
-        tokens_out: result.metadata?.tokens_out,
-        metadata: result.metadata,
-      })
+        content: assistantContent,
+        metadata: {
+          tool_name,
+          model_used: result.metadata?.model_used,
+          provider_used: result.metadata?.provider_used,
+          tokens_in: result.metadata?.tokens_in,
+          tokens_out: result.metadata?.tokens_out,
+          ...result.metadata
+        },
+        idempotency_key: assistantIdempotencyKey
+      });
 
-      // Update session timestamp
+      // Update conversation timestamp
       await supabase
-        .from('exai_sessions')
+        .from('conversations')
         .update({ updated_at: new Date().toISOString() })
-        .eq('id', session_id)
+        .eq('id', conversationId)
 
       return new Response(
         JSON.stringify({

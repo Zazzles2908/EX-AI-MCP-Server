@@ -25,8 +25,147 @@ from src.providers.kimi import KimiModelProvider
 from src.providers.registry import ModelProviderRegistry
 from utils.file.cross_platform import get_path_handler
 from utils.file.cache import FileCache
+from utils.file.deduplication import FileDeduplicationManager
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# SUPABASE GATEWAY FUNCTIONS (Phase 2 - 2025-10-26)
+# ============================================================================
+
+async def upload_via_supabase_gateway_kimi(file_path: str, storage, purpose: str = "file-extract") -> dict:
+    """
+    Upload file to Supabase first, then upload to Kimi using SDK.
+
+    UPDATED APPROACH (EXAI-validated):
+    Kimi does NOT support URL-based file extraction. Instead:
+    1. Upload file to Supabase Storage
+    2. Upload file to Kimi using SDK (client.files.create)
+    3. Track both IDs in database
+
+    This provides:
+    - Supabase as centralized storage
+    - Kimi file_id for AI operations
+    - Bidirectional tracking
+
+    Args:
+        file_path: Path to file (absolute or relative)
+        storage: Supabase storage manager instance
+        purpose: File purpose ('file-extract' or 'assistants')
+
+    Returns:
+        dict with:
+        - kimi_file_id: File ID from Kimi
+        - supabase_file_id: File ID from Supabase
+        - filename: Original filename
+        - size_bytes: File size
+        - upload_method: 'supabase_gateway'
+
+    Raises:
+        RuntimeError: If upload fails
+        ValueError: If file doesn't exist or is too large
+
+    Source: EXAI Consultation c90cdeec-48bb-4d10-b075-925ebbf39c8a
+    Note: Uses SDK instead of raw HTTP for reliability
+    """
+    import mimetypes
+    from pathlib import Path
+
+    pth = Path(file_path)
+
+    # Validate file exists
+    if not pth.exists() or not pth.is_file():
+        raise ValueError(f"File not found: {file_path}")
+
+    # Check file size (Kimi limit: 100MB)
+    file_size = pth.stat().st_size
+    max_size = 100 * 1024 * 1024  # 100MB
+    if file_size > max_size:
+        raise ValueError(f"File too large: {file_size} bytes (max 100MB for Kimi)")
+
+    logger.info(f"Starting Supabase gateway upload for {pth.name} ({file_size} bytes)")
+
+    # 1. Upload to Supabase Storage
+    try:
+        with open(pth, 'rb') as f:
+            file_data = f.read()
+
+        mime_type, _ = mimetypes.guess_type(str(pth))
+
+        supabase_file_id = storage.upload_file(
+            file_path=f"kimi-gateway/{pth.name}",
+            file_data=file_data,
+            original_name=pth.name,
+            mime_type=mime_type,
+            file_type="user_upload"
+        )
+
+        if not supabase_file_id:
+            raise RuntimeError("Supabase upload returned None")
+
+        logger.info(f"✅ Uploaded to Supabase: {pth.name} -> {supabase_file_id}")
+
+    except Exception as e:
+        logger.error(f"❌ Supabase upload failed: {e}")
+        raise RuntimeError(f"Failed to upload to Supabase: {e}")
+
+    # 2. Upload to Kimi using SDK (EXAI-recommended approach)
+    # Note: Kimi does NOT support URL-based file extraction
+    # Must use SDK client.files.create() instead
+    try:
+        from src.providers.registry import ModelProviderRegistry
+        from src.providers.kimi import KimiModelProvider
+
+        api_key = os.getenv("KIMI_API_KEY")
+        if not api_key:
+            raise RuntimeError("KIMI_API_KEY not configured")
+
+        default_model = os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview")
+        prov = ModelProviderRegistry.get_provider_for_model(default_model)
+
+        if not isinstance(prov, KimiModelProvider):
+            prov = KimiModelProvider(api_key=api_key)
+
+        # Upload using SDK (uses client.files.create internally)
+        kimi_file_id = prov.upload_file(str(pth), purpose=purpose)
+
+        if not kimi_file_id:
+            raise RuntimeError("Kimi upload returned None")
+
+        logger.info(f"✅ Uploaded to Kimi via SDK: {kimi_file_id}")
+
+    except Exception as e:
+        logger.error(f"❌ Kimi SDK upload failed: {e}")
+        raise RuntimeError(f"Failed to upload to Kimi via SDK: {e}")
+
+    # 3. Track both IDs in database
+    try:
+        client = storage.get_client()
+        client.table("provider_file_uploads").insert({
+            "provider": "kimi",
+            "provider_file_id": kimi_file_id,
+            "supabase_file_id": supabase_file_id,
+            "sha256": FileCache.sha256_file(pth),
+            "filename": pth.name,
+            "file_size_bytes": file_size,
+            "upload_status": "completed",
+            "upload_method": "supabase_gateway"
+        }).execute()
+
+        logger.info(f"✅ Tracked in database: kimi={kimi_file_id}, supabase={supabase_file_id}")
+
+    except Exception as e:
+        logger.warning(f"⚠️  Failed to track in database: {e}")
+        # Don't fail - upload was successful
+
+    return {
+        "kimi_file_id": kimi_file_id,
+        "supabase_file_id": supabase_file_id,
+        "filename": pth.name,
+        "size_bytes": file_size,
+        "upload_method": "supabase_gateway"
+    }
 
 
 class KimiUploadFilesTool(BaseTool):
@@ -151,10 +290,10 @@ class KimiUploadFilesTool(BaseTool):
         max_parallel = int(os.getenv("KIMI_FILES_MAX_PARALLEL", "3"))
 
         def process_single_file(fp):
-            """Process a single file upload"""
+            """Process a single file upload with deduplication support"""
             try:
                 pth = Path(str(fp))
-                
+
                 # Size check
                 if max_bytes and pth.exists() and pth.is_file():
                     try:
@@ -167,87 +306,109 @@ class KimiUploadFilesTool(BaseTool):
                         skipped.append(str(pth))
                         return None
 
-                # Check cache
-                cache_enabled = os.getenv("FILECACHE_ENABLED", "true").strip().lower() == "true"
+                # DEDUPLICATION CHECK (Phase 2.4 - 2025-10-26)
+                # Check if file already exists by SHA256 hash
+                dedup_enabled = os.getenv("FILE_DEDUPLICATION_ENABLED", "true").strip().lower() == "true"
                 file_id = None
-                prov_name = prov.get_provider_type().value
-                
-                if cache_enabled:
-                    try:
-                        sha = FileCache.sha256_file(pth)
-                        fc = FileCache()
-                        cached = fc.get(sha, prov_name)
-                        if cached:
-                            file_id = cached
-                            logger.info(f"Using cached file_id for {pth.name}: {file_id}")
-                    except Exception:
-                        file_id = None
+                supabase_file_id = None
 
-                # Upload if not cached
+                if dedup_enabled:
+                    try:
+                        from src.storage.supabase_client import get_storage_manager
+                        storage = get_storage_manager()
+                        dedup_manager = FileDeduplicationManager(storage)
+
+                        existing = dedup_manager.check_duplicate(pth, "kimi")
+                        if existing:
+                            # File already exists - reuse it
+                            file_id = existing['provider_file_id']
+                            supabase_file_id = existing.get('supabase_file_id')
+
+                            # Increment reference count
+                            dedup_manager.increment_reference(file_id, "kimi")
+
+                            logger.info(f"♻️  Reusing existing file: {pth.name} -> {file_id} (ref_count incremented)")
+
+                            return {
+                                "filename": pth.name,
+                                "file_id": file_id,
+                                "size_bytes": pth.stat().st_size,
+                                "upload_timestamp": datetime.utcnow().isoformat(),
+                                "deduplicated": True
+                            }
+                    except Exception as e:
+                        logger.warning(f"Deduplication check failed, proceeding with upload: {e}")
+
+                # Upload if not deduplicated
                 if not file_id:
                     file_id = prov.upload_file(str(pth), purpose=purpose)
-                    
-                    # Cache new upload
-                    if cache_enabled:
-                        try:
-                            sha = FileCache.sha256_file(pth)
-                            fc = FileCache()
-                            fc.set(sha, prov_name, file_id)
-                        except Exception:
-                            pass
 
                 # Track in Supabase AND upload file content to Supabase Storage
-                supabase_file_id = None
-                try:
-                    from src.storage.supabase_client import get_storage_manager
-                    storage = get_storage_manager()
+                # (Only for new uploads, not deduplicated ones)
+                if not supabase_file_id:  # supabase_file_id set if deduplicated
+                    try:
+                        from src.storage.supabase_client import get_storage_manager
+                        storage = get_storage_manager()
 
-                    # Check if Supabase upload is enabled
-                    upload_to_supabase = os.getenv("KIMI_UPLOAD_TO_SUPABASE", "true").lower() == "true"
+                        # Check if Supabase upload is enabled
+                        upload_to_supabase = os.getenv("KIMI_UPLOAD_TO_SUPABASE", "true").lower() == "true"
 
-                    if storage and storage.enabled and upload_to_supabase:
-                        sha256 = FileCache.sha256_file(pth)
+                        if storage and storage.enabled and upload_to_supabase:
+                            # Upload file content to Supabase Storage
+                            try:
+                                with open(pth, 'rb') as f:
+                                    file_data = f.read()
 
-                        # Upload file content to Supabase Storage
-                        try:
-                            with open(pth, 'rb') as f:
-                                file_data = f.read()
+                                # Upload to Supabase Storage with timeout
+                                import mimetypes
+                                mime_type, _ = mimetypes.guess_type(str(pth))
 
-                            # Upload to Supabase Storage with timeout
-                            import mimetypes
-                            mime_type, _ = mimetypes.guess_type(str(pth))
+                                supabase_file_id = storage.upload_file(
+                                    file_path=f"kimi-uploads/{file_id}",
+                                    file_data=file_data,
+                                    original_name=pth.name,
+                                    mime_type=mime_type,
+                                    file_type="user_upload"  # Map to existing enum value
+                                )
 
-                            supabase_file_id = storage.upload_file(
-                                file_path=f"kimi-uploads/{file_id}",
-                                file_data=file_data,
-                                original_name=pth.name,
-                                mime_type=mime_type,
-                                file_type="user_upload"  # Map to existing enum value
-                            )
+                                if supabase_file_id:
+                                    logger.info(f"Uploaded to Supabase Storage: {pth.name} -> {supabase_file_id}")
+                                else:
+                                    logger.warning(f"Supabase storage upload returned None for {pth.name}")
 
-                            if supabase_file_id:
-                                logger.info(f"Uploaded to Supabase Storage: {pth.name} -> {supabase_file_id}")
-                            else:
-                                logger.warning(f"Supabase storage upload returned None for {pth.name}")
+                            except Exception as storage_err:
+                                logger.error(f"Failed to upload to Supabase Storage: {storage_err}")
+                                # Continue - don't fail the primary Moonshot upload
 
-                        except Exception as storage_err:
-                            logger.error(f"Failed to upload to Supabase Storage: {storage_err}")
-                            # Continue - don't fail the primary Moonshot upload
+                            # Register new file with deduplication manager
+                            if dedup_enabled:
+                                try:
+                                    dedup_manager = FileDeduplicationManager(storage)
+                                    dedup_manager.register_new_file(
+                                        provider_file_id=file_id,
+                                        supabase_file_id=supabase_file_id,
+                                        file_path=pth,
+                                        provider="kimi",
+                                        upload_method="direct"
+                                    )
+                                except Exception as reg_err:
+                                    logger.warning(f"Failed to register with deduplication manager: {reg_err}")
+                                    # Fallback to direct insert
+                                    sha256 = FileCache.sha256_file(pth)
+                                    client = storage.get_client()
+                                    client.table("provider_file_uploads").insert({
+                                        "provider": "kimi",
+                                        "provider_file_id": file_id,
+                                        "supabase_file_id": supabase_file_id,
+                                        "sha256": sha256,
+                                        "filename": pth.name,
+                                        "file_size_bytes": pth.stat().st_size,
+                                        "upload_status": "completed" if supabase_file_id else "failed",
+                                        "reference_count": 1
+                                    }).execute()
 
-                        # Track metadata (even if storage upload failed)
-                        client = storage.get_client()
-                        client.table("provider_file_uploads").insert({
-                            "provider": "kimi",
-                            "provider_file_id": file_id,
-                            "supabase_file_id": supabase_file_id,  # May be None if upload failed
-                            "sha256": sha256,
-                            "filename": pth.name,
-                            "file_size_bytes": pth.stat().st_size,
-                            "upload_status": "completed" if supabase_file_id else "failed"  # Map to existing constraint value
-                        }).execute()
-
-                except Exception as e:
-                    logger.warning(f"Failed to track upload in Supabase: {e}")
+                    except Exception as e:
+                        logger.warning(f"Failed to track upload in Supabase: {e}")
 
                 return {
                     "filename": pth.name,
@@ -285,7 +446,7 @@ class KimiUploadFilesTool(BaseTool):
 
         return results
 
-    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list[TextContent]:
         import asyncio as _aio
         from tools.shared.error_envelope import make_error_envelope
         try:
@@ -457,7 +618,7 @@ class KimiChatWithFilesTool(BaseTool):
         content = (resp or {}).get("content", "")
         return {"model": model, "content": content}
 
-    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list[TextContent]:
         from tools.shared.error_envelope import make_error_envelope
         try:
             result = await self._run_async(**arguments)
@@ -720,7 +881,7 @@ class KimiManageFilesTool(BaseTool):
         else:
             raise ValueError(f"Unknown operation: {operation}")
 
-    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list[TextContent]:
         import asyncio as _aio
         from tools.shared.error_envelope import make_error_envelope
         try:
