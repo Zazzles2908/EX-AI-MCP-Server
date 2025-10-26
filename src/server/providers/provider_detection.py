@@ -3,13 +3,26 @@ Provider Detection Module
 
 Handles detection and validation of available AI model providers.
 Checks API keys, validates configurations, and performs lazy imports.
+
+Thread Safety:
+- WEEK 1 FIX #5 (2025-10-21): Added thread safety for provider detection
+- Uses double-checked locking pattern to prevent race conditions
+- Caches detection results to avoid redundant environment checks
+- Safe for concurrent access after module initialization
 """
 
 import logging
 import os
+import threading
 from typing import Any, Optional, Tuple
 
 logger = logging.getLogger(__name__)
+
+# WEEK 1 FIX #5 (2025-10-21): Thread safety for provider detection
+# Double-checked locking pattern: fast path without lock, slow path with lock + double-check
+_detection_lock = threading.Lock()
+_detection_complete = False
+_cached_provider_config = None
 
 
 def _check_api_key(key_name: str, alias_name: Optional[str] = None) -> Optional[str]:
@@ -140,39 +153,39 @@ def detect_openrouter_provider() -> Tuple[bool, Optional[str]]:
 def detect_custom_provider() -> Tuple[bool, Optional[Any], Optional[str], Optional[str]]:
     """
     Detect custom provider availability (Ollama, vLLM, etc.).
-    
+
     Returns:
         Tuple of (is_available, provider_class, api_key, base_url)
     """
     # Check if custom provider is enabled
     enable_custom = os.getenv("ENABLE_CUSTOM", "false").strip().lower() in ("1", "true", "yes")
-    
+
     if not enable_custom:
         logger.debug("Custom provider disabled by ENABLE_CUSTOM=false (default)")
         return False, None, None, None
-    
+
     # Check for custom API URL
     custom_url = os.getenv("CUSTOM_API_URL")
-    
+
     if not custom_url:
         logger.debug("Custom API URL not found in environment")
         return False, None, None, None
-    
-    # Try to import custom provider
+
+    # Try to import custom provider (uses OpenAI-compatible provider)
     try:
-        from src.providers.custom import CustomProvider
-        
+        from src.providers.openai_compatible import OpenAICompatibleProvider
+
         # Get API key (can be empty for Ollama)
         custom_key = os.getenv("CUSTOM_API_KEY", "")
         custom_model = os.getenv("CUSTOM_MODEL_NAME", "llama3.2")
-        
+
         logger.info(f"Custom API enabled; endpoint: {custom_url} with model {custom_model}")
         if custom_key:
             logger.debug("Custom API key provided for authentication")
         else:
             logger.debug("No custom API key provided (using unauthenticated access)")
-        
-        return True, CustomProvider, custom_key, custom_url
+
+        return True, OpenAICompatibleProvider, custom_key, custom_url
     except Exception as e:
         logger.warning(f"Custom provider module not available: {e}; skipping custom provider registration")
         return False, None, None, None
@@ -181,7 +194,10 @@ def detect_custom_provider() -> Tuple[bool, Optional[Any], Optional[str], Option
 def detect_all_providers() -> dict:
     """
     Detect all available providers.
-    
+
+    Thread-safe with double-checked locking pattern.
+    Results are cached after first detection to avoid redundant environment checks.
+
     Returns:
         Dict with provider configuration:
         {
@@ -197,68 +213,90 @@ def detect_all_providers() -> dict:
             'has_custom': bool
         }
     """
-    # Log environment variable status
-    logger.debug("Checking environment variables for API keys...")
-    api_keys_to_check = ["KIMI_API_KEY", "GLM_API_KEY", "OPENROUTER_API_KEY", "CUSTOM_API_URL"]
-    for key in api_keys_to_check:
-        value = os.getenv(key)
-        logger.debug(f"  {key}: {'[PRESENT]' if value else '[MISSING]'}")
-    
-    # Parse provider gating configuration
-    disabled_providers = {p.strip().upper() for p in os.getenv("DISABLED_PROVIDERS", "").split(",") if p.strip()}
-    allowed_providers = {p.strip().upper() for p in os.getenv("ALLOWED_PROVIDERS", "").split(",") if p.strip()}
-    
-    # Force-disable providers we don't support in this deployment
-    disabled_providers.update({"GOOGLE", "OPENAI", "XAI", "DIAL"})
-    
-    # Detect each provider
-    kimi_available, kimi_class, kimi_key = detect_kimi_provider(disabled_providers, allowed_providers)
-    glm_available, glm_class, glm_key = detect_glm_provider(disabled_providers, allowed_providers)
-    openrouter_available, openrouter_key = detect_openrouter_provider()
-    custom_available, custom_class, custom_key, custom_url = detect_custom_provider()
-    
-    # Build valid providers list
-    valid_providers = []
-    if kimi_available:
-        valid_providers.append("Kimi")
-    if glm_available:
-        valid_providers.append("GLM")
-    if openrouter_available:
-        valid_providers.append("OpenRouter")
-    if custom_available:
-        valid_providers.append(f"Custom API ({custom_url})")
-    
-    # Determine provider categories
-    has_native_apis = kimi_available or glm_available
-    has_openrouter = openrouter_available
-    has_custom = custom_available
-    
-    return {
-        'disabled_providers': disabled_providers,
-        'allowed_providers': allowed_providers,
-        'kimi': {
-            'available': kimi_available,
-            'class': kimi_class,
-            'key': kimi_key
-        },
-        'glm': {
-            'available': glm_available,
-            'class': glm_class,
-            'key': glm_key
-        },
-        'openrouter': {
-            'available': openrouter_available,
-            'key': openrouter_key
-        },
-        'custom': {
-            'available': custom_available,
-            'class': custom_class,
-            'key': custom_key,
-            'url': custom_url
-        },
-        'valid_providers': valid_providers,
-        'has_native_apis': has_native_apis,
-        'has_openrouter': has_openrouter,
-        'has_custom': has_custom
-    }
+    global _detection_complete, _cached_provider_config
+
+    # WEEK 1 FIX #5 (2025-10-21): Fast path - no lock needed if already detected
+    if _detection_complete and _cached_provider_config is not None:
+        logger.debug("Provider detection already complete, returning cached config")
+        return _cached_provider_config
+
+    # WEEK 1 FIX #5 (2025-10-21): Slow path - acquire lock and double-check
+    with _detection_lock:
+        # Double-check inside lock (another thread may have detected while we waited)
+        if _detection_complete and _cached_provider_config is not None:
+            logger.debug("Provider detection already complete (confirmed in lock), returning cached config")
+            return _cached_provider_config
+
+        logger.debug("Performing first-time provider detection")
+
+        # Log environment variable status
+        logger.debug("Checking environment variables for API keys...")
+        api_keys_to_check = ["KIMI_API_KEY", "GLM_API_KEY", "OPENROUTER_API_KEY", "CUSTOM_API_URL"]
+        for key in api_keys_to_check:
+            value = os.getenv(key)
+            logger.debug(f"  {key}: {'[PRESENT]' if value else '[MISSING]'}")
+
+        # Parse provider gating configuration
+        disabled_providers = {p.strip().upper() for p in os.getenv("DISABLED_PROVIDERS", "").split(",") if p.strip()}
+        allowed_providers = {p.strip().upper() for p in os.getenv("ALLOWED_PROVIDERS", "").split(",") if p.strip()}
+
+        # Force-disable providers we don't support in this deployment
+        disabled_providers.update({"GOOGLE", "OPENAI", "XAI", "DIAL"})
+
+        # Detect each provider
+        kimi_available, kimi_class, kimi_key = detect_kimi_provider(disabled_providers, allowed_providers)
+        glm_available, glm_class, glm_key = detect_glm_provider(disabled_providers, allowed_providers)
+        openrouter_available, openrouter_key = detect_openrouter_provider()
+        custom_available, custom_class, custom_key, custom_url = detect_custom_provider()
+
+        # Build valid providers list
+        valid_providers = []
+        if kimi_available:
+            valid_providers.append("Kimi")
+        if glm_available:
+            valid_providers.append("GLM")
+        if openrouter_available:
+            valid_providers.append("OpenRouter")
+        if custom_available:
+            valid_providers.append(f"Custom API ({custom_url})")
+
+        # Determine provider categories
+        has_native_apis = kimi_available or glm_available
+        has_openrouter = openrouter_available
+        has_custom = custom_available
+
+        # Cache the result
+        _cached_provider_config = {
+            'disabled_providers': disabled_providers,
+            'allowed_providers': allowed_providers,
+            'kimi': {
+                'available': kimi_available,
+                'class': kimi_class,
+                'key': kimi_key
+            },
+            'glm': {
+                'available': glm_available,
+                'class': glm_class,
+                'key': glm_key
+            },
+            'openrouter': {
+                'available': openrouter_available,
+                'key': openrouter_key
+            },
+            'custom': {
+                'available': custom_available,
+                'class': custom_class,
+                'key': custom_key,
+                'url': custom_url
+            },
+            'valid_providers': valid_providers,
+            'has_native_apis': has_native_apis,
+            'has_openrouter': has_openrouter,
+            'has_custom': has_custom
+        }
+
+        _detection_complete = True
+        logger.debug("Provider detection complete, config cached")
+
+        return _cached_provider_config
 

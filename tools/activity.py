@@ -94,7 +94,7 @@ class ActivityTool(SimpleTool):
     async def prepare_prompt(self, request) -> str:
         return ""
 
-    async def execute(self, arguments: Dict[str, Any]) -> List:
+    async def execute(self, arguments: Dict[str, Any], on_chunk=None) -> List:
         from mcp.types import TextContent
         from tools.models import ToolOutput
 

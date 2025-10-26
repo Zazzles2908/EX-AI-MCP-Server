@@ -2,7 +2,7 @@
 # Multi-stage build for optimized image size
 
 # Stage 1: Builder
-FROM python:3.13-slim as builder
+FROM python:3.13-slim AS builder
 
 # Set working directory
 WORKDIR /app
@@ -16,8 +16,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --user -r requirements.txt
+# Install Python dependencies (optimized for layer caching)
+# Upgrade pip first for better dependency resolution
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --user -r requirements.txt
 
 # Stage 2: Runtime
 FROM python:3.13-slim
@@ -44,9 +46,10 @@ COPY src/ ./src/
 COPY tools/ ./tools/
 COPY utils/ ./utils/
 COPY systemprompts/ ./systemprompts/
+COPY configurations/ ./configurations/
 COPY streaming/ ./streaming/
 COPY scripts/ws/ ./scripts/ws/
-COPY scripts/health_check.py ./scripts/
+COPY scripts/runtime/ ./scripts/runtime/
 COPY static/ ./static/
 COPY server.py ./
 COPY config.py ./
@@ -65,7 +68,7 @@ EXPOSE 8079
 # Start-period: 60s (allows Supabase connections to initialize)
 # Retries: 3 (allows for transient network issues)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD python scripts/health_check.py || exit 1
+    CMD python scripts/runtime/health_check.py || exit 1
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \

@@ -208,14 +208,24 @@ class ConversationIntegrationMixin:
         Handle work completion logic - expert analysis decision and response building.
         """
         response_data[f"{self.get_name()}_complete"] = True
-        
+
+        # DEBUG: Log consolidated findings state
+        print(f"[DEBUG_COMPLETION] Tool: {self.get_name()}")
+        print(f"[DEBUG_COMPLETION] consolidated_findings.relevant_files: {len(self.consolidated_findings.relevant_files) if hasattr(self.consolidated_findings, 'relevant_files') else 'N/A'}")  # type: ignore
+        print(f"[DEBUG_COMPLETION] consolidated_findings.findings: {len(self.consolidated_findings.findings) if hasattr(self.consolidated_findings, 'findings') else 'N/A'}")  # type: ignore
+        print(f"[DEBUG_COMPLETION] requires_expert_analysis(): {self.requires_expert_analysis()}")  # type: ignore
+        print(f"[DEBUG_COMPLETION] should_call_expert_analysis(): {self.should_call_expert_analysis(self.consolidated_findings, request)}")  # type: ignore
+        print(f"[DEBUG_COMPLETION] should_skip_expert_analysis(): {self.should_skip_expert_analysis(request, self.consolidated_findings)}")  # type: ignore
+
         # Check if tool wants to skip expert analysis due to high certainty
         if self.should_skip_expert_analysis(request, self.consolidated_findings):  # type: ignore
             # Handle completion without expert analysis
+            print(f"[DEBUG_COMPLETION] Skipping expert analysis (should_skip returned True)")
             completion_response = self.handle_completion_without_expert_analysis(request, self.consolidated_findings)  # type: ignore
             response_data.update(completion_response)
         elif self.requires_expert_analysis() and self.should_call_expert_analysis(self.consolidated_findings, request):  # type: ignore
             # Standard expert analysis path
+            print(f"[DEBUG_COMPLETION] Calling expert analysis")
             response_data["status"] = "calling_expert_analysis"
 
             # DEBUG: Print to verify execution
@@ -245,8 +255,9 @@ class ConversationIntegrationMixin:
             print(f"[DEBUG_EXPERT] About to await _call_expert_analysis...")
             import asyncio
             import os
-            # Make timeout configurable via environment variable
-            timeout_secs = float(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", "180"))
+            from config import TimeoutConfig
+            # Use centralized timeout configuration (EXAI Fix #3 - 2025-10-21)
+            timeout_secs = float(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", str(TimeoutConfig.EXPERT_ANALYSIS_TIMEOUT_SECS)))
             try:
                 expert_analysis = await asyncio.wait_for(
                     self._call_expert_analysis(arguments, request),

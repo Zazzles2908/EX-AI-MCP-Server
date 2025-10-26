@@ -45,7 +45,7 @@ class GLMPayloadPreviewTool(BaseTool):
     def get_system_prompt(self) -> str:
         return "Preview GLM payload; no network I/O."
 
-    async def execute(self, arguments: dict[str, Any]):
+    async def execute(self, arguments: dict[str, Any], on_chunk=None):
         from mcp.types import TextContent
         from src.providers.glm import GLMModelProvider
 

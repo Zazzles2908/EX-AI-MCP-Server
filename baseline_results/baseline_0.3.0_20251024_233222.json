@@ -1,0 +1,2728 @@
+{
+  "baseline_version": "0.3.0",
+  "timestamp": "2025-10-24T12:31:52.264976+00:00",
+  "total_executions": 310,
+  "duration_seconds": 30.1620831489563,
+  "results": [
+    {
+      "tool_name": "chat",
+      "iteration": 1,
+      "status": "success",
+      "latency_ms": 6283.0,
+      "timestamp": "2025-10-24T12:31:58.555231+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 2,
+      "status": "success",
+      "latency_ms": 379.14,
+      "timestamp": "2025-10-24T12:31:58.934496+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 3,
+      "status": "success",
+      "latency_ms": 294.75,
+      "timestamp": "2025-10-24T12:31:59.229353+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 4,
+      "status": "success",
+      "latency_ms": 312.7,
+      "timestamp": "2025-10-24T12:31:59.542191+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 5,
+      "status": "success",
+      "latency_ms": 298.81,
+      "timestamp": "2025-10-24T12:31:59.841158+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 6,
+      "status": "success",
+      "latency_ms": 287.73,
+      "timestamp": "2025-10-24T12:32:00.129118+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 7,
+      "status": "success",
+      "latency_ms": 275.47,
+      "timestamp": "2025-10-24T12:32:00.404706+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 8,
+      "status": "success",
+      "latency_ms": 331.4,
+      "timestamp": "2025-10-24T12:32:00.736240+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 9,
+      "status": "success",
+      "latency_ms": 298.62,
+      "timestamp": "2025-10-24T12:32:01.034965+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "chat",
+      "iteration": 10,
+      "status": "success",
+      "latency_ms": 291.46,
+      "timestamp": "2025-10-24T12:32:01.326555+00:00",
+      "baseline_version": "0.3.0",
+      "output_count": 1
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 21080.77,
+      "timestamp": "2025-10-24T12:32:22.407554+00:00",
+      "baseline_version": "0.3.0",
+      "error": "WebSocket connection closed"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.407644+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.407718+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.407793+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.407915+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.407987+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.408080+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.408157+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.408230+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "analyze",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.408299+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.408480+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.408550+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.408617+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.408673+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.408737+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.408804+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.408853+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.408912+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.408995+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "codereview",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409081+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409237+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409302+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409372+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409420+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409474+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409524+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409575+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409628+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409691+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "debug",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409745+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409863+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409923+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.409975+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410039+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410079+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410115+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410152+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410198+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410256+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "refactor",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410304+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410436+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410492+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410547+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410598+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410642+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410690+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410747+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410816+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410884+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "testgen",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.410930+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411041+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411088+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411125+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411158+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411202+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411264+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411326+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411360+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411399+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "planner",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411435+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411536+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411574+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411624+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411669+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411720+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411773+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411821+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411883+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411944+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "thinkdeep",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.411990+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:32:22.412140+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:32:22.412217+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:32:22.412288+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:32:22.412384+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:32:22.412437+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:32:22.412484+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:32:22.414157+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:32:22.414286+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:32:22.414404+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_files",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Requires file_ids from kimi_upload_files",
+      "timestamp": "2025-10-24T12:32:22.414490+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.414661+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.414710+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.414748+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.414784+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.414854+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.414929+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.414988+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.415047+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.415110+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "status",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.415162+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.415297+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.415345+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.415409+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.415460+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.415507+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.415567+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.415617+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.415664+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.415914+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "secaudit",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.415977+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416139+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416213+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416279+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416342+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416393+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416438+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416490+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416544+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416607+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "docgen",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416655+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416811+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416877+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416936+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.416989+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417041+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417090+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417140+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417193+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417248+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "consensus",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417295+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417418+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417465+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417507+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417551+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417593+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417647+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417682+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417730+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417779+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "tracer",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417837+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.417976+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418029+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418069+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418113+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418166+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418218+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418264+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418305+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418370+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "precommit",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418414+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418516+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418565+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418604+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418646+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418685+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418745+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418795+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418853+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418911+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "challenge",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.418964+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.419112+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.419198+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.419276+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.419348+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.419419+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.419507+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.419568+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.419649+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.419732+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "kimi_upload_files",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.419816+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.419946+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.419994+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420037+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420083+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420123+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420181+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420226+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420270+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420306+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_manage_files",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420340+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420442+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420479+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420518+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420557+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420592+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420621+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420658+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420695+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420727+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_chat_with_tools",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420756+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420842+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420876+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420910+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.420953+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421009+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421054+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421088+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421133+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421176+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_capture_headers",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421222+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421336+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421399+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421455+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421505+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421542+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421578+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421609+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421644+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421683+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "kimi_intent_analysis",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.421727+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.421849+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.421925+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.421998+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.422080+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.422154+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.422228+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.422301+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.422366+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.422422+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "glm_upload_file",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.422485+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.422594+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.422639+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.422682+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.422718+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.422760+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.422805+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.422840+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.422880+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.422920+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_web_search",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.422954+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 1,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.423071+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 2,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.423111+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 3,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.423154+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 4,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.423188+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 5,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.423224+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 6,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.423261+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 7,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.423298+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 8,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.423339+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 9,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.423375+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "glm_payload_preview",
+      "iteration": 10,
+      "status": "skipped",
+      "reason": "Unknown tool tier",
+      "timestamp": "2025-10-24T12:32:22.423415+00:00",
+      "baseline_version": "0.3.0"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.423526+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.423567+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.423614+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.423658+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.423700+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.423741+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.423807+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.423891+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.423948+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "provider_capabilities",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424024+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424144+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424192+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424247+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424305+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424374+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424422+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424483+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424551+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424613+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "listmodels",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424659+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424754+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424792+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424849+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424895+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424946+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.424996+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425059+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425101+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425147+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "activity",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425185+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425294+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425337+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425380+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425437+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425488+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425529+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425577+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425632+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425671+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "version",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425714+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425850+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425896+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425941+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.425984+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426025+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426069+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426110+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426150+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426194+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "toolcall_log_tail",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426242+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426377+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426436+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426477+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426521+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426564+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426617+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426659+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426700+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426743+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "health",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426785+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 1,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426891+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 2,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426935+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 3,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.426984+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 4,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.427037+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 5,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.427091+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 6,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.427135+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 7,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.427186+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 8,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.427276+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 9,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.427331+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    },
+    {
+      "tool_name": "self-check",
+      "iteration": 10,
+      "status": "error",
+      "latency_ms": 0.0,
+      "timestamp": "2025-10-24T12:32:22.427418+00:00",
+      "baseline_version": "0.3.0",
+      "error": "Not connected to MCP server"
+    }
+  ]
+}

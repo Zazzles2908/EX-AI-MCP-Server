@@ -86,7 +86,7 @@ class HealthTool(BaseTool):
         """Health checks do not require model access."""
         return False
 
-    async def execute(self, arguments: Dict[str, Any]) -> list:
+    async def execute(self, arguments: Dict[str, Any], on_chunk=None) -> list:
         """Execute health check and return JSON text content.
 
         We avoid model resolution and simply return a compact JSON payload with

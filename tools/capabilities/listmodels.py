@@ -74,7 +74,7 @@ class ListModelsTool(BaseTool):
         """Not used for this utility tool"""
         return response
 
-    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list[TextContent]:
         """
         List all available models organized by provider.
 

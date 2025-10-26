@@ -56,22 +56,28 @@ class AnalyzeTool(WorkflowTool):
 
     def get_description(self) -> str:
         return (
-            "COMPREHENSIVE ANALYSIS WORKFLOW - Step-by-step code analysis with expert validation. "
-            "Examples: {\"step\":\"Kickoff\",\"step_number\":1,\"next_step_required\":true,\"findings\":\"...\",\"model\":\"auto\"}.\n"
-            "This tool guides you through a systematic investigation process where you:\n\n"
-            "1. Start with step 1: describe your analysis investigation plan\n"
-            "2. STOP and investigate code structure, patterns, and architectural decisions\n"
-            "3. Report findings in step 2 with concrete evidence from actual code analysis\n"
-            "4. Continue investigating between each step\n"
-            "5. Track findings, relevant files, and insights throughout\n"
-            "6. Update assessments as understanding evolves\n"
-            "7. Once investigation is complete, always receive expert validation\n\n"
-            "IMPORTANT: This tool enforces investigation between steps:\n"
-            "- After each call, you MUST investigate before calling again\n"
-            "- Each step must include NEW evidence from code examination\n"
-            "- No recursive calls without actual investigation work\n"
-            "- The tool will specify which step number to use next\n"
-            "- Follow the required_actions list for investigation guidance\n\n"
+            "COMPREHENSIVE CODE ANALYSIS - Structured analysis workflow with expert validation.\n\n"
+            "⚠️ CRITICAL: This tool CANNOT analyze code for you! YOU (Claude) must analyze FIRST.\n\n"
+            "HOW THIS TOOL WORKS:\n"
+            "1. YOU analyze code using view/codebase-retrieval tools\n"
+            "2. YOU call this tool with your analysis findings\n"
+            "3. Tool auto-executes internally (NO AI calls during steps 2-N)\n"
+            "4. Tool calls expert analysis at END (ONE AI call for validation)\n"
+            "5. You receive comprehensive analysis with strategic insights\n\n"
+            "WORKFLOW:\n"
+            "Step 1: YOU analyze the code using view/codebase-retrieval\n"
+            "  - Explore codebase structure and organization\n"
+            "  - Identify architectural patterns and design decisions\n"
+            "  - Assess code quality and maintainability\n"
+            "  - Note performance characteristics\n"
+            "  - Understand business logic and data flow\n"
+            "Step 2: Call analyze_EXAI-WS with YOUR findings:\n"
+            "  - Describe architecture and patterns YOU discovered\n"
+            "  - Include strengths and concerns YOU identified\n"
+            "  - Specify relevant files (absolute paths)\n"
+            "Step 3: Receive expert validation and strategic recommendations\n\n"
+            "❌ DON'T: Call this tool expecting it to analyze code for you\n"
+            "✅ DO: Analyze code first, then use this tool to structure findings and get expert validation\n\n"
             "Perfect for: comprehensive code analysis, architectural assessment, performance evaluation, "
             "security analysis, maintainability review, pattern detection, strategic planning."
         )
@@ -101,6 +107,23 @@ class AnalyzeTool(WorkflowTool):
         Override global EXPERT_ANALYSIS_INCLUDE_FILES setting.
         """
         return True
+
+    def get_request_use_websearch(self, request) -> bool:
+        """
+        Enable web search for analyze tool by default.
+
+        Analyze benefits from external documentation for:
+        - Architectural patterns and best practices
+        - Framework-specific implementation details
+        - Industry standards and conventions
+        - Performance benchmarks and optimization techniques
+
+        User can still explicitly disable with use_websearch=false.
+        """
+        try:
+            return request.use_websearch if request.use_websearch is not None else True
+        except AttributeError:
+            return True
 
     def get_input_schema(self) -> dict[str, Any]:
         """Generate input schema using WorkflowSchemaBuilder with analyze-specific overrides."""
@@ -225,12 +248,22 @@ class AnalyzeTool(WorkflowTool):
 
         Analysis benefits from a second opinion to ensure completeness.
         """
-        # Check if user explicitly requested to skip assistant model
-        if request and not self.get_request_use_assistant_model(request):
-            return False
+        # DEBUG: Log decision process
+        print(f"[DEBUG_SHOULD_CALL] request: {request is not None}")
+        if request:
+            use_assistant = self.get_request_use_assistant_model(request)
+            print(f"[DEBUG_SHOULD_CALL] use_assistant_model: {use_assistant}")
+            if not use_assistant:
+                print(f"[DEBUG_SHOULD_CALL] Returning False - user disabled assistant model")
+                return False
 
         # For analysis, we always want expert validation if we have any meaningful data
-        return len(consolidated_findings.relevant_files) > 0 or len(consolidated_findings.findings) >= 1
+        has_files = len(consolidated_findings.relevant_files) > 0
+        has_findings = len(consolidated_findings.findings) >= 1
+        print(f"[DEBUG_SHOULD_CALL] has_files: {has_files}, has_findings: {has_findings}")
+        result = has_files or has_findings
+        print(f"[DEBUG_SHOULD_CALL] Returning: {result}")
+        return result
 
     def prepare_expert_analysis_context(self, consolidated_findings) -> str:
         """Prepare context for external model call for final analysis validation."""

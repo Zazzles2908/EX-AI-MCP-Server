@@ -164,7 +164,23 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
     result = attach_progress_and_summary(result, arguments, name, resolved_model,
                                         req_id, overall_start, 1 + steps)
     write_session_cache(arguments)
-    
+
+    # BUG FIX #13 (2025-10-20): Clear request-scoped cache after each request
+    # CRITICAL FIX (2025-10-24): Use global_storage to ensure we clear the SAME cache
+    # that was used during the request (prevents 4x Supabase duplication)
+    # The thread cache eliminates redundant Supabase queries WITHIN a request,
+    # but must be cleared BETWEEN requests
+    try:
+        logger.info(f"[REQUEST_CACHE] Attempting to clear cache for request {req_id}")
+        from utils.conversation.global_storage import clear_request_cache, get_global_storage
+        storage = get_global_storage()
+        logger.info(f"[REQUEST_CACHE] Got global storage: {type(storage).__name__} (id={id(storage)})")
+        clear_request_cache()
+        logger.info(f"[REQUEST_CACHE] Successfully cleared request cache")
+    except Exception as e:
+        # Don't fail the request if cache cleanup fails
+        logger.error(f"[REQUEST_CACHE] Failed to clear request cache: {e}", exc_info=True)
+
     logger.info(f"Tool '{name}' execution completed")
     return result
 

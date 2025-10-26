@@ -57,27 +57,27 @@
       "type": "stdio",
       "trust": true,
       "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
-      "args": ["-u", "C:/Project/EX-AI-MCP-Server/scripts/run_ws_shim.py"],
+      "args": ["-u", "C:/Project/EX-AI-MCP-Server/scripts/runtime/run_ws_shim.py"],
       "cwd": "C:/Project/EX-AI-MCP-Server"
     },
-    
+
     "augmentcode": {
       "root_key": "mcpServers",
       "server_name": "EXAI-WS",
       "type": "stdio",
       "trust": true,
       "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
-      "args": ["-u", "C:/Project/EX-AI-MCP-Server/scripts/run_ws_shim.py"],
+      "args": ["-u", "C:/Project/EX-AI-MCP-Server/scripts/runtime/run_ws_shim.py"],
       "cwd": "C:/Project/EX-AI-MCP-Server"
     },
-    
+
     "claude": {
       "root_key": "servers",
       "server_name": "exai-mcp",
       "type": "stdio",
       "trust": true,
       "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
-      "args": ["-u", "C:/Project/EX-AI-MCP-Server/scripts/run_ws_shim.py"],
+      "args": ["-u", "C:/Project/EX-AI-MCP-Server/scripts/runtime/run_ws_shim.py"],
       "cwd": "C:/Project/EX-AI-MCP-Server"
     }
   },

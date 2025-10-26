@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from typing import Any, Dict
 from pathlib import Path
+import logging
 
 
 
@@ -12,6 +13,154 @@ from tools.shared.base_models import ToolRequest
 from src.providers.glm import GLMModelProvider
 
 from src.providers.registry import ModelProviderRegistry
+from utils.file.deduplication import FileDeduplicationManager
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# SUPABASE GATEWAY FUNCTIONS (Phase 3 - 2025-10-26)
+# ============================================================================
+
+async def upload_via_supabase_gateway_glm(file_path: str, storage, purpose: str = "agent") -> dict:
+    """
+    Upload file to Supabase first, then upload to GLM using SDK.
+
+    UPDATED APPROACH (EXAI-validated):
+    GLM does NOT support URL-based file extraction. Instead:
+    1. Upload file to Supabase Storage
+    2. Upload file to GLM using SDK (client.files.create or HTTP fallback)
+    3. Track both IDs in database
+
+    This provides:
+    - Supabase as centralized storage
+    - GLM file_id for AI operations
+    - Bidirectional tracking
+    - SDK handles large files with chunked uploads and retries
+
+    Args:
+        file_path: Path to file (absolute or relative)
+        storage: Supabase storage manager instance
+        purpose: File purpose ('agent' for GLM)
+
+    Returns:
+        dict with:
+        - glm_file_id: File ID from GLM
+        - supabase_file_id: File ID from Supabase
+        - filename: Original filename
+        - size_bytes: File size
+        - upload_method: 'supabase_gateway'
+
+    Raises:
+        RuntimeError: If upload fails
+        ValueError: If file doesn't exist or is too large
+
+    Source: EXAI Consultation c90cdeec-48bb-4d10-b075-925ebbf39c8a
+    Note: Uses SDK instead of raw HTTP for reliability and large file support
+    """
+    import mimetypes
+    from pathlib import Path
+    from utils.file.cache import FileCache
+
+    pth = Path(file_path)
+
+    # Validate file exists
+    if not pth.exists() or not pth.is_file():
+        raise ValueError(f"File not found: {file_path}")
+
+    # Check file size (GLM limit: 20MB)
+    file_size = pth.stat().st_size
+    max_size = 20 * 1024 * 1024  # 20MB
+    if file_size > max_size:
+        raise ValueError(f"File too large: {file_size} bytes (max 20MB for GLM)")
+
+    logger.info(f"Starting Supabase gateway upload for {pth.name} ({file_size} bytes)")
+
+    # 1. Upload to Supabase Storage
+    try:
+        with open(pth, 'rb') as f:
+            file_data = f.read()
+
+        mime_type, _ = mimetypes.guess_type(str(pth))
+
+        supabase_file_id = storage.upload_file(
+            file_path=f"glm-gateway/{pth.name}",
+            file_data=file_data,
+            original_name=pth.name,
+            mime_type=mime_type,
+            file_type="user_upload"
+        )
+
+        if not supabase_file_id:
+            raise RuntimeError("Supabase upload returned None")
+
+        logger.info(f"✅ Uploaded to Supabase: {pth.name} -> {supabase_file_id}")
+
+    except Exception as e:
+        logger.error(f"❌ Supabase upload failed: {e}")
+        raise RuntimeError(f"Failed to upload to Supabase: {e}")
+
+
+
+    # 3. Upload to GLM using SDK (EXAI-recommended approach)
+    # Note: GLM SDK handles large files better than raw HTTP
+    # Provides chunked uploads, retry logic, and connection pooling
+    try:
+        from src.providers.registry import ModelProviderRegistry
+        from src.providers.glm import GLMModelProvider
+
+        api_key = os.getenv("GLM_API_KEY")
+        if not api_key:
+            raise RuntimeError("GLM_API_KEY not configured")
+
+        default_model = os.getenv("GLM_DEFAULT_MODEL", "glm-4.6")
+        prov = ModelProviderRegistry.get_provider_for_model(default_model)
+
+        if not isinstance(prov, GLMModelProvider):
+            # Fallback: create provider directly
+            base_url = os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/paas/v4")
+            prov = GLMModelProvider(api_key=api_key, base_url=base_url)
+
+        # Upload using SDK (uses client.files.create or HTTP fallback internally)
+        # This handles large files much better than raw HTTP (chunked uploads, retries)
+        glm_file_id = prov.upload_file(str(pth), purpose=purpose)
+
+        if not glm_file_id:
+            raise RuntimeError("GLM upload returned None")
+
+        logger.info(f"✅ Uploaded to GLM via SDK: {glm_file_id}")
+
+    except Exception as e:
+        logger.error(f"❌ GLM SDK upload failed: {e}")
+        raise RuntimeError(f"Failed to upload to GLM via SDK: {e}")
+
+    # 5. Track both IDs in database
+    try:
+        client = storage.get_client()
+        client.table("provider_file_uploads").insert({
+            "provider": "glm",
+            "provider_file_id": glm_file_id,
+            "supabase_file_id": supabase_file_id,
+            "sha256": FileCache.sha256_file(pth),
+            "filename": pth.name,
+            "file_size_bytes": file_size,
+            "upload_status": "completed",
+            "upload_method": "supabase_gateway_presigned"
+        }).execute()
+
+        logger.info(f"✅ Tracked in database: glm={glm_file_id}, supabase={supabase_file_id}")
+
+    except Exception as e:
+        logger.warning(f"⚠️  Failed to track in database: {e}")
+        # Don't fail - upload was successful
+
+    return {
+        "glm_file_id": glm_file_id,
+        "supabase_file_id": supabase_file_id,
+        "filename": pth.name,
+        "size_bytes": file_size,
+        "upload_method": "supabase_gateway_presigned"
+    }
 
 
 class GLMUploadFileTool(BaseTool):
@@ -82,50 +231,66 @@ class GLMUploadFileTool(BaseTool):
             raise FileNotFoundError(f"File not found: {file_path}")
 
         try:
-            # FileCache: reuse existing file_id if enabled and present
+            # DEDUPLICATION CHECK (Phase 2.4 - 2025-10-26)
             from pathlib import Path as _P
             from utils.file.cache import FileCache
-            cache_enabled = os.getenv("FILECACHE_ENABLED", "true").strip().lower() == "true"
+
+            dedup_enabled = os.getenv("FILE_DEDUPLICATION_ENABLED", "true").strip().lower() == "true"
             file_id = None
-            if cache_enabled:
+
+            if dedup_enabled:
                 try:
-                    pth = _P(str(p))
-                    sha = FileCache.sha256_file(pth)
-                    fc = FileCache()
-                    cached = fc.get(sha, "GLM")
-                    if cached:
+                    from src.storage.supabase_client import get_storage_manager
+                    storage = get_storage_manager()
+                    dedup_manager = FileDeduplicationManager(storage)
+
+                    existing = dedup_manager.check_duplicate(p, "glm")
+                    if existing:
+                        # File already exists - reuse it
+                        file_id = existing['provider_file_id']
+
+                        # Increment reference count
+                        dedup_manager.increment_reference(file_id, "glm")
+
+                        logger.info(f"♻️  Reusing existing file: {p.name} -> {file_id} (ref_count incremented)")
+
                         try:
                             from utils.observability import record_cache_hit
-                            record_cache_hit("GLM", sha)
+                            record_cache_hit("GLM", existing['sha256'])
                         except Exception:
                             pass
-                        file_id = cached
-                    else:
-                        try:
-                            from utils.observability import record_cache_miss
-                            record_cache_miss("GLM", sha)
-                        except Exception:
-                            pass
-                except Exception:
-                    file_id = None
 
+                        return {"file_id": file_id, "filename": p.name, "deduplicated": True}
+                except Exception as e:
+                    logger.warning(f"Deduplication check failed, proceeding with upload: {e}")
+
+            # Upload if not deduplicated
             if not file_id:
                 file_id = prov.upload_file(str(p), purpose=purpose)
-                # on new upload, cache it
-                try:
-                    if cache_enabled:
-                        pth = _P(str(p))
-                        sha = FileCache.sha256_file(pth)
-                        fc = FileCache()
-                        fc.set(sha, "GLM", file_id)
-                except Exception:
-                    pass
+
+                # Register new file with deduplication manager
+                if dedup_enabled:
+                    try:
+                        from src.storage.supabase_client import get_storage_manager
+                        storage = get_storage_manager()
+                        dedup_manager = FileDeduplicationManager(storage)
+                        dedup_manager.register_new_file(
+                            provider_file_id=file_id,
+                            supabase_file_id=None,
+                            file_path=p,
+                            provider="glm",
+                            upload_method="direct"
+                        )
+                    except Exception as reg_err:
+                        logger.warning(f"Failed to register with deduplication manager: {reg_err}")
+
                 # Observability: record file count +1
                 try:
                     from utils.observability import record_file_count
                     record_file_count("GLM", +1)
                 except Exception:
                     pass
+
             return {"file_id": file_id, "filename": p.name}
         except Exception as e:
             try:
@@ -135,7 +300,7 @@ class GLMUploadFileTool(BaseTool):
                 pass
             raise
 
-    async def execute(self, arguments: dict[str, Any]) -> list["TextContent"]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list["TextContent"]:
         import asyncio as _aio
         from mcp.types import TextContent
         result = await _aio.to_thread(self.run, **arguments)
@@ -214,7 +379,7 @@ class GLMMultiFileChatTool(BaseTool):
         return {"model": model, "content": mr.content, "uploaded": uploaded}
 
 
-    async def execute(self, arguments: dict[str, Any]) -> list["TextContent"]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list["TextContent"]:
         import asyncio as _aio
         from mcp.types import TextContent
         from tools.shared.error_envelope import make_error_envelope

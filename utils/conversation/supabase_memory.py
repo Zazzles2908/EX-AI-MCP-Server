@@ -16,12 +16,8 @@ Target: 90% token reduction (108K → <10K)
 """
 
 import logging
-import re
 import time
-import uuid
-import asyncio
 from typing import Optional, Dict, Any, List
-from concurrent.futures import ThreadPoolExecutor
 from src.storage.supabase_client import get_storage_manager
 from src.storage.conversation_mapper import get_conversation_mapper
 from src.storage.file_handler import get_file_handler
@@ -44,7 +40,7 @@ HARD_TOKEN_LIMIT = 4000  # Hard limit: prune aggressively if exceeded (EXAI reco
 class SupabaseConversationMemory:
     """
     Persistent conversation memory using Supabase.
-    
+
     Features:
     - Conversation persistence
     - Message history storage
@@ -52,7 +48,7 @@ class SupabaseConversationMemory:
     - Fallback to in-memory storage
     - Compatible with existing memory interface
     """
-    
+
     def __init__(self, fallback_to_memory: bool = True):
         """
         Initialize Supabase conversation memory
@@ -71,7 +67,10 @@ class SupabaseConversationMemory:
         # BUG FIX #11 (2025-10-19): Add in-memory thread cache to eliminate redundant get_thread() calls
         # This prevents multiple get_thread() calls within the same request from hitting Supabase
         # Expected improvement: 0.905s → 0.3s (eliminates 3x redundant calls)
+        # BUG FIX #13 (2025-10-20): This is a REQUEST-SCOPED cache that MUST be cleared after each request
+        # Without clearing, it becomes a memory leak and serves stale data across requests
         self._thread_cache = {}
+        self._request_cache_enabled = True  # Can be disabled for debugging
 
         # BUG FIX #11 (Phase 1b - 2025-10-20): Use async queue instead of ThreadPoolExecutor
         # When USE_ASYNC_SUPABASE=true, writes are submitted to async queue
@@ -96,7 +95,7 @@ class SupabaseConversationMemory:
             except ImportError:
                 logger.warning("In-memory fallback not available")
                 self.fallback_to_memory = False
-    
+
     @timing_decorator("SupabaseMemory.get_thread")
     def get_thread(self, continuation_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -119,9 +118,11 @@ class SupabaseConversationMemory:
             return None
 
         try:
-            # BUG FIX #11: Check in-memory thread cache first (L0 - request-level cache)
-            if continuation_id in self._thread_cache:
-                logger.debug(f"[THREAD_CACHE HIT] Retrieved thread {continuation_id} from in-memory cache (0ms)")
+            # BUG FIX #11 & #13: Check in-memory thread cache first (L0 - request-level cache)
+            # This eliminates redundant Supabase queries WITHIN a single request
+            # Cache is cleared after each request completes (see request_handler.py)
+            if self._request_cache_enabled and continuation_id in self._thread_cache:
+                logger.info(f"[REQUEST_CACHE HIT] Thread {continuation_id} from request cache (0ms, no Supabase query)")
                 return self._thread_cache[continuation_id]
 
             # PERFORMANCE FIX: Check cache first (L1 → L2)
@@ -141,8 +142,10 @@ class SupabaseConversationMemory:
                 }
                 logger.debug(f"[CACHE HIT] Retrieved thread {continuation_id} from cache ({len(cached_messages)} messages)")
 
-                # BUG FIX #11: Store in thread cache for subsequent calls in same request
-                self._thread_cache[continuation_id] = thread
+                # BUG FIX #11 & #13: Store in request cache for subsequent calls in same request
+                if self._request_cache_enabled:
+                    self._thread_cache[continuation_id] = thread
+                    logger.debug(f"[REQUEST_CACHE STORE] Cached thread {continuation_id} for this request")
 
                 return thread
 
@@ -183,8 +186,10 @@ class SupabaseConversationMemory:
                 'updated_at': conv.get('updated_at')
             }
 
-            # BUG FIX #11: Store in thread cache for subsequent calls in same request
-            self._thread_cache[continuation_id] = thread
+            # BUG FIX #11 & #13: Store in request cache for subsequent calls in same request
+            if self._request_cache_enabled:
+                self._thread_cache[continuation_id] = thread
+                logger.info(f"[REQUEST_CACHE STORE] Cached thread {continuation_id} for this request (loaded from Supabase)")
 
             logger.debug(f"Retrieved thread {continuation_id} with {len(messages)} messages (cached for next request)")
             return thread
@@ -195,7 +200,7 @@ class SupabaseConversationMemory:
                 logger.debug("Falling back to in-memory storage")
                 return self._memory_get_thread(continuation_id)
             return None
-    
+
     def _write_message_background(
         self,
         continuation_id: str,
@@ -256,12 +261,22 @@ class SupabaseConversationMemory:
             msg_metadata['file_ids'] = file_ids
             msg_metadata['tool_name'] = tool_name
 
-            # Save message
+            # Save message with timestamp for unique idempotency key
+            # CRITICAL FIX (2025-10-23): Include microsecond-precision timestamp
+            # to ensure each message gets a unique idempotency key, preventing
+            # race conditions where duplicate messages are created simultaneously
+            #
+            # ARCHITECTURAL FIX (2025-10-23): Use guaranteed microsecond precision
+            # and rely entirely on database constraints for duplicate prevention
+            from datetime import datetime
+            client_timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
+
             msg_id = self.storage.save_message(
                 conversation_id=conv_id,
                 role=role,
                 content=content,
-                metadata=msg_metadata
+                metadata=msg_metadata,
+                client_timestamp=client_timestamp
             )
 
             if msg_id:
@@ -278,6 +293,65 @@ class SupabaseConversationMemory:
 
         except Exception as e:
             logger.error(f"[BACKGROUND_WRITE] Error adding turn to {continuation_id}: {e}")
+
+    def _is_duplicate_message(self, conversation_id: str, content: str, role: str, limit: int = 10) -> bool:
+        """
+        Check if this message was recently saved to prevent duplicates.
+
+        CRITICAL FIX (2025-10-23): Prevents duplicate messages caused by race conditions
+        during slow API responses (9+ minute Kimi responses triggering retries).
+
+        BUG FIX (2025-10-23): Fixed incorrect method call - use get_or_create_conversation()
+        instead of non-existent get_conversation_id() method.
+
+        Args:
+            conversation_id: Conversation identifier (continuation_id)
+            content: Message content to check
+            role: Message role (user, assistant, system)
+            limit: Number of recent messages to check (default: 10)
+
+        Returns:
+            True if duplicate found, False otherwise
+        """
+        try:
+            # Get the database conversation UUID from the continuation_id
+            # BUG FIX: Use get_or_create_conversation() instead of get_conversation_id()
+            conv_id = self.mapper.get_or_create_conversation(conversation_id)
+            if not conv_id:
+                logger.debug(f"[DEDUP] No conversation found for {conversation_id[:8]}")
+                return False
+
+            # Get recent messages using the correct method name
+            # BUG FIX: Use get_conversation_messages() instead of get_messages()
+            recent_messages = self.storage.get_conversation_messages(conv_id, limit=limit)
+            if not recent_messages:
+                logger.debug(f"[DEDUP] No recent messages found for {conversation_id[:8]}")
+                return False
+
+            # Check for exact content match within last 60 seconds
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+
+            for msg in recent_messages:
+                if msg.get('role') == role and msg.get('content') == content:
+                    # Check timestamp - only consider duplicates within 60 seconds
+                    created_at = msg.get('created_at')
+                    if created_at:
+                        if isinstance(created_at, str):
+                            created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+
+                        time_diff = (now - created_at).total_seconds()
+                        if time_diff < 60:
+                            logger.warning(f"[DEDUP] Found duplicate message from {time_diff:.1f}s ago in {conversation_id[:8]}")
+                            return True
+
+            logger.debug(f"[DEDUP] No duplicates found for {role} message in {conversation_id[:8]}")
+            return False
+
+        except Exception as e:
+            logger.error(f"[DEDUP] Error checking for duplicates: {e}", exc_info=True)
+            # On error, allow the message through (fail open)
+            return False
 
     @timing_decorator("SupabaseMemory.add_turn")
     def add_turn(
@@ -316,19 +390,51 @@ class SupabaseConversationMemory:
                 )
             return False
 
+        # CRITICAL FIX (2025-10-23): Prevent duplicate messages from race conditions
+        # Check if this exact message was recently saved (within last 60 seconds)
+        # This prevents duplicates caused by slow responses triggering retries
+        if self._is_duplicate_message(continuation_id, content, role):
+            logger.warning(f"[DEDUP] Preventing duplicate message: {role} in {continuation_id[:8]}")
+            return True
+
+        # PHASE 1 (2025-10-24): Standardize metadata before storage
+        # Extract and standardize metadata fields to match Supabase schema
+        # DEBUG: Log incoming metadata
+        logger.info(f"[PHASE1_DEBUG] add_turn called with metadata={metadata}, type={type(metadata)}")
+
+        storage_metadata = {}
+        if metadata:
+            if isinstance(metadata, dict):
+                # Direct field mapping
+                if 'model_used' in metadata:
+                    storage_metadata['model_used'] = metadata['model_used']
+                if 'provider_used' in metadata:
+                    storage_metadata['provider_used'] = metadata['provider_used']
+                if 'response_time_ms' in metadata:
+                    storage_metadata['response_time_ms'] = metadata['response_time_ms']
+                if 'token_usage' in metadata:
+                    storage_metadata['token_usage'] = metadata['token_usage']
+                if 'thinking_mode' in metadata:
+                    storage_metadata['thinking_mode'] = metadata['thinking_mode']
+                # Preserve full metadata for backward compatibility
+                storage_metadata['model_metadata'] = metadata
+
+        # PHASE 1 DEBUG (2025-10-24): Log metadata being passed to storage
+        logger.info(f"[PHASE1_METADATA] continuation_id={continuation_id}, storage_metadata={storage_metadata}")
+
         # BUG FIX #11 (Phase 1b - 2025-10-20): If async writes are enabled, submit to async queue and return immediately
         # This prevents blocking the response while saving to Supabase
         # Expected improvement: Eliminates write blocking (~0.13s per request) + avoids ThreadPoolExecutor resource exhaustion
         if self._use_async_queue:
             logger.info(f"[ASYNC_SUPABASE] Submitting write to async queue for {continuation_id}")
 
-            # Prepare the data for the queue
+            # Prepare the data for the queue (use standardized metadata)
             update_data = {
                 'role': role,
                 'content': content,
                 'files': files,
                 'images': images,
-                'metadata': metadata,
+                'metadata': storage_metadata,  # Use standardized metadata
                 'tool_name': tool_name
             }
 
@@ -348,7 +454,7 @@ class SupabaseConversationMemory:
                 queue = get_conversation_queue_sync()
                 if queue is None:
                     # Fallback to synchronous write if queue not available
-                    logger.warning(f"[ASYNC_SUPABASE] Async queue not available, falling back to sync write")
+                    logger.warning("[ASYNC_SUPABASE] Async queue not available, falling back to sync write")
                     # Continue to synchronous path below
                 else:
                     queue.put_sync(item)
@@ -398,18 +504,28 @@ class SupabaseConversationMemory:
                         file_ids.append(file_id)
                         self.storage.link_file_to_conversation(conv_id, file_id)
 
-            # Prepare message metadata
-            msg_metadata = metadata or {}
+            # Prepare message metadata (use standardized metadata from Phase 1)
+            msg_metadata = storage_metadata or {}
             msg_metadata['file_ids'] = file_ids
             msg_metadata['tool_name'] = tool_name
 
             # Save message (TIMED)
+            # CRITICAL FIX (2025-10-23): Include microsecond-precision timestamp
+            # to ensure each message gets a unique idempotency key, preventing
+            # race conditions where duplicate messages are created simultaneously
+            #
+            # ARCHITECTURAL FIX (2025-10-23): Use guaranteed microsecond precision
+            # and rely entirely on database constraints for duplicate prevention
+            from datetime import datetime
+            client_timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')
+
             start_time = time.time()
             msg_id = self.storage.save_message(
                 conversation_id=conv_id,
                 role=role,
                 content=content,
-                metadata=msg_metadata
+                metadata=msg_metadata,
+                client_timestamp=client_timestamp
             )
             log_operation_time("SupabaseMemory.save_message", start_time)
 
@@ -430,7 +546,7 @@ class SupabaseConversationMemory:
                         continuation_id, role, content, files, images, metadata, tool_name
                     )
                 return False
-        
+
         except Exception as e:
             logger.error(f"Error adding turn to {continuation_id}: {e}")
             if self.fallback_to_memory:
@@ -439,119 +555,31 @@ class SupabaseConversationMemory:
                     continuation_id, role, content, files, images, metadata, tool_name
                 )
             return False
-    
-    def build_conversation_history(
-        self,
-        continuation_id: str,
-        model_context: Optional[Dict] = None
-    ) -> tuple[str, int]:
+
+    # BUG FIX #14 (2025-10-20): DELETED build_conversation_history
+    # Legacy text-based history building is no longer used.
+    # Modern approach: Use get_messages_array() for SDK-native message format.
+    # SDKs (Kimi/GLM) receive message arrays directly, not text strings.
+
+    def clear_request_cache(self):
         """
-        Build conversation history string from Supabase with aggressive context pruning
+        Clear the request-scoped thread cache.
 
-        BUG FIX #12 (2025-10-20): Aggressive pruning based on EXAI assessment
-        - Implements sliding window approach with hard token limit
-        - Removes entire messages if token limit exceeded
-        - Removes file contents from older messages
-        - Target: 60-70% reduction with max 4000 tokens
+        BUG FIX #13 (2025-10-20): This MUST be called after each request completes
+        to prevent memory leaks and stale data being served across requests.
 
-        Args:
-            continuation_id: Unique conversation identifier
-            model_context: Optional model context for token counting
-
-        Returns:
-            Tuple of (history_string, token_count)
+        The thread cache is designed to eliminate redundant Supabase queries WITHIN
+        a single request, but it must be cleared BETWEEN requests.
         """
-        thread = self.get_thread(continuation_id)
+        if not self._request_cache_enabled:
+            return
 
-        if not thread or not thread.get('messages'):
-            return "", 0
-
-        messages = thread['messages']
-        total_messages = len(messages)
-
-        # BUG FIX #12 (2025-10-20): Log before pruning to track context bloat
-        total_chars_before = sum(len(msg.get('content', '')) for msg in messages)
-        logger.info(
-            f"[CONTEXT_PRUNING] BEFORE pruning: {total_messages} messages, "
-            f"{total_chars_before:,} chars, ~{total_chars_before // 4:,} tokens"
-        )
-
-        # AGGRESSIVE PRUNING: Implement sliding window approach
-        # Start with most recent messages and work backwards until token limit reached
-        pruned_messages = []
-        current_tokens = 0
-        pruned_count = 0
-        file_content_removed = 0
-
-        # Process messages in reverse order (newest first)
-        for i in range(len(messages) - 1, -1, -1):
-            msg = messages[i]
-            role = msg.get('role', 'unknown')
-            content = msg.get('content', '')
-
-            # AGGRESSIVE PRUNING: Remove file contents from messages older than KEEP_FILE_CONTENT_TURNS
-            turns_from_end = len(messages) - i
-            if turns_from_end > KEEP_FILE_CONTENT_TURNS:
-                original_length = len(content)
-                content = re.sub(
-                    r'(\[File:\s*[^\]]+\])\s*CONTENT:.*?(?=\n\[File:|\n\n\*\*|$)',
-                    r'\1 [Content removed - older than 1 turn]',
-                    content,
-                    flags=re.DOTALL
-                )
-
-                if len(content) < original_length:
-                    file_content_removed += 1
-                    logger.debug(
-                        f"[CONTEXT_PRUNING] Removed file content from message {i+1}/{total_messages} "
-                        f"({original_length} → {len(content)} chars, {turns_from_end} turns from end)"
-                    )
-
-            # Estimate tokens for this message (4 chars per token)
-            msg_tokens = len(content) // 4
-
-            # HARD TOKEN LIMIT: Stop adding messages if we exceed the limit
-            if current_tokens + msg_tokens > HARD_TOKEN_LIMIT:
-                pruned_count += 1
-                logger.debug(
-                    f"[CONTEXT_PRUNING] Skipping message {i+1}/{total_messages} "
-                    f"(would exceed token limit: {current_tokens + msg_tokens} > {HARD_TOKEN_LIMIT})"
-                )
-                continue
-
-            # Add message to pruned list (will be reversed later)
-            pruned_messages.append({
-                'role': role,
-                'content': content
-            })
-            current_tokens += msg_tokens
-
-        # Reverse to restore chronological order
-        pruned_messages.reverse()
-
-        # Build history string from pruned messages
-        history_parts = ["=== CONVERSATION HISTORY ===\n"]
-        for msg in pruned_messages:
-            history_parts.append(f"\n**{msg['role'].upper()}:**\n{msg['content']}\n")
-        history_parts.append("\n=== END CONVERSATION HISTORY ===\n")
-        history_string = "".join(history_parts)
-
-        # Calculate actual token count
-        token_count = len(history_string) // 4
-
-        # BUG FIX #12 (2025-10-20): Enhanced logging to track pruning effectiveness
-        chars_removed = total_chars_before - len(history_string)
-        reduction_pct = (chars_removed / total_chars_before * 100) if total_chars_before > 0 else 0
-        messages_kept = len(pruned_messages)
-
-        logger.info(
-            f"[CONTEXT_PRUNING] AFTER pruning for {continuation_id}: "
-            f"{messages_kept}/{total_messages} messages kept, {len(history_string):,} chars, ~{token_count:,} tokens | "
-            f"Pruned {pruned_count} messages, removed {file_content_removed} file contents, "
-            f"removed {chars_removed:,} chars ({reduction_pct:.1f}% reduction)"
-        )
-
-        return history_string, token_count
+        cache_size = len(self._thread_cache)
+        if cache_size > 0:
+            logger.debug(f"[REQUEST_CACHE] Clearing {cache_size} cached threads")
+            self._thread_cache.clear()
+        else:
+            logger.debug("[REQUEST_CACHE] No cached threads to clear")
 
 
 # Global instance
@@ -600,4 +628,3 @@ async def process_conversation_update(queue_item):
 
     except Exception as e:
         logger.error(f"[CONV_QUEUE] Error processing conversation update: {e}", exc_info=True)
-

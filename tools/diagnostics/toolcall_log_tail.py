@@ -25,10 +25,13 @@ class ToolcallLogTail(BaseTool):
             },
         }
 
+    def get_system_prompt(self) -> str:
+        return ""
+
     async def prepare_prompt(self, request) -> str:
         return ""
 
-    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def execute(self, arguments: dict[str, Any], on_chunk=None) -> list[TextContent]:
         n = int(arguments.get("n") or 20)
         p = arguments.get("path") or os.getenv("EX_TOOLCALL_LOG_PATH", "")
         if not p:

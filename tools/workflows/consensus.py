@@ -432,7 +432,17 @@ of the evidence, even when it strongly points in one direction.""",
         return await super().execute_workflow(arguments)
 
     async def _consult_model(self, model_config: dict, request) -> dict:
-        """Consult a single model and return its response."""
+        """
+        Consult a single model and return its response.
+
+        CRITICAL: Each model consultation must be completely isolated:
+        - No shared ModelContext between consultations
+        - No conversation history (blinded consensus)
+        - Only original proposal + files
+        - Proper cleanup to prevent context leakage
+        """
+        _temp_ctx = None  # Initialize to None for proper cleanup
+
         try:
             # Get the provider for this model
             model_name = model_config["model"]
@@ -447,35 +457,32 @@ of the evidence, even when it strongly points in one direction.""",
 
             # Inject per-step ModelContext for file prep when running outside server wrapper
             if request.relevant_files:
+                from utils.model.context import ModelContext
+                # Create a temporary context only for file prep - ISOLATED per model
+                _temp_ctx = ModelContext(model_name)
+                self._model_context = _temp_ctx
+
                 try:
-                    from utils.model.context import ModelContext
-                    # Create a temporary context only for file prep
-                    _temp_ctx = ModelContext(model_name)
-                    self._model_context = _temp_ctx
                     file_content, _ = self._prepare_file_content_for_prompt(
                         request.relevant_files,
                         None,  # Use None instead of request.continuation_id for blinded consensus
                         "Context files",
                     )
+                    if file_content:
+                        prompt = f"{prompt}\n\n=== CONTEXT FILES ===\n{file_content}\n=== END CONTEXT ==="
                 finally:
-                    # Ensure no leakage across models/steps
-                    try:
-                        del self._model_context
-                    except Exception:
-                        pass
-                    try:
-                        self._model_context = None
-                    except Exception:
-                        pass
-                if file_content:
-                    prompt = f"{prompt}\n\n=== CONTEXT FILES ===\n{file_content}\n=== END CONTEXT ==="
+                    # CRITICAL: Ensure no leakage across models/steps
+                    # Clean up immediately after file prep, before model call
+                    if hasattr(self, '_model_context'):
+                        delattr(self, '_model_context')
+                    _temp_ctx = None
 
             # Get stance-specific system prompt
             stance = model_config.get("stance", "neutral")
             stance_prompt = model_config.get("stance_prompt")
             system_prompt = self._get_stance_enhanced_prompt(stance, stance_prompt)
 
-            # Call the model
+            # Call the model - NO ModelContext should exist at this point
             response = provider.generate_content(
                 prompt=prompt,
                 model_name=model_name,
@@ -484,6 +491,10 @@ of the evidence, even when it strongly points in one direction.""",
                 thinking_mode="medium",
                 images=request.images if request.images else None,
             )
+
+            # Validate response before returning
+            if not response or not hasattr(response, 'content'):
+                raise ValueError(f"Invalid response from model {model_name}: missing content")
 
             return {
                 "model": model_name,
@@ -514,6 +525,16 @@ of the evidence, even when it strongly points in one direction.""",
                 "status": "error",
                 "error": str(e),
             }
+        finally:
+            # FINAL CLEANUP: Ensure ModelContext is completely removed
+            # This runs even if exception occurred
+            if _temp_ctx is not None:
+                _temp_ctx = None
+            if hasattr(self, '_model_context'):
+                try:
+                    delattr(self, '_model_context')
+                except Exception:
+                    pass
 
     def _preflight_validate_step_one(self, request) -> None:
         """Validate models, steps, and files for consensus step 1.

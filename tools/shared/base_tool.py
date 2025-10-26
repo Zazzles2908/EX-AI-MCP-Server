@@ -16,7 +16,7 @@ providing the full functionality needed by all tools.
 
 import logging
 from abc import ABC
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from mcp.types import TextContent
 
@@ -94,10 +94,18 @@ class BaseTool(
     # Implementation Methods - Must be implemented by subclasses
     # ================================================================================
     
-    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def execute(
+        self,
+        arguments: dict[str, Any],
+        on_chunk: Optional[Any] = None  # NEW: Streaming callback for progressive chunk delivery
+    ) -> list[TextContent]:
         """
         Execute the tool with the given arguments.
-        
+
+        Args:
+            arguments: Tool arguments dictionary
+            on_chunk: Optional async callback for streaming chunks (signature: async def on_chunk(chunk: str))
+
         This is the main entry point for tool execution. It should:
         1. Validate and parse the arguments into a request object
         2. Resolve the model context

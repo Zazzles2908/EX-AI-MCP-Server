@@ -36,8 +36,16 @@ CHAT_FIELD_DESCRIPTIONS = {
     ),
     "files": (
         "Optional files for context - EMBEDS CONTENT AS TEXT in prompt (not uploaded to platform). "
-        "Use for small files (<5KB). For large files or persistent reference, use kimi_upload_and_extract tool instead. "
-        "(must be FULL absolute paths to real files / folders - DO NOT SHORTEN)"
+        "Use for small files (<5KB). For large files or persistent reference, use kimi_upload_files tool instead. "
+        "(must be FULL absolute paths to real files / folders - DO NOT SHORTEN)\n\n"
+        "⚠️  FILE SIZE WARNING: Files >5KB will trigger automatic warnings suggesting kimi_upload_files workflow for 70-80% token savings.\n\n"
+        "📋 FILE HANDLING DECISION MATRIX:\n"
+        "- <5KB, single-use: Use 'files' parameter (this tool)\n"
+        "- >5KB or multi-turn: Use kimi_upload_files + kimi_chat_with_files\n"
+        "- Multiple large files: Upload once, query many times\n\n"
+        "Example for large files:\n"
+        "  upload_result = kimi_upload_files(files=['large_file.py'])\n"
+        "  kimi_chat_with_files(prompt='...', file_ids=upload_result['file_ids'])"
     ),
     "images": (
         "Optional images for visual context. Useful for UI discussions, diagrams, visual problems, "
@@ -76,15 +84,43 @@ class ChatTool(SimpleTool):
 
     def get_description(self) -> str:
         return (
-            "GENERAL CHAT & COLLABORATIVE THINKING - Use the AI model as your thinking partner! "
-            "Perfect for: bouncing ideas during your own analysis, getting second opinions on your plans, "
-            "collaborative brainstorming, validating your checklists and approaches, exploring alternatives. "
-            "Also great for: explanations, comparisons, general development questions. "
-            "Use this when you want to ask questions, brainstorm ideas, get opinions, discuss topics, "
-            "share your thinking, or need explanations about concepts and approaches. "
-            "Note: If you're not currently using a top-tier model such as Opus 4 or above, these tools can "
-            "provide enhanced capabilities."
+            "GENERAL CHAT & COLLABORATIVE THINKING - Use the AI model as your thinking partner!\n\n"
+            "✅ USE THIS FOR:\n"
+            "- General questions and explanations\n"
+            "- Brainstorming and ideation\n"
+            "- Getting second opinions on your plans\n"
+            "- Discussing approaches and alternatives\n"
+            "- Validating your checklists and strategies\n"
+            "- Asking 'how to' questions\n"
+            "- Exploring concepts and best practices\n\n"
+            "❌ DON'T USE THIS FOR:\n"
+            "- Code review (use codereview_EXAI-WS instead)\n"
+            "- Debugging (use debug_EXAI-WS instead)\n"
+            "- Code analysis (use analyze_EXAI-WS instead)\n"
+            "- Systematic investigation (use workflow tools instead)\n\n"
+            "HOW IT WORKS:\n"
+            "- You ask a question or share an idea\n"
+            "- AI responds with insights, suggestions, or explanations\n"
+            "- Simple request/response pattern (no multi-step workflow)\n"
+            "- Can include files for context (small files only, <5KB)\n\n"
+            "🔧 CAPABILITIES:\n"
+            "- File context: Use 'files' parameter for <5KB files (embeds as text)\n"
+            "- Large files: Use 'kimi_upload_files' tool for >5KB files (saves 70-80% tokens)\n"
+            "- Multi-turn: Use 'continuation_id' to maintain conversation context\n"
+            "- Web search: Enable with 'use_websearch=true' for documentation/best practices\n"
+            "- Model selection: 'glm-4.5-flash' (fast) or 'glm-4.6' (complex analysis)\n\n"
+            "📊 WORKFLOW ESCALATION:\n"
+            "chat → analyze → codereview → debug\n\n"
+            "Note: If you're not currently using a top-tier model such as Opus 4 or above, "
+            "these tools can provide enhanced capabilities."
         )
+
+    def _get_related_tools(self) -> dict[str, list[str]]:
+        """Return related tools for chat escalation patterns"""
+        return {
+            "escalation": ["analyze", "codereview", "debug", "thinkdeep"],
+            "alternatives": ["planner"]
+        }
 
     def get_system_prompt(self) -> str:
         return CHAT_PROMPT
@@ -203,24 +239,14 @@ class ChatTool(SimpleTool):
             # Surface a clear validation error; callers will see this as tool error
             raise ValueError(f"[chat:security] {e}")
 
-        # Build conversation preface
-        preface = ""
+        # BUG FIX #14 (2025-10-20): Remove legacy text-based conversation building
+        # The request handler now provides conversation history via _messages parameter
+        # which is passed directly to SDK providers (Kimi/GLM) in their native format.
+        # We no longer need to build text-based "preface" - SDKs handle message arrays.
+        #
+        # Record the user turn for conversation persistence
         try:
             if request.continuation_id:
-                from src.conversation.memory_policy import assemble_context_block
-                from src.conversation.cache_store import get_cache_store
-                preface = assemble_context_block(request.continuation_id, max_turns=6)
-                # Attach cache context header if available
-                cache = get_cache_store().load(request.continuation_id)
-                if cache:
-                    cache_bits = []
-                    for k in ("session_id", "call_key", "token"):
-                        v = cache.get(k)
-                        if v:
-                            cache_bits.append(f"{k}={v}")
-                    if cache_bits:
-                        preface = "[Context cache: " + ", ".join(cache_bits) + "]\n" + preface
-                # Record the user turn immediately
                 # CRITICAL FIX (2025-10-17): Use _original_user_prompt if available to avoid
                 # recording system instructions in conversation history (P0-3 fix)
                 # CRITICAL FIX (2025-10-19): Use Supabase storage instead of in-memory history_store
@@ -236,7 +262,7 @@ class ChatTool(SimpleTool):
                         tool_name="chat"
                     )
         except Exception as e:
-            logger.warning(f"[chat:context] Failed to assemble conversation context: {e}")
+            logger.warning(f"[chat:context] Failed to record user turn: {e}")
 
         # Phase 5: propagate stream flag by temporarily setting GLM_STREAM_ENABLED for duration of call
         try:
@@ -248,9 +274,9 @@ class ChatTool(SimpleTool):
             logger.warning(f"[chat:stream] Failed to set stream flag: {e}")
             self._prev_stream_env = None
 
+        # BUG FIX #14 (2025-10-20): No longer build text preface
+        # Conversation history is provided via _messages parameter to SDK providers
         base_prompt = self.prepare_chat_style_prompt(request)
-        if preface:
-            return f"{preface}\nCurrent request:\n{base_prompt}"
         return base_prompt
 
     def format_response(self, response: str, request: ChatRequest, model_info: Optional[dict] = None) -> str:
@@ -273,20 +299,53 @@ class ChatTool(SimpleTool):
                 from utils.conversation.threads import _get_storage_backend
                 storage = _get_storage_backend()
                 if storage:
-                    # Check if this is a first turn (continuation_id was just created in _parse_response)
-                    # by checking if the conversation exists in storage
-                    thread_context = storage.get_thread(request.continuation_id)
-                    if thread_context:
-                        # Existing conversation - save assistant response immediately
-                        storage.add_turn(
-                            request.continuation_id,
-                            "assistant",
-                            str(response),
-                            tool_name="chat"
-                        )
-                    else:
-                        # First turn - store response temporarily for _create_continuation_offer to save
-                        request._assistant_response_to_save = str(response)
+                    # PHASE 1 (2025-10-24): Prepare metadata from model_info
+                    metadata = {}
+                    if model_info and isinstance(model_info, dict):
+                        model_name = model_info.get("model_name")
+                        if model_name:
+                            metadata['model_used'] = model_name
+                        provider = model_info.get("provider")
+                        if provider:
+                            # Extract provider name from class name (e.g., "GLMModelProvider" -> "glm")
+                            provider_class_name = provider.__class__.__name__
+                            if provider_class_name.endswith("ModelProvider"):
+                                provider_name = provider_class_name[:-len("ModelProvider")].lower()
+                            else:
+                                provider_name = provider_class_name.lower()
+                            metadata['provider_used'] = provider_name
+
+                        # FIX (2025-10-24): Extract usage from model_info (not model_metadata)
+                        # Providers return usage at top level: model_info['usage']
+                        usage = model_info.get("usage")
+                        if usage and isinstance(usage, dict):
+                            metadata['token_usage'] = usage
+
+                        model_metadata = model_info.get("metadata")
+                        if model_metadata and isinstance(model_metadata, dict):
+                            if 'thinking_mode' in model_metadata:
+                                metadata['thinking_mode'] = model_metadata['thinking_mode']
+                            if 'ai_response_time_ms' in model_metadata:
+                                metadata['response_time_ms'] = model_metadata['ai_response_time_ms']
+                            metadata['model_metadata'] = model_metadata
+
+                    # CRITICAL FIX (2025-10-24): Removed duplicate add_turn() call
+                    # The base class SimpleTool already handles storing assistant responses
+                    # in tools/simple/base.py:1102-1112. This was causing double storage
+                    # with different metadata structures, resulting in 2x Supabase writes.
+                    #
+                    # Evidence: Messages stored 58ms apart with different idempotency keys
+                    # - Message 1: metadata={'model_used': 'glm-4.6', ...} (from here)
+                    # - Message 2: metadata={'model_provider': 'glm', ...} (from base class)
+                    #
+                    # Fix: Let base class handle all storage for consistency
+                    # The base class has access to complete model_info and handles
+                    # files, images, and metadata correctly.
+
+                    # Store response and metadata for base class to save
+                    # (base class will call add_turn with complete metadata)
+                    request._assistant_response_to_save = str(response)
+                    request._assistant_metadata_to_save = metadata
                 # Capture cache tokens if present in model_info
                 try:
                     if model_info and isinstance(model_info, dict):

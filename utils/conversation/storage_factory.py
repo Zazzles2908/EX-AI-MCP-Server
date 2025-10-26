@@ -195,7 +195,7 @@ class DualStorageConversation:
 
             # In dry run mode, don't actually save the stripped content
             if self.config.get("dry_run", False):
-                logger.info(f"[DUAL_STORAGE] DRY RUN: Would have stripped history from turn")
+                logger.info("[DUAL_STORAGE] DRY RUN: Would have stripped history from turn")
                 content = original_content  # Restore original for dry run
 
         supabase_success = False
@@ -283,43 +283,21 @@ class DualStorageConversation:
             # Return original content if stripping fails (graceful degradation)
             return content
 
-    def build_conversation_history(
-        self,
-        continuation_id: str,
-        model_context: Optional[Dict] = None
-    ) -> tuple[str, int]:
+    # BUG FIX #14 (2025-10-20): DELETED build_conversation_history
+    # Legacy text-based history building is no longer used.
+    # Modern approach: Use get_messages_array() for SDK-native message format.
+
+    def clear_request_cache(self):
         """
-        Build conversation history from Supabase with fallback
-        
-        Args:
-            continuation_id: Unique conversation identifier
-            model_context: Optional model context for token counting
-        
-        Returns:
-            Tuple of (history_string, token_count)
+        Clear the request-scoped thread cache in Supabase storage.
+
+        BUG FIX #13 (2025-10-20): Delegate to Supabase storage's cache clearing.
+        This prevents memory leaks and stale data being served across requests.
         """
-        # Try Supabase first
-        try:
-            history, tokens = self.supabase.build_conversation_history(
-                continuation_id, model_context
-            )
-            if history:
-                return history, tokens
-        except Exception as e:
-            logger.warning(f"Supabase build_conversation_history failed: {e}")
-        
-        # Fallback to in-memory
-        if self.fallback:
-            try:
-                from .memory import build_conversation_history
-                return build_conversation_history(
-                    self.memory.get_thread(continuation_id),
-                    model_context
-                )
-            except Exception as e:
-                logger.warning(f"In-memory build_conversation_history failed: {e}")
-        
-        return "", 0
+        if hasattr(self.supabase, 'clear_request_cache'):
+            self.supabase.clear_request_cache()
+        else:
+            logger.warning("[REQUEST_CACHE] Supabase storage has no clear_request_cache method")
 
 
 # ============================================================================
@@ -376,11 +354,7 @@ def add_turn(
     )
 
 
-def build_conversation_history(
-    continuation_id: str,
-    model_context: Optional[Dict] = None
-) -> tuple[str, int]:
-    """Build conversation history using configured storage backend"""
-    storage = get_conversation_storage()
-    return storage.build_conversation_history(continuation_id, model_context)
+# BUG FIX #14 (2025-10-20): DELETED build_conversation_history
+# Legacy text-based history building is no longer used.
+# Modern approach: Use get_messages_array() for SDK-native message format.
 

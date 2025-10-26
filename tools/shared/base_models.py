@@ -19,12 +19,15 @@ logger = logging.getLogger(__name__)
 
 
 # Shared field descriptions to avoid duplication
-# Last Updated: 2025-10-09
+# Last Updated: 2025-10-25 - Enhanced with decision matrices and capability hints
 COMMON_FIELD_DESCRIPTIONS = {
     "model": (
-        "Model to use. Use 'auto' to let the server select the best model. "
-        "Supported examples (if providers are configured): GLM: 'glm-4.6','glm-4.5','glm-4.5-flash','glm-4.5-air','glm-4.5-x','glm-4.5v'; "
-        "Kimi/Moonshot: 'kimi-k2-0905-preview','kimi-k2-0711-preview','kimi-k2-turbo-preview','kimi-thinking-preview','moonshot-v1-128k','moonshot-v1-32k','moonshot-v1-8k','kimi-latest'."
+        "Model to use. Native models: 'auto', 'kimi-k2-0905-preview', 'kimi-k2-0711-preview', "
+        "'moonshot-v1-8k', 'moonshot-v1-32k', 'kimi-k2-turbo-preview', 'moonshot-v1-128k', "
+        "'moonshot-v1-8k-vision-preview', 'moonshot-v1-32k-vision-preview', 'moonshot-v1-128k-vision-preview', "
+        "'kimi-latest', 'kimi-latest-8k', 'kimi-latest-32k', 'kimi-latest-128k', 'kimi-thinking-preview', "
+        "'glm-4.6', 'glm-4.5-flash', 'glm-4.5', 'glm-4.5-air', 'glm-4.5v'. "
+        "Use 'auto' to let the server select the best model. Defaults to 'glm-4.5-flash' if not specified."
     ),
     "temperature": (
         "Temperature for response (0.0 to 1.0). Lower values are more focused and deterministic, "
@@ -46,36 +49,72 @@ COMMON_FIELD_DESCRIPTIONS = {
         "Thread continuation ID for multi-turn conversations. When provided, the complete conversation "
         "history is automatically embedded as context. Your response should build upon this history "
         "without repeating previous analysis or instructions. Focus on providing only new insights, "
-        "additional findings, or answers to follow-up questions. Can be used across different tools."
+        "additional findings, or answers to follow-up questions. Can be used across different tools.\n\n"
+        "🔄 LIFECYCLE MANAGEMENT:\n"
+        "- Create new ID when starting a fresh conversation or topic\n"
+        "- Reuse existing ID when continuing the same conversation across tools\n"
+        "- The system automatically tracks conversation state and context\n"
+        "- IDs are persistent across tool calls and can be shared between compatible tools"
     ),
     "images": (
-        "Optional image(s) for visual context. Accepts absolute file paths or "
-        "base64 data URLs. Only provide when user explicitly mentions images. "
-        "When including images, please describe what you believe each image contains "
-        "to aid with contextual understanding. Useful for UI discussions, diagrams, "
-        "visual problems, error screens, architecture mockups, and visual analysis tasks."
+        "Optional image(s) for visual context. Accepts absolute file paths or base64 data URLs. "
+        "Only provide when user explicitly mentions images. When including images, please describe "
+        "what you believe each image contains to aid with contextual understanding. Useful for UI "
+        "discussions, diagrams, visual problems, error screens, architecture mockups, and visual analysis tasks."
     ),
     "files": (
         "Optional files for context - EMBEDS CONTENT AS TEXT in prompt (not uploaded to platform). "
-        "Use for small files (<5KB). For large files or persistent reference, use kimi_upload_and_extract tool instead. "
-        "(must be FULL absolute paths to real files / folders - DO NOT SHORTEN)"
+        "Use for small files (<5KB). For large files or persistent reference, use kimi_upload_files tool instead. "
+        "(must be FULL absolute paths to real files / folders - DO NOT SHORTEN)\n\n"
+        "🔒 DEDUPLICATION: Files are automatically deduplicated using SHA256 hashes to prevent redundant uploads.\n\n"
+        "📋 DECISION MATRIX:\n"
+        "- <5KB, single-use: Use 'files' parameter (embeds as text)\n"
+        "- >5KB or multi-turn: Use kimi_upload_files + kimi_chat_with_files (70-80% token savings)\n"
+        "- Multiple large files: Upload once, query many times\n\n"
+        "⚠️ Files >5KB will trigger automatic warnings suggesting kimi_upload_files workflow."
     ),
 }
 
 # Workflow-specific field descriptions
 WORKFLOW_FIELD_DESCRIPTIONS = {
-    "step": "Current work step content and findings from your overall work",
+    "step": (
+        "Current work step content and findings from your overall work.\n\n"
+        "🔍 'YOU INVESTIGATE FIRST' PATTERN:\n"
+        "- ALWAYS investigate and analyze before asking for user input\n"
+        "- Provide your findings, analysis, and recommendations first\n"
+        "- Then ask specific, targeted questions if needed\n"
+        "- Never start with 'I need more information' - investigate what's available first\n\n"
+        "📝 WHAT TO INCLUDE:\n"
+        "- What you investigated in this step\n"
+        "- Key findings and evidence discovered\n"
+        "- Analysis of what the findings mean\n"
+        "- Your current understanding and any remaining questions\n"
+        "- Next steps you plan to take (if continuing)"
+    ),
     "step_number": "Current step number in the work sequence (starts at 1)",
     "total_steps": "Estimated total steps needed to complete the work",
     "next_step_required": "Whether another work step is needed after this one",
-    "findings": "Important findings, evidence and insights discovered in this step of the work",
+    "findings": (
+        "Important findings, evidence and insights discovered in this step of the work.\n\n"
+        "📋 WHAT TO DOCUMENT:\n"
+        "- Specific evidence discovered (code patterns, error messages, test results)\n"
+        "- Key insights and observations\n"
+        "- Connections between different pieces of evidence\n"
+        "- Patterns or anomalies identified\n"
+        "- Root causes or contributing factors\n"
+        "- Impact assessment of findings\n\n"
+        "💡 EXAMPLES:\n"
+        "- 'Found null pointer exception in auth_service.py line 42 when user token expires'\n"
+        "- 'Database query timeout occurs only with datasets >10MB, indicating performance bottleneck'\n"
+        "- 'Test suite passes in isolation but fails when run with integration tests, suggesting state leakage'"
+    ),
     "files_checked": "List of files examined during this work step",
     "relevant_files": "Files identified as relevant to the issue/goal",
     "relevant_context": "Methods/functions identified as involved in the issue",
     "issues_found": "Issues identified with severity levels during work",
     "confidence": (
         "Your confidence level in the current findings and analysis. This enables agentic early termination when goals are achieved.\n\n"
-        "Levels (use higher confidence when appropriate to enable efficient workflows):\n"
+        "Levels (progress naturally as you investigate):\n"
         "• exploring - Just starting, forming initial hypotheses\n"
         "• low - Early investigation, limited evidence gathered\n"
         "• medium - Some solid evidence, partial understanding (DEFAULT for ongoing work)\n"
@@ -83,8 +122,13 @@ WORKFLOW_FIELD_DESCRIPTIONS = {
         "• very_high - Comprehensive understanding, all major questions answered, ready to conclude\n"
         "• almost_certain - Near complete confidence, minimal uncertainty remains\n"
         "• certain - Complete confidence, analysis is thorough and conclusive\n\n"
-        "💡 TIP: Use 'very_high' or 'certain' when you've thoroughly investigated and have clear answers. "
-        "This enables early termination and saves time. Don't be overly cautious - if you're confident, say so!"
+        "💡 PROGRESSION GUIDANCE:\n"
+        "- Start at 'exploring' or 'low' for new investigations\n"
+        "- Progress to 'medium' once you have solid evidence\n"
+        "- Use 'high' or 'very_high' when you have clear answers to most questions\n"
+        "- Use 'certain' only when analysis is comprehensive and conclusive\n\n"
+        "🚀 EFFICIENCY TIP: Use higher confidence when appropriate to enable early termination. "
+        "Don't be overly cautious - if you're confident, say so!"
     ),
     "hypothesis": "Current theory about the issue/goal based on work",
     "backtrack_from_step": "Step number to backtrack from if work needs revision",

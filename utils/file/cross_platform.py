@@ -3,12 +3,19 @@ Cross-platform path handling for Docker environments.
 
 This module handles path validation and normalization for scenarios where
 Windows host paths need to be mapped to Linux container paths.
+
+PHASE 2.3.2 (2025-10-22): Enhanced with caching and dual mapping support
+- Added LRU cache for performance
+- Support for both Docker (/app/) and WSL (/mnt/c/) mappings
+- Auto-detection of environment (Docker vs WSL)
+- Project marker extraction (EX-AI-MCP-Server)
 """
 
 import os
 import re
 from pathlib import PureWindowsPath, PurePosixPath
 from typing import Tuple, Optional, Dict
+from functools import lru_cache
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,43 +25,104 @@ class CrossPlatformPathHandler:
     """
     Handles cross-platform path validation and normalization for Docker environments
     where Windows host paths are mapped to Linux container paths.
+
+    PHASE 2.3.2 (2025-10-22): Enhanced with caching and environment detection
     """
-    
-    def __init__(self, 
+
+    def __init__(self,
                  drive_mappings: Optional[Dict[str, str]] = None,
                  allowed_prefixes: Optional[list] = None):
         """
         Initialize with custom drive mappings and allowed prefixes.
-        
+
         Args:
             drive_mappings: Dict mapping Windows drive letters to Linux paths
                            e.g., {'C:': '/app'}
             allowed_prefixes: List of allowed path prefixes in Linux format
         """
-        self.drive_mappings = drive_mappings or {'C:': '/app'}
-        self.allowed_prefixes = allowed_prefixes or ['/app']
-        
+        # Auto-detect environment if no mappings provided
+        if drive_mappings is None:
+            drive_mappings = self._detect_environment_mappings()
+
+        self.drive_mappings = drive_mappings
+        self.allowed_prefixes = allowed_prefixes or ['/app', '/mnt/c']
+
         # Regex to detect Windows absolute paths
         self.windows_path_pattern = re.compile(r'^[a-zA-Z]:[\\/]')
-        
+
         # Regex to detect UNC paths (\\server\share)
         self.unc_path_pattern = re.compile(r'^\\\\[^\\]+\\[^\\]+')
+
+        # Statistics tracking
+        self._normalization_count = 0
+        self._cache_hits = 0
+
+    def _detect_environment_mappings(self) -> Dict[str, str]:
+        """
+        Auto-detect environment and return appropriate drive mappings.
+
+        Returns:
+            Dict mapping drive letters to Linux paths
+        """
+        is_docker = os.path.exists('/app')
+        is_wsl = os.path.exists('/mnt/c')
+
+        if is_docker:
+            logger.debug("Detected Docker environment - using /app/ mappings")
+            return {'C:': '/app', 'D:': '/app', 'E:': '/app'}
+        elif is_wsl:
+            logger.debug("Detected WSL environment - using /mnt/ mappings")
+            return {'C:': '/mnt/c', 'D:': '/mnt/d', 'E:': '/mnt/e'}
+        else:
+            logger.debug("Unknown environment - defaulting to Docker /app/ mappings")
+            return {'C:': '/app', 'D:': '/app', 'E:': '/app'}
     
+    @lru_cache(maxsize=256)
+    def normalize_path_cached(self, file_path: str) -> Tuple[str, bool, Optional[str]]:
+        """
+        Cached version of normalize_path for performance.
+
+        PHASE 2.3.2 (2025-10-22): Added LRU cache for frequently accessed paths
+
+        Args:
+            file_path: Input path in Windows or Linux format
+
+        Returns:
+            Tuple of (normalized_path, was_converted, error_message)
+        """
+        self._cache_hits += 1
+        return self.normalize_path(file_path)
+
     def normalize_path(self, file_path: str) -> Tuple[str, bool, Optional[str]]:
         """
         Normalize a cross-platform path to Linux format.
-        
+
+        PHASE 2.3.2 (2025-10-22): Enhanced with project marker extraction
+        CRITICAL FIX (2025-10-23): Handle double-prefixed paths from workflow tools
+
         Args:
             file_path: Input path in Windows or Linux format
-            
+
         Returns:
             Tuple of (normalized_path, was_converted, error_message)
             - normalized_path: Path normalized to Linux format
             - was_converted: True if conversion occurred
             - error_message: Error message if validation fails, None otherwise
         """
+        self._normalization_count += 1
+
         if not file_path or not isinstance(file_path, str):
             return file_path, False, "Error: Empty or invalid path provided"
+
+        # CRITICAL FIX (2025-10-23): Handle double-prefixed paths
+        # Workflow tools sometimes pass paths like "/app/c:/Project/..." or "/app/c:\Project\..."
+        # which are already partially normalized. Strip the incorrect /app/ prefix to get back to raw Windows path.
+        # UPDATED: Handle both forward slashes (/app/c:/) and backslashes (/app/c:\)
+        if file_path.startswith('/app/c:/') or file_path.startswith('/app/C:/') or \
+           file_path.startswith('/app/c:\\') or file_path.startswith('/app/C:\\'):
+            logger.warning(f"[PATH_FIX] Detected double-prefixed path, stripping /app/ prefix: {file_path}")
+            file_path = file_path[5:]  # Remove '/app/' prefix (5 characters)
+            logger.info(f"[PATH_FIX] Corrected path: {file_path}")
 
         # CRITICAL: Check Windows paths FIRST before os.path.isabs()
         # because os.path.isabs() returns True for Windows paths on Windows,
@@ -159,6 +227,34 @@ class CrossPlatformPathHandler:
             return normalized_path, True, error
 
         return normalized_path, True, None
+
+    def clear_cache(self) -> None:
+        """
+        Clear the path normalization cache.
+
+        PHASE 2.3.2 (2025-10-22): Added cache management
+        """
+        self.normalize_path_cached.cache_clear()
+        logger.debug("Path normalization cache cleared")
+
+    def get_stats(self) -> Dict[str, any]:
+        """
+        Get normalization statistics.
+
+        PHASE 2.3.2 (2025-10-22): Added statistics tracking
+
+        Returns:
+            Dict with normalization statistics
+        """
+        cache_info = self.normalize_path_cached.cache_info()
+        return {
+            'total_normalizations': self._normalization_count,
+            'cache_hits': cache_info.hits,
+            'cache_misses': cache_info.misses,
+            'cache_size': cache_info.currsize,
+            'cache_maxsize': cache_info.maxsize,
+            'hit_rate': cache_info.hits / (cache_info.hits + cache_info.misses) if (cache_info.hits + cache_info.misses) > 0 else 0.0
+        }
 
 
 # Singleton instance
