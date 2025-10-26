@@ -31,7 +31,8 @@
 | File Size | Method | Token Savings | Deduplication | Auto-Warning | When to Use |
 |-----------|--------|---------------|---------------|--------------|-------------|
 | **<5KB** | `files` parameter | N/A | ✅ SHA256 | ❌ No | Quick, single-use, small files |
-| **>5KB** | `kimi_upload_files` | 70-80% | ✅ SHA256 | ✅ Yes | Large files, persistent reference |
+| **>5KB (Kimi)** | `kimi_upload_files` | 70-80% | ✅ SHA256 | ✅ Yes | Large files with Kimi models |
+| **>5KB (GLM)** | `glm_multi_file_chat` | 70-80% | ✅ SHA256 | ✅ Yes | Large files with GLM models |
 
 ### Usage Examples:
 
@@ -47,7 +48,9 @@ chat_EXAI-WS(
 )
 ```
 
-**Large Files (>5KB) - Use `kimi_upload_files`:**
+**Large Files (>5KB) - Use Upload Workflow:**
+
+**Option A: Kimi Upload (for Kimi models):**
 ```python
 # Step 1: Upload files
 result = kimi_upload_files(
@@ -60,6 +63,16 @@ kimi_chat_with_files(
     prompt="Summarize this document",
     file_ids=file_ids,
     model="kimi-k2-0905-preview"
+)
+```
+
+**Option B: GLM Upload (for GLM models):**
+```python
+# Upload and chat in one call
+glm_multi_file_chat(
+    files=["c:\\Project\\large_document.pdf"],
+    prompt="Summarize this document",
+    model="glm-4.6"
 )
 ```
 
@@ -310,9 +323,10 @@ For comprehensive patterns, examples, and advanced usage:
 - System status: Run `status_EXAI-WS`
 
 **File Handling:**
-- Small files: Use `files` parameter in `chat_EXAI-WS`
-- Large files: Use `kimi_upload_files` + `kimi_chat_with_files`
-- File management: Use `kimi_manage_files`
+- Small files (<5KB): Use `files` parameter in `chat_EXAI-WS`
+- Large files with Kimi (>5KB): Use `kimi_upload_files` + `kimi_chat_with_files`
+- Large files with GLM (>5KB): Use `glm_multi_file_chat`
+- File management: Use `kimi_manage_files` (Kimi) or `glm_upload_file` (GLM)
 
 **Conversation:**
 - Continuation: Use `continuation_id` from previous response

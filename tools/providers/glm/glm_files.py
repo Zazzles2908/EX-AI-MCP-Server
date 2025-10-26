@@ -312,6 +312,29 @@ class GLMMultiFileChatTool(BaseTool):
         "Upload multiple files to GLM (purpose=agent), then call chat/completions with those files summarized as system content."
     )
 
+    def get_name(self) -> str:
+        """Return the tool name."""
+        return self.name
+
+    def get_description(self) -> str:
+        """Return the tool description."""
+        return self.description
+
+    def get_input_schema(self) -> Dict[str, Any]:
+        """Return the input schema for this tool."""
+        return {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+                "files": {"type": "array", "items": {"type": "string"}, "description": "List of file paths to upload and analyze"},
+                "prompt": {"type": "string", "description": "Question or instruction about the files"},
+                "model": {"type": "string", "default": os.getenv("GLM_QUALITY_MODEL", "glm-4.5"), "description": "GLM model to use"},
+                "temperature": {"type": "number", "default": 0.3, "description": "Response creativity (0-1)"},
+            },
+            "required": ["files", "prompt"],
+            "additionalProperties": False,
+        }
+
     def get_system_prompt(self) -> str:
         return (
             "You orchestrate GLM multi-file chat.\n"
@@ -322,21 +345,11 @@ class GLMMultiFileChatTool(BaseTool):
         )
 
     def get_descriptor(self) -> Dict[str, Any]:
+        """Legacy method for backward compatibility."""
         return {
-            "name": self.name,
-            "description": self.description,
-            "input_schema": {
-                "$schema": "http://json-schema.org/draft-07/schema#",
-                "type": "object",
-                "properties": {
-                    "files": {"type": "array", "items": {"type": "string"}},
-                    "prompt": {"type": "string"},
-                    "model": {"type": "string", "default": os.getenv("GLM_QUALITY_MODEL", "glm-4.5")},
-                    "temperature": {"type": "number", "default": 0.3},
-                },
-                "required": ["files", "prompt"],
-                "additionalProperties": False,
-            },
+            "name": self.get_name(),
+            "description": self.get_description(),
+            "input_schema": self.get_input_schema(),
         }
 
     def run(self, **kwargs) -> Dict[str, Any]:

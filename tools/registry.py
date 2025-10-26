@@ -47,9 +47,9 @@ TOOL_MAP: Dict[str, tuple[str, str]] = {
     # GLM utilities
     "kimi_chat_with_tools": ("tools.providers.kimi.kimi_tools_chat", "KimiChatWithToolsTool"),
     "glm_upload_file": ("tools.providers.glm.glm_files", "GLMUploadFileTool"),
+    "glm_multi_file_chat": ("tools.providers.glm.glm_files", "GLMMultiFileChatTool"),  # Added 2025-10-27
     "glm_web_search": ("tools.providers.glm.glm_web_search", "GLMWebSearchTool"),
     "glm_payload_preview": ("tools.providers.glm.glm_payload_preview", "GLMPayloadPreviewTool"),
-    # De-scoped: glm_multi_file_chat
     # Diagnostics
     "provider_capabilities": ("tools.capabilities.provider_capabilities", "ProviderCapabilitiesTool"),
     # Observability helpers

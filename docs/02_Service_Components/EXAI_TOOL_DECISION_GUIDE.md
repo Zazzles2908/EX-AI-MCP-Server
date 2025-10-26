@@ -33,13 +33,21 @@ chat_EXAI-WS(
     thinking_mode="high"
 )
 
-# For files >5KB (large files)
-# Step 1: Upload first
+# For files >5KB (large files) - TWO OPTIONS:
+
+# Option 1: Kimi Upload+Chat (2 steps)
 kimi_upload_files(files=["c:\\Project\\EX-AI-MCP-Server\\large_file.py"])
-# Step 2: Chat with uploaded file
 kimi_chat_with_files(
     prompt="Please review this implementation...",
-    file_ids=["file-xxx"]
+    file_ids=["file-xxx"],
+    model="kimi-k2-0905-preview"
+)
+
+# Option 2: GLM Multi-File Chat (1 step) ⭐ NEW!
+glm_multi_file_chat(
+    files=["c:\\Project\\EX-AI-MCP-Server\\large_file.py"],
+    prompt="Please review this implementation...",
+    model="glm-4.6"
 )
 ```
 

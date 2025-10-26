@@ -863,9 +863,26 @@ def setup_monitoring_broadcast() -> None:
             "metadata": kwargs.get("metadata", {}),
         }
 
-        # Schedule broadcast (non-blocking)
+        # Schedule broadcast (non-blocking) - THREAD-SAFE for sync contexts
         if _dashboard_clients:
-            asyncio.create_task(broadcast_monitoring_event(event_data))
+            try:
+                # Try to get running loop (async context)
+                loop = asyncio.get_running_loop()
+                loop.create_task(broadcast_monitoring_event(event_data))
+            except RuntimeError:
+                # No running loop (sync context) - use thread pool
+                from concurrent.futures import ThreadPoolExecutor
+                import threading
+
+                # Use a shared thread pool executor
+                if not hasattr(broadcast_wrapper, '_executor'):
+                    broadcast_wrapper._executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="monitoring_broadcast")
+
+                # Submit async task to thread pool
+                def run_async_broadcast():
+                    asyncio.run(broadcast_monitoring_event(event_data))
+
+                broadcast_wrapper._executor.submit(run_async_broadcast)
     
     monitor.record_event = broadcast_wrapper
     logger.info("[MONITORING] Broadcast hook installed")
