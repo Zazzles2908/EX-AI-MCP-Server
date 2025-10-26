@@ -763,8 +763,21 @@ async def main_async() -> None:
     await _resilient_ws.start_background_tasks()
     logger.info("[RESILIENT_WS] Started resilient WebSocket manager with background tasks")
 
+    # PHASE 2.3 FIX (2025-10-25): Add port availability check before binding
+    logger.debug(f"Checking if port {EXAI_WS_PORT} is available...")
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as test_socket:
+            test_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            test_socket.bind((EXAI_WS_HOST, EXAI_WS_PORT))
+            logger.debug(f"Port {EXAI_WS_PORT} is available for binding")
+    except OSError as e:
+        logger.error(f"Port {EXAI_WS_PORT} is NOT available: {e}")
+        logger.error(f"Another process may be using port {EXAI_WS_PORT}. Check with: netstat -ano | findstr :{EXAI_WS_PORT}")
+        raise
+
     logger.info(f"Starting WS daemon on ws://{EXAI_WS_HOST}:{EXAI_WS_PORT}")
     try:
+        logger.debug("About to enter websockets.serve context manager...")
         async with websockets.serve(
             _connection_wrapper,  # Handles post-handshake protocol errors
             EXAI_WS_HOST,
@@ -774,17 +787,23 @@ async def main_async() -> None:
             ping_timeout=PING_TIMEOUT,
             # Week 3 Fix #12 (2025-10-21): Use validated close timeout
             close_timeout=float(_validated_env["EXAI_WS_CLOSE_TIMEOUT"]),
-        ):
+        ) as server:
+            logger.info(f"✅ WebSocket server successfully started and listening on ws://{EXAI_WS_HOST}:{EXAI_WS_PORT}")
+            logger.debug(f"Server object: {server}")
+
             # Week 3 Fix #15 (2025-10-21): Start background tasks using extracted modules
             # Start health monitoring tasks
+            logger.debug("Starting health monitoring tasks...")
             health_writer_task, semaphore_health_task = health_monitor.start_monitoring_tasks(stop_event)
 
             # Start session cleanup task
+            logger.debug("Starting session cleanup task...")
             session_cleanup_task = asyncio.create_task(session_handler.start_periodic_cleanup(stop_event))
 
             logger.info("[BACKGROUND_TASKS] Started health monitoring and session cleanup tasks")
 
             # Wait indefinitely until a signal or external shutdown sets the event
+            logger.debug("Server ready - waiting for stop_event...")
             await stop_event.wait()
     except OSError as e:
         # Friendly message on address-in-use

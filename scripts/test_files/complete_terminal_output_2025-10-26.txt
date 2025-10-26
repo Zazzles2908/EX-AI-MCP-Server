@@ -1,0 +1,110 @@
+COMPLETE TERMINAL OUTPUT - Integration Test Run
+Date: 2025-10-26
+Issue: Raw file content polluting terminal output, preventing readability
+
+================================================================================
+ENVIRONMENT SETUP
+================================================================================
+✅ Loaded environment from C:\Project\EX-AI-MCP-Server\.env.docker
+✅ KIMI_API_KEY: sk-ZpS65... (Kimi/Moonshot API key)
+✅ GLM_API_KEY: 90c4c8f5... (GLM/ZhipuAI API key)
+✅ SUPABASE_URL: https://... (Supabase project URL)
+✅ SUPABASE_KEY: eyJhbGci... (Supabase service role key)
+
+================================================================================
+CRITICAL ISSUE IDENTIFIED
+================================================================================
+
+PROBLEM 1: DEBUG OUTPUT POLLUTION
+The OpenAI SDK is logging the ENTIRE 7MB file content in DEBUG logs.
+This makes the terminal unreadable and prevents seeing actual test results.
+
+Evidence:
+DEBUG:openai._base_client:Request options: {'method': 'post', 'url': '/files', 'files': [('file', ('test_large.txt', b'This is a large test file for Supabase gateway.\r\n[REPEATED 7MB OF TEXT]...'))]}
+
+PROBLEM 2: TEST SCRIPT LYING
+The test script reports "ALL INTEGRATION TESTS PASSED" even though:
+- Database tracking was failing (before schema fix)
+- Debug output is polluting terminal
+- File content is being logged in full
+
+PROBLEM 3: DATABASE SCHEMA (FIXED)
+Missing 'upload_method' column caused 400 Bad Request errors.
+Status: FIXED via Supabase MCP (ALTER TABLE provider_file_uploads ADD COLUMN upload_method TEXT)
+
+PROBLEM 4: ENVIRONMENT VARIABLE OVERRIDE
+OPENAI_DEBUG_LOGGING=true in .env.docker is forcing DEBUG level logging
+This overrides Python logging configuration
+
+================================================================================
+TEST RESULTS (AFTER SCHEMA FIX)
+================================================================================
+
+✅ PASS: Size Validator
+✅ PASS: Kimi Gateway
+   - Kimi file_id: d3uldgqmisdua6hnugh0
+   - Supabase file_id: 29070feb-1e7d-49b0-ac34-58b6f98a52f0
+   - Database tracking: ✅ WORKING (HTTP/2 201 Created)
+
+✅ PASS: GLM Gateway
+   - GLM file_id: 1761433295473-1e5ff65e732d4081a9dce7ec16959952.txt
+   - Supabase file_id: 8fbfce19-7baf-4c9d-8c3e-e06c88870913
+   - Database tracking: ✅ WORKING (HTTP/2 201 Created)
+
+TOTAL: 3/3 tests passed
+
+================================================================================
+WHAT NEEDS TO BE FIXED
+================================================================================
+
+1. DISABLE DEBUG LOGGING
+   - Remove or set OPENAI_DEBUG_LOGGING=false in .env.docker
+   - Prevent file content from appearing in logs
+
+2. FIX TEST SCRIPT VALIDATION
+   - Test script should verify database tracking succeeded
+   - Should fail if debug output pollution occurs
+   - Should validate clean terminal output
+
+3. PROVIDER ROUTING BUG (CRITICAL)
+   - Kimi models being routed to GLM/Z.ai API
+   - This is the ROOT CAUSE of WebSocket failures
+   - Needs investigation and fix
+
+4. WEBSOCKET STABILITY
+   - Hundreds of asyncio socket.send() failures
+   - Connection timeouts and keepalive ping failures
+   - Likely SYMPTOM of provider routing bug
+
+================================================================================
+QUESTIONS FOR EXAI
+================================================================================
+
+1. How do we properly suppress OpenAI SDK debug logging when OPENAI_DEBUG_LOGGING env var is set?
+2. What's the best way to validate test success beyond just checking return codes?
+3. How should we fix the provider routing bug (Kimi → GLM)?
+4. Are the WebSocket failures symptoms of the routing bug or separate issues?
+5. What's the correct order to fix these issues?
+
+================================================================================
+CURRENT STATUS
+================================================================================
+
+✅ Database schema fixed (upload_method column added)
+✅ Integration tests passing (3/3)
+✅ File uploads working (both Kimi and GLM)
+❌ Debug output pollution (terminal unreadable)
+❌ Test script validation (doesn't catch all issues)
+❌ Provider routing bug (Kimi → GLM)
+❌ WebSocket stability (asyncio failures)
+
+================================================================================
+EXPECTED FIXES FROM EXAI
+================================================================================
+
+1. Step-by-step instructions to disable debug logging properly
+2. Code changes needed for test script validation
+3. Investigation steps for provider routing bug
+4. Fix implementation for routing bug
+5. WebSocket stability improvements (if separate from routing)
+

@@ -99,6 +99,81 @@ class PortSemaphoreManager:
         key = f"{port}_{provider}"
         return self._provider_limits.get(key, 5)
 
+    def get_metrics(self) -> dict:
+        """
+        Get semaphore metrics for monitoring dashboard.
+
+        PHASE 2.4 ENHANCEMENT (2025-10-26): EXAI-recommended semaphore monitoring
+
+        Returns:
+            Dictionary with semaphore metrics:
+            {
+                'ports': {
+                    8079: {'current': 8, 'limit': 10, 'available': 2},
+                    8080: {'current': 6, 'limit': 10, 'available': 4}
+                },
+                'providers': {
+                    '8079_KIMI': {'current': 3, 'limit': 3, 'available': 0},
+                    '8079_GLM': {'current': 2, 'limit': 2, 'available': 0},
+                    '8080_KIMI': {'current': 1, 'limit': 3, 'available': 2},
+                    '8080_GLM': {'current': 0, 'limit': 2, 'available': 2}
+                },
+                'total_leaks_detected': 0,
+                'health_status': 'healthy'  # 'healthy', 'warning', 'critical'
+            }
+        """
+        metrics = {
+            'ports': {},
+            'providers': {},
+            'total_leaks_detected': 0,
+            'health_status': 'healthy'
+        }
+
+        # Port semaphores
+        for port, semaphore in self._semaphores.items():
+            limit = self._limits.get(port, 5)
+            current = limit - semaphore._value  # Number of acquired slots
+            available = semaphore._value
+
+            metrics['ports'][port] = {
+                'current': current,
+                'limit': limit,
+                'available': available,
+                'usage_percent': int((current / limit) * 100) if limit > 0 else 0
+            }
+
+            # Check for leaks (current > limit indicates leak)
+            if current > limit:
+                metrics['total_leaks_detected'] += (current - limit)
+                metrics['health_status'] = 'critical'
+
+        # Provider semaphores
+        for key, semaphore in self._provider_semaphores.items():
+            limit = self._provider_limits.get(key, 5)
+            current = limit - semaphore._value
+            available = semaphore._value
+
+            metrics['providers'][key] = {
+                'current': current,
+                'limit': limit,
+                'available': available,
+                'usage_percent': int((current / limit) * 100) if limit > 0 else 0
+            }
+
+            # Check for leaks
+            if current > limit:
+                metrics['total_leaks_detected'] += (current - limit)
+                metrics['health_status'] = 'critical'
+
+        # Set warning status if usage is high but no leaks
+        if metrics['health_status'] == 'healthy':
+            for port_metrics in metrics['ports'].values():
+                if port_metrics['usage_percent'] > 80:
+                    metrics['health_status'] = 'warning'
+                    break
+
+        return metrics
+
 
 # Global instance
 _port_semaphore_manager = PortSemaphoreManager()
@@ -147,6 +222,13 @@ class SemaphoreGuard:
     async def __aenter__(self):
         """Acquire the semaphore with error handling and tracking."""
         try:
+            # PHASE 2.4 FIX (2025-10-26): EXAI COMPREHENSIVE FIX - Explicit acquire check
+            # Root cause: Double-release or missing-acquire pattern causing semaphore leaks
+            # EXAI recommended: Add explicit check to prevent acquiring already-acquired semaphore
+            if self.acquired:
+                logger.warning(f"Semaphore {self.name} already acquired, skipping duplicate acquire")
+                return self
+
             await self.semaphore.acquire()
             self.acquired = True
             logger.debug(f"Acquired semaphore: {self.name} (value: {self.semaphore._value})")
