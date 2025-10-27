@@ -64,6 +64,11 @@ aiohttp>=3.9.0  # HTTP server for health checks and metrics
 pybreaker>=1.0.0  # Circuit breaker pattern for external service calls
 
 # ============================================================================
-# CODE QUALITY DEPENDENCIES (2025-10-20)
+# CODE QUALITY DEPENDENCIES (2025-10-20, Updated 2025-10-27)
 # ============================================================================
 pyflakes>=3.0.0  # Static code analysis for finding bugs and code quality issues
+ruff>=0.1.0  # Fast Python linter and formatter (replaces flake8, isort, black)
+black>=23.0.0  # Code formatter for consistent style
+isort>=5.12.0  # Import statement organizer
+pytest>=7.4.0  # Testing framework
+pytest-asyncio>=0.21.0  # Async test support for pytest
