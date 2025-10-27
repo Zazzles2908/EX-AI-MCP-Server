@@ -66,18 +66,31 @@ class AIAuditor:
                 base_url="https://api.moonshot.ai/v1"
             )
             self.client_type = "kimi"
-        
+
         # Initialize Supabase client
         self.supabase = SupabaseStorageManager()
-        
+
         # Event buffer
         self.event_buffer: List[Dict] = []
         self.last_analysis_time = time.time()
-        
+
+        # PRIORITY 2 FIX (2025-10-27): Rate limiting to prevent excessive API calls
+        self.hourly_calls = 0
+        self.max_hourly_calls = 60  # Max 1 API call per minute
+        self.hour_start = time.time()
+
+        # PRIORITY 3 FIX (2025-10-27): Adaptive intervals and cost tracking
+        self.recent_errors = 0  # Track recent error count for adaptive intervals
+        self.error_window_start = time.time()
+        self.total_cost = 0.0  # Track total API cost
+        self.daily_cost_limit = 10.0  # Daily cost limit in USD
+
         # Statistics
         self.stats = {
             "events_processed": 0,
+            "events_filtered": 0,  # PRIORITY 2: Track filtered events
             "analyses_performed": 0,
+            "analyses_skipped_rate_limit": 0,  # PRIORITY 2: Track rate-limited analyses
             "observations_created": 0,
             "observations_stored": 0,
             "storage_failures": 0,
@@ -107,7 +120,7 @@ class AIAuditor:
             # Signal handlers can only be set in main thread
             logger.warning("[AI_AUDITOR] Cannot set signal handlers (not in main thread)")
 
-        logger.info(f"[AI_AUDITOR] Initialized with model={model}, batch_size={batch_size}")
+        logger.info(f"[AI_AUDITOR] Initialized with model={model}, batch_size={batch_size}, max_hourly_calls={self.max_hourly_calls}")
 
     def _signal_handler(self, signum, frame):
         """Handle shutdown signals"""
@@ -154,57 +167,141 @@ class AIAuditor:
                 except Exception as e:
                     logger.error(f"[AI_AUDITOR] Error processing event: {e}")
     
+    def _should_buffer_event(self, event: Dict) -> bool:
+        """PRIORITY 3: Smart event selection - determine if event should be buffered"""
+        severity = event.get('severity', 'info').lower()
+        event_type = event.get('type', '')
+
+        # Always buffer errors and critical events
+        if severity in ['error', 'critical']:
+            return True
+
+        # Sample routine events (10% sampling for health checks)
+        if event_type == 'health_check':
+            import random
+            return random.random() < 0.1
+
+        # Buffer performance anomalies (response time > 1 second)
+        if event.get('response_time_ms', 0) > 1000:
+            return True
+
+        # Buffer warnings
+        if severity == 'warning':
+            return True
+
+        return False
+
     async def _process_event(self, event: Dict):
-        """Process incoming event"""
+        """Process incoming event with smart selection and severity filtering"""
+        # PRIORITY 3 FIX (2025-10-27): Smart event selection
+        if not self._should_buffer_event(event):
+            self.stats["events_filtered"] += 1
+            return  # Skip routine events
+
         # Add to buffer
         self.event_buffer.append(event)
         self.stats["events_processed"] += 1
-        
+
+        # PRIORITY 3: Track errors for adaptive intervals
+        if event.get('severity', '').lower() in ['error', 'critical']:
+            self.recent_errors += 1
+
         # Check if we should analyze
         if self._should_analyze():
             await self._analyze_batch()
-    
+
+    def _get_adaptive_interval(self) -> int:
+        """PRIORITY 3: Calculate adaptive analysis interval based on system activity"""
+        # Reset error counter every hour
+        if time.time() - self.error_window_start > 3600:
+            self.recent_errors = 0
+            self.error_window_start = time.time()
+
+        # Analyze frequently during issues
+        if self.recent_errors > 5:
+            return 60  # 1 minute during high error rate
+        elif self.recent_errors > 0:
+            return 300  # 5 minutes during moderate errors
+        else:
+            return 900  # 15 minutes during normal operation
+
     def _should_analyze(self) -> bool:
-        """Determine if we should analyze now"""
+        """Determine if we should analyze now with minimum batch size and adaptive intervals"""
         time_elapsed = time.time() - self.last_analysis_time
-        
+
+        # PRIORITY 2 FIX: Require minimum 20 events AND time interval
+        min_batch_size = max(self.batch_size, 20)
+
+        # PRIORITY 3 FIX: Use adaptive interval based on system activity
+        adaptive_interval = self._get_adaptive_interval()
+
         return (
-            len(self.event_buffer) >= self.batch_size or
-            time_elapsed >= self.analysis_interval
+            len(self.event_buffer) >= min_batch_size and
+            time_elapsed >= adaptive_interval
         ) and not self.circuit_open
     
     async def _analyze_batch(self):
-        """Analyze batch of events with AI"""
+        """Analyze batch of events with AI and rate limiting"""
         if not self.event_buffer:
             return
-        
+
+        # PRIORITY 2 FIX (2025-10-27): Hourly rate limiting
+        # Reset hourly counter if hour elapsed
+        if time.time() - self.hour_start > 3600:
+            self.hourly_calls = 0
+            self.hour_start = time.time()
+            logger.info("[AI_AUDITOR] Hourly rate limit counter reset")
+
+        # Check rate limit
+        if self.hourly_calls >= self.max_hourly_calls:
+            logger.warning(f"[AI_AUDITOR] Hourly rate limit reached ({self.max_hourly_calls} calls/hour), skipping analysis")
+            self.stats["analyses_skipped_rate_limit"] += 1
+
+            # EXAI RECOMMENDATION: Buffer overflow protection during rate limiting
+            if len(self.event_buffer) > 1000:
+                logger.warning(f"[AI_AUDITOR] Buffer overflow during rate limit ({len(self.event_buffer)} events), dropping oldest events")
+                self.event_buffer = self.event_buffer[-500:]  # Keep most recent 500
+
+            # Keep events in buffer for next analysis window
+            return
+
         # Get events to analyze
         events = self.event_buffer.copy()
         self.event_buffer.clear()
         self.last_analysis_time = time.time()
-        
-        logger.info(f"[AI_AUDITOR] Analyzing batch of {len(events)} events")
-        
+
+        logger.info(f"[AI_AUDITOR] Analyzing batch of {len(events)} events (hourly calls: {self.hourly_calls}/{self.max_hourly_calls})")
+
         try:
             # Build context
             context = self._build_context(events)
-            
+
             # Get AI analysis
             observations = await self._get_ai_analysis(context, events)
-            
+
+            # PRIORITY 3 FIX: Track API cost
+            cost = self._estimate_cost(context, observations)
+            self.total_cost += cost
+            logger.info(f"[AI_AUDITOR] API call cost: ${cost:.4f}, total: ${self.total_cost:.4f}")
+
+            # Check daily cost limit
+            if self.total_cost > self.daily_cost_limit:
+                logger.warning(f"[AI_AUDITOR] Daily cost limit exceeded: ${self.total_cost:.2f} > ${self.daily_cost_limit:.2f}")
+
             # Store observations
             if observations:
                 await self._store_observations(observations)
                 self.stats["observations_created"] += len(observations)
-            
+
             self.stats["analyses_performed"] += 1
+            self.hourly_calls += 1  # PRIORITY 2: Increment rate limit counter
             self.consecutive_failures = 0
-            
+
         except Exception as e:
             logger.error(f"[AI_AUDITOR] Analysis failed: {e}")
             self.stats["errors"] += 1
             self.consecutive_failures += 1
-            
+
             # Open circuit breaker if too many failures
             if self.consecutive_failures >= self.max_failures:
                 self.circuit_open = True
@@ -218,6 +315,26 @@ class AIAuditor:
         self.circuit_open = False
         self.consecutive_failures = 0
         logger.info("[AI_AUDITOR] Circuit breaker reset")
+
+    def _estimate_cost(self, context: str, observations: List[Dict]) -> float:
+        """PRIORITY 3: Estimate API call cost based on tokens used"""
+        # Rough token estimation (1 token ≈ 4 characters)
+        input_tokens = len(context) / 4
+        output_tokens = sum(len(str(obs)) for obs in observations) / 4 if observations else 100
+
+        # GLM-4.5-flash pricing (FREE tier, but track for monitoring)
+        # Using nominal cost for tracking purposes
+        if self.is_glm:
+            # GLM-4.5-flash: FREE (but track as if $0.0001 per 1K tokens)
+            cost_per_1k_input = 0.0001
+            cost_per_1k_output = 0.0001
+        else:
+            # Kimi pricing (approximate)
+            cost_per_1k_input = 0.001
+            cost_per_1k_output = 0.002
+
+        total_cost = (input_tokens / 1000 * cost_per_1k_input) + (output_tokens / 1000 * cost_per_1k_output)
+        return total_cost
     
     def _build_context(self, events: List[Dict]) -> str:
         """Build context string from events"""
@@ -424,14 +541,22 @@ If nothing significant, return an empty array: []
                         logger.error(f"[AI_AUDITOR] Failed to store observation after {max_retries} attempts: {e}")
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get auditor statistics"""
+        """Get auditor statistics with rate limiting and cost tracking"""
         return {
             **self.stats,
             "circuit_open": self.circuit_open,
             "buffer_size": len(self.event_buffer),
             "model": self.model,
             "batch_size": self.batch_size,
-            "analysis_interval": self.analysis_interval
+            "analysis_interval": self.analysis_interval,
+            "hourly_calls": self.hourly_calls,  # PRIORITY 2: Rate limit tracking
+            "max_hourly_calls": self.max_hourly_calls,
+            "rate_limit_remaining": self.max_hourly_calls - self.hourly_calls,
+            "recent_errors": self.recent_errors,  # PRIORITY 3: Adaptive intervals
+            "adaptive_interval": self._get_adaptive_interval(),
+            "total_cost": self.total_cost,  # PRIORITY 3: Cost tracking
+            "daily_cost_limit": self.daily_cost_limit,
+            "cost_remaining": max(0, self.daily_cost_limit - self.total_cost)
         }
 
     async def health_check(self) -> Dict[str, Any]:
