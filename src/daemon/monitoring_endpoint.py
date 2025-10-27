@@ -435,6 +435,69 @@ def prepare_stats_for_dashboard(stats_dict):
     return stats_dict
 
 
+async def event_ingestion_handler(request: web.Request) -> web.WebSocketResponse:
+    """
+    Handle event ingestion from test generators (2025-10-27).
+
+    This endpoint receives test events and broadcasts them to the monitoring system.
+    Used for testing AI Auditor and monitoring dashboard functionality.
+
+    Args:
+        request: aiohttp request object
+
+    Returns:
+        WebSocket response
+    """
+    ws = web.WebSocketResponse(
+        timeout=3600.0,         # 1 hour overall timeout for long-running tests
+        heartbeat=30.0,         # Ping interval (30 seconds)
+        receive_timeout=3600.0  # Explicit receive timeout for long connections
+    )
+    await ws.prepare(request)
+
+    logger.info(f"[EVENT_INGESTION] Test generator connected from {request.remote}")
+
+    try:
+        async for msg in ws:
+            if msg.type == web.WSMsgType.TEXT:
+                try:
+                    event_data = json.loads(msg.data)
+
+                    # Broadcast event to all connected dashboard clients
+                    await broadcast_monitoring_event({
+                        "type": "test_event",
+                        "event": event_data,
+                        "timestamp": log_timestamp()
+                    })
+
+                    # Send acknowledgment
+                    await ws.send_str(json.dumps({"status": "received", "event_type": event_data.get("type")}))
+
+                    logger.debug(f"[EVENT_INGESTION] Received and broadcast event: {event_data.get('type')}")
+
+                except json.JSONDecodeError as e:
+                    logger.warning(f"[EVENT_INGESTION] Invalid JSON: {e}")
+                    await ws.send_str(json.dumps({"status": "error", "message": "Invalid JSON"}))
+                except Exception as e:
+                    logger.error(f"[EVENT_INGESTION] Error processing event: {e}")
+                    await ws.send_str(json.dumps({"status": "error", "message": str(e)}))
+
+            elif msg.type == web.WSMsgType.CLOSE:
+                logger.info(f"[EVENT_INGESTION] WebSocket closed by client")
+                break
+
+            elif msg.type == web.WSMsgType.ERROR:
+                logger.error(f"[EVENT_INGESTION] WebSocket error: {ws.exception()}")
+
+    except Exception as e:
+        logger.error(f"[EVENT_INGESTION] Connection error: {e}")
+    finally:
+        logger.info(f"[EVENT_INGESTION] Test generator disconnected")
+
+    return ws
+
+
+
 async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
     """
     Handle dashboard WebSocket connection (aiohttp version).
@@ -802,6 +865,10 @@ async def start_monitoring_server(host: str = "0.0.0.0", port: int = 8080) -> No
     # Testing API routes (Phase 0.4 - 2025-10-24)
     app.router.add_get('/api/metrics/current', get_current_metrics)
 
+    # Event ingestion endpoint for testing (2025-10-27)
+    app.router.add_get('/events', event_ingestion_handler)
+    logger.info("[MONITORING] Registered /events endpoint for test event ingestion")
+
     # Semaphore monitor (added 2025-10-21)
     static_dir = Path(__file__).parent.parent.parent / "static"
     async def serve_semaphore_monitor(request):
@@ -842,7 +909,7 @@ def setup_monitoring_broadcast() -> None:
     Call this during server initialization.
     """
     monitor = get_monitor()
-    
+
     # Override record_event to broadcast
     original_record_event = monitor.record_event
 
@@ -883,7 +950,7 @@ def setup_monitoring_broadcast() -> None:
                     asyncio.run(broadcast_monitoring_event(event_data))
 
                 broadcast_wrapper._executor.submit(run_async_broadcast)
-    
+
     monitor.record_event = broadcast_wrapper
     logger.info("[MONITORING] Broadcast hook installed")
 
