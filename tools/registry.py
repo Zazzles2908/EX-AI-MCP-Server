@@ -34,10 +34,17 @@ TOOL_MAP: Dict[str, tuple[str, str]] = {
     "self-check": ("tools.selfcheck", "SelfCheckTool"),
     # Web tools removed: internet access disabled in production build
 
+    # Testing utilities
+    "test_echo": ("tools.simple.test_echo", "TestEchoTool"),
+
     # Precommit and Challenge utilities
     "precommit": ("tools.workflows.precommit", "PrecommitTool"),
     "challenge": ("tools.challenge", "ChallengeTool"),
     # Orchestrators (aliases map to autopilot)
+    # Smart File Query (unified interface)
+    "smart_file_query": ("tools.smart_file_query", "SmartFileQueryTool"),
+    # Smart File Download (unified download interface)
+    "smart_file_download": ("tools.smart_file_download", "SmartFileDownloadTool"),
     # Kimi utilities
     "kimi_upload_files": ("tools.providers.kimi.kimi_files", "KimiUploadFilesTool"),
     "kimi_chat_with_files": ("tools.providers.kimi.kimi_files", "KimiChatWithFilesTool"),
@@ -65,44 +72,76 @@ TOOL_MAP: Dict[str, tuple[str, str]] = {
 
 }
 # Visibility map for tools: 'core' | 'advanced' | 'hidden'
-# NOTE: During development, all tools are set to 'core' or 'advanced' for full accessibility.
-# In production, consider setting diagnostic tools to 'hidden' to reduce MCP client clutter.
+# 4-TIER TOOL VISIBILITY SYSTEM
+# Designed to prevent overwhelming agents while maintaining full functionality
+#
+# ESSENTIAL (3 tools): Absolute must-haves for basic operation
+# CORE (7 tools): Frequently used for common workflows (80% of use cases)
+# ADVANCED (7 tools): Specialized tools for complex scenarios
+# HIDDEN (16 tools): Internal/diagnostic/deprecated tools
+#
+# Progressive disclosure: Agents see Essential + Core (10 tools) by default
+# Advanced tools revealed based on context or explicit request
+# Hidden tools completely invisible to agents
 TOOL_VISIBILITY = {
-    # Core verbs
-    "status": "core",
-    "chat": "core",
-    "planner": "core",
-    "thinkdeep": "core",
-    "analyze": "core",
-    "codereview": "core",
-    "refactor": "core",
-    "testgen": "core",
-    "debug": "core",
-    # Auxiliary (advanced)
-    "provider_capabilities": "advanced",  # Diagnostics - useful during development
-    "listmodels": "advanced",              # Diagnostics - useful during development
-    "activity": "advanced",
-    "version": "advanced",                 # Diagnostics - useful during development
-    "kimi_upload_files": "advanced",       # File upload - useful during development
-    "kimi_chat_with_files": "core",        # Core tool for file-based analysis
-    "kimi_manage_files": "advanced",       # File management - useful during development
-    "kimi_chat_with_tools": "advanced",
-    "kimi_capture_headers": "advanced",    # Diagnostics - useful during development
-    "glm_upload_file": "advanced",         # Backend pathway - useful during development
-    "glm_payload_preview": "advanced",     # Diagnostics - useful during development
-    "consensus": "advanced",
-    "docgen": "advanced",
-    "secaudit": "advanced",
-    "tracer": "advanced",
-    "precommit": "advanced",
-    # Internal utilities
-    "toolcall_log_tail": "advanced",       # Diagnostics - useful during development
-    "health": "advanced",                  # Diagnostics - useful during development
+    # ========== ESSENTIAL TIER (3 tools) ==========
+    # Always visible - basic operations every agent needs
+    "status": "essential",      # System status checking
+    "chat": "essential",        # Basic communication interface
+    "planner": "essential",     # Task planning and coordination
+
+    # ========== CORE TIER (8 tools) ==========
+    # Default visibility - 80% of use cases covered here
+    "analyze": "core",          # Strategic architectural assessment
+    "codereview": "core",       # Systematic code review
+    "debug": "core",            # Root cause investigation
+    "refactor": "core",         # Code improvement and modernization
+    "testgen": "core",          # Test case generation
+    "thinkdeep": "core",        # Extended hypothesis-driven reasoning
+    "smart_file_query": "core", # ⭐ UNIFIED file upload/query interface (replaces 6+ tools)
+    "smart_file_download": "core", # ⭐ UNIFIED file download interface with caching
+
+    # ========== ADVANCED TIER (7 tools) ==========
+    # Visible on request - specialized scenarios
+    "consensus": "advanced",           # Multi-agent coordination
+    "docgen": "advanced",              # Documentation generation
+    "secaudit": "advanced",            # Security auditing
+    "tracer": "advanced",              # Code execution tracing
+    "precommit": "advanced",           # Pre-commit hook management
+    "kimi_chat_with_tools": "advanced", # Advanced Kimi capabilities
+    "glm_payload_preview": "advanced",  # GLM payload inspection
+
+    # ========== HIDDEN TIER (16 tools) ==========
+    # System/diagnostic only - invisible to agents
+
+    # Diagnostic tools
+    "provider_capabilities": "hidden",  # System diagnostics
+    "listmodels": "hidden",             # Model listing
+    "activity": "hidden",               # Activity monitoring
+    "version": "hidden",                # Version information
+    "health": "hidden",                 # Health checks
+    "toolcall_log_tail": "hidden",      # Tool call logging
+    "test_echo": "hidden",              # Load testing
+    "kimi_capture_headers": "hidden",   # Header inspection
+    "kimi_intent_analysis": "hidden",   # Intent classification
+
+    # ⚠️ DEPRECATED - Use smart_file_query instead
+    "kimi_upload_files": "hidden",      # DEPRECATED: Use smart_file_query
+    "kimi_chat_with_files": "hidden",   # DEPRECATED: Use smart_file_query
+    "kimi_manage_files": "hidden",      # DEPRECATED: Use smart_file_query
+    "glm_upload_file": "hidden",        # DEPRECATED: Use smart_file_query
+    "glm_multi_file_chat": "hidden",    # DEPRECATED: Use smart_file_query
+    "glm_web_search": "hidden",         # Internal utility
+    "kimi_web_search": "hidden",        # Internal utility
 }
 
 
-# Derive DEFAULT_LEAN_TOOLS dynamically from TOOL_VISIBILITY (all 'core' tools)
-DEFAULT_LEAN_TOOLS = {name for name, vis in TOOL_VISIBILITY.items() if vis == "core"}
+# Derive DEFAULT_LEAN_TOOLS dynamically from TOOL_VISIBILITY
+# Includes ESSENTIAL + CORE tools (10 total) for optimal agent experience
+DEFAULT_LEAN_TOOLS = {
+    name for name, vis in TOOL_VISIBILITY.items()
+    if vis in ("essential", "core")
+}
 
 
 class ToolRegistry:
@@ -122,14 +161,23 @@ class ToolRegistry:
     def build_tools(self) -> None:
         disabled = {t.strip().lower() for t in os.getenv("DISABLED_TOOLS", "").split(",") if t.strip()}
         lean_mode = os.getenv("LEAN_MODE", "false").strip().lower() == "true"
+
         if lean_mode:
             lean_overrides = {t.strip().lower() for t in os.getenv("LEAN_TOOLS", "").split(",") if t.strip()}
-            active = lean_overrides or set(DEFAULT_LEAN_TOOLS)
+            if lean_overrides:
+                active = lean_overrides
+            else:
+                # Use TOOL_VISIBILITY to determine active tools in lean mode
+                # Only include ESSENTIAL + CORE tiers (10 tools total)
+                active = {name for name, vis in TOOL_VISIBILITY.items()
+                         if vis in ("essential", "core")}
         else:
             active = set(TOOL_MAP.keys())
 
-        # Ensure utilities are always on unless STRICT_LEAN is enabled
-        if os.getenv("STRICT_LEAN", "false").strip().lower() != "true":
+        # Only add utilities if NOT in lean mode AND not in strict lean mode
+        # This prevents version/listmodels from being added in LEAN_MODE
+        if (os.getenv("STRICT_LEAN", "false").strip().lower() != "true" and
+            not lean_mode):
             active.update({"version", "listmodels"})
 
         # Remove disabled

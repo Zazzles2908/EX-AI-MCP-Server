@@ -15,6 +15,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import os
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -44,7 +45,20 @@ from utils.timezone_helper import log_timestamp
 # PHASE 1 (2025-10-24): Import error capture for comprehensive monitoring
 from utils.monitoring.error_capture import capture_errors, extract_tool_context
 
-logger = logging.getLogger(__name__)
+# PHASE 2 (2025-10-28): Import advanced logging utilities
+# EXAI Consultation: 7e59bfd7-a9cc-4a19-9807-5ebd84082cab
+from src.utils.logging_utils import get_logger, SamplingLogger
+
+# Module-specific configuration
+_MODULE_LOG_LEVEL = os.getenv("LOG_LEVEL_REQUEST_ROUTER", os.getenv("LOG_LEVEL", "ERROR"))
+_MODULE_SAMPLE_RATE = float(os.getenv("LOG_SAMPLE_RATE_REQUEST_ROUTER", "0.05"))  # 5% default
+
+# Create module logger
+logger = get_logger(__name__)
+logger.setLevel(_MODULE_LOG_LEVEL)
+
+# Sampling logger for high-frequency operations (5% sampling by default)
+sampling_logger = SamplingLogger(logger, sample_rate=_MODULE_SAMPLE_RATE)
 
 # Initialize semaphore tracker for leak detection (EXAI recommendation 2025-10-21)
 _semaphore_tracker = get_global_tracker(leak_threshold=60.0)
@@ -414,10 +428,10 @@ class ToolExecutor:
                         outputs[0]['metadata'] = {}
                     outputs[0]['metadata']['latency_metrics'] = latency_metrics
 
-                    logger.debug(f"[LATENCY] {name}: total={total_latency_ms:.2f}ms, "
+                    sampling_logger.debug(f"[LATENCY] {name}: total={total_latency_ms:.2f}ms, "
                                f"global_sem={global_sem_wait_ms:.2f}ms, "
                                f"provider_sem={provider_sem_wait_ms:.2f}ms, "
-                               f"processing={processing_ms:.2f}ms")
+                               f"processing={processing_ms:.2f}ms", key="latency")
             except Exception as e:
                 logger.warning(f"[LATENCY] Failed to inject metrics into outputs: {e}")
 
@@ -516,7 +530,7 @@ class ToolExecutor:
             # Normal cancellation when tool completes
             pass
         except Exception as e:
-            logger.debug(f"Progress update failed: {e}")
+            sampling_logger.debug(f"Progress update failed: {e}", key="progress_fail")
             # Don't propagate - progress updates are best-effort
 
     async def _send_stream_chunk(
@@ -544,7 +558,7 @@ class ToolExecutor:
                 resilient_ws_manager=resilient_ws_manager
             )
         except Exception as e:
-            logger.debug(f"Stream chunk send failed: {e}")
+            sampling_logger.debug(f"Stream chunk send failed: {e}", key="stream_chunk_fail")
             # Don't propagate - streaming is best-effort
 
     async def _send_stream_completion(
@@ -570,7 +584,7 @@ class ToolExecutor:
                 resilient_ws_manager=resilient_ws_manager
             )
         except Exception as e:
-            logger.debug(f"Stream completion send failed: {e}")
+            sampling_logger.debug(f"Stream completion send failed: {e}", key="stream_complete_fail")
             # Don't propagate - completion message is best-effort
 
     def _get_provider_for_tool(self, tool_name: str) -> Optional[str]:
@@ -719,14 +733,14 @@ class RequestRouter:
         # Route based on operation
         op = msg.get("op")
 
-        # CRITICAL DEBUG: Log all incoming operations
-        logger.info(f"[ROUTER_DEBUG] Received operation: {op} for session: {session_id}")
-        logger.info(f"[ROUTER_DEBUG] Message: {msg}")
+        # PHASE 2: Sample high-frequency router debug logs
+        sampling_logger.info(f"[ROUTER_DEBUG] Received operation: {op} for session: {session_id}", key="router_op")
+        sampling_logger.debug(f"[ROUTER_DEBUG] Message: {msg}", key="router_msg")
 
         if op == "list_tools":
-            logger.info(f"[ROUTER_DEBUG] Routing to _handle_list_tools for session: {session_id}")
+            sampling_logger.debug(f"[ROUTER_DEBUG] Routing to _handle_list_tools for session: {session_id}", key="list_tools_route")
             await self._handle_list_tools(ws, resilient_ws_manager)
-            logger.info(f"[ROUTER_DEBUG] _handle_list_tools completed for session: {session_id}")
+            sampling_logger.debug(f"[ROUTER_DEBUG] _handle_list_tools completed for session: {session_id}", key="list_tools_complete")
         elif op == "call_tool":
             await self._handle_call_tool(ws, session_id, msg, resilient_ws_manager)
         else:
@@ -747,8 +761,8 @@ class RequestRouter:
     ) -> None:
         """Handle list_tools operation."""
         try:
-            logger.info(f"[LIST_TOOLS_HANDLER] Starting list_tools handler")
-            logger.info(f"[LIST_TOOLS_HANDLER] server_tools count: {len(self.server_tools)}")
+            sampling_logger.debug(f"[LIST_TOOLS_HANDLER] Starting list_tools handler", key="list_tools_start")
+            sampling_logger.debug(f"[LIST_TOOLS_HANDLER] server_tools count: {len(self.server_tools)}", key="list_tools_count")
 
             tools = []
             for name, tool in self.server_tools.items():
@@ -759,7 +773,7 @@ class RequestRouter:
                         "inputSchema": tool.get_input_schema(),
                     })
                 except Exception as e:
-                    logger.warning(f"Failed to get full schema for tool '{name}': {e}")
+                    logger.warning(f"Failed to get full schema for tool '{name}': {e}")  # Keep warnings unsampled
                     # Fallback to minimal descriptor
                     tools.append({
                         "name": name,
@@ -767,8 +781,8 @@ class RequestRouter:
                         "inputSchema": {"type": "object"}
                     })
 
-            logger.info(f"[LIST_TOOLS_HANDLER] Prepared {len(tools)} tools")
-            logger.info(f"[LIST_TOOLS_HANDLER] Sending list_tools_res to client")
+            sampling_logger.debug(f"[LIST_TOOLS_HANDLER] Prepared {len(tools)} tools", key="list_tools_prepared")
+            sampling_logger.debug(f"[LIST_TOOLS_HANDLER] Sending list_tools_res to client", key="list_tools_send")
 
             # CRITICAL FIX (2025-10-27): Add timestamp with microsecond precision to prevent message deduplication
             # The ResilientWebSocketManager deduplicates messages with identical content.
@@ -781,7 +795,7 @@ class RequestRouter:
                 "timestamp": time.time()  # Microsecond precision to make each response unique
             }, resilient_ws_manager=resilient_ws_manager)
 
-            logger.info(f"[LIST_TOOLS_HANDLER] list_tools_res sent successfully")
+            sampling_logger.debug(f"[LIST_TOOLS_HANDLER] list_tools_res sent successfully", key="list_tools_success")
         except Exception as e:
             logger.error(f"[LIST_TOOLS_HANDLER] CRITICAL ERROR: {e}", exc_info=True)
             raise
@@ -799,23 +813,23 @@ class RequestRouter:
         arguments = msg.get("arguments") or {}
         req_id = msg.get("request_id")
 
-        # Log tool call
-        logger.info(f"=== TOOL CALL RECEIVED ===")
-        logger.info(f"Session: {session_id}")
-        logger.info(f"Tool: {name} (original: {orig_name})")
-        logger.info(f"Request ID: {req_id}")
+        # PHASE 2: Sample high-frequency tool call logging
+        sampling_logger.info(f"=== TOOL CALL RECEIVED ===", key="tool_call")
+        sampling_logger.info(f"Session: {session_id}", key="tool_call")
+        sampling_logger.info(f"Tool: {name} (original: {orig_name})", key="tool_call")
+        sampling_logger.info(f"Request ID: {req_id}", key="tool_call")
         try:
             args_preview = json.dumps(arguments, indent=2)[:500]
-            logger.info(f"Arguments (first 500 chars): {args_preview}")
+            sampling_logger.info(f"Arguments (first 500 chars): {args_preview}", key="tool_call")
         except Exception as e:
-            logger.warning(f"Failed to serialize arguments for logging: {e}")
-            logger.info(f"Arguments: <unable to serialize>")
-        logger.info(f"=== PROCESSING ===")
+            logger.warning(f"Failed to serialize arguments for logging: {e}")  # Keep warnings unsampled
+            sampling_logger.info(f"Arguments: <unable to serialize>", key="tool_call")
+        sampling_logger.info(f"=== PROCESSING ===", key="tool_call")
 
         # Validate arguments
         try:
             arguments = validate_tool_arguments(name, arguments)
-            logger.debug(f"[{req_id}] Arguments validated successfully")
+            sampling_logger.debug(f"[{req_id}] Arguments validated successfully", key="validation_success")
         except InputValidationError as e:
             # PHASE 1 (2025-10-24): Record validation error in monitoring system
             import traceback
@@ -867,7 +881,7 @@ class RequestRouter:
         # Check for cached result
         cached = await self.cache_manager.get_cached_result(req_id)
         if cached:
-            logger.info(f"[{req_id}] Returning cached result")
+            sampling_logger.info(f"[{req_id}] Returning cached result", key="cache_hit")
             await _safe_send(ws, cached, resilient_ws_manager=resilient_ws_manager)
             return
 
@@ -882,7 +896,7 @@ class RequestRouter:
             # Check if we have cached result from the duplicate
             cached_outputs = await self.cache_manager.get_cached_by_key(call_key)
             if cached_outputs:
-                logger.info(f"[{req_id}] Returning cached result from duplicate request {existing_req_id}")
+                sampling_logger.info(f"[{req_id}] Returning cached result from duplicate request {existing_req_id}", key="cache_duplicate")
                 response = {
                     "op": "call_tool_res",
                     "request_id": req_id,
@@ -894,7 +908,7 @@ class RequestRouter:
                 return
             else:
                 # Duplicate is still processing - send retry response
-                logger.info(f"[{req_id}] Duplicate request detected (original: {existing_req_id}), sending retry")
+                sampling_logger.info(f"[{req_id}] Duplicate request detected (original: {existing_req_id}), sending retry", key="duplicate_retry")
                 error_response = create_error_response(
                     code=ErrorCode.OVER_CAPACITY,
                     message=(

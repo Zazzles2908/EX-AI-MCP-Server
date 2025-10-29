@@ -10,6 +10,197 @@ The SDK Integration component provides a unified interface for interacting with 
 - **Supabase records EVERYTHING in parallel** (non-blocking async storage)
 - **Fallback chain**: SDK (primary) → Supabase recovery → HTTP mode (if platform down)
 
+---
+
+## 🎯 **EXAI TOOL LANDSCAPE (4-TIER SYSTEM)**
+
+**Last Updated:** 2025-10-29
+
+### **Overview**
+
+EXAI provides 33 tools organized into 4 tiers to prevent overwhelming agents while maintaining full functionality:
+
+- **ESSENTIAL (3 tools)**: Absolute must-haves for basic operation
+- **CORE (7 tools)**: Frequently used for common workflows (80% of use cases)
+- **ADVANCED (7 tools)**: Specialized tools for complex scenarios
+- **HIDDEN (16 tools)**: Internal/diagnostic/deprecated tools
+
+**Progressive Disclosure:** Agents see Essential + Core (10 tools) by default. Advanced tools revealed based on context. Hidden tools completely invisible.
+
+---
+
+### **ESSENTIAL TIER (3 tools)** - Always Visible
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `status` | System status checking | Starting a session, checking if system is operational |
+| `chat` | Basic communication interface | General questions, explanations, brainstorming |
+| `planner` | Task planning and coordination | Complex tasks requiring structured planning |
+
+**Usage:**
+```python
+# Check system health
+status()
+
+# Ask a question
+chat(prompt="How do I implement OAuth2?")
+
+# Plan complex task
+planner(
+    step="Break down authentication implementation",
+    step_number=1,
+    total_steps=3,
+    next_step_required=True,
+    findings="Initial analysis shows..."
+)
+```
+
+---
+
+### **CORE TIER (7 tools)** - Default Workflow
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `analyze` | Strategic architectural assessment | Understanding code structure, patterns, architecture |
+| `codereview` | Systematic code review | Reviewing code for bugs, security issues, code smells |
+| `debug` | Root cause investigation | Finding root cause of bugs, performance issues |
+| `refactor` | Code improvement and modernization | Identifying code smells, decomposition opportunities |
+| `testgen` | Test case generation | Generating unit tests, integration tests, edge cases |
+| `thinkdeep` | Extended hypothesis-driven reasoning | Complex reasoning, architectural decisions |
+| `smart_file_query` | **⭐ UNIFIED file operations** | ALL file operations (upload, query, chat, manage) |
+
+**Usage:**
+```python
+# Analyze codebase
+analyze(
+    step="Analyze authentication system architecture",
+    step_number=1,
+    total_steps=1,
+    next_step_required=False,
+    findings="Discovered JWT-based auth with Redis session storage"
+)
+
+# Review code
+codereview(
+    step="Review authentication changes for security issues",
+    step_number=1,
+    total_steps=1,
+    next_step_required=False,
+    findings="Found potential SQL injection in login handler",
+    relevant_files=["/mnt/project/src/auth/login.py"]
+)
+
+# Debug issue
+debug(
+    step="Investigate login failure",
+    hypothesis="JWT token expiration issue",
+    confidence="exploring",
+    step_number=1,
+    total_steps=2,
+    next_step_required=True,
+    findings="Token expires after 15 minutes, no refresh mechanism"
+)
+
+# File operations (REPLACES 6+ old tools)
+smart_file_query(
+    file_path="/mnt/project/EX-AI-MCP-Server/src/file.py",
+    question="Analyze this code for security issues"
+)
+```
+
+---
+
+### **ADVANCED TIER (7 tools)** - Specialized Scenarios
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `consensus` | Multi-agent coordination | Complex decisions requiring multiple perspectives |
+| `docgen` | Documentation generation | Generating comprehensive code documentation |
+| `secaudit` | Security auditing | OWASP Top 10 analysis, compliance evaluation |
+| `tracer` | Code execution tracing | Understanding execution flow, call chains |
+| `precommit` | Pre-commit hook management | Validating changes before commit |
+| `kimi_chat_with_tools` | Advanced Kimi capabilities | Advanced Kimi-specific features |
+| `glm_payload_preview` | GLM payload inspection | Debugging GLM API calls |
+
+**Usage:**
+```python
+# Multi-model consensus
+consensus(
+    step="Evaluate database migration proposal",
+    models=[
+        {"model": "glm-4.6", "stance": "for"},
+        {"model": "kimi-k2-0905-preview", "stance": "against"}
+    ],
+    step_number=1,
+    total_steps=2,
+    next_step_required=True,
+    findings="Initial analysis of migration proposal..."
+)
+
+# Security audit
+secaudit(
+    step="Audit authentication system for OWASP Top 10",
+    audit_focus="owasp",
+    threat_level="high",
+    step_number=1,
+    total_steps=1,
+    next_step_required=False,
+    findings="Found SQL injection vulnerability in login handler"
+)
+```
+
+---
+
+### **HIDDEN TIER (16 tools)** - System/Diagnostic Only
+
+**Diagnostic Tools:**
+- `provider_capabilities` - System diagnostics
+- `listmodels` - Model listing
+- `activity` - Activity monitoring
+- `version` - Version information
+- `health` - Health checks
+- `toolcall_log_tail` - Tool call logging
+- `test_echo` - Load testing
+- `kimi_capture_headers` - Header inspection
+- `kimi_intent_analysis` - Intent classification
+
+**⚠️ DEPRECATED FILE TOOLS (Use `smart_file_query` instead):**
+- `kimi_upload_files` → Use `smart_file_query`
+- `kimi_chat_with_files` → Use `smart_file_query`
+- `kimi_manage_files` → Use `smart_file_query`
+- `glm_upload_file` → Use `smart_file_query`
+- `glm_multi_file_chat` → Use `smart_file_query`
+- `glm_web_search` - Internal utility
+- `kimi_web_search` - Internal utility
+
+**Note:** Hidden tools are invisible to agents and should not be used directly. Use the recommended alternatives above.
+
+---
+
+### **Tool Selection Quick Reference**
+
+```
+File Operations → smart_file_query
+Code Analysis → analyze
+Code Review → codereview
+Debugging → debug
+Refactoring → refactor
+Test Generation → testgen
+Planning → planner
+Deep Reasoning → thinkdeep
+Security Audit → secaudit
+Documentation → docgen
+Code Tracing → tracer
+Multi-Agent → consensus
+Pre-Commit → precommit
+```
+
+**For detailed tool selection guidance, see:**
+- `docs/00_Quick_Start_Guide.md` - Get started in 5 minutes
+- `docs/01_Tool_Decision_Tree.md` - Comprehensive tool selection guide
+
+---
+
 ## Architecture & Design Patterns
 
 ### Provider Abstraction Layer

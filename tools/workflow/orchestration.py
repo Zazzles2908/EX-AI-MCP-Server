@@ -637,24 +637,38 @@ class OrchestrationMixin:
             # Only flag stagnation at low/medium confidence levels (not at high confidence)
             if len(set(recent_confidences)) == 1:
                 stagnant_confidence = recent_confidences[0]
-                if stagnant_confidence in ['exploring', 'low', 'medium']:
+
+                # FIX (2025-10-29): Different thresholds for different confidence levels
+                # External agents may need more steps at 'medium' confidence
+                if stagnant_confidence in ['exploring', 'low']:
+                    # Strict: 3 steps (likely stuck)
+                    threshold = 3
+                elif stagnant_confidence == 'medium':
+                    # Lenient: 5 steps (may be making progress)
+                    threshold = 5
+                else:
+                    # High confidence is stable, not stuck
+                    logger.debug(f"{self.get_name()}: Confidence stable at '{stagnant_confidence}' - legitimately confident")
+                    threshold = None
+
+                if threshold is not None and len(recent_confidences) >= threshold:
                     # BUG FIX #10 CORRECTED (2025-10-20): Circuit breaker must RAISE EXCEPTION to truly abort
                     # Previous behavior: returned False but caller still triggered expert analysis
                     # New behavior: raise exception to force immediate abort without expert analysis
+                    # FIX (2025-10-29): Enhanced error message for external agents
                     error_msg = (
                         f"{self.get_name()}: Circuit breaker ABORT - Confidence stagnant at "
-                        f"'{stagnant_confidence}' for 3 consecutive steps. Auto-execution stopped to prevent infinite loop.\n\n"
-                        f"Suggestions:\n"
-                        f"  1. Provide more context or relevant files\n"
-                        f"  2. Break task into smaller, more specific steps\n"
-                        f"  3. Use chat_EXAI-WS for manual guidance\n"
-                        f"  4. Increase thinking_mode for deeper analysis"
+                        f"'{stagnant_confidence}' for {len(recent_confidences)} consecutive steps.\n\n"
+                        f"🔧 TROUBLESHOOTING FOR EXTERNAL AGENTS:\n"
+                        f"  1. Increase confidence level in your next call (e.g., 'high' instead of 'medium')\n"
+                        f"  2. Provide more specific context or relevant files\n"
+                        f"  3. Break task into smaller, more focused steps\n"
+                        f"  4. Use chat_EXAI-WS for manual guidance instead of workflow tools\n"
+                        f"  5. Increase thinking_mode for deeper analysis (e.g., 'high' or 'max')\n\n"
+                        f"💡 TIP: If you're making progress, set confidence='high' to bypass circuit breaker."
                     )
                     logger.error(error_msg)
                     raise RuntimeError(error_msg)
-                elif stagnant_confidence in ['high', 'very_high', 'certain']:
-                    logger.debug(f"{self.get_name()}: Confidence stable at '{stagnant_confidence}' - legitimately confident")
-                    # This is good - high confidence is stable, not stuck
 
         # Check information sufficiency with enhanced quality assessment
         try:

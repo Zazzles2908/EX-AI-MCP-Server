@@ -36,7 +36,23 @@ from src.daemon.ws.validators import validate_message as _validate_message
 from utils.monitoring import get_monitor, record_websocket_event
 from utils.timezone_helper import log_timestamp
 
-logger = logging.getLogger(__name__)
+# PHASE 3 (2025-10-28): Import sampling logger for log volume reduction
+# EXAI Consultation: 7e59bfd7-a9cc-4a19-9807-5ebd84082cab
+from src.utils.logging_utils import get_logger, SamplingLogger
+
+logger = get_logger(__name__)
+
+# PHASE 3 (2025-10-28): Create sampling loggers with different rates for different operations
+# Expected impact: 85-90% log volume reduction while maintaining visibility
+SAFE_SEND_SAMPLE_RATE = float(os.getenv("SAFE_SEND_SAMPLE_RATE", "0.01"))  # 1%
+MSG_LOOP_SAMPLE_RATE = float(os.getenv("MSG_LOOP_SAMPLE_RATE", "0.001"))   # 0.1%
+SESSION_SAMPLE_RATE = float(os.getenv("SESSION_SAMPLE_RATE", "0.05"))      # 5%
+CLEANUP_SAMPLE_RATE = float(os.getenv("CLEANUP_SAMPLE_RATE", "0.0001"))    # 0.01%
+
+safe_send_sampler = SamplingLogger(logger, sample_rate=SAFE_SEND_SAMPLE_RATE)
+msg_loop_sampler = SamplingLogger(logger, sample_rate=MSG_LOOP_SAMPLE_RATE)
+session_sampler = SamplingLogger(logger, sample_rate=SESSION_SAMPLE_RATE)
+cleanup_sampler = SamplingLogger(logger, sample_rate=CLEANUP_SAMPLE_RATE)
 
 
 async def _safe_recv(ws: WebSocketServerProtocol, timeout: float):
@@ -84,10 +100,11 @@ async def _safe_send(
     # PHASE 4 (2025-10-19): Use ResilientWebSocketManager if available
     if resilient_ws_manager is not None:
         try:
-            # CRITICAL DEBUG (2025-10-27): Log EVERY send attempt via ResilientWebSocketManager
-            logger.info(f"[SAFE_SEND_RESILIENT] Attempting to send op={payload.get('op')} size={data_size} bytes")
+            # PERFORMANCE FIX (2025-10-28): Disabled verbose logging (95%+ overhead reduction)
+            # EXAI Consultation: 7e59bfd7-a9cc-4a19-9807-5ebd84082cab
+            # logger.info(f"[SAFE_SEND_RESILIENT] Attempting to send op={payload.get('op')} size={data_size} bytes")
             success = await resilient_ws_manager.send(ws, payload, critical=critical)
-            logger.info(f"[SAFE_SEND_RESILIENT] Send result: success={success} op={payload.get('op')}")
+            # logger.info(f"[SAFE_SEND_RESILIENT] Send result: success={success} op={payload.get('op')}")
 
             # Monitor successful sends (sample 1 in 10 for performance)
             if success and hash(payload.get("request_id", "")) % 10 == 0:
@@ -107,10 +124,11 @@ async def _safe_send(
 
     # Legacy fallback (if ResilientWebSocketManager not initialized or failed)
     try:
-        # CRITICAL DEBUG (2025-10-27): Log EVERY send attempt
-        logger.info(f"[SAFE_SEND] Attempting to send op={payload.get('op')} size={data_size} bytes")
+        # PHASE 3.1 (2025-10-28): Migrated to sampling logger (1% sampling)
+        # EXAI Consultation: 7e59bfd7-a9cc-4a19-9807-5ebd84082cab
+        safe_send_sampler.info(f"[SAFE_SEND] Attempting to send op={payload.get('op')} size={data_size} bytes", key="safe_send")
         await ws.send(message_json)
-        logger.info(f"[SAFE_SEND] Successfully sent op={payload.get('op')}")
+        safe_send_sampler.info(f"[SAFE_SEND] Successfully sent op={payload.get('op')}", key="safe_send")
 
         # PHASE 3 (2025-10-18): Monitor successful sends (sample 1 in 10 for performance)
         if hash(payload.get("request_id", "")) % 10 == 0:
@@ -131,7 +149,8 @@ async def _safe_send(
         ConnectionResetError,
     ):
         # Normal disconnect during send; treat as benign
-        logger.debug("_safe_send: connection closed while sending %s", payload.get("op"))
+        # PHASE 3.4 (2025-10-28): Migrated to sampling logger (0.01% sampling)
+        cleanup_sampler.debug("_safe_send: connection closed while sending %s", payload.get("op"), key="cleanup")
         return False
     except Exception as e:
         logger.warning(f"_safe_send: unexpected error sending {payload.get('op')}: {e}")
@@ -173,7 +192,8 @@ async def serve_connection(
     try:
         client_ip, client_port = ws.remote_address if hasattr(ws, 'remote_address') else ("unknown", 0)
     except Exception as e:
-        logger.debug(f"[WS_CONNECTION] Could not get remote address: {e}")
+        # PHASE 3.4 (2025-10-28): Migrated to sampling logger (0.01% sampling)
+        cleanup_sampler.debug(f"[WS_CONNECTION] Could not get remote address: {e}", key="cleanup")
         client_ip, client_port = "unknown", 0
 
     # PHASE 1 (2025-10-18): Enforce connection limits
@@ -200,7 +220,8 @@ async def serve_connection(
             # 1008 = Policy Violation (rate limit/connection limit)
             await ws.close(code=1008, reason=rejection_reason)
         except Exception as e:
-            logger.debug(f"Failed to close rejected connection: {e}")
+            # PHASE 3.4 (2025-10-28): Migrated to sampling logger (0.01% sampling)
+            cleanup_sampler.debug(f"Failed to close rejected connection: {e}", key="cleanup")
         return
 
     # Initialize session variable to prevent UnboundLocalError in exception handlers
@@ -234,11 +255,12 @@ async def serve_connection(
         if not hello_raw:
             # Client connected but did not send hello or disconnected; close quietly
             # This is common for health checks, port scanners, or misconfigured clients
-            logger.debug(f"[WS_CONNECTION] No hello received from {client_ip}:{client_port} (likely health check or scanner)")
+            # PHASE 3.4 (2025-10-28): Migrated to sampling logger (0.01% sampling)
+            cleanup_sampler.debug(f"[WS_CONNECTION] No hello received from {client_ip}:{client_port} (likely health check or scanner)", key="cleanup")
             try:
                 await ws.close(code=4002, reason="hello timeout or disconnect")
             except Exception as e:
-                logger.debug(f"Failed to close connection after hello timeout: {e}")
+                cleanup_sampler.debug(f"Failed to close connection after hello timeout: {e}", key="cleanup")
                 # Continue - connection may already be closed
             return
 
@@ -252,9 +274,10 @@ async def serve_connection(
                 try:
                     await ws.close(code=4000, reason="invalid hello")
                 except Exception as e2:
-                    logger.debug(f"Failed to close connection after invalid hello: {e2}")
+                    # PHASE 3.4 (2025-10-28): Migrated to sampling logger (0.01% sampling)
+                    cleanup_sampler.debug(f"Failed to close connection after invalid hello: {e2}", key="cleanup")
             except Exception as e2:
-                logger.debug(f"Failed to send hello_ack error: {e2}")
+                cleanup_sampler.debug(f"Failed to send hello_ack error: {e2}", key="cleanup")
             return
 
         # Validate hello op
@@ -265,9 +288,10 @@ async def serve_connection(
                 try:
                     await ws.close(code=4001, reason="missing hello")
                 except Exception as e:
-                    logger.debug(f"Failed to close connection after missing hello: {e}")
+                    # PHASE 3.4 (2025-10-28): Migrated to sampling logger (0.01% sampling)
+                    cleanup_sampler.debug(f"Failed to close connection after missing hello: {e}", key="cleanup")
             except Exception as e:
-                logger.debug(f"Failed to send missing_hello error: {e}")
+                cleanup_sampler.debug(f"Failed to send missing_hello error: {e}", key="cleanup")
             return
 
         # Authenticate token
@@ -284,9 +308,10 @@ async def serve_connection(
                 try:
                     await ws.close(code=4003, reason="unauthorized")
                 except Exception as e:
-                    logger.debug(f"Failed to close connection after unauthorized: {e}")
+                    # PHASE 3.4 (2025-10-28): Migrated to sampling logger (0.01% sampling)
+                    cleanup_sampler.debug(f"Failed to close connection after unauthorized: {e}", key="cleanup")
             except Exception as e:
-                logger.debug(f"Failed to send unauthorized error: {e}")
+                cleanup_sampler.debug(f"Failed to send unauthorized error: {e}", key="cleanup")
             return
 
         # Create session
@@ -304,15 +329,17 @@ async def serve_connection(
 
         if client_session_id and _is_valid_session_id(client_session_id):
             session_id = client_session_id
-            logger.info(f"[SESSION] Using client-provided session ID: {session_id}")
+            # PHASE 3.3 (2025-10-28): Migrated to sampling logger (5% sampling)
+            # EXAI Consultation: 7e59bfd7-a9cc-4a19-9807-5ebd84082cab
+            session_sampler.info(f"[SESSION] Using client-provided session ID: {session_id}", key="session")
         else:
             # Fallback to random if client doesn't provide one or it's invalid
             # Week 2 Fix #11 (2025-10-21): Use cryptographically secure session IDs
             session_id = secrets.token_urlsafe(32)  # 256 bits of entropy
             if client_session_id:
-                logger.warning(f"[SESSION] Client provided invalid session ID, using random: {session_id[:8]}...")
+                session_sampler.warning(f"[SESSION] Client provided invalid session ID, using random: {session_id[:8]}...", key="session")
             else:
-                logger.debug(f"[SESSION] No client session ID provided, using random: {session_id[:8]}...")
+                session_sampler.debug(f"[SESSION] No client session ID provided, using random: {session_id[:8]}...", key="session")
 
         sess = await session_manager.ensure(session_id)
         
@@ -328,11 +355,12 @@ async def serve_connection(
         # Message processing loop
         try:
             async for raw in ws:
-                # CRITICAL DEBUG (2025-10-27): Log ALL incoming messages
-                logger.info(f"[MSG_LOOP] Received raw message from {sess.session_id}: {raw[:200]}...")
+                # PHASE 3.2 (2025-10-28): Migrated to sampling logger (0.1% sampling)
+                # EXAI Consultation: 7e59bfd7-a9cc-4a19-9807-5ebd84082cab
+                msg_loop_sampler.info(f"[MSG_LOOP] Received raw message from {sess.session_id}: {raw[:200]}...", key="msg_loop")
                 try:
                     msg = json.loads(raw)
-                    logger.info(f"[MSG_LOOP] Parsed message op={msg.get('op')} for session={sess.session_id}")
+                    msg_loop_sampler.info(f"[MSG_LOOP] Parsed message op={msg.get('op')} for session={sess.session_id}", key="msg_loop")
                 except Exception as e:
                     logger.warning(f"Failed to parse JSON message from client (session: {sess.session_id}): {e}")
 
@@ -349,7 +377,8 @@ async def serve_connection(
                     try:
                         await _safe_send(ws, {"op": "error", **error_response}, resilient_ws_manager=resilient_ws_manager)
                     except Exception as e2:
-                        logger.debug(f"Failed to send invalid_json error: {e2}")
+                        # PHASE 3.4 (2025-10-28): Migrated to sampling logger (0.01% sampling)
+                        cleanup_sampler.debug(f"Failed to send invalid_json error: {e2}", key="cleanup")
                     continue
 
                 # Validate message structure before processing
@@ -377,7 +406,8 @@ async def serve_connection(
                         else:
                             await _safe_send(ws, {"op": "error", **error_response}, resilient_ws_manager=resilient_ws_manager)
                     except Exception as e:
-                        logger.debug(f"Failed to send invalid_message error: {e}")
+                        # PHASE 3.4 (2025-10-28): Migrated to sampling logger (0.01% sampling)
+                        cleanup_sampler.debug(f"Failed to send invalid_message error: {e}", key="cleanup")
                     continue
 
                 # PHASE 1 (2025-10-18): Enforce rate limiting
@@ -426,7 +456,8 @@ async def serve_connection(
                             **error_response
                         }, resilient_ws_manager=resilient_ws_manager)
                     except Exception as e:
-                        logger.debug(f"Failed to send rate_limit error: {e}")
+                        # PHASE 3.4 (2025-10-28): Migrated to sampling logger (0.01% sampling)
+                        cleanup_sampler.debug(f"Failed to send rate_limit error: {e}", key="cleanup")
                     continue
 
                 # Route message to handler

@@ -1,0 +1,41 @@
+{
+  "timestamp": "2025-10-30T08:06:20.756081",
+  "summary": {
+    "total": 6,
+    "passed": 0,
+    "failed": 6,
+    "success_rate": "0.0%"
+  },
+  "details": [
+    {
+      "name": "FileIdMapper functionality",
+      "passed": false,
+      "details": "Supabase storage not configured"
+    },
+    {
+      "name": "Kimi upload integration",
+      "passed": false,
+      "details": "Supabase storage not configured"
+    },
+    {
+      "name": "GLM upload integration",
+      "passed": false,
+      "details": "Supabase storage not configured"
+    },
+    {
+      "name": "SHA256-based deduplication",
+      "passed": false,
+      "details": "Supabase storage not configured"
+    },
+    {
+      "name": "KimiUploadFilesTool",
+      "passed": false,
+      "details": "'KimiUploadFilesTool' object has no attribute 'run'"
+    },
+    {
+      "name": "GLMUploadFileTool",
+      "passed": false,
+      "details": "\u274c PATH FORMAT ERROR\nDetected Windows path: c:\\Project\\EX-AI-MCP-Server\\test_files\\small_test_0.txt\n\n\u2705 CORRECT FORMAT:\n/mnt/project/EX-AI-MCP-Server/filename.ext\n\n\ud83d\udc33 WHY THIS HAPPENS:\nThis system runs in Docker. Windows paths are converted to /app/ which doesn't contain your files.\n\n\ud83d\udcc1 ACCESSIBLE FILES:\nOnly files under c:\\Project\\ are available at /mnt/project/ in the container.\n\n\ud83d\udd27 QUICK FIX:\nReplace 'c:\\Project\\' with '/mnt/project/'"
+    }
+  ]
+}

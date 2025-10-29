@@ -130,6 +130,22 @@ class FileDeduplicationManager:
         self.file_cache = FileCache()
         self.large_file_threshold = 100 * 1024 * 1024  # 100MB
 
+    def calculate_sha256(self, file_path: str | Path) -> str:
+        """
+        Calculate SHA256 hash of a file for integrity verification.
+
+        This is a convenience wrapper around FileCache.sha256_file() for
+        compatibility with code that expects this method on the manager.
+
+        Args:
+            file_path: Path to the file to hash
+
+        Returns:
+            SHA256 hash as a hexadecimal string
+        """
+        pth = Path(file_path) if isinstance(file_path, str) else file_path
+        return FileCache.sha256_file(pth)
+
     async def check_duplicate_async(
         self,
         file_path: str | Path,

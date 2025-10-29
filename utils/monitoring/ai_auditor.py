@@ -167,6 +167,31 @@ class AIAuditor:
                 except Exception as e:
                     logger.error(f"[AI_AUDITOR] Error processing event: {e}")
     
+    def _safe_numeric_compare(self, value, threshold, operation='>'):
+        """
+        Null-safe numeric comparison.
+        Returns False if value is None.
+
+        FIX (2025-10-29): Prevents NoneType comparison errors in AI Auditor
+        """
+        if value is None:
+            return False
+
+        if operation == '>':
+            return value > threshold
+        elif operation == '<':
+            return value < threshold
+        elif operation == '>=':
+            return value >= threshold
+        elif operation == '<=':
+            return value <= threshold
+        elif operation == '==':
+            return value == threshold
+        elif operation == '!=':
+            return value != threshold
+        else:
+            raise ValueError(f"Unsupported operation: {operation}")
+
     def _should_buffer_event(self, event: Dict) -> bool:
         """PRIORITY 3: Smart event selection - determine if event should be buffered"""
         severity = event.get('severity', 'info').lower()
@@ -182,7 +207,8 @@ class AIAuditor:
             return random.random() < 0.1
 
         # Buffer performance anomalies (response time > 1 second)
-        if event.get('response_time_ms', 0) > 1000:
+        # FIX (2025-10-29): Use null-safe comparison to prevent NoneType errors
+        if self._safe_numeric_compare(event.get('response_time_ms'), 1000, '>'):
             return True
 
         # Buffer warnings

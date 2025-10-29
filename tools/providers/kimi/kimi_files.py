@@ -34,139 +34,14 @@ logger = logging.getLogger(__name__)
 # SUPABASE GATEWAY FUNCTIONS (Phase 2 - 2025-10-26)
 # ============================================================================
 
-async def upload_via_supabase_gateway_kimi(file_path: str, storage, purpose: str = "file-extract") -> dict:
-    """
-    Upload file to Supabase first, then upload to Kimi using SDK.
-
-    UPDATED APPROACH (EXAI-validated):
-    Kimi does NOT support URL-based file extraction. Instead:
-    1. Upload file to Supabase Storage
-    2. Upload file to Kimi using SDK (client.files.create)
-    3. Track both IDs in database
-
-    This provides:
-    - Supabase as centralized storage
-    - Kimi file_id for AI operations
-    - Bidirectional tracking
-
-    Args:
-        file_path: Path to file (absolute or relative)
-        storage: Supabase storage manager instance
-        purpose: File purpose ('file-extract' or 'assistants')
-
-    Returns:
-        dict with:
-        - kimi_file_id: File ID from Kimi
-        - supabase_file_id: File ID from Supabase
-        - filename: Original filename
-        - size_bytes: File size
-        - upload_method: 'supabase_gateway'
-
-    Raises:
-        RuntimeError: If upload fails
-        ValueError: If file doesn't exist or is too large
-
-    Source: EXAI Consultation c90cdeec-48bb-4d10-b075-925ebbf39c8a
-    Note: Uses SDK instead of raw HTTP for reliability
-    """
-    import mimetypes
-    from pathlib import Path
-
-    pth = Path(file_path)
-
-    # Validate file exists
-    if not pth.exists() or not pth.is_file():
-        raise ValueError(f"File not found: {file_path}")
-
-    # Check file size (Kimi limit: 100MB)
-    file_size = pth.stat().st_size
-    max_size = 100 * 1024 * 1024  # 100MB
-    if file_size > max_size:
-        raise ValueError(f"File too large: {file_size} bytes (max 100MB for Kimi)")
-
-    logger.info(f"Starting Supabase gateway upload for {pth.name} ({file_size} bytes)")
-
-    # 1. Upload to Supabase Storage
-    try:
-        with open(pth, 'rb') as f:
-            file_data = f.read()
-
-        mime_type, _ = mimetypes.guess_type(str(pth))
-
-        supabase_file_id = storage.upload_file(
-            file_path=f"kimi-gateway/{pth.name}",
-            file_data=file_data,
-            original_name=pth.name,
-            mime_type=mime_type,
-            file_type="user_upload"
-        )
-
-        if not supabase_file_id:
-            raise RuntimeError("Supabase upload returned None")
-
-        logger.info(f"✅ Uploaded to Supabase: {pth.name} -> {supabase_file_id}")
-
-    except Exception as e:
-        logger.error(f"❌ Supabase upload failed: {e}")
-        raise RuntimeError(f"Failed to upload to Supabase: {e}")
-
-    # 2. Upload to Kimi using SDK (EXAI-recommended approach)
-    # Note: Kimi does NOT support URL-based file extraction
-    # Must use SDK client.files.create() instead
-    try:
-        from src.providers.registry import ModelProviderRegistry
-        from src.providers.kimi import KimiModelProvider
-
-        api_key = os.getenv("KIMI_API_KEY")
-        if not api_key:
-            raise RuntimeError("KIMI_API_KEY not configured")
-
-        default_model = os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview")
-        prov = ModelProviderRegistry.get_provider_for_model(default_model)
-
-        if not isinstance(prov, KimiModelProvider):
-            prov = KimiModelProvider(api_key=api_key)
-
-        # Upload using SDK (uses client.files.create internally)
-        kimi_file_id = prov.upload_file(str(pth), purpose=purpose)
-
-        if not kimi_file_id:
-            raise RuntimeError("Kimi upload returned None")
-
-        logger.info(f"✅ Uploaded to Kimi via SDK: {kimi_file_id}")
-
-    except Exception as e:
-        logger.error(f"❌ Kimi SDK upload failed: {e}")
-        raise RuntimeError(f"Failed to upload to Kimi via SDK: {e}")
-
-    # 3. Track both IDs in database
-    try:
-        client = storage.get_client()
-        client.table("provider_file_uploads").insert({
-            "provider": "kimi",
-            "provider_file_id": kimi_file_id,
-            "supabase_file_id": supabase_file_id,
-            "sha256": FileCache.sha256_file(pth),
-            "filename": pth.name,
-            "file_size_bytes": file_size,
-            "upload_status": "completed",
-            "upload_method": "supabase_gateway"
-        }).execute()
-
-        logger.info(f"✅ Tracked in database: kimi={kimi_file_id}, supabase={supabase_file_id}")
-
-    except Exception as e:
-        logger.warning(f"⚠️  Failed to track in database: {e}")
-        # Don't fail - upload was successful
-
-    return {
-        "kimi_file_id": kimi_file_id,
-        "supabase_file_id": supabase_file_id,
-        "filename": pth.name,
-        "size_bytes": file_size,
-        "upload_method": "supabase_gateway"
-    }
-
+# PHASE 5 CLEANUP (2025-10-30):
+# Removed upload_via_supabase_gateway_kimi() function (~133 lines)
+# This function is now redundant - replaced by upload_file_with_provider() in tools/supabase_upload.py
+# The new implementation provides:
+# - Better error handling
+# - Retry logic
+# - Bidirectional ID mapping via FileIdMapper
+# - Consistent interface with GLM
 
 class KimiUploadFilesTool(BaseTool):
     """Upload files to Moonshot/Kimi and return file IDs only (no content extraction)"""
@@ -176,8 +51,11 @@ class KimiUploadFilesTool(BaseTool):
 
     def get_description(self) -> str:
         return (
-            "Upload one or more files to Moonshot (Kimi) and return file IDs for later use. "
-            "Does NOT extract content - just uploads and returns IDs. "
+            "Upload files to Moonshot/Kimi platform (100MB limit, multiple files supported). "
+            "\n\n🎯 USE CASES: Large documents (>5MB), multiple files, PDFs, long-term file reference"
+            "\n📁 PATH REQUIREMENTS: Linux container paths ONLY - Format: /mnt/project/EX-AI-MCP-Server/filename.ext"
+            "\n⚡ ALTERNATIVE: Use glm_upload_file for single files <20MB, quick analysis"
+            "\n\nDoes NOT extract content - just uploads and returns file IDs. "
             "Use kimi_chat_with_files to analyze uploaded files."
         )
 
@@ -188,13 +66,22 @@ class KimiUploadFilesTool(BaseTool):
             "properties": {
                 "files": {
                     "type": "array",
-                    "items": {"type": "string"},
-                    "description": "List of file paths (absolute or relative to project root)",
+                    "items": {
+                        "type": "string",
+                        "pattern": "^/mnt/project/.*"
+                    },
+                    "description": (
+                        "Linux container paths ONLY. Format: /mnt/project/EX-AI-MCP-Server/filename.ext\n"
+                        "❌ Windows paths (c:\\Project\\...) will be REJECTED\n"
+                        "❌ Relative paths (./file.txt) will be REJECTED\n"
+                        "✅ Only files under c:\\Project\\ are accessible at /mnt/project/ in the container"
+                    ),
                 },
                 "purpose": {
                     "type": "string",
                     "enum": ["file-extract", "assistants"],
                     "default": "file-extract",
+                    "description": "File purpose: 'file-extract' (default) for content analysis, 'assistants' for assistant API"
                 },
             },
             "required": ["files"],
@@ -203,11 +90,30 @@ class KimiUploadFilesTool(BaseTool):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are uploading files to Moonshot/Kimi.\n"
-            "Purpose: Upload files and return file IDs for later reference.\n\n"
-            "Parameters:\n- files: list of file paths (absolute preferred).\n- purpose: 'file-extract' (default) or 'assistants'.\n\n"
-            "Output:\n- Returns JSON array: [{filename, file_id, size_bytes, upload_timestamp}]\n"
-            "- Use these file_ids with kimi_chat_with_files to analyze the files.\n"
+            "You are uploading files to Moonshot/Kimi platform running in a Docker container.\n\n"
+            "🐳 DOCKER CONTEXT:\n"
+            "- This system runs in Docker with files mounted at /mnt/project/\n"
+            "- Windows paths (c:\\Project\\...) are NOT accessible\n"
+            "- Only Linux container paths work: /mnt/project/EX-AI-MCP-Server/filename.ext\n\n"
+            "📁 PATH REQUIREMENTS:\n"
+            "✅ VALID: /mnt/project/EX-AI-MCP-Server/large_file.py\n"
+            "❌ INVALID: c:\\Project\\EX-AI-MCP-Server\\large_file.py\n"
+            "❌ INVALID: ./large_file.py\n"
+            "❌ INVALID: large_file.py\n\n"
+            "📋 PARAMETERS:\n"
+            "- files: Array of Linux container paths (must start with /mnt/project/)\n"
+            "- purpose: 'file-extract' (default) or 'assistants'\n\n"
+            "🔄 WORKFLOW:\n"
+            "1. Upload files with kimi_upload_files → get file_ids\n"
+            "2. Use file_ids with kimi_chat_with_files for analysis\n\n"
+            "⚠️ TROUBLESHOOTING:\n"
+            "- 'All files were skipped' → Check path format (must start with /mnt/project/)\n"
+            "- Windows paths → Convert to Linux container paths\n"
+            "- File not found → Verify file exists under c:\\Project\\\n\n"
+            "📊 LIMITS:\n"
+            "- Max file size: 100MB per file\n"
+            "- Multiple files supported\n"
+            "- Use for large documents, PDFs, codebases\n"
             "- Files are cached by SHA256 - re-uploading same file returns cached ID."
         )
 
@@ -227,15 +133,35 @@ class KimiUploadFilesTool(BaseTool):
     def format_response(self, response: str, request: ToolRequest, model_info: dict | None = None) -> str:
         return response
 
+    # System user ID for tool uploads
+    SYSTEM_USER_ID = "system"
+
     def _run(self, **kwargs) -> List[Dict[str, Any]]:
+        # ⚠️ DEPRECATION WARNING
+        logger.warning(
+            "⚠️ DEPRECATION WARNING: kimi_upload_files is deprecated. "
+            "Use smart_file_query instead for unified file operations. "
+            "smart_file_query provides automatic deduplication, provider selection, "
+            "and fallback - all in one tool. "
+            "Example: smart_file_query(file_path='/mnt/project/file.py', question='Analyze this code')"
+        )
+
         files = kwargs.get("files") or []
         purpose = (kwargs.get("purpose") or "file-extract").strip()
         if not files:
             raise ValueError("No files provided")
 
-        # Normalize paths
-        import logging
-        logger = logging.getLogger(__name__)
+        # CRITICAL: Validate path format BEFORE normalization using centralized validation
+        from utils.path_validation import validate_upload_path
+        # FIX (2025-10-29): Removed local logger redefinition that caused UnboundLocalError
+        # Module-level logger is already defined at top of file
+
+        for fp in files:
+            is_valid, error_message = validate_upload_path(fp)
+            if not is_valid:
+                raise ValueError(error_message)
+
+        # Normalize paths (should be no-op now since we validated format)
         path_handler = get_path_handler()
         normalized_files = []
 
@@ -290,11 +216,19 @@ class KimiUploadFilesTool(BaseTool):
         max_parallel = int(os.getenv("KIMI_FILES_MAX_PARALLEL", "3"))
 
         def process_single_file(fp):
-            """Process a single file upload with deduplication support"""
+            """
+            Process a single file upload using enhanced utilities.
+
+            PHASE 2 UPDATE (2025-10-30):
+            - Uses upload_file_with_provider() for unified upload workflow
+            - Deduplication handled by SupabaseUploadManager (SHA256-based)
+            - Bidirectional ID mapping via FileIdMapper
+            - Backward compatible return format
+            """
             try:
                 pth = Path(str(fp))
 
-                # Size check
+                # Size check (still needed for early validation)
                 if max_bytes and pth.exists() and pth.is_file():
                     try:
                         sz = pth.stat().st_size
@@ -306,116 +240,35 @@ class KimiUploadFilesTool(BaseTool):
                         skipped.append(str(pth))
                         return None
 
-                # DEDUPLICATION CHECK (Phase 2.4 - 2025-10-26)
-                # Check if file already exists by SHA256 hash
-                dedup_enabled = os.getenv("FILE_DEDUPLICATION_ENABLED", "true").strip().lower() == "true"
-                file_id = None
-                supabase_file_id = None
+                # Upload using enhanced utilities (handles deduplication internally)
+                from tools.supabase_upload import upload_file_with_provider
+                from src.storage.supabase_client import get_storage_manager
 
-                if dedup_enabled:
-                    try:
-                        from src.storage.supabase_client import get_storage_manager
-                        storage = get_storage_manager()
-                        dedup_manager = FileDeduplicationManager(storage)
+                storage = get_storage_manager()
+                supabase_client = storage.get_client()
 
-                        existing = dedup_manager.check_duplicate(pth, "kimi")
-                        if existing:
-                            # File already exists - reuse it
-                            file_id = existing['provider_file_id']
-                            supabase_file_id = existing.get('supabase_file_id')
+                # Upload with provider adapter
+                result = upload_file_with_provider(
+                    supabase_client=supabase_client,
+                    file_path=str(pth),
+                    provider="kimi",
+                    user_id=self.SYSTEM_USER_ID,
+                    filename=pth.name,
+                    bucket="user-files",
+                    tags=["kimi-upload", purpose]
+                )
 
-                            # Increment reference count
-                            dedup_manager.increment_reference(file_id, "kimi")
-
-                            logger.info(f"♻️  Reusing existing file: {pth.name} -> {file_id} (ref_count incremented)")
-
-                            return {
-                                "filename": pth.name,
-                                "file_id": file_id,
-                                "size_bytes": pth.stat().st_size,
-                                "upload_timestamp": datetime.utcnow().isoformat(),
-                                "deduplicated": True
-                            }
-                    except Exception as e:
-                        logger.warning(f"Deduplication check failed, proceeding with upload: {e}")
-
-                # Upload if not deduplicated
-                if not file_id:
-                    file_id = prov.upload_file(str(pth), purpose=purpose)
-
-                # Track in Supabase AND upload file content to Supabase Storage
-                # (Only for new uploads, not deduplicated ones)
-                if not supabase_file_id:  # supabase_file_id set if deduplicated
-                    try:
-                        from src.storage.supabase_client import get_storage_manager
-                        storage = get_storage_manager()
-
-                        # Check if Supabase upload is enabled
-                        upload_to_supabase = os.getenv("KIMI_UPLOAD_TO_SUPABASE", "true").lower() == "true"
-
-                        if storage and storage.enabled and upload_to_supabase:
-                            # Upload file content to Supabase Storage
-                            try:
-                                with open(pth, 'rb') as f:
-                                    file_data = f.read()
-
-                                # Upload to Supabase Storage with timeout
-                                import mimetypes
-                                mime_type, _ = mimetypes.guess_type(str(pth))
-
-                                supabase_file_id = storage.upload_file(
-                                    file_path=f"kimi-uploads/{file_id}",
-                                    file_data=file_data,
-                                    original_name=pth.name,
-                                    mime_type=mime_type,
-                                    file_type="user_upload"  # Map to existing enum value
-                                )
-
-                                if supabase_file_id:
-                                    logger.info(f"Uploaded to Supabase Storage: {pth.name} -> {supabase_file_id}")
-                                else:
-                                    logger.warning(f"Supabase storage upload returned None for {pth.name}")
-
-                            except Exception as storage_err:
-                                logger.error(f"Failed to upload to Supabase Storage: {storage_err}")
-                                # Continue - don't fail the primary Moonshot upload
-
-                            # Register new file with deduplication manager
-                            if dedup_enabled:
-                                try:
-                                    dedup_manager = FileDeduplicationManager(storage)
-                                    dedup_manager.register_new_file(
-                                        provider_file_id=file_id,
-                                        supabase_file_id=supabase_file_id,
-                                        file_path=pth,
-                                        provider="kimi",
-                                        upload_method="direct"
-                                    )
-                                except Exception as reg_err:
-                                    logger.warning(f"Failed to register with deduplication manager: {reg_err}")
-                                    # Fallback to direct insert
-                                    sha256 = FileCache.sha256_file(pth)
-                                    client = storage.get_client()
-                                    client.table("provider_file_uploads").insert({
-                                        "provider": "kimi",
-                                        "provider_file_id": file_id,
-                                        "supabase_file_id": supabase_file_id,
-                                        "sha256": sha256,
-                                        "filename": pth.name,
-                                        "file_size_bytes": pth.stat().st_size,
-                                        "upload_status": "completed" if supabase_file_id else "failed",
-                                        "reference_count": 1
-                                    }).execute()
-
-                    except Exception as e:
-                        logger.warning(f"Failed to track upload in Supabase: {e}")
-
+                # Map adapter response to tool format (backward compatible)
                 return {
                     "filename": pth.name,
-                    "file_id": file_id,
-                    "size_bytes": pth.stat().st_size,
-                    "upload_timestamp": datetime.utcnow().isoformat()
+                    "file_id": result["provider_file_id"],  # Kimi file_id
+                    "size_bytes": result["file_size"],
+                    "upload_timestamp": result["upload_time"],
+                    "deduplicated": result.get("deduplicated", False)
                 }
+
+                # NOTE: Supabase upload and deduplication now handled by upload_file_with_provider()
+                # No need for separate Supabase upload or FileDeduplicationManager calls
 
             except Exception as e:
                 logger.warning(f"⚠️ File upload failed for {fp}: {e}")
@@ -531,6 +384,14 @@ class KimiChatWithFilesTool(BaseTool):
         """Async implementation - uses official Moonshot file pattern"""
         from utils.progress import send_progress
 
+        # ⚠️ DEPRECATION WARNING
+        logger.warning(
+            "⚠️ DEPRECATION WARNING: kimi_chat_with_files is deprecated. "
+            "Use smart_file_query instead for unified file operations. "
+            "smart_file_query handles upload + query in one step with automatic deduplication. "
+            "Example: smart_file_query(file_path='/mnt/project/file.py', question='Analyze this code')"
+        )
+
         prompt = kwargs.get("prompt") or ""
         file_ids = kwargs.get("file_ids") or []
         model = kwargs.get("model") or os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview")
@@ -567,7 +428,11 @@ class KimiChatWithFilesTool(BaseTool):
         file_messages = []
 
         def retrieve_content(file_id: str) -> str:
-            """Retrieve file content from Moonshot API."""
+            """Retrieve file content from Moonshot API.
+
+            ENHANCED (2025-10-29): Now handles both text and binary content.
+            Returns text content as string for chat completions.
+            """
             # The OpenAI SDK's files.content() method returns a response object
             # We need to call it as a method, not access it as a property
             files_api = prov.client.files
@@ -576,11 +441,25 @@ class KimiChatWithFilesTool(BaseTool):
             # Call the content method with file_id parameter
             response = content_method(file_id=file_id)
 
-            # The response should have a .text attribute
+            # Handle different response types (text and binary)
             if hasattr(response, 'text'):
                 return response.text
+            elif hasattr(response, 'content'):
+                # Binary content - decode if possible, otherwise return as string
+                try:
+                    return response.content.decode('utf-8')
+                except (UnicodeDecodeError, AttributeError):
+                    # If binary can't be decoded, return base64 or hex representation
+                    logger.warning(f"File {file_id} contains binary data, converting to string")
+                    return str(response.content)
             elif isinstance(response, str):
                 return response
+            elif isinstance(response, bytes):
+                try:
+                    return response.decode('utf-8')
+                except UnicodeDecodeError:
+                    logger.warning(f"File {file_id} contains binary data, converting to string")
+                    return str(response)
             else:
                 return str(response)
 

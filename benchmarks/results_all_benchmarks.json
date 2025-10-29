@@ -1,0 +1,218 @@
+{
+  "timestamp": 1761640824.1551661,
+  "datetime": "2025-10-28T19:40:24.155166",
+  "total_time_seconds": 33.23927640914917,
+  "benchmarks": {
+    "hash_performance": {
+      "benchmark_name": "hash_performance",
+      "message_size_kb": 10,
+      "message_count": 1000,
+      "iterations": 10,
+      "total_data_mb": 9.765625,
+      "sha256": {
+        "algorithm": "SHA256",
+        "iterations": 10,
+        "message_count": 1000,
+        "avg_ms": 5.309589998796582,
+        "min_ms": 4.773599997861311,
+        "max_ms": 6.1117000004742295,
+        "median_ms": 5.346899997675791,
+        "stdev_ms": 0.48229674163875536,
+        "avg_per_message_us": 5.309589998796582
+      },
+      "xxhash": null,
+      "speedup": null,
+      "target_speedup_min": 3.0,
+      "target_speedup_max": 5.0,
+      "passed": false
+    },
+    "cleanup_performance": {
+      "error": "Expected 100 cleaned, got 0"
+    },
+    "metrics_overhead": {
+      "benchmark_name": "metrics_overhead",
+      "duration_seconds": 5.0,
+      "iterations": 3,
+      "with_metrics": {
+        "avg_ops_per_second": 470667.75786512176,
+        "results": [
+          {
+            "metrics_enabled": true,
+            "operations_completed": 2446205,
+            "duration_seconds": 5.000002000015229,
+            "ops_per_second": 489240.80430218816,
+            "initial_memory_mb": 30.265625,
+            "final_memory_mb": 862.3359375,
+            "memory_increase_mb": 832.0703125,
+            "memory_per_10k_ops_kb": 3483.109551325421
+          },
+          {
+            "metrics_enabled": true,
+            "operations_completed": 2354378,
+            "duration_seconds": 5.000001100008376,
+            "ops_per_second": 470875.496406602,
+            "initial_memory_mb": 862.375,
+            "final_memory_mb": 1667.84765625,
+            "memory_increase_mb": 805.47265625,
+            "memory_per_10k_ops_kb": 3503.2777234581704
+          },
+          {
+            "metrics_enabled": true,
+            "operations_completed": 2259435,
+            "duration_seconds": 5.000000300002284,
+            "ops_per_second": 451886.97288657515,
+            "initial_memory_mb": 1667.84765625,
+            "final_memory_mb": 2445.5078125,
+            "memory_increase_mb": 777.66015625,
+            "memory_per_10k_ops_kb": 3524.4386317818394
+          }
+        ]
+      },
+      "without_metrics": {
+        "avg_ops_per_second": 16887285.21739557,
+        "results": [
+          {
+            "metrics_enabled": false,
+            "operations_completed": 84573596,
+            "duration_seconds": 5.000001899985364,
+            "ops_per_second": 16914712.77245866,
+            "initial_memory_mb": 862.37109375,
+            "final_memory_mb": 862.37109375,
+            "memory_increase_mb": 0.0
+          },
+          {
+            "metrics_enabled": false,
+            "operations_completed": 84606468,
+            "duration_seconds": 5.0000022999884095,
+            "ops_per_second": 16921285.81624775,
+            "initial_memory_mb": 1667.84765625,
+            "final_memory_mb": 1667.84765625,
+            "memory_increase_mb": 0.0
+          },
+          {
+            "metrics_enabled": false,
+            "operations_completed": 84129287,
+            "duration_seconds": 5.0000001000007614,
+            "ops_per_second": 16825857.063480295,
+            "initial_memory_mb": 2445.5078125,
+            "final_memory_mb": 2445.546875,
+            "memory_increase_mb": 0.0390625
+          }
+        ]
+      },
+      "cpu_overhead_percent": 97.21288678549536,
+      "memory_per_10k_ops_kb": 3503.6086355218104,
+      "target_cpu_overhead_percent": 1.0,
+      "target_memory_per_10k_kb": 100.0,
+      "cpu_passed": false,
+      "memory_passed": false,
+      "passed": false
+    },
+    "circuit_breaker_latency": {
+      "benchmark_name": "circuit_breaker_latency",
+      "target_per_check_ms": 0.1,
+      "state_check_results": [
+        {
+          "check_count": 1000,
+          "iterations": 10,
+          "avg_total_ms": 0.04149999876972288,
+          "min_ms": 0.04110002191737294,
+          "max_ms": 0.043599982745945454,
+          "median_ms": 0.04119999357499182,
+          "stdev_ms": 0.0007630288198983453,
+          "time_per_check_us": 0.04149999876972288,
+          "time_per_check_ms": 4.149999876972288e-05,
+          "checks_per_second": 24096386.25651163
+        },
+        {
+          "check_count": 10000,
+          "iterations": 10,
+          "avg_total_ms": 0.46493000409100205,
+          "min_ms": 0.4087999986950308,
+          "max_ms": 0.5562000151257962,
+          "median_ms": 0.4585999995470047,
+          "stdev_ms": 0.05302860978905494,
+          "time_per_check_us": 0.046493000409100205,
+          "time_per_check_ms": 4.649300040910021e-05,
+          "checks_per_second": 21508614.01072896
+        },
+        {
+          "check_count": 100000,
+          "iterations": 10,
+          "avg_total_ms": 3.901929999119602,
+          "min_ms": 3.723700006958097,
+          "max_ms": 4.369800008134916,
+          "median_ms": 3.767150003113784,
+          "stdev_ms": 0.23434377640921766,
+          "time_per_check_us": 0.03901929999119602,
+          "time_per_check_ms": 3.901929999119602e-05,
+          "checks_per_second": 25628342.902759183
+        }
+      ],
+      "failure_recording_results": [
+        {
+          "operation_count": 100,
+          "iterations": 10,
+          "avg_total_ms": 0.08844000985845923,
+          "min_ms": 0.06660001236014068,
+          "max_ms": 0.10130001464858651,
+          "median_ms": 0.09250000584870577,
+          "stdev_ms": 0.012929739061389002,
+          "time_per_operation_us": 0.8844000985845923,
+          "operations_per_second": 1130709.959893057
+        },
+        {
+          "operation_count": 1000,
+          "iterations": 10,
+          "avg_total_ms": 0.7279799989191815,
+          "min_ms": 0.67120001767762,
+          "max_ms": 0.8720999758224934,
+          "median_ms": 0.6809499900555238,
+          "stdev_ms": 0.08248173462978664,
+          "time_per_operation_us": 0.7279799989191815,
+          "operations_per_second": 1373664.1136908727
+        },
+        {
+          "operation_count": 10000,
+          "iterations": 10,
+          "avg_total_ms": 6.924259994411841,
+          "min_ms": 6.742600002326071,
+          "max_ms": 7.38429999910295,
+          "median_ms": 6.815449989517219,
+          "stdev_ms": 0.21253472156438832,
+          "time_per_operation_us": 0.6924259994411841,
+          "operations_per_second": 1444197.6482787193
+        }
+      ],
+      "passed": true
+    }
+  },
+  "summary": {
+    "total_benchmarks": 4,
+    "passed": 1,
+    "failed": 3,
+    "pass_rate": 25.0,
+    "status": [
+      {
+        "name": "Hash Performance",
+        "passed": false,
+        "detail": "xxhash not available - cannot measure speedup"
+      },
+      {
+        "name": "Cleanup Performance",
+        "passed": false,
+        "detail": "Error: Expected 100 cleaned, got 0"
+      },
+      {
+        "name": "Metrics Overhead",
+        "passed": false,
+        "detail": "CPU: 97.21%, Memory: 3503.61 KB/10K"
+      },
+      {
+        "name": "Circuit Breaker Latency",
+        "passed": true,
+        "detail": "Target: <0.1ms per check"
+      }
+    ]
+  }
+}

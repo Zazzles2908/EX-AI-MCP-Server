@@ -28,6 +28,7 @@ services:
     # Volume mounts for logs, documentation, and source code (development)
     # REBUILD (2025-10-19): Added all source directories for complete hot reload
     # ARCHITECTURAL FIX (2025-10-21): Added missing directories for complete hot reload
+    # FILE UPLOAD FIX (2025-10-28): Added TEST_FILES_DIR mounts for cross-platform file upload
     volumes:
       # Source code (development mode - hot reload)
       - ./src:/app/src
@@ -46,6 +47,12 @@ services:
 
       # Configuration (read-only)
       - ./.env.docker:/app/.env:ro
+
+      # FILE UPLOAD FIX (2025-10-28): Mount entire project root for file upload support
+      # This enables kimi_upload_files and glm_upload_file to access files from Windows host
+      # Maps c:\Project\EX-AI-MCP-Server to /mnt/project/EX-AI-MCP-Server
+      # Maps c:\Project\Personal_AI_Agent to /mnt/project/Personal_AI_Agent
+      - c:\Project:/mnt/project:ro
 
     # Depends on Redis for conversation storage
     depends_on:
