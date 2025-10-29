@@ -728,7 +728,7 @@ def upload_file_with_provider(
 # APPLICATION-AWARE FILE UPLOAD (Phase A1)
 # ============================================================================
 
-async def upload_file_with_app_context(
+def upload_file_with_app_context(
     file_path: str,
     bucket: str,
     application_id: Optional[str] = None,
@@ -758,10 +758,15 @@ async def upload_file_with_app_context(
     """
     from tools.temp_file_handler import temp_handler
     from utils.path_validation import validate_file_path
+    from src.storage.supabase_client import get_storage_manager
 
     temp_path = None
 
     try:
+        # Get Supabase client
+        storage = get_storage_manager()
+        supabase_client = storage.get_client()
+
         # Check if file is in accessible location
         is_accessible, error_msg = validate_file_path(file_path, application_id)
 
@@ -779,22 +784,31 @@ async def upload_file_with_app_context(
             file_path = temp_path
             logger.info(f"[APP_UPLOAD] Using temp file: {temp_path}")
 
-        # Proceed with upload using existing infrastructure
-        result = await upload_file_with_provider(
+        # Proceed with upload using existing infrastructure (NOT async)
+        result = upload_file_with_provider(
+            supabase_client=supabase_client,
             file_path=file_path,
             user_id=user_id or "system",
             provider=provider,
+            bucket=bucket,
             **kwargs
         )
 
-        # Log application access if needed
+        # Log application access if needed (run in background thread)
         if application_id and user_id:
-            await log_application_access(
-                application_id,
-                user_id,
-                file_path,
-                result.get("success", False)
-            )
+            import threading
+            import asyncio
+
+            def run_async_logging():
+                asyncio.run(log_application_access(
+                    application_id,
+                    user_id,
+                    file_path,
+                    result.get("success", False)
+                ))
+
+            thread = threading.Thread(target=run_async_logging, daemon=True)
+            thread.start()
 
         # Cleanup temp file if used
         if temp_path:

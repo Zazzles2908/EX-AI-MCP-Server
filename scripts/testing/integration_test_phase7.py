@@ -53,6 +53,12 @@ from src.storage.supabase_client import get_storage_manager
 # Import path normalization utilities (EXAI recommendation: use existing infrastructure)
 from utils.path_normalization import normalize_path, convert_to_linux_path
 
+# Import provider registry for initialization
+from src.providers.registry import ModelProviderRegistry
+from src.providers.base import ProviderType
+from src.providers.kimi import KimiModelProvider
+from src.providers.glm import GLMModelProvider
+
 # Test configuration
 TEST_FILES_DIR_ENV = os.getenv("TEST_FILES_DIR", "c:\\Project\\EX-AI-MCP-Server")
 TEST_FILES_DIR = Path(TEST_FILES_DIR_ENV.split(";")[0]) / "test_files"
@@ -70,6 +76,24 @@ test_results = {
     "failed": 0,
     "details": []
 }
+
+
+def initialize_providers():
+    """Initialize model providers for testing"""
+    try:
+        # Register Kimi provider class
+        ModelProviderRegistry.register_provider(ProviderType.KIMI, KimiModelProvider)
+
+        # Register GLM provider class
+        ModelProviderRegistry.register_provider(ProviderType.GLM, GLMModelProvider)
+
+        logger.info("✅ Provider registry initialized for testing")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize providers: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 def log_test_result(test_name: str, passed: bool, details: str = "") -> None:
     """Record a test result and update counters"""
@@ -89,21 +113,28 @@ def log_test_result(test_name: str, passed: bool, details: str = "") -> None:
         "details": details
     })
 
-def setup_test_files() -> Tuple[List[Path], List[Path]]:
-    """Create or locate test files for small and medium size categories"""
+def setup_test_files() -> Tuple[List[str], List[str]]:
+    """Create or locate test files for small and medium size categories
+
+    Returns:
+        Tuple of (small_files, medium_files) as POSIX path strings
+    """
     small_files = []
     medium_files = []
-    
-    logger.info(f"Setting up test files in: {TEST_FILES_DIR}")
-    
+
+    # Use forward slashes regardless of platform
+    test_files_dir = TEST_FILES_DIR.as_posix()
+    logger.info(f"Setting up test files in: {test_files_dir}")
+
     # Create small test files (<5MB)
     for i in range(2):
         file_path = TEST_FILES_DIR / f"small_test_{i}.txt"
         if not file_path.exists():
             with open(file_path, 'w') as f:
                 f.write(f"Small test file {i}\n" * 1000)  # ~20KB
-        small_files.append(file_path)
-    
+        # Convert to forward slash path for consistency (use string directly)
+        small_files.append(file_path.as_posix())
+
     # Create medium test files (5-20MB) - but keep under GLM limit
     for i in range(2):
         file_path = TEST_FILES_DIR / f"medium_test_{i}.txt"
@@ -112,7 +143,8 @@ def setup_test_files() -> Tuple[List[Path], List[Path]]:
                 # Create ~10MB file
                 for j in range(10000):
                     f.write(f"Medium test file {i}, line {j}\n" * 100)
-        medium_files.append(file_path)
+        # Convert to forward slash path for consistency (use string directly)
+        medium_files.append(file_path.as_posix())
     
     return small_files, medium_files
 
@@ -178,24 +210,24 @@ def test_file_id_mapper() -> None:
     except Exception as e:
         log_test_result("FileIdMapper functionality", False, str(e))
 
-def test_kimi_upload_integration(small_files: List[Path]) -> None:
+def test_kimi_upload_integration(small_files: List[str]) -> None:
     """Test Kimi upload via upload_file_with_provider"""
     logger.info("Testing Kimi upload integration...")
-    
+
     try:
         # Test with small file
         small_file = small_files[0]
         file_hash = calculate_file_hash(small_file)
-        
+
         storage = get_storage_manager()
         supabase_client = storage.get_client()
-        
+
         result = upload_file_with_provider(
             supabase_client=supabase_client,
-            file_path=str(small_file),
+            file_path=small_file,
             provider="kimi",
             user_id="test_user",
-            filename=small_file.name,
+            filename=Path(small_file).name,
             bucket="user-files",
             tags=["integration-test", "kimi"]
         )
@@ -210,24 +242,24 @@ def test_kimi_upload_integration(small_files: List[Path]) -> None:
     except Exception as e:
         log_test_result("Kimi upload integration", False, str(e))
 
-def test_glm_upload_integration(small_files: List[Path]) -> None:
+def test_glm_upload_integration(small_files: List[str]) -> None:
     """Test GLM upload via upload_file_with_provider"""
     logger.info("Testing GLM upload integration...")
-    
+
     try:
         # Test with small file
         small_file = small_files[1]  # Use different file to avoid deduplication
         file_hash = calculate_file_hash(small_file)
-        
+
         storage = get_storage_manager()
         supabase_client = storage.get_client()
-        
+
         result = upload_file_with_provider(
             supabase_client=supabase_client,
-            file_path=str(small_file),
+            file_path=small_file,
             provider="glm",
             user_id="test_user",
-            filename=small_file.name,
+            filename=Path(small_file).name,
             bucket="user-files",
             tags=["integration-test", "glm"]
         )
@@ -243,36 +275,36 @@ def test_glm_upload_integration(small_files: List[Path]) -> None:
     except Exception as e:
         log_test_result("GLM upload integration", False, str(e))
 
-def test_sha256_deduplication(small_files: List[Path]) -> None:
+def test_sha256_deduplication(small_files: List[str]) -> None:
     """Test SHA256-based deduplication works"""
     logger.info("Testing SHA256-based deduplication...")
-    
+
     try:
         # Use the same file twice to test deduplication
         test_file = small_files[0]
         file_hash = calculate_file_hash(test_file)
-        
+
         storage = get_storage_manager()
         supabase_client = storage.get_client()
-        
+
         # First upload
         result1 = upload_file_with_provider(
             supabase_client=supabase_client,
-            file_path=str(test_file),
+            file_path=test_file,
             provider="kimi",
             user_id="test_user",
-            filename=test_file.name,
+            filename=Path(test_file).name,
             bucket="user-files",
             tags=["dedup-test"]
         )
-        
+
         # Second upload of same file
         result2 = upload_file_with_provider(
             supabase_client=supabase_client,
-            file_path=str(test_file),
+            file_path=test_file,
             provider="kimi",
             user_id="test_user",
-            filename=test_file.name,
+            filename=Path(test_file).name,
             bucket="user-files",
             tags=["dedup-test"]
         )
@@ -285,7 +317,7 @@ def test_sha256_deduplication(small_files: List[Path]) -> None:
     except Exception as e:
         log_test_result("SHA256-based deduplication", False, str(e))
 
-def test_kimi_upload_files_tool(small_files: List[Path]) -> None:
+def test_kimi_upload_files_tool(small_files: List[str]) -> None:
     """Test KimiUploadFilesTool uses enhanced utilities"""
     logger.info("Testing KimiUploadFilesTool...")
 
@@ -308,7 +340,7 @@ def test_kimi_upload_files_tool(small_files: List[Path]) -> None:
     except Exception as e:
         log_test_result("KimiUploadFilesTool", False, str(e))
 
-def test_glm_upload_file_tool(small_files: List[Path]) -> None:
+def test_glm_upload_file_tool(small_files: List[str]) -> None:
     """Test GLMUploadFileTool uses enhanced utilities"""
     logger.info("Testing GLMUploadFileTool...")
 
@@ -330,26 +362,25 @@ def test_glm_upload_file_tool(small_files: List[Path]) -> None:
         log_test_result("GLMUploadFileTool", False, str(e))
 
 
-def test_application_aware_upload(small_files: List[Path]) -> None:
+def test_application_aware_upload(small_files: List[str]) -> None:
     """Test upload with application context (Phase A1)"""
     logger.info("Testing application-aware upload...")
 
     try:
-        import asyncio
         from tools.supabase_upload import upload_file_with_app_context
 
         # Test with test-app application
         app_id = "test-app"
         test_file = str(small_files[0])
 
-        # Run async upload
-        result = asyncio.run(upload_file_with_app_context(
+        # Run upload (now synchronous)
+        result = upload_file_with_app_context(
             file_path=test_file,
             bucket="user-files",
             application_id=app_id,
             user_id="test-user",
             provider="kimi"
-        ))
+        )
 
         assert result.get("success") or "file_id" in result, f"Upload failed: {result.get('error')}"
 
@@ -426,8 +457,13 @@ def generate_summary_report() -> None:
 def main():
     """Main test execution function"""
     logger.info("Starting integration tests...")
-    
+
     try:
+        # Initialize providers first
+        if not initialize_providers():
+            logger.error("Failed to initialize providers, exiting")
+            sys.exit(1)
+
         # Setup test files
         small_files, medium_files = setup_test_files()
         
