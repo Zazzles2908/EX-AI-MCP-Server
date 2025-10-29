@@ -2,6 +2,13 @@
 """
 Test Event Generator for AI Auditor Testing
 Generates realistic system events to test AI Auditor functionality
+
+Enhanced with comprehensive diagnostics:
+- Send latency monitoring with timeout detection
+- Connection health monitoring (ping/pong)
+- Resource usage tracking (CPU, memory)
+- Automatic reconnection with exponential backoff
+- Detailed logging to file and stdout
 """
 
 import asyncio
@@ -10,16 +17,31 @@ import json
 import random
 import time
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 import argparse
 import sys
 import logging
+import os
 
-# Configure logging with immediate flushing
+# Try to import psutil for resource monitoring
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    print("WARNING: psutil not available - resource monitoring disabled")
+
+# Configure logging with file and stdout handlers
+log_dir = os.environ.get('LOG_DIR', '/app/logs')
+os.makedirs(log_dir, exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
+    handlers=[
+        logging.FileHandler(f'{log_dir}/websocket_test.log'),
+        logging.StreamHandler(sys.stdout)
+    ]
 )
 logger = logging.getLogger(__name__)
 
@@ -145,56 +167,156 @@ class TestEventGenerator:
         
         return self.generate_health_check_event()
     
-    async def send_event(self, websocket, event: Dict):
-        """Send event to WebSocket server"""
+    async def send_event_with_monitoring(self, websocket, event: Dict):
+        """Send event to WebSocket server with comprehensive monitoring"""
+        event_start = time.time()
+
+        # Monitor system resources if available
+        if PSUTIL_AVAILABLE:
+            try:
+                process = psutil.Process(os.getpid())
+                memory_mb = process.memory_info().rss / 1024 / 1024
+                cpu_percent = process.cpu_percent()
+            except:
+                memory_mb = 0
+                cpu_percent = 0
+        else:
+            memory_mb = 0
+            cpu_percent = 0
+
         try:
-            await asyncio.wait_for(websocket.send(json.dumps(event)), timeout=5.0)
+            # Measure send time with timeout
+            send_start = time.time()
+            await asyncio.wait_for(
+                websocket.send(json.dumps(event)),
+                timeout=10.0  # 10 second timeout
+            )
+            send_duration = time.time() - send_start
+
             self.event_count += 1
-            logger.info(f"[{self.event_count}] Sent {event['type']} event (severity: {event['severity']})")
+            event_duration = time.time() - event_start
+
+            # Log with detailed metrics
+            logger.info(
+                f"[{self.event_count}] {event['type']} | "
+                f"Send: {send_duration:.3f}s | "
+                f"Total: {event_duration:.3f}s | "
+                f"Mem: {memory_mb:.1f}MB | "
+                f"CPU: {cpu_percent:.1f}%"
+            )
+
+            # Alert on slow sends
+            if send_duration > 1.0:
+                logger.warning(f"⚠️  SLOW SEND: {send_duration:.3f}s for event {self.event_count}")
+
+            if send_duration > 5.0:
+                logger.error(f"🚨 CRITICAL SLOW SEND: {send_duration:.3f}s for event {self.event_count}")
+
         except asyncio.TimeoutError:
-            logger.error(f"Send operation timed out after 5 seconds")
+            logger.error(f"❌ TIMEOUT: Event {self.event_count + 1} send blocked >10s")
             raise
         except Exception as e:
-            logger.error(f"Error sending event: {e}")
+            logger.error(f"❌ ERROR sending event {self.event_count + 1}: {e}")
             raise
-    
+
+    async def send_event(self, websocket, event: Dict):
+        """Legacy method - redirects to monitored version"""
+        await self.send_event_with_monitoring(websocket, event)
+
+    async def monitor_connection_health(self, websocket, check_interval: int = 30):
+        """Monitor WebSocket connection health with ping/pong"""
+        logger.info(f"🔍 Starting connection health monitor (ping every {check_interval}s)")
+
+        while True:
+            try:
+                # Check if connection is still open
+                if websocket.closed:
+                    logger.error("❌ WebSocket connection is CLOSED")
+                    return False
+
+                # Send ping and measure response time
+                ping_start = time.time()
+                pong_waiter = await websocket.ping()
+                await asyncio.wait_for(pong_waiter, timeout=10.0)
+                ping_duration = time.time() - ping_start
+
+                logger.info(f"🏓 PING successful: {ping_duration:.3f}s")
+
+                # Alert on slow pings
+                if ping_duration > 2.0:
+                    logger.warning(f"⚠️  SLOW PING: {ping_duration:.3f}s")
+
+                if ping_duration > 5.0:
+                    logger.error(f"🚨 CRITICAL SLOW PING: {ping_duration:.3f}s")
+
+                await asyncio.sleep(check_interval)
+
+            except asyncio.TimeoutError:
+                logger.error("❌ PING timeout - connection may be dead")
+                return False
+            except Exception as e:
+                logger.error(f"❌ Connection monitoring failed: {e}")
+                return False
+
     async def run_baseline_test(self, duration_minutes: int = 30, events_per_minute: int = 10):
-        """Run baseline test - generate events for specified duration"""
+        """Run baseline test with comprehensive monitoring"""
         logger.info(f"\n{'='*60}")
-        logger.info(f"BASELINE TEST - AI Auditor DISABLED")
+        logger.info(f"BASELINE TEST - Enhanced Monitoring")
         logger.info(f"Duration: {duration_minutes} minutes")
         logger.info(f"Events per minute: {events_per_minute}")
+        logger.info(f"Total events: {duration_minutes * events_per_minute}")
         logger.info(f"{'='*60}\n")
 
         try:
             logger.info(f"Connecting to {self.ws_url}...")
             async with websockets.connect(
                 self.ws_url,
-                ping_interval=30,      # Send ping every 30 seconds
-                ping_timeout=60,       # Wait 60 seconds for pong
+                ping_interval=None,    # Disable auto-ping (we'll do manual monitoring)
+                ping_timeout=10,       # 10 second pong timeout
                 close_timeout=3600,    # 1 hour close timeout
                 max_queue=512,         # Increase frame queue from default 16 to 512
                 write_limit=65536      # Increase write buffer from default 32KB to 64KB
             ) as websocket:
                 logger.info(f"✅ Connected to {self.ws_url}")
 
-                end_time = time.time() + (duration_minutes * 60)
-                interval = 60 / events_per_minute  # seconds between events
+                # Start connection health monitoring in background
+                monitor_task = asyncio.create_task(
+                    self.monitor_connection_health(websocket, check_interval=30)
+                )
 
-                logger.info(f"Starting event generation (interval: {interval:.2f}s)")
+                try:
+                    end_time = time.time() + (duration_minutes * 60)
+                    interval = 60 / events_per_minute  # seconds between events
 
-                while time.time() < end_time:
-                    event = self.generate_event()
-                    await self.send_event(websocket, event)
-                    await asyncio.sleep(interval)
+                    logger.info(f"Starting event generation (interval: {interval:.2f}s)")
+                    logger.info(f"Expected completion: {datetime.fromtimestamp(end_time).strftime('%H:%M:%S')}")
 
-                elapsed = time.time() - self.start_time
-                logger.info(f"\n{'='*60}")
-                logger.info(f"✅ BASELINE TEST COMPLETE")
-                logger.info(f"Total events sent: {self.event_count}")
-                logger.info(f"Duration: {elapsed/60:.2f} minutes")
-                logger.info(f"Events per minute: {self.event_count/(elapsed/60):.2f}")
-                logger.info(f"{'='*60}\n")
+                    while time.time() < end_time:
+                        event = self.generate_event()
+                        await self.send_event(websocket, event)
+
+                        # Check if monitor detected connection failure
+                        if monitor_task.done():
+                            logger.error("❌ Connection health monitor detected failure")
+                            break
+
+                        await asyncio.sleep(interval)
+
+                    elapsed = time.time() - self.start_time
+                    logger.info(f"\n{'='*60}")
+                    logger.info(f"✅ BASELINE TEST COMPLETE")
+                    logger.info(f"Total events sent: {self.event_count}")
+                    logger.info(f"Duration: {elapsed/60:.2f} minutes")
+                    logger.info(f"Events per minute: {self.event_count/(elapsed/60):.2f}")
+                    logger.info(f"{'='*60}\n")
+
+                finally:
+                    # Cancel health monitor
+                    monitor_task.cancel()
+                    try:
+                        await monitor_task
+                    except asyncio.CancelledError:
+                        pass
 
         except Exception as e:
             logger.error(f"❌ Error during baseline test: {e}")

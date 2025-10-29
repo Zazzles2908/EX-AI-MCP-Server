@@ -1,0 +1,46 @@
+{
+  "timestamp": "2025-10-30T08:22:10.281090",
+  "summary": {
+    "total": 7,
+    "passed": 4,
+    "failed": 3,
+    "success_rate": "57.1%"
+  },
+  "details": [
+    {
+      "name": "FileIdMapper bidirectional mapping",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "FileIdMapper session tracking",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Kimi upload with small file",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "GLM upload integration",
+      "passed": false,
+      "details": "Missing session_info in result"
+    },
+    {
+      "name": "SHA256-based deduplication",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "KimiUploadFilesTool",
+      "passed": false,
+      "details": "\u274c PATH FORMAT ERROR\nDetected Windows path: \\mnt\\project\\test_files\\small_test_0.txt\n\n\u2705 CORRECT FORMAT:\n/mnt/project/EX-AI-MCP-Server/filename.ext\n\n\ud83d\udc33 WHY THIS HAPPENS:\nThis system runs in Docker. Windows paths are converted to /app/ which doesn't contain your files.\n\n\ud83d\udcc1 ACCESSIBLE FILES:\nOnly files under c:\\Project\\ are available at /mnt/project/ in the container.\n\n\ud83d\udd27 QUICK FIX:\nReplace 'c:\\Project\\' with '/mnt/project/'"
+    },
+    {
+      "name": "GLMUploadFileTool",
+      "passed": false,
+      "details": "\u274c PATH FORMAT ERROR\nDetected Windows path: \\mnt\\project\\test_files\\small_test_0.txt\n\n\u2705 CORRECT FORMAT:\n/mnt/project/EX-AI-MCP-Server/filename.ext\n\n\ud83d\udc33 WHY THIS HAPPENS:\nThis system runs in Docker. Windows paths are converted to /app/ which doesn't contain your files.\n\n\ud83d\udcc1 ACCESSIBLE FILES:\nOnly files under c:\\Project\\ are available at /mnt/project/ in the container.\n\n\ud83d\udd27 QUICK FIX:\nReplace 'c:\\Project\\' with '/mnt/project/'"
+    }
+  ]
+}
