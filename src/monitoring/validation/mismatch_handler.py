@@ -5,6 +5,7 @@ Handles checksum mismatches, logs failures, and triggers circuit breaker logic.
 """
 
 import logging
+import threading
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -76,14 +77,16 @@ class MismatchStats:
 
 class MismatchHandler:
     """Handles checksum mismatches and validation failures."""
-    
+
     # Singleton instance
     _instance: Optional['MismatchHandler'] = None
-    
+    _lock = threading.Lock()
+
     def __new__(cls):
-        """Implement singleton pattern."""
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
+        """Implement thread-safe singleton pattern."""
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
         return cls._instance
     
     def __init__(self):

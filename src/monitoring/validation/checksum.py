@@ -8,6 +8,8 @@ Ensures data integrity across WebSocket and Supabase Realtime adapters.
 import hashlib
 import zlib
 import json
+import hmac
+import threading
 from typing import Dict, Any, Optional, Tuple
 from enum import Enum
 from dataclasses import dataclass
@@ -50,17 +52,20 @@ class ChecksumManager:
     
     # Singleton instance
     _instance: Optional['ChecksumManager'] = None
-    
+    _lock = threading.Lock()
+
     # Metrics
     _checksums_generated: int = 0
     _checksums_validated: int = 0
     _validation_failures: int = 0
     _algorithm_distribution: Dict[str, int] = {}
-    
+    _secret_key: Optional[str] = None
+
     def __new__(cls):
-        """Implement singleton pattern."""
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
+        """Implement thread-safe singleton pattern."""
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
         return cls._instance
     
     def __init__(self):
@@ -95,6 +100,19 @@ class ChecksumManager:
     def _calculate_sha256(self, data: str) -> str:
         """Calculate SHA256 checksum."""
         return hashlib.sha256(data.encode('utf-8')).hexdigest()
+
+    def _calculate_hmac_sha256(self, data: str, secret_key: str) -> str:
+        """Calculate HMAC-SHA256 checksum for critical events."""
+        return hmac.new(
+            secret_key.encode('utf-8'),
+            data.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+
+    def set_secret_key(self, secret_key: str) -> None:
+        """Set secret key for HMAC-SHA256 (for critical events)."""
+        with self._lock:
+            self._secret_key = secret_key
     
     def generate_checksum(
         self,
@@ -120,11 +138,15 @@ class ChecksumManager:
         
         try:
             serialized = self._serialize_event_data(event_data)
-            
+
             if algorithm == ChecksumAlgorithm.CRC32:
                 checksum = self._calculate_crc32(serialized)
             elif algorithm == ChecksumAlgorithm.SHA256:
-                checksum = self._calculate_sha256(serialized)
+                # Use HMAC-SHA256 if secret key is set, otherwise use regular SHA256
+                if self._secret_key:
+                    checksum = self._calculate_hmac_sha256(serialized, self._secret_key)
+                else:
+                    checksum = self._calculate_sha256(serialized)
             else:
                 raise ValueError(f"Unsupported algorithm: {algorithm}")
             
@@ -172,8 +194,9 @@ class ChecksumManager:
             )
             
             self._checksums_validated += 1
-            
-            if result.checksum == expected_checksum:
+
+            # Use constant-time comparison to prevent timing attacks
+            if hmac.compare_digest(result.checksum, expected_checksum):
                 result.is_valid = True
                 return result
             else:
