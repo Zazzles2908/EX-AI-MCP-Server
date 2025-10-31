@@ -191,11 +191,33 @@ await _resilient_ws.start_background_tasks()
 
 ---
 
-## 🎯 Next Steps
+## ✅ Fixes Applied
 
-1. **Immediate**: Update .env with WORKFLOW_TOOL_TIMEOUT_SECS=180
-2. **High Priority**: Fix semaphore double-release in SemaphoreGuard
-3. **High Priority**: Implement WebSocket reconnection logic
-4. **Monitor**: Watch for Kimi API rate limiting patterns
+### Fix #1: WORKFLOW_TOOL_TIMEOUT_SECS Updated ✅
+- **File**: `.env`
+- **Change**: `WORKFLOW_TOOL_TIMEOUT_SECS=300` → `WORKFLOW_TOOL_TIMEOUT_SECS=180`
+- **Status**: COMMITTED
+
+### Fix #2: Semaphore Double-Release Fixed ✅
+- **File**: `src/daemon/middleware/semaphores.py`
+- **Change**: Return `True` instead of `False` to suppress exception propagation
+- **Status**: COMMITTED
+
+### Fix #3: ResilientWebSocketManager Re-enabled ✅
+- **File**: `src/daemon/ws_server.py`
+- **Change**: Uncommented and re-enabled the manager
+- **Status**: COMMITTED
+
+---
+
+## 🎯 Verification Steps
+
+1. **Restart Docker container** to apply fixes
+2. **Monitor logs** for:
+   - No more "Tool execution timed out after 300.0s"
+   - No more "Semaphore leak detected"
+   - No more "socket.send() raised exception" spam
+3. **Test EXAI tools** (debug, analyze, thinkdeep) to verify they work
+4. **Test client disconnect** to verify message queuing works
 
 
