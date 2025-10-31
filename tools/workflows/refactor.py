@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from tools.models import ToolModelCategory
 
 from config import TEMPERATURE_ANALYTICAL
-from systemprompts import REFACTOR_PROMPT
+from src.prompts import REFACTOR_PROMPT
 
 from .refactor_config import REFACTOR_FIELD_DESCRIPTIONS
 from .refactor_models import RefactorRequest

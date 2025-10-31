@@ -1,0 +1,10 @@
+{
+  "model": "kimi-k2-0905-preview",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Test prompt for challenge"
+    }
+  ],
+  "temperature": 0.0
+}

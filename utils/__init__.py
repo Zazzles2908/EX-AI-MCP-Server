@@ -1,7 +1,8 @@
 """
 Utility functions for EX MCP Server
 
-Reorganized structure (Phase 1.C):
+Reorganized structure (Phase 1.C + Phase 1 Path Consolidation):
+- utils/path/ - Path normalization and validation (NEW - 2025-10-31)
 - utils/file/ - File operations and utilities
 - utils/conversation/ - Conversation management
 - utils/model/ - Model context and token utilities
@@ -21,6 +22,17 @@ from .config.security import EXCLUDED_DIRS
 from .model.token_utils import check_token_limit, estimate_tokens
 from .cache import get_session_cache, make_session_key, MemoryLRUTTL
 
+# Phase 1 Path Consolidation: Re-export path utilities for backward compatibility
+from .path import (
+    PathNormalizer,
+    validate_upload_path,
+    validate_universal_upload_path,
+    get_path_validation_examples,
+    ApplicationAwarePathValidator,
+    validate_file_path,
+    default_validator,
+)
+
 # Re-export all subfolder modules for backward compatibility
 from . import file
 from . import conversation
@@ -28,6 +40,7 @@ from . import model
 from . import config
 from . import progress_utils
 from . import infrastructure
+from . import path  # NEW - Phase 1 consolidation
 
 __all__ = [
     "read_files",
@@ -43,6 +56,14 @@ __all__ = [
     "get_session_cache",
     "make_session_key",
     "MemoryLRUTTL",
+    # Path utilities (Phase 1 consolidation)
+    "PathNormalizer",
+    "validate_upload_path",
+    "validate_universal_upload_path",
+    "get_path_validation_examples",
+    "ApplicationAwarePathValidator",
+    "validate_file_path",
+    "default_validator",
     # Submodules
     "file",
     "conversation",
@@ -50,4 +71,5 @@ __all__ = [
     "config",
     "progress_utils",
     "infrastructure",
+    "path",  # NEW - Phase 1 consolidation
 ]

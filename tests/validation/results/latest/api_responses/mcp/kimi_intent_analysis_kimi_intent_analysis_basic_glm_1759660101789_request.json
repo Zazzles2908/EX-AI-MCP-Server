@@ -1,0 +1,8 @@
+{
+  "op": "call_tool",
+  "request_id": "kimi_intent_analysis_basic_glm_1759660101789",
+  "name": "kimi_intent_analysis",
+  "arguments": {
+    "prompt": "I want to build a website"
+  }
+}

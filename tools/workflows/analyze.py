@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from tools.models import ToolModelCategory
 
 from config import TEMPERATURE_ANALYTICAL
-from systemprompts import ANALYZE_PROMPT
+from src.prompts import ANALYZE_PROMPT
 
 from .analyze_config import ANALYZE_WORKFLOW_FIELD_DESCRIPTIONS
 from .analyze_models import AnalyzeWorkflowRequest

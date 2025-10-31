@@ -1,0 +1,6 @@
+{
+  "op": "call_tool",
+  "request_id": "listmodels_basic_kimi_1759663818876",
+  "name": "listmodels",
+  "arguments": {}
+}

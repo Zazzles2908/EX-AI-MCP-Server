@@ -1,0 +1,41 @@
+{
+  "timestamp": "2025-10-30T08:08:22.579361",
+  "summary": {
+    "total": 6,
+    "passed": 0,
+    "failed": 6,
+    "success_rate": "0.0%"
+  },
+  "details": [
+    {
+      "name": "FileIdMapper functionality",
+      "passed": false,
+      "details": "Expected kimi_file_1761772101, got None"
+    },
+    {
+      "name": "Kimi upload integration",
+      "passed": false,
+      "details": "{'message': 'invalid input syntax for type uuid: \"test_user\"', 'code': '22P02', 'hint': None, 'details': None}"
+    },
+    {
+      "name": "GLM upload integration",
+      "passed": false,
+      "details": "{'message': 'invalid input syntax for type uuid: \"test_user\"', 'code': '22P02', 'hint': None, 'details': None}"
+    },
+    {
+      "name": "SHA256-based deduplication",
+      "passed": false,
+      "details": "{'message': 'invalid input syntax for type uuid: \"test_user\"', 'code': '22P02', 'hint': None, 'details': None}"
+    },
+    {
+      "name": "KimiUploadFilesTool",
+      "passed": false,
+      "details": "No valid files to process after path normalization"
+    },
+    {
+      "name": "GLMUploadFileTool",
+      "passed": false,
+      "details": "{'message': 'invalid input syntax for type uuid: \"system\"', 'code': '22P02', 'hint': None, 'details': None}"
+    }
+  ]
+}

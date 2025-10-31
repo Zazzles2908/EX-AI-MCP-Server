@@ -95,8 +95,11 @@ from src.daemon.env_validation import (
 LOG_DIR = get_repo_root() / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
-# CRITICAL FIX: Setup async-safe logging to prevent deadlocks in async contexts
-# Python's standard logging uses thread locks that can deadlock in async code
+# CRITICAL FIX (2025-10-28): Restore async_safe_logging temporarily
+# Issue: Removing async_logging broke the entire logging system (only 1 log line appears)
+# Root cause: Two competing logging systems (bootstrap vs logging_utils)
+# TODO: Unify logging systems after file upload feature is complete
+# For now: Restore async_logging to get system working again
 from src.utils.async_logging import setup_async_safe_logging
 _log_listener = setup_async_safe_logging(level=logging.INFO)
 
@@ -758,21 +761,37 @@ async def main_async() -> None:
                 logger.warning(f"[WS_ERROR] Unexpected error handling connection: {e}")
 
     # PHASE 4 (2025-10-19): Initialize resilient WebSocket manager
+    # TEMPORARY WORKAROUND (2025-10-28): Disable resilient WebSocket manager for load testing
+    # Root cause: asyncio.create_task() in start_background_tasks() causes await to hang
+    # TODO: Debug and fix the asyncio event loop issue after load test completes
+    logger.info("[DEBUG] ⚠️  SKIPPING ResilientWebSocketManager for load test")
     global _resilient_ws
-    _resilient_ws = ResilientWebSocketManager(fallback_send=_safe_send)
-    await _resilient_ws.start_background_tasks()
-    logger.info("[RESILIENT_WS] Started resilient WebSocket manager with background tasks")
+    _resilient_ws = None
+    # _resilient_ws = ResilientWebSocketManager(fallback_send=_safe_send)
+    # logger.info("[DEBUG] ResilientWebSocketManager created, about to start background tasks...")
+    # await _resilient_ws.start_background_tasks()
+    # logger.info("[DEBUG] ✅ Background tasks started successfully!")
+    # logger.info("[RESILIENT_WS] Started resilient WebSocket manager with background tasks")
 
     # PHASE 2.3 FIX (2025-10-25): Add port availability check before binding
-    logger.debug(f"Checking if port {EXAI_WS_PORT} is available...")
+    logger.info(f"[DEBUG] About to check port availability for {EXAI_WS_HOST}:{EXAI_WS_PORT}")
+    logger.info(f"[DEBUG] Current process PID: {os.getpid()}")
     try:
+        logger.info(f"[DEBUG] Creating test socket...")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as test_socket:
+            logger.info(f"[DEBUG] Setting SO_REUSEADDR...")
             test_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            logger.info(f"[DEBUG] Attempting to bind to {EXAI_WS_HOST}:{EXAI_WS_PORT}...")
             test_socket.bind((EXAI_WS_HOST, EXAI_WS_PORT))
-            logger.debug(f"Port {EXAI_WS_PORT} is available for binding")
+            logger.info(f"[DEBUG] ✅ Port {EXAI_WS_PORT} is available for binding")
     except OSError as e:
-        logger.error(f"Port {EXAI_WS_PORT} is NOT available: {e}")
-        logger.error(f"Another process may be using port {EXAI_WS_PORT}. Check with: netstat -ano | findstr :{EXAI_WS_PORT}")
+        logger.error(f"[DEBUG] ❌ Port {EXAI_WS_PORT} is NOT available: {e}")
+        logger.error(f"[DEBUG] Another process may be using port {EXAI_WS_PORT}. Check with: netstat -ano | findstr :{EXAI_WS_PORT}")
+        logger.exception(f"[DEBUG] Full traceback:")
+        raise
+    except Exception as e:
+        logger.error(f"[DEBUG] ❌ Unexpected exception during port check: {e}")
+        logger.exception(f"[DEBUG] Full traceback:")
         raise
 
     logger.info(f"Starting WS daemon on ws://{EXAI_WS_HOST}:{EXAI_WS_PORT}")

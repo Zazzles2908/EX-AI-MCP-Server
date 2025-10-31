@@ -6,7 +6,7 @@ including field descriptions for the input schema and stance-specific prompts
 for multi-model consensus gathering.
 """
 
-from systemprompts import CONSENSUS_PROMPT
+from src.prompts import CONSENSUS_PROMPT
 
 # Tool-specific field descriptions for consensus workflow
 CONSENSUS_WORKFLOW_FIELD_DESCRIPTIONS = {

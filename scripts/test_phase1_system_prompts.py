@@ -43,11 +43,11 @@ def test_configurations_import():
 def test_base_prompt_import():
     """Test that systemprompts/base_prompt.py imports from configurations."""
     print("\n" + "=" * 80)
-    print("TEST 2: Import systemprompts/base_prompt.py")
+    print("TEST 2: import src.prompts/base_prompt.py")
     print("=" * 80)
     
     try:
-        from systemprompts.base_prompt import FILE_PATH_GUIDANCE, RESPONSE_QUALITY
+        from src.prompts.base_prompt import FILE_PATH_GUIDANCE, RESPONSE_QUALITY
         print("✅ Successfully imported FILE_PATH_GUIDANCE from base_prompt")
         print("✅ Successfully imported RESPONSE_QUALITY from base_prompt")
         
@@ -68,7 +68,7 @@ def test_no_duplication():
     
     try:
         from configurations.file_handling_guidance import FILE_PATH_GUIDANCE as CONFIG_PATH
-        from systemprompts.base_prompt import FILE_PATH_GUIDANCE as PROMPT_PATH
+        from src.prompts.base_prompt import FILE_PATH_GUIDANCE as PROMPT_PATH
         
         # They should be the same object (imported, not duplicated)
         if CONFIG_PATH == PROMPT_PATH:
@@ -89,7 +89,7 @@ def test_file_upload_guidance_available():
     print("=" * 80)
     
     try:
-        from systemprompts.base_prompt import FILE_UPLOAD_GUIDANCE
+        from src.prompts.base_prompt import FILE_UPLOAD_GUIDANCE
         print("✅ FILE_UPLOAD_GUIDANCE available from base_prompt")
         
         # Verify content
@@ -109,7 +109,7 @@ def test_all_expected_constants():
     print("=" * 80)
     
     try:
-        from systemprompts.base_prompt import (
+        from src.prompts.base_prompt import (
             FILE_PATH_GUIDANCE,
             FILE_UPLOAD_GUIDANCE,
             RESPONSE_QUALITY,

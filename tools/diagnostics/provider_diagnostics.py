@@ -201,8 +201,9 @@ class ProviderDiagnosticsTool(BaseTool):
         try:
             from datetime import datetime
             diagnostics["timestamp"] = datetime.utcnow().isoformat() + "Z"
-        except:
-            pass
+        except Exception as e:
+            # Non-critical: Timestamp generation failure shouldn't break diagnostics
+            logger.debug(f"Failed to generate timestamp: {e}")
         
         # Check each provider
         for provider_name in providers_to_check:

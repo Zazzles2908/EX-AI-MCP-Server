@@ -1,0 +1,22 @@
+{
+  "tool": "status",
+  "variation": "provider_availability",
+  "timestamp": "2025-10-05T07:05:50.164144Z",
+  "test_status": "failed",
+  "watcher_analysis": {
+    "quality_score": 0,
+    "correctness": "ERROR",
+    "anomalies": [
+      "Watcher error: HTTPSConnectionPool(host='open.bigmodel.cn', port=443): Read timed out. (read timeout=30)"
+    ],
+    "suggestions": [],
+    "confidence": 0.0,
+    "observations": "Watcher analysis failed: HTTPSConnectionPool(host='open.bigmodel.cn', port=443): Read timed out. (read timeout=30)"
+  },
+  "performance_metrics": {
+    "test_id": "status_provider_availability_1759647919",
+    "start_time": 1759647919.1484993,
+    "start_memory_mb": 36.0234375,
+    "start_cpu_percent": 0.0
+  }
+}

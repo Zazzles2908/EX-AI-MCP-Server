@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "chat_long_prompt_1759740294099",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"continuation_available\",\"content\":\"Artificial intelligence is the engineering discipline of creating systems that can perceive their environment, reason about information, and take actions to achieve specific goals with varying degrees of autonomy.\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"ba06aa63-4386-4f61-9892-781b10e01e4f\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 5.5s | Model: glm-4.5-flash | Tokens: ~140\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=45a00cc0-615f-4739-9603-bc8e3c0beeab"
+    }
+  ],
+  "text": "{\"status\":\"continuation_available\",\"content\":\"Artificial intelligence is the engineering discipline of creating systems that can perceive their environment, reason about information, and take actions to achieve specific goals with varying degrees of autonomy.\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"ba06aa63-4386-4f61-9892-781b10e01e4f\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}\n\n\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 5.5s | Model: glm-4.5-flash | Tokens: ~140\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=45a00cc0-615f-4739-9603-bc8e3c0beeab"
+}

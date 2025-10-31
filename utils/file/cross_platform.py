@@ -45,7 +45,8 @@ class CrossPlatformPathHandler:
             drive_mappings = self._detect_environment_mappings()
 
         self.drive_mappings = drive_mappings
-        self.allowed_prefixes = allowed_prefixes or ['/app', '/mnt/c']
+        # FILE UPLOAD FIX (2025-10-28): Added /mnt/project to allowed prefixes
+        self.allowed_prefixes = allowed_prefixes or ['/app', '/mnt/c', '/mnt/project']
 
         # Regex to detect Windows absolute paths
         self.windows_path_pattern = re.compile(r'^[a-zA-Z]:[\\/]')
@@ -61,18 +62,38 @@ class CrossPlatformPathHandler:
         """
         Auto-detect environment and return appropriate drive mappings.
 
+        FILE UPLOAD FIX (2025-10-28): Updated to use /mnt/project for Docker
+        This matches the new volume mount: c:\Project -> /mnt/project
+
+        FIX (2025-10-30): When running on Windows host, default to /mnt/project
+        since files will be accessed via Docker container with /mnt/project mount
+
         Returns:
             Dict mapping drive letters to Linux paths
         """
+        import platform
+
+        is_windows = platform.system() == "Windows"
         is_docker = os.path.exists('/app')
         is_wsl = os.path.exists('/mnt/c')
+        is_project_mount = os.path.exists('/mnt/project')
 
-        if is_docker:
+        if is_docker and is_project_mount:
+            logger.debug("Detected Docker environment with /mnt/project mount - using /mnt/project/ mappings")
+            # FILE UPLOAD FIX: Map C: to /mnt/project for file upload support
+            # This allows accessing files from c:\Project\... via /mnt/project/...
+            return {'C:': '/mnt/project', 'D:': '/mnt/project', 'E:': '/mnt/project'}
+        elif is_docker:
             logger.debug("Detected Docker environment - using /app/ mappings")
             return {'C:': '/app', 'D:': '/app', 'E:': '/app'}
         elif is_wsl:
             logger.debug("Detected WSL environment - using /mnt/ mappings")
             return {'C:': '/mnt/c', 'D:': '/mnt/d', 'E:': '/mnt/e'}
+        elif is_windows:
+            # FIX (2025-10-30): When running on Windows host, assume files will be
+            # accessed via Docker container with /mnt/project mount
+            logger.debug("Detected Windows host - using /mnt/project/ mappings for Docker access")
+            return {'C:': '/mnt/project', 'D:': '/mnt/project', 'E:': '/mnt/project'}
         else:
             logger.debug("Unknown environment - defaulting to Docker /app/ mappings")
             return {'C:': '/app', 'D:': '/app', 'E:': '/app'}
@@ -152,7 +173,9 @@ class CrossPlatformPathHandler:
     def _validate_linux_path(self, file_path: str) -> Tuple[str, bool, Optional[str]]:
         """Validate a Linux absolute path against allowed prefixes."""
         # Normalize the path to remove redundant components
-        normalized = os.path.normpath(file_path)
+        # FIX (2025-10-30): Use posixpath.normpath() to preserve forward slashes on Windows
+        import posixpath
+        normalized = posixpath.normpath(file_path)
         
         # Check if the path is within allowed prefixes
         is_allowed = any(normalized.startswith(prefix) for prefix in self.allowed_prefixes)
@@ -167,7 +190,13 @@ class CrossPlatformPathHandler:
         return normalized, False, None
     
     def _convert_windows_path(self, file_path: str) -> Tuple[str, bool, Optional[str]]:
-        """Convert a Windows path to Linux path using drive mappings."""
+        """
+        Convert a Windows path to Linux path using drive mappings.
+
+        FILE UPLOAD FIX (2025-10-28): Updated to handle /mnt/project mount
+        - For /app mount: c:\Project\EX-AI-MCP-Server\src\file.py -> /app/src/file.py
+        - For /mnt/project mount: c:\Project\EX-AI-MCP-Server\src\file.py -> /mnt/project/EX-AI-MCP-Server/src/file.py
+        """
         # Extract drive letter (case insensitive)
         drive_letter = file_path[0:2].upper()
 
@@ -189,37 +218,42 @@ class CrossPlatformPathHandler:
         if path_without_drive.startswith('/'):
             path_without_drive = path_without_drive[1:]
 
-        # Combine with Linux prefix
-        # If linux_prefix is "/app" and path is "Project/EX-AI-MCP-Server/file.py"
-        # Result should be "/app" (since the Windows path C:\Project\EX-AI-MCP-Server is mounted at /app)
-        # We need to strip the common prefix
+        # FILE UPLOAD FIX (2025-10-28): Different logic for /mnt/project vs /app
+        if linux_prefix == '/mnt/project':
+            # For /mnt/project mount: keep full path after drive letter
+            # c:\Project\EX-AI-MCP-Server\src\file.py -> /mnt/project/Project/EX-AI-MCP-Server/src/file.py
+            # But we want: /mnt/project/EX-AI-MCP-Server/src/file.py
+            # So strip "Project/" prefix if present
+            if path_without_drive.startswith('Project/'):
+                path_without_drive = path_without_drive[8:]  # Remove "Project/"
 
-        # For now, assume the entire Windows path maps to the Linux prefix
-        # This means C:\Project\EX-AI-MCP-Server\utils\file.py -> /app/utils/file.py
-        # We need to find where the mount point is
-
-        # Simple approach: if the path contains the project directory, strip it
-        # C:\Project\EX-AI-MCP-Server\utils\file.py -> utils/file.py -> /app/utils/file.py
-        project_marker = "EX-AI-MCP-Server"
-        if project_marker in path_without_drive:
-            # Find the position after the project marker
-            parts = path_without_drive.split('/')
-            try:
-                marker_index = parts.index(project_marker)
-                # Take everything after the project marker
-                relative_parts = parts[marker_index + 1:]
-                path_without_drive = '/'.join(relative_parts)
-            except ValueError:
-                pass  # Marker not found, use full path
-
-        # Combine with Linux prefix
-        if path_without_drive:
             normalized_path = linux_prefix + '/' + path_without_drive
         else:
-            normalized_path = linux_prefix
+            # For /app mount: strip project marker to get relative path
+            # c:\Project\EX-AI-MCP-Server\src\file.py -> /app/src/file.py
+            project_marker = "EX-AI-MCP-Server"
+            if project_marker in path_without_drive:
+                # Find the position after the project marker
+                parts = path_without_drive.split('/')
+                try:
+                    marker_index = parts.index(project_marker)
+                    # Take everything after the project marker
+                    relative_parts = parts[marker_index + 1:]
+                    path_without_drive = '/'.join(relative_parts)
+                except ValueError:
+                    pass  # Marker not found, use full path
+
+            # Combine with Linux prefix
+            if path_without_drive:
+                normalized_path = linux_prefix + '/' + path_without_drive
+            else:
+                normalized_path = linux_prefix
 
         # Normalize the resulting path
-        normalized_path = os.path.normpath(normalized_path)
+        # FIX (2025-10-30): Use posixpath.normpath() instead of os.path.normpath()
+        # to preserve forward slashes on Windows
+        import posixpath
+        normalized_path = posixpath.normpath(normalized_path)
 
         # Validate the converted path
         normalized_path, _, error = self._validate_linux_path(normalized_path)
@@ -265,16 +299,19 @@ def get_path_handler() -> CrossPlatformPathHandler:
     """
     Factory function to create a configured path handler.
     Uses singleton pattern to avoid re-parsing environment variables.
+
+    FIX (2025-10-30): Use auto-detection instead of hardcoded defaults
     """
     global _path_handler_instance
-    
+
     if _path_handler_instance is not None:
         return _path_handler_instance
-    
-    # Default mappings
-    drive_mappings = {'C:': '/app'}
-    
-    # Try to get additional mappings from environment
+
+    # FIX (2025-10-30): Create temporary instance to use auto-detection
+    temp_handler = CrossPlatformPathHandler()
+    drive_mappings = temp_handler._detect_environment_mappings()
+
+    # Try to get additional mappings from environment (override auto-detection)
     # Format: C:/app,D:/data,E:/shared
     env_mappings = os.getenv('EX_DRIVE_MAPPINGS', '')
     if env_mappings:
@@ -292,14 +329,15 @@ def get_path_handler() -> CrossPlatformPathHandler:
         except Exception as e:
             # Log error but continue with default mappings
             logger.warning(f"Failed to parse drive mappings from EX_DRIVE_MAPPINGS: {e}")
-    
+
     # Get allowed prefixes from environment
-    allowed_prefixes_str = os.getenv('EX_ALLOWED_EXTERNAL_PREFIXES', '/app')
+    # FIX (2025-10-30): Default to /mnt/project instead of /app
+    allowed_prefixes_str = os.getenv('EX_ALLOWED_EXTERNAL_PREFIXES', '/app,/mnt/project')
     allowed_prefixes = [p.strip() for p in allowed_prefixes_str.split(',') if p.strip()]
-    
+
     _path_handler_instance = CrossPlatformPathHandler(drive_mappings, allowed_prefixes)
     logger.debug(f"Initialized path handler with drive mappings: {drive_mappings}, allowed prefixes: {allowed_prefixes}")
-    
+
     return _path_handler_instance
 
 

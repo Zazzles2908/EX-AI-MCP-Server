@@ -4,6 +4,8 @@ Base Cache Manager for EXAI MCP Server
 Unified caching abstraction supporting multi-layer caching (L1 + L2 + optional L3).
 Used by both routing cache and conversation cache to eliminate duplication.
 
+Implements CacheInterface for unified caching API.
+
 Architecture:
 - L1: In-memory TTLCache (fastest, configurable TTL and size)
 - L2: Redis distributed cache (fast, persistent across restarts)
@@ -16,6 +18,7 @@ Performance Benefits:
 - Cache miss: Full retrieval + population
 
 Created: 2025-10-16
+Updated: 2025-10-31 (Phase 2: Implements CacheInterface)
 """
 
 import json
@@ -24,6 +27,8 @@ import os
 import threading
 from typing import Optional, Dict, Any, Callable
 from urllib.parse import urlparse
+
+from utils.caching.interface import CacheInterface
 
 try:
     from cachetools import TTLCache, LRUCache
@@ -35,10 +40,12 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class BaseCacheManager:
+class BaseCacheManager(CacheInterface):
     """
     Base class for multi-layer caching with L1 (memory) + L2 (Redis) support.
-    
+
+    Implements CacheInterface for unified caching API.
+
     Subclasses should override:
     - _get_cache_prefix() - Return cache key prefix (e.g., "routing:", "conversation:")
     - _serialize_value() - Custom serialization if needed (default: JSON)
@@ -53,22 +60,25 @@ class BaseCacheManager:
         l1_ttl: int = 300,
         l2_ttl: int = 1800,
         enable_redis: bool = True,
-        cache_prefix: str = "cache"
+        cache_prefix: str = "cache",
+        max_response_size: Optional[int] = None
     ):
         """
         Initialize base cache manager.
-        
+
         Args:
             l1_maxsize: Maximum items in L1 cache
             l1_ttl: L1 cache TTL in seconds
             l2_ttl: L2 (Redis) cache TTL in seconds
             enable_redis: Whether to enable L2 Redis caching
             cache_prefix: Prefix for cache keys (e.g., "routing", "conversation")
+            max_response_size: Maximum size of a single response in bytes (optional, for semantic caching)
         """
         self._cache_prefix = cache_prefix
         self._l1_ttl = l1_ttl
         self._l2_ttl = l2_ttl
         self._enable_redis = enable_redis
+        self._max_response_size = max_response_size
         
         # L1: In-memory cache
         try:
@@ -92,7 +102,8 @@ class BaseCacheManager:
             'l2_hits': 0,
             'misses': 0,
             'writes': 0,
-            'errors': 0
+            'errors': 0,
+            'size_rejections': 0  # Track responses too large to cache
         }
         
         logger.info(f"[{self._cache_prefix.upper()}_CACHE] Base cache manager initialized")
@@ -197,15 +208,44 @@ class BaseCacheManager:
         logger.debug(f"[{self._cache_prefix.upper()}_CACHE] MISS: {key}")
         return None
     
+    def _validate_response_size(self, response: Any) -> bool:
+        """
+        Validate response size against max_response_size limit.
+
+        Args:
+            response: Response to validate
+
+        Returns:
+            True if response size is acceptable, False otherwise
+        """
+        if self._max_response_size is None:
+            return True
+
+        import sys
+        response_size = sys.getsizeof(response)
+        if response_size > self._max_response_size:
+            self._stats['size_rejections'] += 1
+            logger.warning(
+                f"[{self._cache_prefix.upper()}_CACHE] Response too large to cache: "
+                f"{response_size} bytes (max: {self._max_response_size} bytes)"
+            )
+            return False
+
+        return True
+
     def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
         """
         Set value in cache (write-through to L1 and L2).
-        
+
         Args:
             key: Cache key (without prefix)
             value: Value to cache
             ttl: Optional TTL override (uses default if None)
         """
+        # Validate response size if configured
+        if not self._validate_response_size(value):
+            return
+
         # L1 cache
         self._l1_cache[key] = value
         
@@ -272,14 +312,14 @@ class BaseCacheManager:
     def get_stats(self) -> Dict[str, Any]:
         """
         Get cache statistics.
-        
+
         Returns:
             Dictionary with hit/miss counts and ratios
         """
         total_requests = self._stats['l1_hits'] + self._stats['l2_hits'] + self._stats['misses']
         total_hits = self._stats['l1_hits'] + self._stats['l2_hits']
-        
-        return {
+
+        stats = {
             'l1_hits': self._stats['l1_hits'],
             'l2_hits': self._stats['l2_hits'],
             'misses': self._stats['misses'],
@@ -291,6 +331,24 @@ class BaseCacheManager:
             'l1_hit_ratio': self._stats['l1_hits'] / total_requests if total_requests > 0 else 0.0,
             'l2_hit_ratio': self._stats['l2_hits'] / total_requests if total_requests > 0 else 0.0,
         }
+
+        # Include size_rejections if max_response_size is configured
+        if self._max_response_size is not None:
+            stats['size_rejections'] = self._stats['size_rejections']
+            stats['max_response_size_bytes'] = self._max_response_size
+
+        return stats
+
+    def stats(self) -> Dict[str, Any]:
+        """
+        Get cache statistics (CacheInterface implementation).
+
+        Alias for get_stats() to comply with CacheInterface.
+
+        Returns:
+            Dictionary with hit/miss counts and ratios
+        """
+        return self.get_stats()
 
 
 __all__ = ["BaseCacheManager"]

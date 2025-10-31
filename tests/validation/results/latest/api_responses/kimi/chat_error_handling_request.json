@@ -1,0 +1,10 @@
+{
+  "model": "invalid-model-name",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Test"
+    }
+  ],
+  "temperature": 0.0
+}

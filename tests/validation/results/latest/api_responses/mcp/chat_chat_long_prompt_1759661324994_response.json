@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "chat_long_prompt_1759661319620",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"continuation_available\",\"content\":\"\\nArtificial intelligence is the field of computer science focused on creating systems that can perform tasks typically requiring human intelligence, such as learning, problem-solving, perception, language understanding, and decision-making, through algorithms and computational models that can process data, recognize patterns, and adapt their behavior based on experience.\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"e1e834d9-022d-48dd-95c3-9bd802ea2a9f\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 5.4s | Model: glm-4.5-flash | Tokens: ~180\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=5c91525e-fe5f-46a3-8f1b-96a40458cbb1"
+    }
+  ],
+  "text": "{\"status\":\"continuation_available\",\"content\":\"\\nArtificial intelligence is the field of computer science focused on creating systems that can perform tasks typically requiring human intelligence, such as learning, problem-solving, perception, language understanding, and decision-making, through algorithms and computational models that can process data, recognize patterns, and adapt their behavior based on experience.\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"e1e834d9-022d-48dd-95c3-9bd802ea2a9f\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}\n\n\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 5.4s | Model: glm-4.5-flash | Tokens: ~180\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=5c91525e-fe5f-46a3-8f1b-96a40458cbb1"
+}

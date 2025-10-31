@@ -1,0 +1,14 @@
+{
+  "op": "call_tool",
+  "request_id": "planner_basic_kimi_1759843561379",
+  "name": "planner",
+  "arguments": {
+    "step": "Create a plan for building a simple web application",
+    "step_number": 1,
+    "total_steps": 1,
+    "next_step_required": false,
+    "findings": "Project planning phase initiated",
+    "model": "kimi-k2-0905-preview",
+    "use_assistant_model": false
+  }
+}

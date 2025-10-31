@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from tools.models import ToolModelCategory
 
 from config import TEMPERATURE_ANALYTICAL
-from systemprompts import SECAUDIT_PROMPT
+from src.prompts import SECAUDIT_PROMPT
 
 from .secaudit_config import SECAUDIT_WORKFLOW_FIELD_DESCRIPTIONS
 from .secaudit_models import SecauditRequest

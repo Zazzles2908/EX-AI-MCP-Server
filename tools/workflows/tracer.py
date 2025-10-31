@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from tools.models import ToolModelCategory
 
 from config import TEMPERATURE_ANALYTICAL
-from systemprompts import TRACER_PROMPT
+from src.prompts import TRACER_PROMPT
 
 from .tracer_config import TRACER_WORKFLOW_FIELD_DESCRIPTIONS
 from .tracer_models import TracerRequest

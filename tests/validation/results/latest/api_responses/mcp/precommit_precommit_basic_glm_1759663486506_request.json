@@ -1,0 +1,11 @@
+{
+  "op": "call_tool",
+  "request_id": "precommit_basic_glm_1759663486506",
+  "name": "precommit",
+  "arguments": {
+    "files": [
+      "test.py"
+    ],
+    "model": "glm-4.5-flash"
+  }
+}

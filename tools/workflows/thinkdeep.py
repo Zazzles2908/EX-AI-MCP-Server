@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from tools.models import ToolModelCategory
 
 from config import TEMPERATURE_CREATIVE
-from systemprompts import THINKDEEP_PROMPT
+from src.prompts import THINKDEEP_PROMPT
 
 from .thinkdeep_config import THINKDEEP_FIELD_OVERRIDES
 from .thinkdeep_models import ThinkDeepWorkflowRequest

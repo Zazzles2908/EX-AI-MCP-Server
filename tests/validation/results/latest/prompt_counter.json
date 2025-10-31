@@ -1,0 +1,113 @@
+{
+  "session_start": "2025-10-07T13:42:06.234783Z",
+  "total_prompts": 2,
+  "prompts_by_provider": {
+    "kimi": 0,
+    "glm": 0,
+    "watcher": 0,
+    "mcp": 2
+  },
+  "prompts_by_model": {
+    "server": 2
+  },
+  "prompts_by_tool": {
+    "kimi_upload_and_extract": 2
+  },
+  "feature_usage": {
+    "web_search": {
+      "kimi": 0,
+      "glm": 0,
+      "total": 0
+    },
+    "file_upload": {
+      "kimi": 0,
+      "glm": 0,
+      "total": 0
+    },
+    "thinking_mode": {
+      "basic": 0,
+      "deep": 0,
+      "expert": 0,
+      "total": 0
+    },
+    "tool_use": {
+      "kimi": 0,
+      "glm": 0,
+      "total": 0
+    }
+  },
+  "token_usage": {
+    "total_input_tokens": 0,
+    "total_output_tokens": 142,
+    "total_tokens": 142,
+    "by_provider": {
+      "kimi": {
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "glm": {
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "watcher": {
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "mcp": {
+        "input": 0,
+        "output": 142,
+        "total": 142
+      }
+    }
+  },
+  "cost_tracking": {
+    "total_cost_usd": 0.0,
+    "by_provider": {
+      "kimi": 0.0,
+      "glm": 0.0,
+      "watcher": 0.0,
+      "mcp": 0.0
+    },
+    "by_feature": {
+      "web_search": 0.0,
+      "file_upload": 0.0,
+      "thinking_mode": 0.0,
+      "base_calls": 0.0
+    }
+  },
+  "prompt_history": [
+    {
+      "timestamp": "2025-10-07T13:42:11.609309Z",
+      "prompt_number": 1,
+      "provider": "mcp",
+      "model": "server",
+      "tool": "kimi_upload_and_extract",
+      "variation": "basic_glm",
+      "tokens": {
+        "input": 0,
+        "output": 71,
+        "total": 71
+      },
+      "features": {},
+      "cost_usd": 0.0
+    },
+    {
+      "timestamp": "2025-10-07T13:43:12.137540Z",
+      "prompt_number": 2,
+      "provider": "mcp",
+      "model": "server",
+      "tool": "kimi_upload_and_extract",
+      "variation": "basic_kimi",
+      "tokens": {
+        "input": 0,
+        "output": 71,
+        "total": 71
+      },
+      "features": {},
+      "cost_usd": 0.0
+    }
+  ]
+}

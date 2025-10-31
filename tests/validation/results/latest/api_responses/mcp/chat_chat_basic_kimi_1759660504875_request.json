@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "chat_basic_kimi_1759660504875",
+  "name": "chat",
+  "arguments": {
+    "prompt": "What is 2+2? Answer with just the number.",
+    "model": "kimi-k2-0905-preview"
+  }
+}

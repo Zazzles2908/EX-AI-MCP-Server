@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "provider_capabilities_basic_glm_1759700826778",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"env\": {\"KIMI_API_KEY_present\": true, \"GLM_API_KEY_present\": true, \"KIMI_API_URL\": \"https://api.moonshot.ai/v1\", \"GLM_API_URL\": \"https://api.z.ai/api/paas/v4\", \"GLM_AGENT_API_URL\": \"\", \"GLM_THINKING_MODE\": \"\", \"KIMI_ENABLE_INTERNET_TOOL\": \"\", \"KIMI_DEFAULT_TOOL_CHOICE\": \"\", \"KIMI_DEFAULT_MODEL\": \"\", \"KIMI_FILES_MAX_SIZE_MB\": \"\", \"GLM_FILES_MAX_SIZE_MB\": \"\"}, \"tools\": [\"analyze\", \"challenge\", \"chat\", \"codereview\", \"debug\", \"glm_web_search\", \"kimi_intent_analysis\", \"kimi_multi_file_chat\", \"planner\", \"refactor\", \"status\", \"testgen\", \"thinkdeep\"], \"showing_advanced\": false}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: provider_capabilities | Status: COMPLETE (Step 1/? complete)\nDuration: 0.0s | Model: glm-4.5-flash | Tokens: ~144\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=44081e34-21fb-4075-8e99-5cea6e6640bc"
+    }
+  ],
+  "text": "{\"env\": {\"KIMI_API_KEY_present\": true, \"GLM_API_KEY_present\": true, \"KIMI_API_URL\": \"https://api.moonshot.ai/v1\", \"GLM_API_URL\": \"https://api.z.ai/api/paas/v4\", \"GLM_AGENT_API_URL\": \"\", \"GLM_THINKING_MODE\": \"\", \"KIMI_ENABLE_INTERNET_TOOL\": \"\", \"KIMI_DEFAULT_TOOL_CHOICE\": \"\", \"KIMI_DEFAULT_MODEL\": \"\", \"KIMI_FILES_MAX_SIZE_MB\": \"\", \"GLM_FILES_MAX_SIZE_MB\": \"\"}, \"tools\": [\"analyze\", \"challenge\", \"chat\", \"codereview\", \"debug\", \"glm_web_search\", \"kimi_intent_analysis\", \"kimi_multi_file_chat\", \"planner\", \"refactor\", \"status\", \"testgen\", \"thinkdeep\"], \"showing_advanced\": false}\n\n\n=== MCP CALL SUMMARY ===\nTool: provider_capabilities | Status: COMPLETE (Step 1/? complete)\nDuration: 0.0s | Model: glm-4.5-flash | Tokens: ~144\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=44081e34-21fb-4075-8e99-5cea6e6640bc"
+}

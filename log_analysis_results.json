@@ -1,0 +1,27 @@
+{
+  "total_lines": 999,
+  "by_level": {
+    "WARNING": 913,
+    "INFO": 85,
+    "ERROR": 1
+  },
+  "by_module": {
+    "src.monitoring.resilient_websocket": 913,
+    "src.daemon.connection_manager": 1,
+    "src.daemon.ws.connection_manager": 4,
+    "utils.monitoring.ai_auditor": 1,
+    "src.daemon.session_manager": 1,
+    "src.daemon.ws.request_router": 8,
+    "tools.chat": 12,
+    "mcp_activity": 5,
+    "httpx": 9,
+    "utils.performance.timing": 6,
+    "utils.conversation.supabase_memory": 13,
+    "root": 17,
+    "src.providers.orchestration.websearch_adapter": 3,
+    "src.providers.glm_chat": 5,
+    "aiohttp.access": 1
+  },
+  "sampled_logs": 0,
+  "sampling_rate": 0.0
+}

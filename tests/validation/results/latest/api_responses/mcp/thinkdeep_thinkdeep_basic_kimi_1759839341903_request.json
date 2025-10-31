@@ -1,0 +1,14 @@
+{
+  "op": "call_tool",
+  "request_id": "thinkdeep_basic_kimi_1759839341903",
+  "name": "thinkdeep",
+  "arguments": {
+    "step": "Deeply analyze the concept of recursion and its applications",
+    "step_number": 1,
+    "total_steps": 1,
+    "next_step_required": false,
+    "findings": "Deep thinking requested on recursion concept",
+    "model": "kimi-k2-0905-preview",
+    "use_assistant_model": false
+  }
+}

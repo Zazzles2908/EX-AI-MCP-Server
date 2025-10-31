@@ -1936,3 +1936,9 @@
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1370, "output_tokens": 5, "t": 1760429610.396497}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 1528, "output_tokens": 161, "t": 1760433710.3153517}
 {"event": "token_usage", "provider": "kimi", "model": "kimi-k2-0905-preview", "input_tokens": 19910, "output_tokens": 1024, "t": 1760434491.4907937}
+{"event": "provider_error", "provider": "GLM", "model": "glm-4.5", "error_type": "upload_error", "message": "{'message': 'invalid input syntax for type uuid: \"system\"', 'code': '22P02', 'hint': None, 'details': None}", "t": 1761772102.5776792}
+{"event": "provider_error", "provider": "GLM", "model": "glm-4.5", "error_type": "upload_error", "message": "{'message': 'invalid input syntax for type uuid: \"system\"', 'code': '22P02', 'hint': None, 'details': None}", "t": 1761772651.8947551}
+{"event": "file_count_delta", "provider": "GLM", "delta": 1, "t": 1761775494.216399}
+{"event": "file_cache", "action": "hit", "provider": "GLM", "sha": "sha256", "t": 1761775655.8054333}
+{"event": "file_cache", "action": "hit", "provider": "GLM", "sha": "sha256", "t": 1761816259.1620162}
+{"event": "file_cache", "action": "hit", "provider": "GLM", "sha": "sha256", "t": 1761817324.5615282}
