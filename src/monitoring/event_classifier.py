@@ -163,7 +163,7 @@ class EventClassifier:
         event_lower = event_type.lower()
         
         # Heuristic 1: Check for keywords in event_type
-        if any(keyword in event_lower for keyword in ['error', 'fail', 'critical', 'alert']):
+        if any(keyword in event_lower for keyword in ['error', 'fail', 'critical', 'alert', 'timeout', 'exception']):
             return EventCategory.CRITICAL
         
         if any(keyword in event_lower for keyword in ['cache', 'metric', 'performance', 'latency']):
