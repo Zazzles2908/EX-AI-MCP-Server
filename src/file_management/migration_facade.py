@@ -343,45 +343,48 @@ class FileManagementFacade:
         metadata: Optional[FileUploadMetadata]
     ) -> FileOperationResult:
         """
-        Upload using legacy KimiUploadFilesTool.
+        Upload using Supabase hub directly.
 
-        This calls the existing KimiUploadFilesTool._run() method directly
-        to preserve all existing functionality and behavior.
+        Phase A2 Cleanup: Replaced KimiUploadFilesTool with direct upload_file_with_provider() call.
+        This eliminates the redundant tool wrapper layer.
         """
         try:
-            # Import here to avoid circular dependencies
-            from tools.providers.kimi.kimi_files import KimiUploadFilesTool
-
-            # Create tool instance
-            tool = KimiUploadFilesTool()
+            # Import Supabase hub function
+            from tools.supabase_upload import upload_file_with_provider
+            from src.storage.supabase_client import get_storage_manager
 
             # Prepare arguments
             purpose = metadata.purpose if metadata else "file-extract"
+            user_id = metadata.user_id if metadata and hasattr(metadata, 'user_id') else "system"
 
-            # Call legacy upload (sync method, so run in thread)
+            # Get Supabase client
+            storage = get_storage_manager()
+            supabase_client = storage.get_client()
+
+            # Call Supabase hub directly (sync method, so run in thread)
             import asyncio
-            results = await asyncio.to_thread(
-                tool._run,
-                files=[file_path],
-                purpose=purpose
+            result = await asyncio.to_thread(
+                upload_file_with_provider,
+                supabase_client=supabase_client,
+                file_path=file_path,
+                provider="kimi",
+                user_id=user_id
             )
 
-            # Convert legacy result to FileOperationResult
-            if results and len(results) > 0:
-                result = results[0]
-
-                # Create FileReference from legacy result
+            # Convert result to FileOperationResult
+            if result:
+                # Create FileReference from Supabase hub result
                 from src.file_management.models import FileReference
                 file_ref = FileReference(
-                    internal_id=None,  # Legacy doesn't have internal ID
-                    provider_id=result.get("file_id"),
+                    internal_id=result.get("supabase_file_id"),
+                    provider_id=result.get("kimi_file_id"),  # Kimi file ID
                     provider="kimi",
-                    file_hash=result.get("sha256"),  # May be None
+                    file_hash=result.get("sha256"),
                     size=result.get("size_bytes"),
-                    mime_type=None,  # Legacy doesn't return mime type
+                    mime_type=result.get("mime_type"),
                     original_name=result.get("filename"),
-                    created_at=None,  # Legacy doesn't return timestamp
-                    metadata={"legacy_upload": True}
+                    created_at=result.get("created_at"),
+                    metadata={"supabase_hub_upload": True}
                 )
 
                 return FileOperationResult(
@@ -391,14 +394,14 @@ class FileManagementFacade:
             else:
                 return FileOperationResult(
                     success=False,
-                    error="Legacy Kimi upload returned no results"
+                    error="Kimi upload via Supabase hub returned no results"
                 )
 
         except Exception as e:
-            logger.error(f"Legacy Kimi upload failed: {e}", exc_info=True)
+            logger.error(f"Kimi upload via Supabase hub failed: {e}", exc_info=True)
             return FileOperationResult(
                 success=False,
-                error=f"Legacy Kimi upload error: {str(e)}"
+                error=f"Kimi upload error: {str(e)}"
             )
 
     async def _legacy_glm_upload(

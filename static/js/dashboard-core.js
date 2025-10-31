@@ -36,6 +36,18 @@ class DashboardCore {
                 tokens_used: 0,
                 max_tokens: 0,
                 current_model: '--'
+            },
+            // PHASE 1 DASHBOARD INTEGRATION (2025-10-31): Cache metrics
+            cacheMetrics: {
+                implementation: '--',
+                hit_rate: 0,
+                hits: 0,
+                misses: 0,
+                total_requests: 0,
+                error_count: 0,
+                size_rejections: 0,
+                cache_size: 0,
+                max_size: 0
             }
         };
         
@@ -230,6 +242,167 @@ class DashboardCore {
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    /**
+     * Update cache metrics
+     * PHASE 1 & 2 DASHBOARD INTEGRATION (2025-10-31)
+     */
+    updateCacheMetrics(metrics) {
+        // Update state
+        this.state.cacheMetrics = { ...metrics };
+
+        // Emit event for subscribers
+        this.emit('cache:update', metrics);
+
+        // PHASE 1: Update health bar
+        const hitRateEl = document.getElementById('cacheHitRate');
+        const implEl = document.getElementById('cacheImplementation');
+        const indicatorEl = document.getElementById('cacheHealthIndicator');
+
+        if (hitRateEl) {
+            hitRateEl.textContent = `${metrics.hit_rate.toFixed(1)}%`;
+        }
+
+        if (implEl) {
+            const implText = metrics.implementation === 'new' ? 'New (L1+L2)' : 'Legacy (L1)';
+            implEl.textContent = implText;
+        }
+
+        // Color code based on hit rate
+        if (indicatorEl) {
+            indicatorEl.className = 'health-indicator';
+            if (metrics.hit_rate >= 80) {
+                indicatorEl.classList.add('health-good');
+            } else if (metrics.hit_rate >= 60) {
+                indicatorEl.classList.add('health-warning');
+            } else {
+                indicatorEl.classList.add('health-critical');
+            }
+        }
+
+        // PHASE 2: Update cache panel
+        this.updateCachePanel(metrics);
+    }
+
+    /**
+     * Update cache migration panel
+     * PHASE 2 DASHBOARD INTEGRATION (2025-10-31)
+     */
+    updateCachePanel(metrics) {
+        // Update migration progress
+        const isNew = metrics.implementation === 'new';
+        const progressPercent = isNew ? 100 : 0;
+
+        const progressFill = document.getElementById('migrationProgressFill');
+        const progressLabel = document.getElementById('migrationProgressLabel');
+
+        if (progressFill) {
+            progressFill.style.width = `${progressPercent}%`;
+        }
+
+        if (progressLabel) {
+            progressLabel.textContent = `${progressPercent}% migrated to new implementation`;
+        }
+
+        // Update implementation-specific metrics
+        if (isNew) {
+            // New implementation is active
+            this.updateImplMetrics('new', metrics);
+            this.updateImplMetrics('legacy', { hit_rate: 0, hits: 0, misses: 0, total_requests: 0, cache_size: 0, error_count: 0 });
+        } else {
+            // Legacy implementation is active
+            this.updateImplMetrics('legacy', metrics);
+            this.updateImplMetrics('new', { hit_rate: 0, hits: 0, misses: 0, total_requests: 0, cache_size: 0, error_count: 0 });
+        }
+
+        // Update error tracking
+        this.updateCacheErrors(metrics);
+    }
+
+    /**
+     * Update implementation-specific metrics
+     */
+    updateImplMetrics(impl, metrics) {
+        const hitRateEl = document.getElementById(`${impl}HitRate`);
+        const requestsEl = document.getElementById(`${impl}Requests`);
+        const cacheSizeEl = document.getElementById(`${impl}CacheSize`);
+        const errorsEl = document.getElementById(`${impl}Errors`);
+
+        if (hitRateEl) {
+            hitRateEl.textContent = `${metrics.hit_rate.toFixed(1)}%`;
+        }
+
+        if (requestsEl) {
+            requestsEl.textContent = metrics.total_requests || 0;
+        }
+
+        if (cacheSizeEl) {
+            cacheSizeEl.textContent = `${metrics.cache_size || 0} / ${metrics.max_size || 0}`;
+        }
+
+        if (errorsEl) {
+            errorsEl.textContent = metrics.error_count || 0;
+        }
+    }
+
+    /**
+     * Update cache error tracking
+     */
+    updateCacheErrors(metrics) {
+        const errorsListEl = document.getElementById('cacheErrorsList');
+
+        if (!errorsListEl) return;
+
+        if (metrics.error_count === 0) {
+            errorsListEl.innerHTML = '<div class="no-errors">No cache errors detected ✅</div>';
+        } else {
+            // Show error summary
+            errorsListEl.innerHTML = `
+                <div class="error-item">
+                    <div class="error-time">${new Date().toLocaleString()}</div>
+                    <div class="error-message">
+                        ${metrics.error_count} total errors detected
+                        ${metrics.size_rejections > 0 ? `<br>• ${metrics.size_rejections} size rejections` : ''}
+                    </div>
+                </div>
+            `;
+        }
+    }
+}
+
+    /**
+     * PHASE 2.5.2: Set data source adapter
+     * Allows switching between WebSocket and Supabase Realtime
+     */
+    setDataSourceAdapter(adapter) {
+        this.dataSourceAdapter = adapter;
+        this.emit('datasource:changed', adapter);
+        console.log('[DashboardCore] Data source adapter changed:', adapter);
+    }
+
+    /**
+     * PHASE 2.5.2: Get current data source adapter
+     */
+    getDataSourceAdapter() {
+        return this.dataSourceAdapter || 'websocket';
+    }
+
+    /**
+     * PHASE 2.5.2: Enable dual-mode operation
+     * Allows receiving data from both WebSocket and Realtime simultaneously
+     */
+    enableDualMode(enabled = true) {
+        this.dualModeEnabled = enabled;
+        this.emit('dualmode:changed', enabled);
+        console.log('[DashboardCore] Dual mode:', enabled ? 'ENABLED' : 'DISABLED');
+    }
+
+    /**
+     * PHASE 2.5.2: Check if dual mode is enabled
+     */
+    isDualModeEnabled() {
+        return this.dualModeEnabled === true;
     }
 }
 

@@ -11,7 +11,7 @@ Backward compatibility: All exports are re-exported at utils level.
 from .health import *
 from .metrics import *
 # instrumentation.py archived (0 imports, depends on archived monitoring/)
-from .lru_cache_ttl import *
+# lru_cache_ttl.py removed (Phase 2: Dead code - 0 imports, replaced by BaseCacheManager)
 from .storage_backend import *
 from .costs import *
 from .docs_validator import *

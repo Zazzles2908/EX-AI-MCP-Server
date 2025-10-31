@@ -53,6 +53,7 @@ COPY scripts/runtime/ ./scripts/runtime/
 COPY static/ ./static/
 COPY server.py ./
 COPY config.py ./
+COPY config/ ./config/
 COPY .env.docker .env
 
 # Create logs directory

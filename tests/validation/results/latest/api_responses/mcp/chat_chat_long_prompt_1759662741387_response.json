@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "chat_long_prompt_1759662735205",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"continuation_available\",\"content\":\"\\nArtificial intelligence is the simulation of human intelligence processes by machines, particularly computer systems, including learning, reasoning, problem-solving, perception, and language understanding.\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"1d098db8-fa70-43f5-b946-3e46e7f0f190\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 6.2s | Model: glm-4.5-flash | Tokens: ~138\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=67132658-626d-4492-8881-b4dec1c2ddbe"
+    }
+  ],
+  "text": "{\"status\":\"continuation_available\",\"content\":\"\\nArtificial intelligence is the simulation of human intelligence processes by machines, particularly computer systems, including learning, reasoning, problem-solving, perception, and language understanding.\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"1d098db8-fa70-43f5-b946-3e46e7f0f190\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}\n\n\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 6.2s | Model: glm-4.5-flash | Tokens: ~138\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=67132658-626d-4492-8881-b4dec1c2ddbe"
+}

@@ -324,7 +324,7 @@ def generate_content(
 
                                         # NEW (2025-10-24): Forward chunk immediately if callback provided
                                         if on_chunk_callback:
-                                            from streaming.streaming_adapter import _safe_call_chunk_callback
+                                            from src.streaming.streaming_adapter import _safe_call_chunk_callback
                                             _safe_call_chunk_callback(on_chunk_callback, chunk_text)
 
                                 msg = getattr(choice, "message", None)

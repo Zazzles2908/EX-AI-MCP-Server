@@ -337,8 +337,9 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
             try:
                 from utils.progress import send_progress
                 send_progress(f"{self.get_name()}: Request validated")
-            except Exception:
-                pass
+            except Exception as progress_err:
+                # Non-critical: Progress notification failure shouldn't break tool execution
+                logger.debug(f"Failed to send progress notification: {progress_err}")
 
             # Validate file paths for security
             # This prevents path traversal attacks and ensures proper access control

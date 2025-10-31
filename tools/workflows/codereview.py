@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from tools.models import ToolModelCategory
 
 from config import TEMPERATURE_ANALYTICAL
-from systemprompts import CODEREVIEW_PROMPT
+from src.prompts import CODEREVIEW_PROMPT
 
 from .codereview_config import CODEREVIEW_WORKFLOW_FIELD_DESCRIPTIONS
 from .codereview_models import CodeReviewRequest

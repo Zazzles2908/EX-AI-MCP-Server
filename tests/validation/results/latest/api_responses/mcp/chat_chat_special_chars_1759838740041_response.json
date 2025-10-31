@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "chat_special_chars_1759838733235",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"continuation_available\",\"content\":\"Hello! 你好 🚀 @#$%\\n\\nI'm ready to collaborate with you on your engineering challenges. As a senior engineering thought-partner, I can help you brainstorm ideas, validate technical decisions, and provide well-reasoned second opinions on your approaches.\\n\\nWhat specific technical challenge or decision would you like to explore together?\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"6cda3609-9cb4-4aaa-8cb9-1843542201d0\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 6.8s | Model: glm-4.5-flash | Tokens: ~170\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=4518ee1f-0e13-4ec6-8e87-aa25f5c49527"
+    }
+  ],
+  "text": "{\"status\":\"continuation_available\",\"content\":\"Hello! 你好 🚀 @#$%\\n\\nI'm ready to collaborate with you on your engineering challenges. As a senior engineering thought-partner, I can help you brainstorm ideas, validate technical decisions, and provide well-reasoned second opinions on your approaches.\\n\\nWhat specific technical challenge or decision would you like to explore together?\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"6cda3609-9cb4-4aaa-8cb9-1843542201d0\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}\n\n\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 6.8s | Model: glm-4.5-flash | Tokens: ~170\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=4518ee1f-0e13-4ec6-8e87-aa25f5c49527"
+}

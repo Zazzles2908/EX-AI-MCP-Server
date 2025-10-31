@@ -1,0 +1,8 @@
+{
+  "op": "call_tool",
+  "request_id": "glm_upload_file_basic_kimi_1759701055114",
+  "name": "glm_upload_file",
+  "arguments": {
+    "file_path": "test.txt"
+  }
+}

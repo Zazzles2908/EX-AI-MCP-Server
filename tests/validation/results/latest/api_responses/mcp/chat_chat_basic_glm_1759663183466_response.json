@@ -1,0 +1,14 @@
+{
+  "op": "call_tool_res",
+  "request_id": "chat_basic_glm_1759663183442",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"continuation_available\",\"content\":\"4\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"7c6bf121-a3b7-40cd-9755-ff746ab9e725\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 3.2s | Model: glm-4.5-flash | Tokens: ~87\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=07bbe0a4-6e2f-43f3-a578-c10316c3abf3"
+    }
+  ]
+}

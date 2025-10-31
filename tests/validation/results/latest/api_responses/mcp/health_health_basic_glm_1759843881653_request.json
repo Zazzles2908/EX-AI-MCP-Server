@@ -1,0 +1,6 @@
+{
+  "op": "call_tool",
+  "request_id": "health_basic_glm_1759843881653",
+  "name": "health",
+  "arguments": {}
+}

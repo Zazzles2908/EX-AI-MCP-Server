@@ -353,5 +353,48 @@ class ChartManager {
             }
         }, 100);
     }
+
+    /**
+     * PHASE 2.5.2: Set data source for charts
+     * Allows tracking which data source (WebSocket or Realtime) provided the data
+     */
+    setDataSource(source) {
+        this.dataSource = source;
+        this._updateDataSourceIndicator();
+    }
+
+    /**
+     * PHASE 2.5.2: Get current data source
+     */
+    getDataSource() {
+        return this.dataSource || 'websocket';
+    }
+
+    /**
+     * PHASE 2.5.2: Update data source indicator in chart area
+     */
+    _updateDataSourceIndicator() {
+        const indicator = document.getElementById('chartDataSourceIndicator');
+        if (indicator) {
+            const source = this.getDataSource();
+            indicator.textContent = source === 'realtime' ? '🔄 Realtime' : '📡 WebSocket';
+            indicator.style.color = source === 'realtime' ? '#10b981' : '#3b82f6';
+        }
+    }
+
+    /**
+     * PHASE 2.5.2: Clear all chart data
+     * Useful when switching data sources
+     */
+    clearAllData() {
+        Object.values(this.charts).forEach(chart => {
+            chart.data.datasets.forEach(dataset => {
+                dataset.data = [];
+            });
+            chart.update('none');
+        });
+        this.eventBuffer = [];
+        console.log('[CHARTS] All chart data cleared');
+    }
 }
 

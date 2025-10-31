@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "docgen_basic_kimi_1759663433089",
+  "name": "docgen",
+  "arguments": {
+    "code": "def process_data(data): return data.upper()",
+    "model": "kimi-k2-0905-preview"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "test_test_1759744940255",
+  "name": "chat",
+  "arguments": {
+    "prompt": "test",
+    "model": "glm-4.5-flash"
+  }
+}

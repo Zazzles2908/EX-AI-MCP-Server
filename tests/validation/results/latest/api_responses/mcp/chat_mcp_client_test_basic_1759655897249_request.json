@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1759655897249,
+  "method": "tools/call",
+  "params": {
+    "name": "chat",
+    "arguments": {
+      "prompt": "Say hello in 5 words",
+      "model": "glm-4.5-flash"
+    }
+  }
+}

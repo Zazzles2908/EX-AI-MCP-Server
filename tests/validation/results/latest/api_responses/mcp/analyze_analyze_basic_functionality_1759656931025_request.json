@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "analyze_basic_functionality_1759656931025",
+  "name": "analyze",
+  "arguments": {
+    "content": "This is a test document about AI and machine learning.",
+    "model": "glm-4.5-flash"
+  }
+}

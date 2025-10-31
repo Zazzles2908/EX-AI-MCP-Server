@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "status_basic_glm_1759660062914",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"providers_configured\": [\"ProviderType.GLM\", \"ProviderType.KIMI\"], \"models_available\": [\"glm-4.5\", \"glm-4.5-air\", \"glm-4.5-flash\", \"glm-4.5-x\", \"glm-4.6\", \"kimi-k2\", \"kimi-k2-0711\", \"kimi-k2-0711-preview\", \"kimi-k2-0905\", \"kimi-k2-0905-preview\", \"kimi-k2-turbo\", \"kimi-k2-turbo-preview\", \"kimi-latest\", \"kimi-thinking-preview\", \"moonshot-v1-128k\", \"moonshot-v1-128k-vision-preview\", \"moonshot-v1-32k\", \"moonshot-v1-32k-vision-preview\", \"moonshot-v1-8k\", \"moonshot-v1-8k-vision-preview\"], \"tools_loaded\": [], \"last_errors\": [], \"next_steps\": []}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: status | Status: COMPLETE (Step 1/? complete)\nDuration: 0.0s | Model: glm-4.5-flash | Tokens: ~136\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=a847b787-83f3-4137-9784-b32f184efe4b"
+    }
+  ],
+  "text": "{\"providers_configured\": [\"ProviderType.GLM\", \"ProviderType.KIMI\"], \"models_available\": [\"glm-4.5\", \"glm-4.5-air\", \"glm-4.5-flash\", \"glm-4.5-x\", \"glm-4.6\", \"kimi-k2\", \"kimi-k2-0711\", \"kimi-k2-0711-preview\", \"kimi-k2-0905\", \"kimi-k2-0905-preview\", \"kimi-k2-turbo\", \"kimi-k2-turbo-preview\", \"kimi-latest\", \"kimi-thinking-preview\", \"moonshot-v1-128k\", \"moonshot-v1-128k-vision-preview\", \"moonshot-v1-32k\", \"moonshot-v1-32k-vision-preview\", \"moonshot-v1-8k\", \"moonshot-v1-8k-vision-preview\"], \"tools_loaded\": [], \"last_errors\": [], \"next_steps\": []}\n\n\n=== MCP CALL SUMMARY ===\nTool: status | Status: COMPLETE (Step 1/? complete)\nDuration: 0.0s | Model: glm-4.5-flash | Tokens: ~136\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=a847b787-83f3-4137-9784-b32f184efe4b"
+}

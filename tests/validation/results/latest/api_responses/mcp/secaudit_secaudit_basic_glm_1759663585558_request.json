@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "secaudit_basic_glm_1759663585558",
+  "name": "secaudit",
+  "arguments": {
+    "code": "password = 'hardcoded123'",
+    "model": "glm-4.5-flash"
+  }
+}

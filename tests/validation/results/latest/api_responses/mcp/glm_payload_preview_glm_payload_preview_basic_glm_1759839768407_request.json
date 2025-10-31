@@ -1,0 +1,8 @@
+{
+  "op": "call_tool",
+  "request_id": "glm_payload_preview_basic_glm_1759839768407",
+  "name": "glm_payload_preview",
+  "arguments": {
+    "prompt": "Test prompt"
+  }
+}

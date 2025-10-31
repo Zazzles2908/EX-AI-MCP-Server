@@ -5,7 +5,7 @@ Phase 7: Comprehensive Integration Testing
 
 This script validates:
 1. File Upload Integration (Kimi/GLM via upload_file_with_provider)
-2. Tool Integration (KimiUploadFilesTool, GLMUploadFileTool, smart_file_query)
+2. Tool Integration (smart_file_query - Phase A2: KimiUploadFilesTool/GLMUploadFileTool removed)
 3. Database Integration (tables populated correctly)
 4. Error Handling (failed uploads, retry logic, fallback)
 
@@ -44,14 +44,15 @@ logger = logging.getLogger("integration_test")
 
 # Import project modules
 from tools.file_id_mapper import FileIdMapper
-from tools.provider_config import validate_file_size, get_provider_limit
-from tools.supabase_upload import upload_file_with_provider
-from tools.providers.kimi.kimi_files import KimiUploadFilesTool
-from tools.providers.glm.glm_files import GLMUploadFileTool
+# Phase A2 Cleanup: provider_config merged into supabase_upload
+from tools.supabase_upload import upload_file_with_provider, validate_file_size, get_provider_limit
+# Phase A2 Cleanup: Removed KimiUploadFilesTool and GLMUploadFileTool imports (tools deleted)
 from src.storage.supabase_client import get_storage_manager
 
 # Import path normalization utilities (EXAI recommendation: use existing infrastructure)
-from utils.path_normalization import normalize_path, convert_to_linux_path
+# Phase A2 Cleanup: Use PathNormalizer class directly instead of global functions
+# Phase 1 Path Consolidation (2025-10-31): Updated to use utils.path.normalizer module
+from utils.path.normalizer import PathNormalizer
 
 # Import provider registry for initialization
 from src.providers.registry import ModelProviderRegistry
@@ -317,49 +318,19 @@ def test_sha256_deduplication(small_files: List[str]) -> None:
     except Exception as e:
         log_test_result("SHA256-based deduplication", False, str(e))
 
-def test_kimi_upload_files_tool(small_files: List[str]) -> None:
-    """Test KimiUploadFilesTool uses enhanced utilities"""
-    logger.info("Testing KimiUploadFilesTool...")
+# Phase A2 Cleanup: Removed test_kimi_upload_files_tool() and test_glm_upload_file_tool()
+# These tools have been deleted - use smart_file_query instead
+# Original tests commented out below for reference:
 
-    try:
-        tool = KimiUploadFilesTool()
+# def test_kimi_upload_files_tool(small_files: List[str]) -> None:
+#     """Test KimiUploadFilesTool uses enhanced utilities"""
+#     # DELETED: KimiUploadFilesTool no longer exists
+#     pass
 
-        # Use Windows path - let the tool handle conversion (EXAI recommendation: Option 2)
-        # The tool's CrossPlatformPathHandler will convert to Docker path internally
-        windows_path = str(small_files[0])
-
-        # Test with single file
-        result = tool._run(files=[windows_path], purpose="file-extract")
-
-        assert isinstance(result, list), "Result should be a list"
-        assert len(result) == 1, "Expected 1 result"
-        assert "file_id" in result[0], "Missing file_id in result"
-
-        log_test_result("KimiUploadFilesTool single file", True)
-
-    except Exception as e:
-        log_test_result("KimiUploadFilesTool", False, str(e))
-
-def test_glm_upload_file_tool(small_files: List[str]) -> None:
-    """Test GLMUploadFileTool uses enhanced utilities"""
-    logger.info("Testing GLMUploadFileTool...")
-
-    try:
-        tool = GLMUploadFileTool()
-
-        # Use Windows path - let the tool handle conversion (EXAI recommendation: Option 2)
-        # The tool's CrossPlatformPathHandler will convert to Docker path internally
-        windows_path = str(small_files[0])
-
-        # Test with single file
-        result = tool.run(file=windows_path, purpose="agent")
-
-        assert "file_id" in result, "Missing file_id in tool response"
-
-        log_test_result("GLMUploadFileTool", True)
-
-    except Exception as e:
-        log_test_result("GLMUploadFileTool", False, str(e))
+# def test_glm_upload_file_tool(small_files: List[str]) -> None:
+#     """Test GLMUploadFileTool uses enhanced utilities"""
+#     # DELETED: GLMUploadFileTool no longer exists
+#     pass
 
 
 def test_application_aware_upload(small_files: List[str]) -> None:
@@ -395,7 +366,8 @@ def test_path_validation() -> None:
     logger.info("Testing path validation...")
 
     try:
-        from utils.path_validation import ApplicationAwarePathValidator
+        # Phase 1 Path Consolidation (2025-10-31): Updated to use utils.path.validation module
+        from utils.path.validation import ApplicationAwarePathValidator
 
         # Test with allowed paths
         validator = ApplicationAwarePathValidator({
@@ -472,8 +444,8 @@ def main():
         test_kimi_upload_integration(small_files)
         test_glm_upload_integration(small_files)
         test_sha256_deduplication(small_files)
-        test_kimi_upload_files_tool(small_files)
-        test_glm_upload_file_tool(small_files)
+        # Phase A2 Cleanup: Removed test_kimi_upload_files_tool() and test_glm_upload_file_tool()
+        # These tools have been deleted - use smart_file_query instead
 
         # Phase A1 tests
         test_application_aware_upload(small_files)

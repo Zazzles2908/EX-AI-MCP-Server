@@ -11,7 +11,7 @@ import logging
 from typing import Dict, Any, Optional, List
 from enum import Enum
 
-from systemprompts.prompt_registry import ProviderType
+from src.prompts.prompt_registry import ProviderType
 
 logger = logging.getLogger(__name__)
 

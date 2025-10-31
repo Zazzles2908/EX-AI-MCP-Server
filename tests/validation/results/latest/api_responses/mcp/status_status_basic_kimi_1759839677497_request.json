@@ -1,0 +1,6 @@
+{
+  "op": "call_tool",
+  "request_id": "status_basic_kimi_1759839677497",
+  "name": "status",
+  "arguments": {}
+}

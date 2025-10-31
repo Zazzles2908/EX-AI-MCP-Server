@@ -1,0 +1,10 @@
+{
+  "model": "glm-4.5-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Test prompt for challenge"
+    }
+  ],
+  "temperature": 0.0
+}

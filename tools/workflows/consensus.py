@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 from mcp.types import TextContent
 
 from config import TEMPERATURE_ANALYTICAL
-from systemprompts import CONSENSUS_PROMPT
+from src.prompts import CONSENSUS_PROMPT
 from tools.shared.base_models import WorkflowRequest
 
 from ..workflow.base import WorkflowTool

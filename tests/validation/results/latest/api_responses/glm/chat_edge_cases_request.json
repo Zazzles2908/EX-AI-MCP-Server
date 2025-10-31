@@ -1,0 +1,10 @@
+{
+  "model": "glm-4.5-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Echo this: Hello! 你好 🚀 @#$%"
+    }
+  ],
+  "temperature": 0.0
+}

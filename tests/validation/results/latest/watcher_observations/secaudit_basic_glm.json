@@ -1,0 +1,39 @@
+{
+  "tool": "secaudit",
+  "variation": "basic_glm",
+  "timestamp": "2025-10-07T13:28:19.531765Z",
+  "test_status": "passed",
+  "watcher_analysis": {
+    "quality_score": 6,
+    "correctness": "PARTIAL",
+    "anomalies": [
+      "Content field appears truncated mid-object",
+      "Content contains newline characters which may affect parsing",
+      "Discrepancy between 'next_step_required': false and presence of continuation_id"
+    ],
+    "suggestions": [
+      "Ensure complete output without truncation",
+      "Format JSON responses without unnecessary newline characters",
+      "Clarify the relationship between continuation_id and next_step_required fields"
+    ],
+    "confidence": 0.7,
+    "observations": "The tool successfully executed and returned a response indicating completion, but the output appears truncated and contains formatting issues that could affect downstream processing.",
+    "progress": "Improvement from previous run (5/10 to 6/10) as the tool now returns a structured response rather than having parsing issues, but truncation is a new concern.",
+    "conversation_id": "2025100721275523565695d5a14cbe"
+  },
+  "performance_metrics": {
+    "test_id": "secaudit_basic_glm_1759843675",
+    "start_time": 1759843675.5604131,
+    "start_memory_mb": 61.24609375,
+    "start_cpu_percent": 15.6,
+    "end_time": 1759843675.6801088,
+    "duration_secs": 0.11969566345214844,
+    "end_memory_mb": 61.421875,
+    "end_cpu_percent": 0.0,
+    "memory_delta_mb": 0.17578125,
+    "alerts": []
+  },
+  "run_number": 3,
+  "previous_run": "2025-10-07T12:13:38.975467Z",
+  "conversation_id": "2025100721275523565695d5a14cbe"
+}

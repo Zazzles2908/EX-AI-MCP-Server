@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "refactor_basic_kimi_1759663554183",
+  "name": "refactor",
+  "arguments": {
+    "code": "x=1;y=2;print(x+y)",
+    "model": "kimi-k2-0905-preview"
+  }
+}

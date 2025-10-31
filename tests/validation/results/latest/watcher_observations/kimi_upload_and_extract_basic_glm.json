@@ -1,0 +1,31 @@
+{
+  "tool": "kimi_upload_and_extract",
+  "variation": "basic_glm",
+  "timestamp": "2025-10-07T13:43:11.626411Z",
+  "test_status": "passed",
+  "watcher_analysis": {
+    "quality_score": 5,
+    "correctness": "UNKNOWN",
+    "anomalies": [],
+    "suggestions": [
+      "Unable to parse watcher response"
+    ],
+    "confidence": 0.5,
+    "observations": ""
+  },
+  "performance_metrics": {
+    "test_id": "kimi_upload_and_extract_basic_glm_1759844526",
+    "start_time": 1759844526.4597375,
+    "start_memory_mb": 61.1015625,
+    "start_cpu_percent": 0.0,
+    "end_time": 1759844531.6097305,
+    "duration_secs": 5.149992942810059,
+    "end_memory_mb": 61.37890625,
+    "end_cpu_percent": 0.0,
+    "memory_delta_mb": 0.27734375,
+    "alerts": []
+  },
+  "run_number": 4,
+  "previous_run": "2025-10-07T12:28:13.240280Z",
+  "conversation_id": null
+}

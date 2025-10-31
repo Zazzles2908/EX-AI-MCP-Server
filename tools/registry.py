@@ -1,12 +1,20 @@
-"""Lean Tool Registry for Zen MCP.
+"""Simplified Tool Registry for EX-AI MCP.
 
 Build the tool set once at server startup, honoring env flags:
-- LEAN_MODE=true|false (default false)
-- LEAN_TOOLS=comma,list (when LEAN_MODE=true, overrides default lean set)
-- DISABLED_TOOLS=comma,list (always excluded)
+- TOOL_PROFILE=lean|standard|full (default: standard)
+  - lean: 10 essential tools only
+  - standard: 20 commonly-used tools
+  - full: all 33 tools
+- ENABLED_TOOLS=comma,list (explicit whitelist, overrides TOOL_PROFILE)
+- DISABLED_TOOLS=comma,list (blacklist, applied after TOOL_PROFILE/ENABLED_TOOLS)
 
-Always expose light utility tools (listmodels, version) for diagnostics.
-Provide helpful error if a disabled tool is invoked.
+Configuration logic:
+1. If ENABLED_TOOLS is set → use explicit whitelist
+2. Else if TOOL_PROFILE is set → use predefined set
+3. Else → use all tools (full mode)
+4. Apply DISABLED_TOOLS blacklist
+
+Always expose utility tools (listmodels, version) unless explicitly disabled.
 """
 from __future__ import annotations
 
@@ -46,15 +54,13 @@ TOOL_MAP: Dict[str, tuple[str, str]] = {
     # Smart File Download (unified download interface)
     "smart_file_download": ("tools.smart_file_download", "SmartFileDownloadTool"),
     # Kimi utilities
-    "kimi_upload_files": ("tools.providers.kimi.kimi_files", "KimiUploadFilesTool"),
-    "kimi_chat_with_files": ("tools.providers.kimi.kimi_files", "KimiChatWithFilesTool"),
+    # Phase A2 Cleanup: Removed kimi_upload_files and kimi_chat_with_files (redundant - use smart_file_query)
     "kimi_manage_files": ("tools.providers.kimi.kimi_files", "KimiManageFilesTool"),
     "kimi_intent_analysis": ("tools.providers.kimi.kimi_intent", "KimiIntentAnalysisTool"),
     "kimi_capture_headers": ("tools.providers.kimi.kimi_capture_headers", "KimiCaptureHeadersTool"),
     # GLM utilities
     "kimi_chat_with_tools": ("tools.providers.kimi.kimi_tools_chat", "KimiChatWithToolsTool"),
-    "glm_upload_file": ("tools.providers.glm.glm_files", "GLMUploadFileTool"),
-    "glm_multi_file_chat": ("tools.providers.glm.glm_files", "GLMMultiFileChatTool"),  # Added 2025-10-27
+    # Phase A2 Cleanup: Removed glm_upload_file and glm_multi_file_chat (redundant - use smart_file_query)
     "glm_web_search": ("tools.providers.glm.glm_web_search", "GLMWebSearchTool"),
     "glm_payload_preview": ("tools.providers.glm.glm_payload_preview", "GLMPayloadPreviewTool"),
     # Diagnostics
@@ -76,9 +82,9 @@ TOOL_MAP: Dict[str, tuple[str, str]] = {
 # Designed to prevent overwhelming agents while maintaining full functionality
 #
 # ESSENTIAL (3 tools): Absolute must-haves for basic operation
-# CORE (7 tools): Frequently used for common workflows (80% of use cases)
+# CORE (8 tools): Frequently used for common workflows (80% of use cases)
 # ADVANCED (7 tools): Specialized tools for complex scenarios
-# HIDDEN (16 tools): Internal/diagnostic/deprecated tools
+# HIDDEN (12 tools): Internal/diagnostic tools (Phase A2: removed 4 deprecated tools)
 #
 # Progressive disclosure: Agents see Essential + Core (10 tools) by default
 # Advanced tools revealed based on context or explicit request
@@ -125,12 +131,12 @@ TOOL_VISIBILITY = {
     "kimi_capture_headers": "hidden",   # Header inspection
     "kimi_intent_analysis": "hidden",   # Intent classification
 
-    # ⚠️ DEPRECATED - Use smart_file_query instead
-    "kimi_upload_files": "hidden",      # DEPRECATED: Use smart_file_query
-    "kimi_chat_with_files": "hidden",   # DEPRECATED: Use smart_file_query
-    "kimi_manage_files": "hidden",      # DEPRECATED: Use smart_file_query
-    "glm_upload_file": "hidden",        # DEPRECATED: Use smart_file_query
-    "glm_multi_file_chat": "hidden",    # DEPRECATED: Use smart_file_query
+    # Phase A2 Cleanup Complete: Removed deprecated file upload tools
+    # (kimi_upload_files, kimi_chat_with_files, glm_upload_file, glm_multi_file_chat)
+    # These tools were deleted - use smart_file_query instead
+
+    # Internal utilities (still needed)
+    "kimi_manage_files": "hidden",      # File cleanup operations
     "glm_web_search": "hidden",         # Internal utility
     "kimi_web_search": "hidden",        # Internal utility
 }
@@ -142,6 +148,12 @@ DEFAULT_LEAN_TOOLS = {
     name for name, vis in TOOL_VISIBILITY.items()
     if vis in ("essential", "core")
 }
+
+# ============================================================================
+# Phase A2 Cleanup (2025-10-30)
+# ============================================================================
+# Removed DEPRECATED_TOOLS set - tools have been deleted entirely
+# Removed get_active_tools() function - no longer needed
 
 
 class ToolRegistry:
@@ -159,35 +171,35 @@ class ToolRegistry:
             self._errors[name] = str(e)
 
     def build_tools(self) -> None:
-        disabled = {t.strip().lower() for t in os.getenv("DISABLED_TOOLS", "").split(",") if t.strip()}
-        lean_mode = os.getenv("LEAN_MODE", "false").strip().lower() == "true"
-
-        if lean_mode:
-            lean_overrides = {t.strip().lower() for t in os.getenv("LEAN_TOOLS", "").split(",") if t.strip()}
-            if lean_overrides:
-                active = lean_overrides
-            else:
-                # Use TOOL_VISIBILITY to determine active tools in lean mode
-                # Only include ESSENTIAL + CORE tiers (10 tools total)
+        """Build tool set based on simplified configuration."""
+        # Step 1: Determine base tool set
+        enabled_tools_env = os.getenv("ENABLED_TOOLS", "").strip()
+        if enabled_tools_env:
+            # Explicit whitelist takes precedence
+            active = {t.strip().lower() for t in enabled_tools_env.split(",") if t.strip()}
+        else:
+            # Use TOOL_PROFILE (lean/standard/full)
+            profile = os.getenv("TOOL_PROFILE", "standard").strip().lower()
+            if profile == "lean":
+                # 10 essential tools only (ESSENTIAL + CORE tiers)
                 active = {name for name, vis in TOOL_VISIBILITY.items()
                          if vis in ("essential", "core")}
-        else:
-            active = set(TOOL_MAP.keys())
+            elif profile == "standard":
+                # 20 commonly-used tools (ESSENTIAL + CORE + ADVANCED)
+                active = {name for name, vis in TOOL_VISIBILITY.items()
+                         if vis in ("essential", "core", "advanced")}
+            else:  # full or any other value
+                # All tools
+                active = set(TOOL_MAP.keys())
 
-        # Only add utilities if NOT in lean mode AND not in strict lean mode
-        # This prevents version/listmodels from being added in LEAN_MODE
-        if (os.getenv("STRICT_LEAN", "false").strip().lower() != "true" and
-            not lean_mode):
-            active.update({"version", "listmodels"})
+        # Step 2: Always include utility tools unless explicitly disabled
+        active.update({"version", "listmodels"})
 
-        # Remove disabled
+        # Step 3: Apply DISABLED_TOOLS blacklist
+        disabled = {t.strip().lower() for t in os.getenv("DISABLED_TOOLS", "").split(",") if t.strip()}
         active = {t for t in active if t not in disabled}
 
-        # Hide diagnostics-only tools unless explicitly enabled
-        if os.getenv("DIAGNOSTICS", "false").strip().lower() != "true":
-            active.discard("self-check")
-
-        # Web tools removed; no gating needed
+        # Step 4: Load all active tools
         for name in sorted(active):
             self._load_tool(name)
 

@@ -1,0 +1,25 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "4",
+        "reasoning_content": "\nFirst, the user asked: \"What is 2+2? Answer with just the number.\"\n\nThe question is straightforward: 2 plus 2 equals 4. That's basic arithmetic.\n\nThe instruction is to answer with just the number. So, I should not add any words, explanations, or additional text. Just the number 4.\n\nI need to make sure my response is concise and directly answers the question. No pleasantries or extra information.\n\nFinally, since this is a simple query, I'll respond with \"4\" as the answer.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1759649533,
+  "id": "20251005153210c4b1df9043564dec",
+  "model": "glm-4.5-flash",
+  "request_id": "20251005153210c4b1df9043564dec",
+  "usage": {
+    "completion_tokens": 118,
+    "prompt_tokens": 18,
+    "prompt_tokens_details": {
+      "cached_tokens": 17
+    },
+    "total_tokens": 136
+  }
+}

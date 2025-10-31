@@ -2,11 +2,15 @@
 Memory-only LRU + TTL cache for session continuity.
 Default-safe: enabled only when called; no external dependencies.
 
+Implements SimpleCacheInterface for unified caching API.
+
 Env (documented):
 - CACHE_BACKEND=memory|redis (only 'memory' implemented)
 - CACHE_TTL_SEC=10800 (3 hours)
 - CACHE_MAX_ITEMS=1000
 - REDIS_URL=... (reserved for future)
+
+Phase 2 Update (2025-10-31): Implements SimpleCacheInterface
 """
 from __future__ import annotations
 
@@ -15,6 +19,8 @@ import time
 import threading
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple
+
+from utils.caching.interface import SimpleCacheInterface
 
 DEFAULT_TTL = int(os.getenv("CACHE_TTL_SEC", "10800") or "10800")
 DEFAULT_MAX_ITEMS = int(os.getenv("CACHE_MAX_ITEMS", "1000") or "1000")
@@ -28,9 +34,12 @@ class _Entry:
     next: Optional[str] = None
 
 
-class MemoryLRUTTL:
-    """Simple LRU with TTL. Not multiprocessing-safe; fine for stdio server.
+class MemoryLRUTTL(SimpleCacheInterface):
+    """
+    Simple LRU with TTL. Not multiprocessing-safe; fine for stdio server.
     Thread-safe via a single lock.
+
+    Implements SimpleCacheInterface for unified caching API.
     """
 
     def __init__(self, max_items: int = DEFAULT_MAX_ITEMS, ttl_sec: int = DEFAULT_TTL) -> None:

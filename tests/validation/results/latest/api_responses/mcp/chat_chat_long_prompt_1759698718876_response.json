@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "chat_long_prompt_1759698711445",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"continuation_available\",\"content\":\"Artificial intelligence is the development of computer systems that can perform tasks typically requiring human intelligence, such as learning, problem-solving, perception, and decision-making.\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"8c64f381-0ae3-4fc3-b1ba-b4db8c95fb37\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 7.4s | Model: glm-4.5-flash | Tokens: ~135\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=90f63c54-d22d-4f43-8be5-dcaec846537b"
+    }
+  ],
+  "text": "{\"status\":\"continuation_available\",\"content\":\"Artificial intelligence is the development of computer systems that can perform tasks typically requiring human intelligence, such as learning, problem-solving, perception, and decision-making.\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"8c64f381-0ae3-4fc3-b1ba-b4db8c95fb37\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}\n\n\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 7.4s | Model: glm-4.5-flash | Tokens: ~135\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=90f63c54-d22d-4f43-8be5-dcaec846537b"
+}

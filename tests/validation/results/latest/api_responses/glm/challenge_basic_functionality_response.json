@@ -1,0 +1,25 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "\nTo test the challenge of creating a function that calculates the sum of squares of even numbers in a list, use this prompt:\n\n---\n\n**Test Prompt:**  \nWrite a Python function `sum_even_squares(numbers)` that takes a list of integers and returns the sum of the squares of all even numbers in the list. If the list is empty, return 0.  \n\n**Requirements:**  \n1. **Filter even numbers**: Only include numbers divisible by 2 (e.g., 2, 4, 6).  \n2. **Square each even number**: Compute the square of each filtered number (e.g., 2² = 4).  \n3. **Sum the squares**: Add all squared values together.  \n4. **Edge cases**: Handle empty lists (return 0) and negative numbers (e.g., -2 is even).  \n\n**Example Test Cases:**  \n```python\nassert sum_even_squares([1, 2, 3, 4, 5, 6]) == 56  # 2² + 4² + 6² = 4 + 16 + 36 = 56\nassert sum_even_squares([-2, -1, 0, 1, 2]) == 8    # (-2)² + 0² + 2² = 4 + 0 + 4 = 8\nassert sum_even_squares([1, 3, 5]) == 0             # No even numbers\nassert sum_even_squares([]) == 0                    # Empty list\nassert sum_even_squares([0, 0, 0]) == 0             # 0 is even, but 0² = 0\n```\n\n**Expected Output:**  \nThe function should pass all test cases above.  \n\n---\n\n### Key Validation Points:\n1. **Correctness**:  \n   - Handles positive/negative even numbers (e.g., `-2` → `4`).  \n   - Ignores odd numbers (e.g., `3` is skipped).  \n   - Returns `0` for empty lists or no even numbers.  \n2. **Edge Cases**:  \n   - Zero (`0`) is even and should be included (but `0² = 0`).  \n   - Negative even numbers (e.g., `-4` → `16`).  \n3. **Efficiency**:  \n   - Solution should process the list in a single pass (O(n) time).  \n\n### Solution Template (for reference):\n```python\ndef sum_even_squares(numbers):\n    return sum(x * x for x in numbers if x % 2 == 0)\n```\n\nThis prompt ensures the challenge is well-defined, testable, and covers critical edge cases.",
+        "reasoning_content": "We are going to create a test prompt for a challenge. The challenge is about generating a function that processes a list of numbers and returns the sum of the squares of the even numbers.\n Steps:\n 1. We'll define a function called `sum_of_squares_of_evens` that takes a list of numbers as input.\n 2. We'll filter the even numbers from the list.\n 3. We'll square each of those even numbers.\n 4. We'll sum up all the squared values.\n 5. Return the result.\n\n Example:\n   Input: [1, 2, 3, 4, 5, 6]\n   Even numbers: [2, 4, 6]\n   Squares: [4, 16, 36]\n   Sum: 56\n\n Let's write the code accordingly.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1759649228,
+  "id": "20251005152654b658809dfc1f4e01",
+  "model": "glm-4.5-flash",
+  "request_id": "20251005152654b658809dfc1f4e01",
+  "usage": {
+    "completion_tokens": 741,
+    "prompt_tokens": 9,
+    "prompt_tokens_details": {
+      "cached_tokens": 4
+    },
+    "total_tokens": 750
+  }
+}

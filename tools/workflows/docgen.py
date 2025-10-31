@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from tools.models import ToolModelCategory
 
 from config import TEMPERATURE_ANALYTICAL
-from systemprompts import DOCGEN_PROMPT
+from src.prompts import DOCGEN_PROMPT
 from tools.shared.base_models import WorkflowRequest
 
 from ..workflow.base import WorkflowTool

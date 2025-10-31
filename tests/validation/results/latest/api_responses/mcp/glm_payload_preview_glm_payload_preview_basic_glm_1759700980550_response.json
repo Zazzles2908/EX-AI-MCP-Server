@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "glm_payload_preview_basic_glm_1759700980173",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"model\": \"glm-4.5-flash\", \"messages\": [{\"role\": \"user\", \"content\": \"Test prompt\"}], \"stream\": false, \"temperature\": 0.3}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: glm_payload_preview | Status: COMPLETE (Step 1/? complete)\nDuration: 0.4s | Model: glm-4.5-flash | Tokens: ~30\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=9a0dd031-23a7-4958-9905-50a22a6a4a37"
+    }
+  ],
+  "text": "{\"model\": \"glm-4.5-flash\", \"messages\": [{\"role\": \"user\", \"content\": \"Test prompt\"}], \"stream\": false, \"temperature\": 0.3}\n\n\n=== MCP CALL SUMMARY ===\nTool: glm_payload_preview | Status: COMPLETE (Step 1/? complete)\nDuration: 0.4s | Model: glm-4.5-flash | Tokens: ~30\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=9a0dd031-23a7-4958-9905-50a22a6a4a37"
+}

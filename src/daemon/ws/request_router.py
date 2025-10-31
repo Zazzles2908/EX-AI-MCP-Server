@@ -49,6 +49,17 @@ from utils.monitoring.error_capture import capture_errors, extract_tool_context
 # EXAI Consultation: 7e59bfd7-a9cc-4a19-9807-5ebd84082cab
 from src.utils.logging_utils import get_logger, SamplingLogger
 
+# PHASE 1 WEEK 1 (2025-11-01): Semantic cache integration
+# EXAI Consultation: 943d110e-7903-443a-b7fc-03fe7904e147
+# EXAI Fix (2025-11-01): Use correct cache metrics interface
+from utils.infrastructure.semantic_cache import get_semantic_cache
+from utils.monitoring.cache_metrics_collector import (
+    record_cache_hit,
+    record_cache_miss,
+    record_cache_set,
+    record_cache_error
+)
+
 # Module-specific configuration
 _MODULE_LOG_LEVEL = os.getenv("LOG_LEVEL_REQUEST_ROUTER", os.getenv("LOG_LEVEL", "ERROR"))
 _MODULE_SAMPLE_RATE = float(os.getenv("LOG_SAMPLE_RATE_REQUEST_ROUTER", "0.05"))  # 5% default
@@ -315,6 +326,103 @@ class ToolExecutor:
         self.progress_interval = progress_interval
         self.use_per_session_semaphores = use_per_session_semaphores
 
+        # PHASE 1 WEEK 1 (2025-11-01): Initialize semantic cache
+        # EXAI Consultation: 943d110e-7903-443a-b7fc-03fe7904e147
+        # EXAI Fix (2025-11-01): Use module-level metrics functions instead of collector instance
+        try:
+            self.semantic_cache = get_semantic_cache()
+            logger.info("[SEMANTIC_CACHE] Initialized semantic cache")
+        except Exception as e:
+            logger.error(f"[SEMANTIC_CACHE] Failed to initialize cache: {e}")
+            self.semantic_cache = None
+
+    def _should_cache_tool(self, tool_name: str) -> bool:
+        """
+        Determine if a tool should use semantic caching.
+
+        EXAI Recommendation: Cache only AI-powered tools that benefit from caching.
+        Whitelist approach for explicit control.
+
+        Args:
+            tool_name: Name of the tool
+
+        Returns:
+            True if tool should be cached, False otherwise
+        """
+        # Cache only tools that call AI providers
+        cacheable_tools = {
+            'chat', 'analyze', 'codereview', 'debug', 'thinkdeep',
+            'testgen', 'refactor', 'planner', 'docgen', 'secaudit',
+            'tracer', 'consensus', 'precommit'
+        }
+        return tool_name in cacheable_tools
+
+    def _should_cache_request(self, arguments: Dict[str, Any]) -> bool:
+        """
+        Determine if a specific request should be cached.
+
+        EXAI Recommendation: Don't cache continuation requests as they rely on
+        conversation state and are less reusable.
+
+        Args:
+            arguments: Tool arguments
+
+        Returns:
+            True if request should be cached, False otherwise
+        """
+        # Don't cache continuation requests
+        continuation_id = arguments.get('continuation_id')
+        if continuation_id is not None:
+            return False
+        return True
+
+    def _extract_cache_params(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract cache parameters from tool arguments.
+
+        EXAI Fix (2025-11-01): Changed from pre-computing cache_key to extracting
+        individual parameters that the semantic cache expects. The cache generates
+        keys internally based on these parameters.
+
+        EXAI Fix (2025-11-01 Part 2): Normalize files and images parameters to ensure
+        consistent cache key generation. Empty lists are normalized to [] and sorted
+        for consistent ordering.
+
+        Args:
+            arguments: Tool arguments
+
+        Returns:
+            Dictionary of parameters to pass to semantic cache get/set methods
+        """
+        # Extract primary prompt (different tools use different parameter names)
+        prompt = arguments.get('prompt') or arguments.get('step', '')
+
+        # Normalize files parameter: None -> [], str -> [str], sort for consistency
+        files = arguments.get('files', [])
+        if files is None:
+            files = []
+        elif isinstance(files, str):
+            files = [files]
+        files = sorted(files) if files else []
+
+        # Normalize images parameter: None -> [], str -> [str], sort for consistency
+        images = arguments.get('images', [])
+        if images is None:
+            images = []
+        elif isinstance(images, str):
+            images = [images]
+        images = sorted(images) if images else []
+
+        return {
+            'prompt': prompt,
+            'model': arguments.get('model', 'auto'),
+            'temperature': arguments.get('temperature'),
+            'thinking_mode': arguments.get('thinking_mode'),
+            'use_websearch': arguments.get('use_websearch', False),
+            'files': files,
+            'images': images,
+        }
+
     @capture_errors(
         connection_type="websocket",
         script_name="request_router.py",
@@ -349,6 +457,62 @@ class ToolExecutor:
         tool = self.server_tools.get(name)
         if not tool:
             return False, None, f"Unknown tool: {name}"
+
+        # PHASE 1 WEEK 1 (2025-11-01): Semantic cache integration
+        # EXAI Consultation: 943d110e-7903-443a-b7fc-03fe7904e147
+        # EXAI Fix (2025-11-01): Use correct cache interface with individual parameters
+        # Check cache BEFORE acquiring semaphores (early return optimization)
+        cache_params = None
+        # EXAI Enhancement: Detect implementation type from environment
+        implementation_type = 'base' if os.getenv('SEMANTIC_CACHE_USE_BASE_MANAGER', 'false').lower() == 'true' else 'legacy'
+
+        if self.semantic_cache and self._should_cache_tool(name) and self._should_cache_request(arguments):
+            try:
+                # Extract cache parameters (prompt, model, temperature, etc.)
+                cache_params = self._extract_cache_params(arguments)
+
+                # Call cache with individual parameters (not pre-computed key)
+                cached_result = self.semantic_cache.get(**cache_params)
+
+                if cached_result is not None:
+                    # Cache hit! Record metric and return cached result
+                    # Generate cache key for metrics logging only
+                    cache_key_for_metrics = hashlib.sha256(
+                        json.dumps(cache_params, sort_keys=True).encode()
+                    ).hexdigest()
+
+                    record_cache_hit(
+                        cache_key=cache_key_for_metrics,
+                        implementation_type=implementation_type,
+                        response_time_ms=int((time.perf_counter() - start_time) * 1000)
+                    )
+                    logger.info(f"[SEMANTIC_CACHE] Cache HIT for {name} (prompt: {cache_params['prompt'][:50]}...)")
+                    return True, cached_result, None
+                else:
+                    # Cache miss - record metric and continue with execution
+                    cache_key_for_metrics = hashlib.sha256(
+                        json.dumps(cache_params, sort_keys=True).encode()
+                    ).hexdigest()
+
+                    record_cache_miss(
+                        cache_key=cache_key_for_metrics,
+                        implementation_type=implementation_type,
+                        response_time_ms=int((time.perf_counter() - start_time) * 1000)
+                    )
+                    logger.info(f"[SEMANTIC_CACHE] Cache MISS for {name} (prompt: {cache_params['prompt'][:50]}...)")
+            except Exception as e:
+                # Cache error - log and continue with normal execution
+                logger.error(f"[SEMANTIC_CACHE] Cache check error for {name}: {e}")
+                if cache_params:
+                    cache_key_for_metrics = hashlib.sha256(
+                        json.dumps(cache_params, sort_keys=True).encode()
+                    ).hexdigest()
+                    record_cache_error(
+                        cache_key=cache_key_for_metrics,
+                        implementation_type=implementation_type,
+                        error_type=type(e).__name__,
+                        error_message=str(e)
+                    )
 
         # Determine which semaphore to use
         provider_name = self._get_provider_for_tool(name)
@@ -434,6 +598,44 @@ class ToolExecutor:
                                f"processing={processing_ms:.2f}ms", key="latency")
             except Exception as e:
                 logger.warning(f"[LATENCY] Failed to inject metrics into outputs: {e}")
+
+        # PHASE 1 WEEK 1 (2025-11-01): Cache successful results
+        # EXAI Consultation: 943d110e-7903-443a-b7fc-03fe7904e147
+        # EXAI Fix (2025-11-01): Use correct cache interface with individual parameters
+        if success and outputs and cache_params and self.semantic_cache:
+            # EXAI Enhancement: Detect implementation type from environment
+            implementation_type = 'base' if os.getenv('SEMANTIC_CACHE_USE_BASE_MANAGER', 'false').lower() == 'true' else 'legacy'
+            try:
+                # Call cache.set() with individual parameters + response
+                self.semantic_cache.set(
+                    **cache_params,
+                    response=outputs
+                )
+
+                # Generate cache key for metrics logging only
+                cache_key_for_metrics = hashlib.sha256(
+                    json.dumps(cache_params, sort_keys=True).encode()
+                ).hexdigest()
+
+                record_cache_set(
+                    cache_key=cache_key_for_metrics,
+                    implementation_type=implementation_type,
+                    response_time_ms=int(total_latency_ms),
+                    cache_size=len(str(outputs))  # Approximate size
+                )
+                logger.info(f"[SEMANTIC_CACHE] Cached result for {name} (prompt: {cache_params['prompt'][:50]}...)")
+            except Exception as e:
+                # Cache set error - log but don't fail the request
+                logger.error(f"[SEMANTIC_CACHE] Failed to cache result for {name}: {e}")
+                cache_key_for_metrics = hashlib.sha256(
+                    json.dumps(cache_params, sort_keys=True).encode()
+                ).hexdigest()
+                record_cache_error(
+                    cache_key=cache_key_for_metrics,
+                    implementation_type=implementation_type,
+                    error_type=type(e).__name__,
+                    error_message=str(e)
+                )
 
         # Return result after semaphores are released
         return success, outputs, error_msg

@@ -416,14 +416,16 @@ async def call_tool_handler(name: str, arguments: dict[str, Any]):
                         "raw": _raw_text,
                     }
                     logging.getLogger("toolcalls_raw").info(_json.dumps(_raw_payload))
-            except Exception:
-                pass
+            except Exception as log_err:
+                # Non-critical: Raw logging failure shouldn't break tool execution
+                logging.getLogger("server").warning(f"Failed to log raw tool output: {log_err}")
 
-        except Exception:
-            pass
+        except Exception as log_err:
+            # Non-critical: Logging failure shouldn't break tool execution
+            logging.getLogger("server").warning(f"Failed to log tool call: {log_err}")
         return result
     except Exception as e:
-        # Log error envelope, then re-raise
+        # Log error envelope, then re-raise (critical path)
         try:
             import json as _json
             req_id = (arguments or {}).get("request_id")
@@ -433,8 +435,9 @@ async def call_tool_handler(name: str, arguments: dict[str, Any]):
                 "request_id": req_id,
                 "error": str(e)
             }))
-        except Exception:
-            pass
+        except Exception as log_err:
+            # Non-critical: Error logging failure shouldn't suppress the original error
+            logging.getLogger("server").warning(f"Failed to log tool error: {log_err}")
         raise
 
 @server.list_prompts()
