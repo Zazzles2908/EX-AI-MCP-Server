@@ -761,16 +761,15 @@ async def main_async() -> None:
                 logger.warning(f"[WS_ERROR] Unexpected error handling connection: {e}")
 
     # PHASE 4 (2025-10-19): Initialize resilient WebSocket manager
-    # CRITICAL FIX (2025-10-31): Re-enable ResilientWebSocketManager
-    # Root cause: Was disabled for load testing but left in production
-    # Impact: Without it, WebSocket messages are lost when client disconnects
-    # This caused 100+ socket.send() failures and system crash
-    logger.info("[DEBUG] Initializing ResilientWebSocketManager...")
+    # REVERTED (2025-10-31): Testing with ONLY auto-execution fix first
+    # Temporarily disable to test if auto-execution fix alone solves the issue
+    logger.info("[DEBUG] ⚠️  TEMPORARILY DISABLING ResilientWebSocketManager for isolated testing")
     global _resilient_ws
-    _resilient_ws = ResilientWebSocketManager(fallback_send=_safe_send)
-    logger.info("[DEBUG] ResilientWebSocketManager created, about to start background tasks...")
-    await _resilient_ws.start_background_tasks()
-    logger.info("[DEBUG] ✅ Background tasks started successfully!")
+    _resilient_ws = None
+    # _resilient_ws = ResilientWebSocketManager(fallback_send=_safe_send)
+    # logger.info("[DEBUG] ResilientWebSocketManager created, about to start background tasks...")
+    # await _resilient_ws.start_background_tasks()
+    # logger.info("[DEBUG] ✅ Background tasks started successfully!")
     # logger.info("[RESILIENT_WS] Started resilient WebSocket manager with background tasks")
 
     # PHASE 2.3 FIX (2025-10-25): Add port availability check before binding

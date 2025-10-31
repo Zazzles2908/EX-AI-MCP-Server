@@ -242,14 +242,15 @@ class SemaphoreGuard:
         """Release the semaphore with error handling and state tracking."""
         if self.acquired:
             try:
-                # CRITICAL FIX (2025-10-31): Check if semaphore is already at max before releasing
+                # REVERTED (2025-10-31): Testing with ONLY auto-execution fix first
+                # Check if semaphore is already at max before releasing
                 # Prevents "BoundedSemaphore released too many times" error when recovery system
                 # has already released this semaphore
                 if hasattr(self.semaphore, '_value') and hasattr(self.semaphore, '_bound_value'):
                     if self.semaphore._value >= self.semaphore._bound_value:
                         logger.warning(f"Semaphore {self.name} already at max value ({self.semaphore._value}/{self.semaphore._bound_value}), skipping release (likely recovered by recovery system)")
                         self.acquired = False  # CRITICAL: Update state
-                        return True  # FIXED: Return True to suppress exception propagation
+                        return False  # REVERTED: Back to original behavior
 
                 self.semaphore.release()
                 self.acquired = False  # CRITICAL: Update state
@@ -258,17 +259,15 @@ class SemaphoreGuard:
                 # This happens when semaphore is already at max (recovery system released it)
                 logger.warning(f"Semaphore {self.name} already released (likely by recovery system): {e}")
                 self.acquired = False  # CRITICAL: Update state
-                return True  # FIXED: Suppress the exception
             except Exception as e:
                 logger.error(f"Failed to release semaphore {self.name}: {e}", exc_info=True)
                 self.acquired = False  # CRITICAL: Update state even on error
                 # This is a critical error that could lead to deadlocks
                 logger.critical(f"CRITICAL: Semaphore leak detected for {self.name}!")
-                return True  # FIXED: Suppress exception to prevent cascading failures
         else:
             logger.warning(f"Attempted to release non-acquired semaphore: {self.name}")
 
-        return False  # Don't suppress exceptions from user code
+        return False  # Don't suppress exceptions
 
 
 async def recover_semaphore_leaks(
