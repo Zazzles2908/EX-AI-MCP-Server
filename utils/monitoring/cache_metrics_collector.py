@@ -104,8 +104,10 @@ class CacheMetricsCollector:
                 logger.error(f"[CACHE_METRICS] Failed to initialize Supabase client: {e}")
         
         # HTTP client for Edge Function calls
-        # EXAI Fix (2025-11-01): Increased timeout from 10s to 30s for Supabase Edge Function
-        self._http_client = httpx.AsyncClient(timeout=30.0)
+        # CRITICAL FIX (2025-10-31): Increased timeout from 30s to 60s for Supabase Edge Function
+        # EXAI Consultation: 467b3bdf-2b74-4cd2-aee5-670a3151aa5c
+        # Previous 30s timeout was too aggressive for Edge Function cold starts
+        self._http_client = httpx.AsyncClient(timeout=60.0)
         
         # Background flush task
         self._flush_task: Optional[asyncio.Task] = None
