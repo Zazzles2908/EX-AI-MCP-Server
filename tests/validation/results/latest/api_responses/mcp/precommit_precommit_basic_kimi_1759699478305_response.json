@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "precommit_basic_kimi_1759699478298",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\n  \"status\": \"precommit_failed\",\n  \"error\": \"1 validation error for PrecommitRequest\\n  Value error, Step 1 requires 'path' field to specify git repository location [type=value_error, input_value={'step': 'Run pre-commit ... '_today': '2025-10-06'}, input_type=dict]\\n    For further information visit https://errors.pydantic.dev/2.11/v/value_error\",\n  \"step_number\": 1,\n  \"metadata\": {\n    \"tool_name\": \"precommit\",\n    \"model_used\": \"kimi-k2-0905-preview\",\n    \"provider_used\": \"kimi\"\n  }\n}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: precommit | Status: COMPLETE (Step 1/? complete)\nDuration: 0.0s | Model: kimi-k2-0905-preview | Tokens: ~123\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=33e66f55-41f6-4295-a68a-07c4d89264ad"
+    }
+  ],
+  "text": "{\n  \"status\": \"precommit_failed\",\n  \"error\": \"1 validation error for PrecommitRequest\\n  Value error, Step 1 requires 'path' field to specify git repository location [type=value_error, input_value={'step': 'Run pre-commit ... '_today': '2025-10-06'}, input_type=dict]\\n    For further information visit https://errors.pydantic.dev/2.11/v/value_error\",\n  \"step_number\": 1,\n  \"metadata\": {\n    \"tool_name\": \"precommit\",\n    \"model_used\": \"kimi-k2-0905-preview\",\n    \"provider_used\": \"kimi\"\n  }\n}\n\n\n=== MCP CALL SUMMARY ===\nTool: precommit | Status: COMPLETE (Step 1/? complete)\nDuration: 0.0s | Model: kimi-k2-0905-preview | Tokens: ~123\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=33e66f55-41f6-4295-a68a-07c4d89264ad"
+}

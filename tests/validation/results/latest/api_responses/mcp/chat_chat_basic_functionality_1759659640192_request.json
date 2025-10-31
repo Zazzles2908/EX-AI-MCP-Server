@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "chat_basic_functionality_1759659640192",
+  "name": "chat",
+  "arguments": {
+    "prompt": "Say hello in 5 words",
+    "model": "glm-4.5-flash"
+  }
+}

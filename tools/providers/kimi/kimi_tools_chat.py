@@ -301,7 +301,7 @@ class KimiChatWithToolsTool(BaseTool):
                     except Exception:
                         pass
                     # Use centralized adapter
-                    from streaming.streaming_adapter import stream_openai_chat_events
+                    from src.streaming.streaming_adapter import stream_openai_chat_events
                     # Build kwargs without None entries for provider compliance
                     _ckw = {
                         "model": model_used,

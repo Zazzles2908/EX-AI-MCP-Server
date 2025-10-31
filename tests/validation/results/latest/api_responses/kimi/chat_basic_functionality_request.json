@@ -1,0 +1,10 @@
+{
+  "model": "kimi-k2-0905-preview",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 2+2? Answer with just the number."
+    }
+  ],
+  "temperature": 0.0
+}

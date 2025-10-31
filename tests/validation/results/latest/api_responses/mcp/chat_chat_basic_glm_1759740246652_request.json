@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "chat_basic_glm_1759740246652",
+  "name": "chat",
+  "arguments": {
+    "prompt": "What is 2+2? Answer with just the number.",
+    "model": "glm-4.5-flash"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "op": "call_tool_res",
+  "request_id": "self-check_basic_kimi_1759843999760",
+  "error": {
+    "code": "TOOL_NOT_FOUND",
+    "message": "Unknown tool: self-check"
+  }
+}

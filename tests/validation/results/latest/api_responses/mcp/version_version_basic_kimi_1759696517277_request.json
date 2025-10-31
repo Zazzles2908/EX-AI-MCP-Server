@@ -1,0 +1,6 @@
+{
+  "op": "call_tool",
+  "request_id": "version_basic_kimi_1759696517277",
+  "name": "version",
+  "arguments": {}
+}

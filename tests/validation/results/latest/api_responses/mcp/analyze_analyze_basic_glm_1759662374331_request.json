@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "analyze_basic_glm_1759662374331",
+  "name": "analyze",
+  "arguments": {
+    "content": "This is test content for analysis.",
+    "model": "glm-4.5-flash"
+  }
+}

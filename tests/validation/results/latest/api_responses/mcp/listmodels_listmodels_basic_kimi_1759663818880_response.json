@@ -1,0 +1,14 @@
+{
+  "op": "call_tool_res",
+  "request_id": "listmodels_basic_kimi_1759663818876",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"success\",\"content\":\"# Available AI Models\\n\\n💡 **TIP**: Use this tool to see which AI models you can call and their capabilities.\\n\\n**Quick Examples**:\\n- Test a model: `chat_exai(prompt='test', model='kimi-latest')`\\n- Check model health: `status_exai()`\\n- List providers: See configured providers below\\n\\n## Moonshot Kimi ✅\\n**Status**: Configured and available\\n\\n**Models**:\\n- `kimi-k2-0905-preview` - 128K context\\n- `kimi-k2-0711-preview` - 128K context\\n- `moonshot-v1-8k` - 8K context\\n- `moonshot-v1-32k` - 32K context\\n- `kimi-k2-turbo-preview` - 256K context\\n- `moonshot-v1-128k` - 128K context\\n- `moonshot-v1-8k-vision-preview` - 8K context\\n- `moonshot-v1-32k-vision-preview` - 32K context\\n- `moonshot-v1-128k-vision-preview` - 128K context\\n- `kimi-latest` - 128K context\\n- `kimi-thinking-preview` - 128K context\\n\\n**Aliases**:\\n- `kimi-k2-0711` → `kimi-k2-0711-preview`\\n- `kimi-k2-0905` → `kimi-k2-0905-preview`\\n- `kimi-k2-turbo` → `kimi-k2-turbo-preview`\\n- `kimi-k2` → `kimi-k2-0905-preview`\\n\\n## ZhipuAI GLM ✅\\n**Status**: Configured and available\\n\\n**Models**:\\n- `glm-4.6` - 200K context\\n- `glm-4.5-flash` - 128K context\\n- `glm-4.5` - 128K context\\n- `glm-4.5-air` - 128K context\\n\\n**Aliases**:\\n- `glm-4.5-air` → `glm-4.5-flash`\\n- `glm-4.5-x` → `glm-4.5-air`\\n\\n## OpenRouter ❌\\n**Status**: Not configured (set OPENROUTER_API_KEY)\\n**Note**: Provides access to GPT-5, O3, Mistral, and many more\\n\\n## Custom/Local API ❌\\n**Status**: Not configured (set CUSTOM_API_URL)\\n**Example**: CUSTOM_API_URL=http://localhost:11434 (for Ollama)\\n\\n## Summary\\n**Configured Providers**: 2\\n**Total Available Models**: 20\\n\\n**Usage Tips**:\\n- Use model aliases (e.g., 'flash', 'gpt5', 'opus') for convenience\\n- In auto mode, the CLI Agent will select the best model for each task\\n- Custom models are only available when CUSTOM_API_URL is set\\n- OpenRouter provides access to many cloud models with one API key\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"listmodels\",\"configured_providers\":2},\"continuation_offer\":null}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: listmodels | Status: COMPLETE (Step 1/? complete)\nDuration: 0.0s | Model: glm-4.5-flash | Tokens: ~515\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=9b6b5e56-e038-4525-873f-3c4993bb551d"
+    }
+  ]
+}

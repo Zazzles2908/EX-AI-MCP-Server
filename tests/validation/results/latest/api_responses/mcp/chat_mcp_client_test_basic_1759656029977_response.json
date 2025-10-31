@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "mcp_client_test_basic_1759656028002",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"continuation_available\",\"content\":\"Hello. How can I assist you today?\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"6339e3f4-2c02-47a3-ba9f-7f6c53f93bb4\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 1.3s | Model: glm-4.5-flash | Tokens: ~95\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=308e052d-7b42-476d-9a4a-857f937bb8c1"
+    }
+  ],
+  "text": "{\"status\":\"continuation_available\",\"content\":\"Hello. How can I assist you today?\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"6339e3f4-2c02-47a3-ba9f-7f6c53f93bb4\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}\n\n\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 1.3s | Model: glm-4.5-flash | Tokens: ~95\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=308e052d-7b42-476d-9a4a-857f937bb8c1"
+}

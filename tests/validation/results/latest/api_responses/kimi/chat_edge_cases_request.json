@@ -1,0 +1,10 @@
+{
+  "model": "kimi-k2-0905-preview",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Echo this: Hello! 你好 🚀 @#$%"
+    }
+  ],
+  "temperature": 0.0
+}

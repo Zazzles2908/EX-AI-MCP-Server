@@ -719,8 +719,9 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
                     "step_number": arguments.get("step_number"),
                 }
                 return [TextContent(type="text", text=json.dumps(error_payload))]
-            except Exception:
-                # Fallback minimal shape
+            except Exception as e:
+                # Fallback minimal shape if error payload creation fails
+                logger.warning(f"Failed to create error payload: {e}")
                 return [{"type": "text", "text": json.dumps({"status": f"{self.get_name()}_timeout"})}]
         except Exception as e:
             # Ensure unexpected errors are logged and surfaced

@@ -1,0 +1,6 @@
+{
+  "op": "call_tool",
+  "request_id": "listmodels_basic_glm_1759660060943",
+  "name": "listmodels",
+  "arguments": {}
+}

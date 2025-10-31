@@ -1,11 +1,7 @@
 """
-Centralized configuration modules for EXAI tools.
+Configurations package for EXAI MCP Server.
 
-This package provides shared configuration and guidance across all tools,
-preventing duplication and providing single sources of truth.
-
-Created: 2025-10-26
-Purpose: Centralize file handling guidance and other shared configurations
+This package contains centralized configuration and guidance modules.
 """
 
 from .file_handling_guidance import FILE_PATH_GUIDANCE, FILE_UPLOAD_GUIDANCE

@@ -68,6 +68,7 @@ class HybridSupabaseManager:
     def __init__(self):
         """Initialize hybrid manager with Supabase Python client."""
         self.project_id = os.getenv("SUPABASE_PROJECT_ID", "mxaazuhlqewmkweewyaz")
+        self._enabled_override = None  # For testing purposes
 
         # Initialize Python client for all autonomous operations
         from src.storage.supabase_client import SupabaseStorageManager
@@ -76,9 +77,39 @@ class HybridSupabaseManager:
         logger.info(
             f"HybridSupabaseManager initialized for autonomous operations (project: {self.project_id})"
         )
-    
 
-    
+    @property
+    def enabled(self) -> bool:
+        """
+        Return whether the underlying Supabase client is enabled.
+
+        FIX (2025-10-29): Added to support FileDeduplicationManager interface.
+        CRITICAL: FileDeduplicationManager checks self.storage.enabled before database operations.
+        """
+        # Allow override for testing
+        if self._enabled_override is not None:
+            return self._enabled_override
+        return self.python_client.enabled if self.python_client else False
+
+    @enabled.setter
+    def enabled(self, value: bool):
+        """
+        Set whether the storage manager is enabled.
+
+        FIX (2025-10-29): Added setter to support testing scenarios.
+        This allows tests to disable storage operations without mocking the entire manager.
+        """
+        self._enabled_override = value
+
+    def get_client(self):
+        """
+        Return the underlying Supabase client for direct database operations.
+
+        FIX (2025-10-29): Added to support FileDeduplicationManager interface.
+        CRITICAL: FileDeduplicationManager needs direct client access for table operations.
+        """
+        return self.python_client.get_client() if self.python_client else None
+
     # ========================================================================
     # DATABASE OPERATIONS (Python Supabase Client)
     # ========================================================================

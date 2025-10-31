@@ -1,0 +1,227 @@
+{
+  "summary": {
+    "session_start": "2025-10-07T13:46:44.257440Z",
+    "total_tests": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "pass_rate": 0.0,
+    "total_tools": 1,
+    "tools_fully_passed": 0,
+    "tools_with_failures": 1
+  },
+  "coverage": {
+    "web_search_integration": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "variations": {
+        "basic_functionality": "failed"
+      }
+    }
+  },
+  "failures": [
+    {
+      "tool": "web_search_integration",
+      "variation": "basic_functionality",
+      "status": "failed",
+      "duration_secs": 0.10167312622070312,
+      "timestamp": "2025-10-07T13:47:15.894173Z",
+      "validation": {
+        "valid": false,
+        "checks": {
+          "execution": {
+            "passed": true,
+            "errors": []
+          },
+          "validation_errors": {
+            "passed": true,
+            "errors": []
+          },
+          "response_structure": {
+            "passed": false,
+            "errors": [
+              "Response has no content"
+            ]
+          },
+          "response_time": {
+            "passed": true,
+            "warnings": [],
+            "duration_secs": 0,
+            "max_secs": 60
+          },
+          "content_quality": {
+            "passed": false,
+            "warnings": [
+              "No content found in response"
+            ]
+          }
+        },
+        "errors": [
+          "Response has no content"
+        ],
+        "warnings": [
+          "No content found in response"
+        ]
+      },
+      "watcher_observation": {
+        "tool": "web_search_integration",
+        "variation": "basic_functionality",
+        "timestamp": "2025-10-07T13:47:15.511329Z",
+        "test_status": "failed",
+        "watcher_analysis": {
+          "quality_score": 5,
+          "correctness": "INCORRECT",
+          "anomalies": [
+            "Test status is 'failed' but output shows 'success': true",
+            "Validation score is 100 despite test failure",
+            "All performance metrics are N/A",
+            "Tool processed empty input but returned complete response"
+          ],
+          "suggestions": [
+            "Clarify expected behavior for basic_functionality test",
+            "Investigate discrepancy between test status and output",
+            "Implement proper performance monitoring to collect meaningful metrics"
+          ],
+          "confidence": 0.9,
+          "observations": "The test shows contradictory information with a 'failed' status but a successful output. The tool appears to have processed an empty input and returned a response with high validation metrics, which raises questions about the test setup and validation criteria.",
+          "progress": "No improvements from previous run. Same issues persist: contradictory test status and output, high validation score despite failure, and N/A performance metrics. This indicates a regression or lack of progress in addressing previous issues.",
+          "conversation_id": "20251007214644d356c59c646a46e8"
+        },
+        "performance_metrics": {
+          "test_id": "web_search_integration_basic_functionality_1759844804",
+          "start_time": 1759844804.2574635,
+          "start_memory_mb": 61.046875,
+          "start_cpu_percent": 0.0,
+          "end_time": 1759844804.3591366,
+          "duration_secs": 0.10167312622070312,
+          "end_memory_mb": 61.0625,
+          "end_cpu_percent": 0.0,
+          "memory_delta_mb": 0.015625,
+          "alerts": []
+        },
+        "run_number": 3,
+        "previous_run": "2025-10-07T12:33:05.399310Z",
+        "conversation_id": "20251007214644d356c59c646a46e8"
+      },
+      "performance_metrics": {
+        "test_id": "web_search_integration_basic_functionality_1759844804",
+        "start_time": 1759844804.2574635,
+        "start_memory_mb": 61.046875,
+        "start_cpu_percent": 0.0,
+        "end_time": 1759844804.3591366,
+        "duration_secs": 0.10167312622070312,
+        "end_memory_mb": 61.0625,
+        "end_cpu_percent": 0.0,
+        "memory_delta_mb": 0.015625,
+        "alerts": []
+      },
+      "error": "Response has no content"
+    }
+  ],
+  "failure_analysis": {
+    "total_failures": 1,
+    "failure_rate": 100.0,
+    "common_errors": [
+      {
+        "error": "Response has no content",
+        "count": 1
+      }
+    ],
+    "tools_with_most_failures": [
+      {
+        "tool": "web_search_integration",
+        "failures": 1
+      }
+    ]
+  },
+  "prompt_counter": {
+    "session_start": "2025-10-07T13:46:44.035292Z",
+    "total_prompts": 0,
+    "prompts_by_provider": {
+      "kimi": 0,
+      "glm": 0,
+      "watcher": 0,
+      "mcp": 0
+    },
+    "top_models": [],
+    "top_tools": [],
+    "feature_usage": {
+      "web_search": {
+        "kimi": 0,
+        "glm": 0,
+        "total": 0
+      },
+      "file_upload": {
+        "kimi": 0,
+        "glm": 0,
+        "total": 0
+      },
+      "thinking_mode": {
+        "basic": 0,
+        "deep": 0,
+        "expert": 0,
+        "total": 0
+      },
+      "tool_use": {
+        "kimi": 0,
+        "glm": 0,
+        "total": 0
+      }
+    },
+    "token_usage": {
+      "total_input_tokens": 0,
+      "total_output_tokens": 0,
+      "total_tokens": 0,
+      "by_provider": {
+        "kimi": {
+          "input": 0,
+          "output": 0,
+          "total": 0
+        },
+        "glm": {
+          "input": 0,
+          "output": 0,
+          "total": 0
+        },
+        "watcher": {
+          "input": 0,
+          "output": 0,
+          "total": 0
+        },
+        "mcp": {
+          "input": 0,
+          "output": 0,
+          "total": 0
+        }
+      }
+    },
+    "cost_tracking": {
+      "total_cost_usd": 0.0,
+      "by_provider": {
+        "kimi": 0.0,
+        "glm": 0.0,
+        "watcher": 0.0,
+        "mcp": 0.0
+      },
+      "by_feature": {
+        "web_search": 0.0,
+        "file_upload": 0.0,
+        "thinking_mode": 0.0,
+        "base_calls": 0.0
+      }
+    }
+  },
+  "performance": {
+    "total_tests": 1,
+    "avg_duration_secs": 0.10167312622070312,
+    "max_duration_secs": 0.10167312622070312,
+    "min_duration_secs": 0.10167312622070312,
+    "avg_memory_mb": 61.0625,
+    "max_memory_mb": 61.0625,
+    "avg_cpu_percent": 0.0,
+    "max_cpu_percent": 0.0,
+    "total_alerts": 0,
+    "alerts": []
+  }
+}

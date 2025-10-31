@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "chat_special_chars_1759740320742",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"continuation_available\",\"content\":\"Hello! 你好 🚀 @#$%\\n\\nI'm ready to collaborate on your engineering challenges. What technical decisions or design problems would you like to work through together?\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"d1683eea-afa8-465b-bc1b-f236293ae0c5\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 2.6s | Model: glm-4.5-flash | Tokens: ~127\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=71a287d4-edca-476a-b6da-31f9dfdf6af9"
+    }
+  ],
+  "text": "{\"status\":\"continuation_available\",\"content\":\"Hello! 你好 🚀 @#$%\\n\\nI'm ready to collaborate on your engineering challenges. What technical decisions or design problems would you like to work through together?\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"d1683eea-afa8-465b-bc1b-f236293ae0c5\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}\n\n\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 2.6s | Model: glm-4.5-flash | Tokens: ~127\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=71a287d4-edca-476a-b6da-31f9dfdf6af9"
+}

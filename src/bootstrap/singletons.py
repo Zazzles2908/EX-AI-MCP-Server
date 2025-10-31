@@ -186,36 +186,48 @@ def ensure_provider_tools_registered(tools_dict: Dict[str, Any]) -> None:
             prov_tools: Dict[str, Any] = {}
 
             # Kimi provider tools (lenient registration)
+            # Phase A2 Cleanup: Removed kimi_upload_files and kimi_chat_with_files (use smart_file_query)
             kimi_tools = [
-                ("kimi_upload_files", ("tools.providers.kimi.kimi_files", "KimiUploadFilesTool")),
-                ("kimi_chat_with_files", ("tools.providers.kimi.kimi_files", "KimiChatWithFilesTool")),
                 ("kimi_manage_files", ("tools.providers.kimi.kimi_files", "KimiManageFilesTool")),
                 ("kimi_intent_analysis", ("tools.providers.kimi.kimi_intent", "KimiIntentAnalysisTool")),
             ]
 
             for name, (module_path, class_name) in kimi_tools:
                 try:
+                    logger.info(f"[PROVIDER_TOOLS] Attempting to import {name} from {module_path}.{class_name}")
                     mod = importlib.import_module(module_path)
                     cls = getattr(mod, class_name)
                     if name not in tools_dict:
                         prov_tools[name] = cls()
+                        logger.info(f"[PROVIDER_TOOLS] Successfully registered {name}")
+                    else:
+                        logger.info(f"[PROVIDER_TOOLS] Skipping {name} - already in registry")
                 except Exception as e:
-                    logger.debug(f"Provider tool import failed: {name} from {module_path} ({e})")
+                    logger.error(f"[PROVIDER_TOOLS] Provider tool import failed: {name} from {module_path} ({e})")
+                    import traceback
+                    logger.error(f"[PROVIDER_TOOLS] Traceback: {traceback.format_exc()}")
 
             # GLM provider tools (lenient registration)
             # NOTE: glm_web_search is INTERNAL ONLY - auto-injected via build_websearch_provider_kwargs()
+            # Phase A2 Cleanup: Removed glm_upload_file and glm_multi_file_chat (use smart_file_query)
             glm_tools = [
-                ("glm_upload_file", ("tools.providers.glm.glm_files", "GLMUploadFileTool")),
+                # All file operations now handled by smart_file_query
             ]
 
             for name, (module_path, class_name) in glm_tools:
                 try:
+                    logger.info(f"[PROVIDER_TOOLS] Attempting to import {name} from {module_path}.{class_name}")
                     mod = importlib.import_module(module_path)
                     cls = getattr(mod, class_name)
                     if name not in tools_dict:
                         prov_tools[name] = cls()
+                        logger.info(f"[PROVIDER_TOOLS] Successfully registered {name}")
+                    else:
+                        logger.info(f"[PROVIDER_TOOLS] Skipping {name} - already in registry")
                 except Exception as e:
-                    logger.debug(f"Provider tool import failed: {name} from {module_path} ({e})")
+                    logger.error(f"[PROVIDER_TOOLS] Provider tool import failed: {name} from {module_path} ({e})")
+                    import traceback
+                    logger.error(f"[PROVIDER_TOOLS] Traceback: {traceback.format_exc()}")
 
             if prov_tools:
                 logger.info(f"Registering provider-specific tools: {sorted(prov_tools.keys())}")

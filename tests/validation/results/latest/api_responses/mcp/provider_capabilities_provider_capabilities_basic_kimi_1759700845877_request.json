@@ -1,0 +1,6 @@
+{
+  "op": "call_tool",
+  "request_id": "provider_capabilities_basic_kimi_1759700845877",
+  "name": "provider_capabilities",
+  "arguments": {}
+}

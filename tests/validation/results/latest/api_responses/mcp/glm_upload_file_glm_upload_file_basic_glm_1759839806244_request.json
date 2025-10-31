@@ -1,0 +1,8 @@
+{
+  "op": "call_tool",
+  "request_id": "glm_upload_file_basic_glm_1759839806244",
+  "name": "glm_upload_file",
+  "arguments": {
+    "file_path": "test.txt"
+  }
+}

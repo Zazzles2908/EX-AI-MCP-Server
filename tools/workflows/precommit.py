@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from tools.models import ToolModelCategory
 
 from config import TEMPERATURE_ANALYTICAL
-from systemprompts import PRECOMMIT_PROMPT
+from src.prompts import PRECOMMIT_PROMPT
 
 from .precommit_config import PRECOMMIT_WORKFLOW_FIELD_DESCRIPTIONS
 from .precommit_models import PrecommitRequest

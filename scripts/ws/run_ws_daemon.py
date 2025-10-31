@@ -27,6 +27,9 @@ from src.daemon.ws_server import main_async
 from src.monitoring.metrics import init_metrics_server, start_periodic_updates
 from src.middleware.correlation import setup_correlation_logging
 
+# Week 2-3 Monitoring Phase (2025-10-31): Import cache metrics collector
+from utils.monitoring import start_collector, stop_collector
+
 
 async def main_with_monitoring():
     """
@@ -77,16 +80,43 @@ async def main_with_monitoring():
     servers = [main_async()]  # WebSocket daemon (always runs)
 
     if monitoring_enabled:
-        servers.append(start_monitoring_server(host=monitoring_host, port=monitoring_port))
-        logger.info(f"[MAIN] Monitoring dashboard will be available at http://localhost:{monitoring_port}/monitoring_dashboard.html")
+        try:
+            logger.info(f"[MAIN] Adding monitoring server to servers list (host={monitoring_host}, port={monitoring_port})")
+            monitoring_server = start_monitoring_server(host=monitoring_host, port=monitoring_port)
+            servers.append(monitoring_server)
+            logger.info(f"[MAIN] Monitoring server task added successfully")
+            logger.info(f"[MAIN] Monitoring dashboard will be available at http://localhost:{monitoring_port}/monitoring_dashboard.html")
+        except Exception as e:
+            logger.error(f"[MAIN] Failed to add monitoring server: {e}")
+            import traceback
+            logger.error(f"[MAIN] Traceback: {traceback.format_exc()}")
+            monitoring_enabled = False
 
     if health_enabled:
-        servers.append(start_health_server(host=health_host, port=health_port))
-        logger.info(f"[MAIN] Health check will be available at http://localhost:{health_port}/health")
+        try:
+            logger.info(f"[MAIN] Adding health server to servers list (host={health_host}, port={health_port})")
+            health_server = start_health_server(host=health_host, port=health_port)
+            servers.append(health_server)
+            logger.info(f"[MAIN] Health server task added successfully")
+            logger.info(f"[MAIN] Health check will be available at http://localhost:{health_port}/health")
+        except Exception as e:
+            logger.error(f"[MAIN] Failed to add health server: {e}")
+            import traceback
+            logger.error(f"[MAIN] Traceback: {traceback.format_exc()}")
+            health_enabled = False
 
     if metrics_enabled:
-        servers.append(start_periodic_updates(interval=60))
-        logger.info(f"[MAIN] Periodic metrics updates enabled (60s interval)")
+        try:
+            logger.info(f"[MAIN] Adding periodic metrics updates to servers list")
+            metrics_server = start_periodic_updates(interval=60)
+            servers.append(metrics_server)
+            logger.info(f"[MAIN] Periodic metrics updates task added successfully")
+            logger.info(f"[MAIN] Periodic metrics updates enabled (60s interval)")
+        except Exception as e:
+            logger.error(f"[MAIN] Failed to add metrics updates: {e}")
+            import traceback
+            logger.error(f"[MAIN] Traceback: {traceback.format_exc()}")
+            metrics_enabled = False
 
     # PHASE 0.1 (2025-10-24): Start AI Auditor service
     if auditor_enabled:
@@ -111,15 +141,39 @@ async def main_with_monitoring():
             logger.error(f"[MAIN] Failed to start AI Auditor: {e}")
             auditor_enabled = False
 
+    # Week 2-3 Monitoring Phase (2025-10-31): Start cache metrics collector
+    try:
+        await start_collector()
+        logger.info("[MAIN] Cache metrics collector started successfully")
+    except Exception as e:
+        logger.error(f"[MAIN] Failed to start cache metrics collector: {e}")
+
     logger.info(f"[MAIN] Starting {len(servers)} servers concurrently")
+    logger.info(f"[MAIN] Server list: {[type(s).__name__ for s in servers]}")
 
     # Run all servers concurrently using asyncio.gather
-    # If any server fails, all will be cancelled
+    # Use return_exceptions=True to capture individual server failures
     try:
-        await asyncio.gather(*servers)
+        results = await asyncio.gather(*servers, return_exceptions=True)
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                logger.error(f"[MAIN] Server {i} failed: {result}")
+                import traceback
+                logger.error(f"[MAIN] Traceback: {''.join(traceback.format_exception(type(result), result, result.__traceback__))}")
+            else:
+                logger.info(f"[MAIN] Server {i} completed successfully")
     except Exception as e:
         logger.error(f"[MAIN] Server error: {e}")
+        import traceback
+        logger.error(f"[MAIN] Traceback: {traceback.format_exc()}")
         raise
+    finally:
+        # Week 2-3 Monitoring Phase (2025-10-31): Stop cache metrics collector
+        try:
+            await stop_collector()
+            logger.info("[MAIN] Cache metrics collector stopped successfully")
+        except Exception as e:
+            logger.error(f"[MAIN] Failed to stop cache metrics collector: {e}")
 
 
 def main():

@@ -1,0 +1,14 @@
+{
+  "op": "call_tool_res",
+  "request_id": "activity_basic_kimi_1759663752107",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "[activity:error] Log file not found or inaccessible: C:\\Project\\EX-AI-MCP-Server\\logs\\mcp_activity.log"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: activity | Status: COMPLETE (Step 1/? complete)\nDuration: 0.0s | Model: glm-4.5-flash | Tokens: ~25\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=2a770589-ba1f-45ef-a1f2-6ca4aaa8ebf4"
+    }
+  ]
+}

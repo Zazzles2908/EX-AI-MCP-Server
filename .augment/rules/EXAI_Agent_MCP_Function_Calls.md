@@ -7,7 +7,43 @@ description: "Guide to Function Calls with EXAI-WS MCP"
 
 **Purpose:** Quick reference for AI agents to discover and use system capabilities efficiently.
 
-**Last Updated:** 2025-10-25
+**Last Updated:** 2025-10-29
+
+**⚠️ CRITICAL OPERATING PRINCIPLE:**
+- **ALWAYS investigate first** using available tools before asking user
+- **NEVER stop at first uncertainty** - use EXAI consultation to resolve ambiguity
+- **Work autonomously** through problems with EXAI as your expert consultant
+- **Only escalate to user** when truly stuck after exhaustive investigation
+
+---
+
+## 🐳 **DOCKER ENVIRONMENT CONTEXT (CRITICAL)**
+
+**This MCP server runs in Docker containers. File access requires understanding the mount points.**
+
+### Windows → Linux Path Mapping
+
+| Windows Host Path | Linux Container Path | Status |
+|-------------------|---------------------|--------|
+| `c:\Project\EX-AI-MCP-Server\file.py` | `/mnt/project/EX-AI-MCP-Server/file.py` | ✅ Accessible |
+| `c:\Project\Personal_AI_Agent\data.json` | `/mnt/project/Personal_AI_Agent/data.json` | ✅ Accessible |
+| `c:\Project\Mum\file.txt` | ❌ NOT MOUNTED | ❌ Not accessible |
+| `c:\Users\...\file.txt` | ❌ NOT MOUNTED | ❌ Not accessible |
+| `d:\Other\file.txt` | ❌ NOT MOUNTED | ❌ Not accessible |
+
+**Path Format Rules:**
+- ✅ **ALWAYS use Linux container paths:** `/mnt/project/EX-AI-MCP-Server/filename.ext`
+- ❌ **NEVER use Windows paths:** `c:\Project\...` (will be rejected)
+- ❌ **NEVER use relative paths:** `./file.txt` or `file.txt` (will fail)
+- ✅ **Only files under `/mnt/project/EX-AI-MCP-Server/` or `/mnt/project/Personal_AI_Agent/`** are accessible
+- ⚠️ **Files outside these directories** must be copied into accessible directories first
+
+### Platform Selection Criteria
+
+| Platform | Max Size | Best For | Use When |
+|----------|----------|----------|----------|
+| **Kimi** | 100MB | Large docs, multiple files, PDFs | Files >5MB, batch processing |
+| **GLM** | 20MB | Quick analysis, single files | Files <20MB, immediate results |
 
 ---
 
@@ -15,7 +51,25 @@ description: "Guide to Function Calls with EXAI-WS MCP"
 
 ### **1. File Handling Patterns**
 
-**Decision Matrix:**
+**🎯 RECOMMENDED: Use smart_file_query for ALL file operations**
+
+```python
+# ✅ BEST PRACTICE - Use smart_file_query (automatic deduplication + provider selection)
+smart_file_query(
+    file_path="/mnt/project/EX-AI-MCP-Server/src/file.py",
+    question="Analyze this code for security issues",
+    provider="auto"  # Automatic provider selection based on file size
+)
+```
+
+**Benefits:**
+- Automatic SHA256-based deduplication (reuses existing uploads)
+- Intelligent provider selection (Kimi vs GLM based on file size)
+- Automatic fallback on provider failure
+- Centralized Supabase tracking
+- Single unified interface
+
+**Legacy Decision Matrix (still available but prefer smart_file_query):**
 
 | File Size | Method | Tool(s) | Token Savings | Example Use Case |
 |-----------|--------|---------|---------------|------------------|
@@ -27,22 +81,31 @@ description: "Guide to Function Calls with EXAI-WS MCP"
 **Examples:**
 
 ```python
-# ✅ CORRECT - Small file (<5KB)
+# ✅ BEST - Use smart_file_query
+smart_file_query(
+    file_path="/mnt/project/EX-AI-MCP-Server/large_file.py",
+    question="Review this implementation"
+)
+
+# ✅ CORRECT - Small file (<5KB) with chat_EXAI-WS
 chat_EXAI-WS(
     prompt="Review this implementation",
     files=["c:\\Project\\EX-AI-MCP-Server\\src\\providers\\file_base.py"],
     model="glm-4.6"
 )
 
-# ✅ CORRECT - Large file (>5KB)
-# Step 1: Upload
-upload_result = kimi_upload_files(files=["c:\\Project\\EX-AI-MCP-Server\\large_file.py"])
+# ✅ CORRECT - Large file (>5KB) with legacy tools
+# Step 1: Upload (use Linux container paths!)
+upload_result = kimi_upload_files(files=["/mnt/project/EX-AI-MCP-Server/large_file.py"])
 # Step 2: Chat
 kimi_chat_with_files(
     prompt="Review this implementation",
     file_ids=[upload_result[0]["file_id"]],
     model="kimi-k2-0905-preview"
 )
+
+# ❌ WRONG - DON'T USE Windows paths for uploads:
+# upload_result = kimi_upload_files(files=["c:\\Project\\EX-AI-MCP-Server\\large_file.py"])
 
 # ❌ WRONG - Manually reading and embedding
 view("large_file.py")  # Don't do this!
@@ -51,7 +114,57 @@ chat_EXAI-WS(prompt="Here's the code: [pasted content]")  # Wastes tokens!
 
 ---
 
-### **2. Tool Escalation Patterns**
+### **2. Autonomous Operation & Task Management**
+
+**🎯 MANDATORY: Use task manager tools for ALL complex work**
+
+```python
+# ✅ CORRECT - Start of task
+add_tasks(tasks=[
+    {
+        "name": "Investigate bug",
+        "description": "Analyze Docker logs and identify root cause",
+        "state": "IN_PROGRESS"
+    },
+    {
+        "name": "Implement fix",
+        "description": "Apply fix based on EXAI validation",
+        "state": "NOT_STARTED"
+    },
+    {
+        "name": "Validate fix",
+        "description": "Test fix and get EXAI validation",
+        "state": "NOT_STARTED"
+    }
+])
+
+# ... do work ...
+
+# ✅ CORRECT - Update task status immediately after completing
+update_tasks(tasks=[
+    {"task_id": "task-uuid-1", "state": "COMPLETE"},
+    {"task_id": "task-uuid-2", "state": "IN_PROGRESS"}
+])
+```
+
+**Why Task Management Matters:**
+- ✅ Prevents forgetting important steps
+- ✅ Provides visibility to user
+- ✅ Enables recovery if interrupted
+- ✅ Tracks progress systematically
+- ✅ Helps with planning complex work
+
+**Autonomous Operation Rules:**
+1. **Investigate first** - Use view, codebase-retrieval, Docker logs
+2. **Consult EXAI** - Validate approach before implementation
+3. **Implement** - Execute with comprehensive testing
+4. **Validate** - EXAI review + Docker log analysis
+5. **Document** - Update relevant markdown files
+6. **Only escalate** - When truly stuck after exhaustive investigation
+
+---
+
+### **3. Tool Escalation Patterns**
 
 **When to Use Which Tool:**
 
@@ -79,7 +192,7 @@ Deep Analysis → thinkdeep_EXAI-WS
 
 ---
 
-### **3. Conversation Continuation**
+### **4. Conversation Continuation**
 
 **Use `continuation_id` for multi-turn conversations:**
 
@@ -170,8 +283,8 @@ response2 = chat_EXAI-WS(
 3. **Uploading files multiple times:**
    ```python
    # ❌ WRONG
-   kimi_upload_files(files=["doc.md"])
-   kimi_upload_files(files=["doc.md"])  # Duplicate upload!
+   kimi_upload_files(files=["/mnt/project/EX-AI-MCP-Server/doc.md"])
+   kimi_upload_files(files=["/mnt/project/EX-AI-MCP-Server/doc.md"])  # Duplicate upload!
    ```
 
 4. **Not using continuation_id for multi-turn:**
@@ -204,7 +317,7 @@ response2 = chat_EXAI-WS(
 2. **Use upload workflow for large files:**
    ```python
    # ✅ CORRECT
-   upload_result = kimi_upload_files(files=["large_file.py"])
+   upload_result = kimi_upload_files(files=["/mnt/project/EX-AI-MCP-Server/large_file.py"])
    kimi_chat_with_files(
        prompt="Review this code",
        file_ids=[upload_result[0]["file_id"]]
@@ -214,9 +327,9 @@ response2 = chat_EXAI-WS(
 3. **Reuse uploaded files:**
    ```python
    # ✅ CORRECT
-   upload_result = kimi_upload_files(files=["doc.md"])
+   upload_result = kimi_upload_files(files=["/mnt/project/EX-AI-MCP-Server/doc.md"])
    file_id = upload_result[0]["file_id"]
-   
+
    kimi_chat_with_files(prompt="Question 1?", file_ids=[file_id])
    kimi_chat_with_files(prompt="Question 2?", file_ids=[file_id])
    ```

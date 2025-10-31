@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from tools.models import ToolModelCategory
 
 from config import TEMPERATURE_BALANCED
-from systemprompts import PLANNER_PROMPT
+from src.prompts import PLANNER_PROMPT
 from tools.shared.base_models import WorkflowRequest
 
 from ..workflow.base import WorkflowTool

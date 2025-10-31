@@ -1,0 +1,6 @@
+{
+  "op": "call_tool",
+  "request_id": "status_basic_glm_1759700879650",
+  "name": "status",
+  "arguments": {}
+}

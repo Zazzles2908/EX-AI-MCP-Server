@@ -67,14 +67,14 @@ class ModelProviderRegistry:
     def __new__(cls):
         """Singleton pattern for registry."""
         if cls._instance is None:
-            logging.info(f"SINGLETON_DEBUG: Creating NEW registry instance")
+            logging.debug(f"Creating new ModelProviderRegistry instance")
             cls._instance = super().__new__(cls)
             # Initialize instance dictionaries on first creation
             cls._instance._providers = {}
             cls._instance._initialized_providers = {}
-            logging.info(f"SINGLETON_DEBUG: Created instance {id(cls._instance)}")
+            logging.debug(f"ModelProviderRegistry instance created (id={id(cls._instance)})")
         else:
-            logging.info(f"SINGLETON_DEBUG: Reusing EXISTING instance {id(cls._instance)}")
+            logging.debug(f"Reusing existing ModelProviderRegistry instance (id={id(cls._instance)})")
         return cls._instance
 
     # ================================================================================
@@ -92,8 +92,7 @@ class ModelProviderRegistry:
         """
         instance = cls()
         instance._providers[provider_type] = provider_class
-        # CRITICAL DEBUG (2025-10-23): Log provider registration
-        logging.info(f"REGISTRY_DEBUG: Registered provider {provider_type.name}, total providers: {len(instance._providers)}")
+        logging.debug(f"Registered provider {provider_type.name} (total: {len(instance._providers)})")
 
     @classmethod
     def get_provider(cls, provider_type: ProviderType, force_new: bool = False) -> Optional[ModelProvider]:

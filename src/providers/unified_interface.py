@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional, Protocol
 from enum import Enum
 
 # Import PromptRegistry for provider-aware prompts
-from systemprompts.prompt_registry import ProviderType, get_registry
+from src.prompts.prompt_registry import ProviderType, get_registry
 
 logger = logging.getLogger(__name__)
 
