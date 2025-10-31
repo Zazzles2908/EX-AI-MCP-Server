@@ -1,7 +1,7 @@
 """
 File ID Mapper for Supabase Universal File Hub
 Date: 2025-10-30
-EXAI Consultation ID: bbfac185-ce22-4140-9b30-b3fda4c362d9
+Phase A2 Cleanup: Simplified file management architecture
 
 Maps between Supabase file IDs and provider-specific file IDs.
 Supports bidirectional lookup and session tracking for GLM.
@@ -186,30 +186,9 @@ class FileIdMapper:
         except Exception as e:
             logger.error(f"Failed to update status: {e}")
             return False
-    
-    def get_failed_uploads(self, provider: Optional[str] = None, max_retries: int = 3) -> list:
-        """
-        Get failed uploads that can be retried.
-        
-        Args:
-            provider: Optional provider filter
-            max_retries: Maximum retry count to include
-        
-        Returns:
-            List of failed upload records
-        """
-        try:
-            query = self.client.table('file_id_mappings').select('*').eq('status', 'failed').lt(
-                'retry_count', max_retries
-            )
-            
-            if provider:
-                query = query.eq('provider', provider)
-            
-            result = query.execute()
-            return result.data if result.data else []
-            
-        except Exception as e:
-            logger.error(f"Failed to get failed uploads: {e}")
-            return []
+
+    # Phase A2 Cleanup: Removed get_failed_uploads() method (~27 lines)
+    # This method was never used in the codebase
+    # If retry logic is needed in the future, it should be implemented
+    # in the upload adapters directly rather than as a separate query method
 

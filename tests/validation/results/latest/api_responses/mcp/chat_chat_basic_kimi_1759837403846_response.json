@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "chat_basic_kimi_1759837401511",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"continuation_available\",\"content\":\"4\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"kimi-k2-0905-preview\",\"provider_used\":\"kimi\"},\"continuation_offer\":{\"continuation_id\":\"9386b5a2-6fa0-41ef-babc-0dfce4800b22\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 2.3s | Model: kimi-k2-0905-preview | Tokens: ~89\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=2c09ef48-3221-4a3b-b571-b2a1779ed7bb"
+    }
+  ],
+  "text": "{\"status\":\"continuation_available\",\"content\":\"4\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"kimi-k2-0905-preview\",\"provider_used\":\"kimi\"},\"continuation_offer\":{\"continuation_id\":\"9386b5a2-6fa0-41ef-babc-0dfce4800b22\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}\n\n\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 2.3s | Model: kimi-k2-0905-preview | Tokens: ~89\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=2c09ef48-3221-4a3b-b571-b2a1779ed7bb"
+}

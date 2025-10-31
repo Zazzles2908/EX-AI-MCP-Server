@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "chat_long_prompt_1759662881083",
+  "name": "chat",
+  "arguments": {
+    "prompt": "Explain the concept of artificial intelligence in one sentence. Explain the concept of artificial intelligence in one sentence. Explain the concept of artificial intelligence in one sentence. Explain the concept of artificial intelligence in one sentence. Explain the concept of artificial intelligence in one sentence. ",
+    "model": "glm-4.5-flash"
+  }
+}

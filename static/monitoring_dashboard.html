@@ -17,6 +17,8 @@
     <script src="/static/js/auditor-panel.js"></script>
     <!-- PHASE 0.4 (2025-10-24): Testing Panel -->
     <script src="/static/js/testing-panel.js"></script>
+    <!-- Week 2-3 Monitoring Phase (2025-10-31): Cache Metrics Panel -->
+    <script src="/static/js/cache-metrics-panel.js"></script>
     <!-- PHASE 1 REFACTORING (2025-10-23): CSS extracted to /static/css/dashboard.css (290 lines removed) -->
 </head>
 <body>
@@ -51,7 +53,13 @@
         <div class="health-indicator">
             <div class="health-score" id="responseTimeScore">--</div>
             <div class="health-label">Response (p95)</div>
-            <div class="health-details">ms</div>
+            <parameter name="health-details">ms</div>
+        </div>
+        <!-- PHASE 1 DASHBOARD INTEGRATION (2025-10-31): Cache Metrics -->
+        <div class="health-indicator" id="cacheHealthIndicator">
+            <div class="health-score" id="cacheHitRate">--</div>
+            <div class="health-label">Cache Hit Rate</div>
+            <div class="health-details" id="cacheImplementation">--</div>
         </div>
     </div>
 
@@ -182,6 +190,84 @@
         </div>
     </div>
 
+    <!-- PHASE 2 DASHBOARD INTEGRATION (2025-10-31): Semantic Cache Migration Panel -->
+    <div class="cache-migration-section" id="cacheMigrationSection">
+        <div class="cache-header">
+            <h2>🗄️ Semantic Cache Migration</h2>
+            <div class="cache-status" id="cacheStatus">
+                <span class="status-badge" id="cacheStatusBadge">Monitoring</span>
+            </div>
+        </div>
+
+        <!-- Migration Progress -->
+        <div class="migration-progress-panel">
+            <h3>Migration Progress</h3>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="migrationProgressFill" style="width: 0%"></div>
+                </div>
+                <div class="progress-label" id="migrationProgressLabel">0% migrated to new implementation</div>
+            </div>
+        </div>
+
+        <!-- Cache Implementation Comparison -->
+        <div class="cache-comparison-panel">
+            <div class="cache-impl-card legacy">
+                <h3>Legacy Implementation</h3>
+                <div class="impl-badge">L1 Only (Dict-based)</div>
+                <div class="cache-metrics">
+                    <div class="cache-metric">
+                        <span class="metric-label">Hit Rate</span>
+                        <span class="metric-value" id="legacyHitRate">--</span>
+                    </div>
+                    <div class="cache-metric">
+                        <span class="metric-label">Total Requests</span>
+                        <span class="metric-value" id="legacyRequests">--</span>
+                    </div>
+                    <div class="cache-metric">
+                        <span class="metric-label">Cache Size</span>
+                        <span class="metric-value" id="legacyCacheSize">--</span>
+                    </div>
+                    <div class="cache-metric">
+                        <span class="metric-label">Errors</span>
+                        <span class="metric-value error" id="legacyErrors">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cache-impl-card new">
+                <h3>New Implementation</h3>
+                <div class="impl-badge">L1 + L2 Redis</div>
+                <div class="cache-metrics">
+                    <div class="cache-metric">
+                        <span class="metric-label">Hit Rate</span>
+                        <span class="metric-value" id="newHitRate">--</span>
+                    </div>
+                    <div class="cache-metric">
+                        <span class="metric-label">Total Requests</span>
+                        <span class="metric-value" id="newRequests">--</span>
+                    </div>
+                    <div class="cache-metric">
+                        <span class="metric-label">Cache Size</span>
+                        <span class="metric-value" id="newCacheSize">--</span>
+                    </div>
+                    <div class="cache-metric">
+                        <span class="metric-label">Errors</span>
+                        <span class="metric-value error" id="newErrors">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Tracking -->
+        <div class="cache-errors-panel">
+            <h3>Error Tracking</h3>
+            <div id="cacheErrorsList" class="errors-list">
+                <div class="no-errors">No cache errors detected ✅</div>
+            </div>
+        </div>
+    </div>
+
     <div class="controls">
         <button onclick="refreshStats()">🔄 Refresh Stats</button>
         <button onclick="exportData()">💾 Export Data</button>
@@ -214,7 +300,59 @@
             <div id="glmStats"></div>
         </div>
     </div>
-    
+
+    <!-- Week 2-3 Monitoring Phase (2025-10-31): Cache Metrics Section -->
+    <div class="auditor-section" id="cacheMetricsSection">
+        <div class="auditor-header" style="cursor: pointer;" onclick="toggleCacheMetrics()">
+            <h2 style="color: #667eea; margin: 0;">💾 Cache Performance Metrics</h2>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <select id="cacheTimeRange" class="time-range-selector" onchange="updateCacheTimeRange(this.value)" onclick="event.stopPropagation();">
+                    <option value="1">Last Hour</option>
+                    <option value="6">Last 6 Hours</option>
+                    <option value="24" selected>Last 24 Hours</option>
+                    <option value="168">Last 7 Days</option>
+                </select>
+                <span id="cacheMetricsLastRefresh" style="color: #a0a0a0; font-size: 0.9em;">Loading...</span>
+                <span id="cacheToggleIcon" style="font-size: 1.2em;">▼</span>
+            </div>
+        </div>
+
+        <div id="cacheMetricsContent" class="auditor-content">
+            <!-- Summary Statistics -->
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 style="color: #667eea; margin-bottom: 15px;">Summary Statistics</h3>
+                <div id="cacheMetricsSummary" class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="metric">
+                        <span class="metric-label">Loading...</span>
+                        <span class="metric-value">...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cache Metrics Charts -->
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h3>📈 Cache Hit Rate</h3>
+                    <div class="chart-container">
+                        <canvas id="cacheHitRateChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>⚡ Response Times</h3>
+                    <div class="chart-container">
+                        <canvas id="cacheResponseTimeChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>📊 Cache Operations</h3>
+                    <div class="chart-container">
+                        <canvas id="cacheOperationsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- TIER 2: Time-Series Charts -->
     <div class="chart-grid">
         <div class="chart-card">
@@ -353,6 +491,11 @@
                 // PHASE 3.1 (2025-10-23): Handle historical data response
                 console.log('[CHARTS] Received historical data:', data.data?.length || 0, 'events');
                 populateChartsWithHistoricalData(data.data);
+            } else if (data.type === 'cache_metrics') {
+                // PHASE 1 DASHBOARD INTEGRATION (2025-10-31): Handle cache metrics
+                if (data.data && dashboard) {
+                    dashboard.updateCacheMetrics(data.data);
+                }
             }
         }
         
@@ -728,7 +871,49 @@
 
             initializeCharts();
             initializeWebSocket();
+
+            // Week 2-3 Monitoring Phase (2025-10-31): Initialize cache metrics panel
+            initCacheMetrics();
         });
+
+        // Week 2-3 Monitoring Phase (2025-10-31): Cache Metrics Panel Functions
+        let cacheMetricsPanel = null;
+
+        function initCacheMetrics() {
+            if (!cacheMetricsPanel) {
+                cacheMetricsPanel = new CacheMetricsPanel({
+                    refreshInterval: 30000, // 30 seconds
+                    timeRange: 24, // 24 hours
+                    aggregation: '1min'
+                });
+                cacheMetricsPanel.init();
+            }
+        }
+
+        function toggleCacheMetrics() {
+            const content = document.getElementById('cacheMetricsContent');
+            const icon = document.getElementById('cacheToggleIcon');
+
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▼';
+
+                // Initialize panel if not already done
+                if (!cacheMetricsPanel) {
+                    initCacheMetrics();
+                }
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▶';
+            }
+        }
+
+        function updateCacheTimeRange(hours) {
+            if (cacheMetricsPanel) {
+                cacheMetricsPanel.timeRange = parseInt(hours);
+                cacheMetricsPanel.fetchAndRender();
+            }
+        }
     </script>
 </body>
 </html>

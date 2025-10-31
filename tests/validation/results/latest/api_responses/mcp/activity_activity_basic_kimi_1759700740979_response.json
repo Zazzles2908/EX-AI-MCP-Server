@@ -1,0 +1,14 @@
+{
+  "op": "call_tool_res",
+  "request_id": "activity_basic_kimi_1759700740976",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "[activity:error] Failed to create log file C:\\Project\\EX-AI-MCP-Server\\logs\\mcp_activity.log: name 'logger' is not defined"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: activity | Status: COMPLETE (Step 1/? complete)\nDuration: 0.0s | Model: glm-4.5-flash | Tokens: ~30\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=b1888628-9222-4f40-84ad-8593ed97cd5b"
+    }
+  ]
+}

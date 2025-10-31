@@ -1,0 +1,10 @@
+{
+  "model": "glm-4.5-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 2+2? Answer with just the number."
+    }
+  ],
+  "temperature": 0.0
+}

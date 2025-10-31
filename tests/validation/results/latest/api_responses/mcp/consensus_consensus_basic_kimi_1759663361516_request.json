@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "consensus_basic_kimi_1759663361516",
+  "name": "consensus",
+  "arguments": {
+    "question": "What is 2+2?",
+    "model": "kimi-k2-0905-preview"
+  }
+}

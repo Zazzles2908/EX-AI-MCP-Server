@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "chat_long_prompt_1759660524073",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"continuation_available\",\"content\":\"Artificial intelligence is the simulation of human intelligence processes by machines, particularly computer systems, including learning, reasoning, and self-correction.\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"4d3110ee-3d8e-43aa-a1f6-f0e00b6a0d84\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 6.8s | Model: glm-4.5-flash | Tokens: ~129\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=e9bea52e-221c-4c9f-85a4-a995a1b7896c"
+    }
+  ],
+  "text": "{\"status\":\"continuation_available\",\"content\":\"Artificial intelligence is the simulation of human intelligence processes by machines, particularly computer systems, including learning, reasoning, and self-correction.\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"4d3110ee-3d8e-43aa-a1f6-f0e00b6a0d84\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}\n\n\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 6.8s | Model: glm-4.5-flash | Tokens: ~129\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=e9bea52e-221c-4c9f-85a4-a995a1b7896c"
+}

@@ -1,0 +1,6 @@
+{
+  "op": "call_tool",
+  "request_id": "health_basic_kimi_1759839469051",
+  "name": "health",
+  "arguments": {}
+}

@@ -49,9 +49,10 @@ from utils.file.deduplication import FileDeduplicationManager
 # Storage
 from src.storage.hybrid_supabase_manager import HybridSupabaseManager
 
-# Provider tools (MCP wrappers - NOT low-level providers)
-from tools.providers.kimi.kimi_files import KimiUploadFilesTool, KimiChatWithFilesTool
-from tools.providers.glm.glm_files import GLMUploadFileTool, GLMMultiFileChatTool
+# Direct Supabase hub and provider access (NO tool wrappers)
+from tools.supabase_upload import upload_file_with_provider
+from src.storage.supabase_client import get_storage_manager
+from src.providers.registry import ModelProviderRegistry
 
 # Base tool
 from tools.shared.base_tool import BaseTool
@@ -62,7 +63,16 @@ from mcp.types import TextContent
 from tools.config.async_upload_config import get_config
 from tools.monitoring.async_upload_metrics import get_metrics_collector, UploadMetrics
 
+# Phase A2 Week 2: Security infrastructure
+from src.security.rate_limiter import RateLimiter
+from src.security.audit_logger import AuditLogger
+
 logger = logging.getLogger(__name__)
+
+
+class RateLimitExceededError(Exception):
+    """Exception raised when rate limit is exceeded"""
+    pass
 
 
 class SmartFileQueryTool(BaseTool):
@@ -83,17 +93,24 @@ class SmartFileQueryTool(BaseTool):
         # CRITICAL BUG: Was initialized without storage, causing all dedup checks to fail
         self.dedup_manager = FileDeduplicationManager(storage_manager=self.storage_manager)
 
-        # FIX (2025-10-29): Lazy initialization to avoid sync init of async tools
-        # Tools will be initialized on first use via _ensure_tools_initialized()
-        self.kimi_upload = None
-        self.kimi_chat = None
-        self.glm_upload = None
-        self.glm_chat = None
-        self._tools_initialized = False
+        # Phase A2 Cleanup: Removed tool wrapper instances
+        # Now using Supabase hub (upload_file_with_provider) directly
+        # No initialization needed - hub functions are stateless
 
-        # FIX (2025-10-29): Add async lock for thread-safe initialization
-        # EXAI QA: Prevents race condition when multiple concurrent calls initialize tools
-        self._init_lock = asyncio.Lock()
+        # Phase A2 Week 2: Security infrastructure (graceful degradation)
+        try:
+            self.rate_limiter = RateLimiter()
+            logger.info("[SMART_FILE_QUERY] Rate limiter initialized")
+        except Exception as e:
+            logger.warning(f"[SMART_FILE_QUERY] Rate limiter initialization failed: {e}. Rate limiting disabled.")
+            self.rate_limiter = None
+
+        try:
+            self.audit_logger = AuditLogger()
+            logger.info("[SMART_FILE_QUERY] Audit logger initialized")
+        except Exception as e:
+            logger.warning(f"[SMART_FILE_QUERY] Audit logger initialization failed: {e}. Audit logging disabled.")
+            self.audit_logger = None
     
     @staticmethod
     def get_name() -> str:
@@ -163,59 +180,8 @@ class SmartFileQueryTool(BaseTool):
         from configurations.file_handling_guidance import SMART_FILE_QUERY_GUIDANCE
         return SMART_FILE_QUERY_GUIDANCE
 
-    async def _ensure_tools_initialized(self):
-        """
-        Ensure provider tools are properly initialized asynchronously.
-
-        FIX (2025-10-29): Added lazy async initialization to avoid sync init of async tools.
-        FIX (2025-10-29): Added async lock for thread-safe initialization.
-        EXAI Consultation: 01bc55a8-86e9-467b-a4e8-351ec6cea6ea
-        EXAI QA: Added lock to prevent race condition with concurrent calls
-
-        This method:
-        1. Uses async lock to prevent race conditions
-        2. Checks if tools are already initialized
-        3. Initializes tools asynchronously if they have async init methods
-        4. Falls back to sync init in thread pool if needed
-        5. Marks tools as initialized to avoid re-initialization
-        """
-        # FIX: Use async lock to prevent race condition
-        async with self._init_lock:
-            if self._tools_initialized:
-                return
-
-            logger.info("[SMART_FILE_QUERY] Initializing provider tools asynchronously...")
-
-            try:
-                # Initialize Kimi tools
-                self.kimi_upload = KimiUploadFilesTool()
-                self.kimi_chat = KimiChatWithFilesTool()
-
-                # Initialize GLM tools
-                self.glm_upload = GLMUploadFileTool()
-                self.glm_chat = GLMMultiFileChatTool()
-
-                # Check if tools have async initialization methods
-                for tool_name, tool in [
-                    ("kimi_upload", self.kimi_upload),
-                    ("kimi_chat", self.kimi_chat),
-                    ("glm_upload", self.glm_upload),
-                    ("glm_chat", self.glm_chat)
-                ]:
-                    if hasattr(tool, 'initialize_async'):
-                        logger.info(f"[SMART_FILE_QUERY] Async initializing {tool_name}...")
-                        await tool.initialize_async()
-                    elif hasattr(tool, 'initialize'):
-                        logger.info(f"[SMART_FILE_QUERY] Sync initializing {tool_name} in thread pool...")
-                        await asyncio.to_thread(tool.initialize)
-
-                self._tools_initialized = True
-                logger.info("[SMART_FILE_QUERY] All provider tools initialized successfully")
-
-            except Exception as e:
-                logger.error(f"[SMART_FILE_QUERY] Failed to initialize provider tools: {e}")
-                self._tools_initialized = False
-                raise
+    # Phase A2 Cleanup: Removed _ensure_tools_initialized()
+    # No longer needed - using Supabase hub directly (stateless functions)
 
     async def execute(
         self,
@@ -307,8 +273,7 @@ class SmartFileQueryTool(BaseTool):
         Returns:
             Query result content as string
         """
-        # FIX (2025-10-29): Ensure tools are initialized before use
-        await self._ensure_tools_initialized()
+        # Phase A2 Cleanup: No initialization needed (using Supabase hub directly)
 
         file_path = kwargs.get("file_path")
         question = kwargs.get("question")
@@ -337,9 +302,37 @@ class SmartFileQueryTool(BaseTool):
         file_size_mb = file_size / (1024 * 1024)
         logger.info(f"[SMART_FILE_QUERY] File: {normalized_path}, Size: {file_size_mb:.2f}MB")
 
-        # Step 3: Select provider
-        provider = self._select_provider(provider_pref, file_size_mb)
-        logger.info(f"[SMART_FILE_QUERY] Selected provider: {provider}")
+        # Phase A2 Week 2: Rate limiting check (before file operations)
+        application_id = kwargs.get('application_id', 'system')
+        user_id = kwargs.get('user_id', 'system')
+
+        if self.rate_limiter:
+            try:
+                rate_check = self.rate_limiter.check_rate_limit(
+                    application_id=application_id,
+                    operation='file_upload',
+                    size_mb=file_size_mb
+                )
+
+                if not rate_check['allowed']:
+                    limits = rate_check['limits']
+                    logger.warning(f"[SMART_FILE_QUERY] Rate limit exceeded for {application_id}: {limits}")
+                    raise RateLimitExceededError(
+                        f"Rate limit exceeded for application '{application_id}'. "
+                        f"Limits: {limits['requests_per_minute']['remaining']} req/min remaining, "
+                        f"{limits['files_per_hour']['remaining']} files/hour remaining, "
+                        f"{limits['mb_per_day']['remaining']:.2f} MB/day remaining"
+                    )
+
+                logger.info(f"[SMART_FILE_QUERY] Rate limit check passed for {application_id}")
+            except RateLimitExceededError:
+                raise  # Re-raise rate limit errors
+            except Exception as e:
+                logger.warning(f"[SMART_FILE_QUERY] Rate limit check failed: {e}. Proceeding without rate limiting.")
+
+        # Step 3: Select provider (always Kimi for file operations)
+        provider = self._select_provider(file_size_mb)
+        logger.debug(f"[SMART_FILE_QUERY] Selected provider: {provider}")
 
         # Step 4: Check deduplication (async to avoid blocking)
         # FIX (2025-10-29): Run deduplication check in thread pool to avoid blocking event loop
@@ -397,6 +390,25 @@ class SmartFileQueryTool(BaseTool):
             # Progress indicator: Complete
             send_progress("Analysis complete!")
 
+            # Phase A2 Week 2: Audit logging (after successful operation)
+            if self.audit_logger:
+                try:
+                    self.audit_logger.log_file_access(
+                        application_id=application_id,
+                        user_id=user_id,
+                        file_path=normalized_path,
+                        operation='file_query',
+                        provider=provider,
+                        additional_data={
+                            'file_size_mb': file_size_mb,
+                            'model': model,
+                            'file_id': file_id
+                        }
+                    )
+                    logger.debug(f"[SMART_FILE_QUERY] Audit log recorded for {application_id}")
+                except Exception as e:
+                    logger.warning(f"[SMART_FILE_QUERY] Audit logging failed: {e}. Continuing without audit log.")
+
             logger.info(f"[SMART_FILE_QUERY] Query successful")
             return result
         except TimeoutError as e:
@@ -406,39 +418,36 @@ class SmartFileQueryTool(BaseTool):
             logger.error(f"[SMART_FILE_QUERY] Query failed: {e}")
             raise
     
-    def _select_provider(self, preference: str, file_size_mb: float) -> str:
+    def _select_provider(self, file_size_mb: float) -> str:
         """
-        Select provider based on user preference and file size.
+        Select provider for file operations.
 
-        Logic:
-        1. ALWAYS use Kimi for file operations (GLM cannot handle pre-uploaded files)
-        2. User preference only applies to non-file operations
-        3. File size validation:
-           - >100MB: Error (exceeds Kimi limit)
+        CRITICAL: Always returns 'kimi' because:
+        - GLM requires re-uploading files for each query (no file persistence)
+        - Kimi supports persistent file references across queries
+        - Kimi has 100MB limit vs GLM's 20MB limit
 
-        FIX (2025-10-29): Force Kimi for ALL file operations due to GLM's file persistence limitation.
-        EXAI Consultation: 7fe98857-42ce-4195-a889-76106496e00f
+        Args:
+            file_size_mb: File size in MB
+
+        Returns:
+            'kimi' - the only supported provider for file operations
+
+        Raises:
+            ValueError: If file size exceeds 100MB limit
         """
-        # CRITICAL: Always use Kimi for file operations
-        # GLM requires re-uploading files for each query (no file persistence)
-        logger.info(f"[SMART_FILE_QUERY] Forcing Kimi provider for file operations (requested: {preference})")
-
-        # File size validation
         if file_size_mb > 100:
             raise ValueError(f"File size {file_size_mb:.2f}MB exceeds maximum limit of 100MB")
 
-        return "kimi"  # Always Kimi for file operations
+        logger.debug(f"[SMART_FILE_QUERY] Using Kimi provider (size: {file_size_mb:.2f}MB)")
+        return "kimi"
     
-    async def _upload_file(self, file_path: str, provider: str) -> str:
+    async def _upload_file(self, file_path: str, provider: str, **kwargs) -> str:
         """
-        Upload file using provider-specific tool asynchronously.
+        Upload file using Supabase hub directly (no tool wrappers).
 
-        FIX (2025-10-29): Changed to async method to avoid blocking event loop.
-        FIX (2025-10-29): Added file validation and comprehensive error handling.
-        EXAI Consultation: 01bc55a8-86e9-467b-a4e8-351ec6cea6ea
-        EXAI QA: Added file validation and error handling
-
-        Phase 2: Integrated with async feature flags and metrics collection.
+        Phase A2 Cleanup: Refactored to use upload_file_with_provider() directly.
+        Removed dependency on tool wrapper classes.
 
         Returns:
             Provider file ID
@@ -450,10 +459,7 @@ class SmartFileQueryTool(BaseTool):
         """
         import time
 
-        # FIX (2025-10-29): Ensure tools are initialized before upload
-        await self._ensure_tools_initialized()
-
-        # FIX (2025-10-29): Validate file exists and is readable
+        # Validate file exists and is readable
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
         if not os.access(file_path, os.R_OK):
@@ -467,52 +473,36 @@ class SmartFileQueryTool(BaseTool):
         metrics_collector = get_metrics_collector()
 
         start_time = time.time()
-        execution_type = "async"  # FIX: Always async now
+        execution_type = "async"
         error_type = None
 
         try:
-            # Determine if this upload should use async (based on rollout percentage)
-            should_use_async = config.enabled and config.should_use_async(file_path)
-            if should_use_async:
-                logger.info(f"[SMART_FILE_QUERY] Using async upload for {file_path} (rollout: {config.rollout_percentage}%)")
+            # Get Supabase client
+            storage = get_storage_manager()
+            supabase_client = storage.get_client()
 
-            # FIX (2025-10-29): Perform upload asynchronously with comprehensive error handling
-            # Check if tools have async methods, otherwise run sync methods in thread pool
-            try:
-                if provider == "kimi":
-                    # Check if kimi_upload has async method
-                    if hasattr(self.kimi_upload, '_run_async'):
-                        result = await self.kimi_upload._run_async(files=[file_path], purpose="file-extract")
-                    else:
-                        # Fallback to sync method in thread pool
-                        result = await asyncio.to_thread(
-                            self.kimi_upload._run, files=[file_path], purpose="file-extract"
-                        )
+            # Extract user_id from kwargs (for audit logging)
+            user_id = kwargs.get('user_id', 'system')
 
-                    if result and len(result) > 0:
-                        file_id = result[0]['file_id']
-                    else:
-                        raise ValueError("Kimi upload returned no file ID")
+            # Call Supabase hub directly (no tool wrappers)
+            result = await asyncio.to_thread(
+                upload_file_with_provider,
+                supabase_client=supabase_client,
+                file_path=file_path,
+                provider=provider,
+                user_id=user_id
+            )
 
-                elif provider == "glm":
-                    # Check if glm_upload has async method
-                    if hasattr(self.glm_upload, 'run_async'):
-                        result = await self.glm_upload.run_async(file=file_path, purpose="agent")
-                    else:
-                        # Fallback to sync method in thread pool
-                        result = await asyncio.to_thread(
-                            self.glm_upload.run, file=file_path, purpose="agent"
-                        )
+            # Extract file_id from result
+            if provider == "kimi":
+                file_id = result.get('kimi_file_id')
+            elif provider == "glm":
+                file_id = result.get('glm_file_id')
+            else:
+                raise ValueError(f"Unknown provider: {provider}")
 
-                    if result and 'file_id' in result:
-                        file_id = result['file_id']
-                    else:
-                        raise ValueError("GLM upload returned no file ID")
-                else:
-                    raise ValueError(f"Unknown provider: {provider}")
-            except Exception as upload_error:
-                # FIX (2025-10-29): Wrap upload errors with context
-                raise ValueError(f"Failed to upload {file_path} to {provider}: {str(upload_error)}") from upload_error
+            if not file_id:
+                raise ValueError(f"{provider} upload returned no file ID")
 
             # Record successful upload metrics
             duration_ms = (time.time() - start_time) * 1000
@@ -548,28 +538,44 @@ class SmartFileQueryTool(BaseTool):
     
     async def _query_with_file(self, file_id: str, question: str, provider: str, model: str) -> str:
         """
-        Query file using provider-specific chat tool.
+        Query file using provider directly (no tool wrappers).
 
-        FIX (2025-10-29): Changed to async and use _run_async() for KimiChatWithFilesTool.
-        EXAI Consultation: 7fe98857-42ce-4195-a889-76106496e00f
+        Phase A2 Cleanup: Refactored to use ModelProviderRegistry directly.
+        Removed dependency on tool wrapper classes.
 
         Returns:
             Query result content (string)
         """
         if provider == "kimi":
-            # FIX: Use _run_async() instead of _run() - KimiChatWithFilesTool only has async method
-            result = await self.kimi_chat._run_async(
-                prompt=question,
-                file_ids=[file_id],
-                model=model if model != "auto" else "kimi-k2-0905-preview"
+            # Get Kimi provider instance
+            model_to_use = model if model != "auto" else "kimi-k2-0905-preview"
+            provider_instance = ModelProviderRegistry.get_provider_for_model(model_to_use)
+
+            if not provider_instance:
+                raise ValueError(f"No provider found for model: {model_to_use}")
+
+            # Build messages with file_ids
+            messages = [
+                {
+                    "role": "user",
+                    "content": question
+                }
+            ]
+
+            # Call provider's chat_completion_async directly
+            result = await provider_instance.chat_completion_async(
+                messages=messages,
+                model=model_to_use,
+                file_ids=[file_id]  # Kimi supports file_ids parameter
             )
-            # Extract content from result dict
+
+            # Extract content from result
             if isinstance(result, dict):
                 return result.get('content', str(result))
             return str(result)
+
         elif provider == "glm":
-            # GLM multi-file chat doesn't support pre-uploaded files
-            # This is a fundamental limitation of GLM's API design
+            # GLM doesn't support pre-uploaded files
             raise NotImplementedError(
                 "GLM does not support file operations efficiently. "
                 "Files are automatically routed to Kimi provider. "

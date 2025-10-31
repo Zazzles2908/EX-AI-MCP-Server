@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-68e21f0aff32b206ed097ee4",
+  "object": "chat.completion",
+  "created": 1759649546,
+  "model": "kimi-k2-0905-preview",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! 你好 🚀 @#$%"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 19,
+    "completion_tokens": 10,
+    "total_tokens": 29,
+    "cached_tokens": 19
+  }
+}

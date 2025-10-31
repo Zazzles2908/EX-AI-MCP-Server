@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "chat_kimi_model_1759659645186",
+  "name": "chat",
+  "arguments": {
+    "prompt": "Say hello in 5 words",
+    "model": "kimi-k2-0905-preview"
+  }
+}

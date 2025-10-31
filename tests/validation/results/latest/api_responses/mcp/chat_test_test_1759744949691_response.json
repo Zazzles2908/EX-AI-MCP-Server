@@ -1,0 +1,15 @@
+{
+  "op": "call_tool_res",
+  "request_id": "test_test_1759744940255",
+  "outputs": [
+    {
+      "type": "text",
+      "text": "{\"status\":\"continuation_available\",\"content\":\"\\nI see you've sent \\\"test\\\" - could you please provide more details about what technical decision or problem you'd like help with? I'm here to help you brainstorm ideas, validate technical approaches, or offer second opinions on engineering challenges.\\n\\nPlease share:\\n- The specific technical problem or decision you're facing\\n- Any relevant code, architecture, or implementation details\\n- What aspects you'd like me to focus on (trade-offs, edge cases, alternatives, etc.)\\n\\nOnce you provide more context, I can give you a more targeted and helpful response.\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"605e3609-899f-4a34-8622-76fb4eb63c02\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}"
+    },
+    {
+      "type": "text",
+      "text": "\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 8.7s | Model: glm-4.5-flash | Tokens: ~228\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=99edb0d4-1b09-4274-ad3d-868af87d1116"
+    }
+  ],
+  "text": "{\"status\":\"continuation_available\",\"content\":\"\\nI see you've sent \\\"test\\\" - could you please provide more details about what technical decision or problem you'd like help with? I'm here to help you brainstorm ideas, validate technical approaches, or offer second opinions on engineering challenges.\\n\\nPlease share:\\n- The specific technical problem or decision you're facing\\n- Any relevant code, architecture, or implementation details\\n- What aspects you'd like me to focus on (trade-offs, edge cases, alternatives, etc.)\\n\\nOnce you provide more context, I can give you a more targeted and helpful response.\",\"content_type\":\"text\",\"metadata\":{\"tool_name\":\"chat\",\"conversation_ready\":true,\"model_used\":\"glm-4.5-flash\",\"provider_used\":\"glm\"},\"continuation_offer\":{\"continuation_id\":\"605e3609-899f-4a34-8622-76fb4eb63c02\",\"note\":\"You can continue this conversation for 19 more exchanges.\",\"remaining_turns\":19}}\n\n\n=== MCP CALL SUMMARY ===\nTool: chat | Status: COMPLETE (Step 1/? complete)\nDuration: 8.7s | Model: glm-4.5-flash | Tokens: ~228\nContinuation ID: -\nNext Action Required: None\nExpert Validation: Disabled\n=== END SUMMARY ===\n\n(no progress captured)\nreq_id=99edb0d4-1b09-4274-ad3d-868af87d1116"
+}

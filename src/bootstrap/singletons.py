@@ -186,9 +186,8 @@ def ensure_provider_tools_registered(tools_dict: Dict[str, Any]) -> None:
             prov_tools: Dict[str, Any] = {}
 
             # Kimi provider tools (lenient registration)
+            # Phase A2 Cleanup: Removed kimi_upload_files and kimi_chat_with_files (use smart_file_query)
             kimi_tools = [
-                ("kimi_upload_files", ("tools.providers.kimi.kimi_files", "KimiUploadFilesTool")),
-                ("kimi_chat_with_files", ("tools.providers.kimi.kimi_files", "KimiChatWithFilesTool")),
                 ("kimi_manage_files", ("tools.providers.kimi.kimi_files", "KimiManageFilesTool")),
                 ("kimi_intent_analysis", ("tools.providers.kimi.kimi_intent", "KimiIntentAnalysisTool")),
             ]
@@ -210,9 +209,9 @@ def ensure_provider_tools_registered(tools_dict: Dict[str, Any]) -> None:
 
             # GLM provider tools (lenient registration)
             # NOTE: glm_web_search is INTERNAL ONLY - auto-injected via build_websearch_provider_kwargs()
+            # Phase A2 Cleanup: Removed glm_upload_file and glm_multi_file_chat (use smart_file_query)
             glm_tools = [
-                ("glm_upload_file", ("tools.providers.glm.glm_files", "GLMUploadFileTool")),
-                ("glm_multi_file_chat", ("tools.providers.glm.glm_files", "GLMMultiFileChatTool")),  # Added 2025-10-27 for feature parity with Kimi
+                # All file operations now handled by smart_file_query
             ]
 
             for name, (module_path, class_name) in glm_tools:

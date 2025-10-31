@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-68e21cc5ff32b206ed097bf4",
+  "object": "chat.completion",
+  "created": 1759648966,
+  "model": "kimi-k2-0905-preview",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "To help you effectively, I need a bit more context. When you say “edge case test for analyze,” what exactly are you referring to?\n\n- Are you testing a function named `analyze` in code?\n- Is this about a data-analysis pipeline, NLP analyzer, security analyzer, or something else?\n- What language or framework are you using?\n- What’s the expected behavior under normal conditions?\n\nIf you can share the signature or a short description of the `analyze` routine, I’ll craft a targeted edge-case test (plus the expected outcome) for you."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 115,
+    "total_tokens": 127,
+    "cached_tokens": 12
+  }
+}

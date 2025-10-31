@@ -1,0 +1,10 @@
+{
+  "model": "kimi-k2-0711-preview",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say 'OK'"
+    }
+  ],
+  "temperature": 0.0
+}

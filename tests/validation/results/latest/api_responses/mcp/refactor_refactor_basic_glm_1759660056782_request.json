@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "refactor_basic_glm_1759660056782",
+  "name": "refactor",
+  "arguments": {
+    "code": "x=1;y=2;print(x+y)",
+    "model": "glm-4.5-flash"
+  }
+}

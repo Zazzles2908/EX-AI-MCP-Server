@@ -1,0 +1,8 @@
+{
+  "op": "call_tool",
+  "request_id": "glm_web_search_basic_kimi_1759659733858",
+  "name": "glm_web_search",
+  "arguments": {
+    "search_query": "Python programming"
+  }
+}

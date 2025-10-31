@@ -1,0 +1,46 @@
+{
+  "timestamp": "2025-10-30T23:35:03.002143",
+  "summary": {
+    "total": 7,
+    "passed": 7,
+    "failed": 0,
+    "success_rate": "100.0%"
+  },
+  "details": [
+    {
+      "name": "FileIdMapper bidirectional mapping",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "FileIdMapper session tracking",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Kimi upload with small file",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "GLM upload with small file",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "SHA256-based deduplication",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Application-aware upload",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Path validation",
+      "passed": true,
+      "details": ""
+    }
+  ]
+}

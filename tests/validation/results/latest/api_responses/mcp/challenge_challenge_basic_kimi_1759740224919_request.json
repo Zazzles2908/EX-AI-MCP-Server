@@ -1,0 +1,8 @@
+{
+  "op": "call_tool",
+  "request_id": "challenge_basic_kimi_1759740224919",
+  "name": "challenge",
+  "arguments": {
+    "prompt": "Python is the best language for all use cases"
+  }
+}

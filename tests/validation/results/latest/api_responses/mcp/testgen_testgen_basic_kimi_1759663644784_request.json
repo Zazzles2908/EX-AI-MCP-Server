@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "testgen_basic_kimi_1759663644784",
+  "name": "testgen",
+  "arguments": {
+    "code": "def add(a, b): return a + b",
+    "model": "kimi-k2-0905-preview"
+  }
+}

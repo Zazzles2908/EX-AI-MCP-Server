@@ -1,0 +1,9 @@
+{
+  "op": "call_tool",
+  "request_id": "codereview_basic_kimi_1759663314462",
+  "name": "codereview",
+  "arguments": {
+    "code": "def hello(): print('world')",
+    "model": "kimi-k2-0905-preview"
+  }
+}

@@ -21,12 +21,17 @@ from collections import defaultdict
 from utils.monitoring import get_monitor
 from utils.timezone_helper import log_timestamp
 from src.daemon.middleware.semaphores import get_port_semaphore_manager
+from src.monitoring.broadcaster import get_broadcaster
+from src.monitoring.flags import get_flag_manager
 import time
 
 logger = logging.getLogger(__name__)
 
 # Connected dashboard clients
 _dashboard_clients: Set[web.WebSocketResponse] = set()
+
+# PHASE 2 (2025-11-01): Monitoring broadcaster for adapter-based event distribution
+_broadcaster = get_broadcaster()
 
 # PHASE 2.4 ENHANCEMENT (2025-10-26): WebSocket health tracking
 class WebSocketHealthTracker:
@@ -319,6 +324,66 @@ async def _broadcast_websocket_health() -> None:
             logger.debug(f"Failed to send WebSocket health to dashboard client: {e}")
 
 
+async def _broadcast_cache_metrics() -> None:
+    """
+    Broadcast semantic cache metrics to all connected dashboard clients.
+
+    PHASE 1 DASHBOARD INTEGRATION (2025-10-31): Cache migration monitoring
+    Tracks legacy vs new implementation usage, hit/miss rates, and errors.
+    """
+    if not _dashboard_clients:
+        return
+
+    try:
+        import os
+        from utils.infrastructure.semantic_cache import get_semantic_cache
+
+        # Get cache instance
+        cache = get_semantic_cache()
+        stats = cache.get_stats()
+
+        # Determine implementation type
+        use_base_manager = os.getenv('SEMANTIC_CACHE_USE_BASE_MANAGER', 'false').lower() == 'true'
+        implementation_type = "new" if use_base_manager else "legacy"
+
+        # Calculate hit rate
+        hits = stats.get('hits', 0)
+        misses = stats.get('misses', 0)
+        total_requests = hits + misses
+        hit_rate = (hits / total_requests * 100) if total_requests > 0 else 0
+
+        # Get error count
+        error_count = stats.get('errors', 0) + stats.get('size_rejections', 0)
+
+        # Prepare cache metrics
+        cache_metrics = {
+            "implementation": implementation_type,
+            "hit_rate": round(hit_rate, 2),
+            "hits": hits,
+            "misses": misses,
+            "total_requests": total_requests,
+            "error_count": error_count,
+            "size_rejections": stats.get('size_rejections', 0),
+            "cache_size": stats.get('size', 0),
+            "max_size": stats.get('max_size', 0)
+        }
+
+        event = {
+            "type": "cache_metrics",
+            "data": cache_metrics,
+            "timestamp": log_timestamp()
+        }
+
+        for client in _dashboard_clients:
+            try:
+                await client.send_str(json.dumps(event))
+            except Exception as e:
+                logger.debug(f"Failed to send cache metrics to dashboard client: {e}")
+
+    except Exception as e:
+        logger.error(f"Failed to get cache metrics: {e}")
+
+
 def _should_broadcast_metrics_change(current: dict, last: Optional[dict]) -> bool:
     """
     Determine if session metrics have changed enough to warrant broadcasting.
@@ -514,6 +579,9 @@ async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
     logger.info(f"[MONITORING] Dashboard connected from {request.remote}")
     _dashboard_clients.add(ws)
 
+    # PHASE 2 (2025-11-01): Register with broadcaster for adapter-based distribution
+    _broadcaster.register_client(ws)
+
     try:
         # Send initial stats
         monitor = get_monitor()
@@ -627,6 +695,8 @@ async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
 
     finally:
         _dashboard_clients.discard(ws)
+        # PHASE 2 (2025-11-01): Unregister from broadcaster
+        _broadcaster.unregister_client(ws)
         logger.info(f"[MONITORING] Dashboard disconnected")
 
     return ws
@@ -673,6 +743,188 @@ async def status_handler(request: web.Request) -> web.Response:
         "clients_connected": len(_dashboard_clients),
         "timestamp": log_timestamp(),
     })
+
+
+# PHASE 2.4.3: Dashboard Endpoints for Feature Flags and Metrics (2025-11-01)
+
+async def get_validation_metrics(request: web.Request) -> web.Response:
+    """
+    Get current validation metrics.
+
+    Returns validation metrics from the monitoring system.
+
+    Args:
+        request: aiohttp request object
+
+    Returns:
+        JSON response with validation metrics
+    """
+    try:
+        # Get metrics from broadcaster
+        metrics = {}
+        if hasattr(_broadcaster, 'get_metrics'):
+            metrics = await _broadcaster.get_metrics()
+
+        return web.json_response({
+            "status": "ok",
+            "metrics": metrics,
+            "timestamp": log_timestamp(),
+        })
+    except Exception as e:
+        logger.error(f"[MONITORING] Error getting validation metrics: {e}")
+        return web.json_response({
+            "status": "error",
+            "error": str(e),
+            "timestamp": log_timestamp(),
+        }, status=500)
+
+
+async def get_adapter_metrics(request: web.Request) -> web.Response:
+    """
+    Get adapter performance metrics.
+
+    Returns metrics about the monitoring adapter (WebSocket/Realtime).
+
+    Args:
+        request: aiohttp request object
+
+    Returns:
+        JSON response with adapter metrics
+    """
+    try:
+        # Get adapter metrics from broadcaster
+        adapter_metrics = {}
+        if hasattr(_broadcaster, '_adapter') and _broadcaster._adapter:
+            adapter_metrics = _broadcaster._adapter.get_metrics() if hasattr(_broadcaster._adapter, 'get_metrics') else {}
+
+        return web.json_response({
+            "status": "ok",
+            "adapter_type": _broadcaster.adapter_type if hasattr(_broadcaster, 'adapter_type') else "unknown",
+            "metrics": adapter_metrics,
+            "timestamp": log_timestamp(),
+        })
+    except Exception as e:
+        logger.error(f"[MONITORING] Error getting adapter metrics: {e}")
+        return web.json_response({
+            "status": "error",
+            "error": str(e),
+            "timestamp": log_timestamp(),
+        }, status=500)
+
+
+async def get_flags_status(request: web.Request) -> web.Response:
+    """
+    Get current feature flags configuration.
+
+    Returns all feature flags and their current values.
+
+    Args:
+        request: aiohttp request object
+
+    Returns:
+        JSON response with flag configuration
+    """
+    try:
+        flag_manager = get_flag_manager()
+        flags = flag_manager.get_all()
+
+        return web.json_response({
+            "status": "ok",
+            "flags": flags,
+            "timestamp": log_timestamp(),
+        })
+    except Exception as e:
+        logger.error(f"[MONITORING] Error getting flags status: {e}")
+        return web.json_response({
+            "status": "error",
+            "error": str(e),
+            "timestamp": log_timestamp(),
+        }, status=500)
+
+
+async def post_metrics_flush(request: web.Request) -> web.Response:
+    """
+    Manually trigger metrics flush to database.
+
+    Flushes in-memory metrics to Supabase database.
+
+    Args:
+        request: aiohttp request object
+
+    Returns:
+        JSON response with flush result
+    """
+    try:
+        # Get metrics from broadcaster and flush
+        if hasattr(_broadcaster, 'flush_metrics'):
+            result = await _broadcaster.flush_metrics()
+            return web.json_response({
+                "status": "ok",
+                "result": result,
+                "timestamp": log_timestamp(),
+            })
+        else:
+            return web.json_response({
+                "status": "error",
+                "error": "Metrics flush not available",
+                "timestamp": log_timestamp(),
+            }, status=501)
+    except Exception as e:
+        logger.error(f"[MONITORING] Error flushing metrics: {e}")
+        return web.json_response({
+            "status": "error",
+            "error": str(e),
+            "timestamp": log_timestamp(),
+        }, status=500)
+
+
+async def get_health_flags(request: web.Request) -> web.Response:
+    """
+    Get flag configuration health check.
+
+    Validates flag configuration and returns health status.
+
+    Args:
+        request: aiohttp request object
+
+    Returns:
+        JSON response with health status
+    """
+    try:
+        flag_manager = get_flag_manager()
+        flags = flag_manager.get_all()
+
+        # Validate flag combinations
+        issues = []
+
+        # Check: VALIDATION_STRICT requires ENABLE_VALIDATION
+        if flags.get('MONITORING_VALIDATION_STRICT') and not flags.get('MONITORING_ENABLE_VALIDATION'):
+            issues.append("VALIDATION_STRICT enabled but ENABLE_VALIDATION disabled")
+
+        # Check: DUAL_MODE requires USE_ADAPTER
+        if flags.get('MONITORING_DUAL_MODE') and not flags.get('MONITORING_USE_ADAPTER'):
+            issues.append("DUAL_MODE enabled but USE_ADAPTER disabled")
+
+        # Check: METRICS_PERSISTENCE requires METRICS_FLUSH_INTERVAL > 0
+        if flags.get('MONITORING_METRICS_PERSISTENCE') and flags.get('MONITORING_METRICS_FLUSH_INTERVAL', 0) <= 0:
+            issues.append("METRICS_PERSISTENCE enabled but METRICS_FLUSH_INTERVAL invalid")
+
+        health_status = "healthy" if not issues else "degraded"
+
+        return web.json_response({
+            "status": "ok",
+            "health": health_status,
+            "issues": issues,
+            "flags": flags,
+            "timestamp": log_timestamp(),
+        })
+    except Exception as e:
+        logger.error(f"[MONITORING] Error checking flags health: {e}")
+        return web.json_response({
+            "status": "error",
+            "error": str(e),
+            "timestamp": log_timestamp(),
+        }, status=500)
 
 
 async def get_auditor_observations(request: web.Request) -> web.Response:
@@ -779,6 +1031,114 @@ async def acknowledge_observation(request: web.Request) -> web.Response:
         }, status=500)
 
 
+async def get_cache_metrics(request: web.Request) -> web.Response:
+    """
+    Get cache metrics from Supabase monitoring schema.
+
+    Week 2-3 Monitoring Phase (2025-10-31): Cache Metrics Integration
+
+    Query params:
+        time_range: Time range in hours (default: 24)
+        implementation_type: Filter by implementation type (legacy, new)
+        aggregation: Aggregation level (raw, 1min, 1hour) (default: 1min)
+
+    Args:
+        request: aiohttp request object
+
+    Returns:
+        JSON response with cache metrics
+    """
+    try:
+        from src.storage.supabase_client import get_storage_manager
+        from datetime import datetime, timedelta
+
+        # Get query parameters
+        time_range_hours = int(request.query.get('time_range', 24))
+        implementation_type = request.query.get('implementation_type')
+        aggregation = request.query.get('aggregation', '1min')
+
+        # Calculate time window
+        end_time = datetime.utcnow()
+        start_time = end_time - timedelta(hours=time_range_hours)
+
+        # Get Supabase client
+        supabase = get_storage_manager()
+        client = supabase.get_client()
+
+        # Determine table based on aggregation level
+        table_map = {
+            'raw': 'cache_metrics',
+            '1min': 'cache_metrics_1min',
+            '1hour': 'cache_metrics_1hour'
+        }
+        table_name = table_map.get(aggregation, 'cache_metrics_1min')
+
+        # Build query for monitoring schema
+        query = client.schema('monitoring').table(table_name).select("*")
+
+        # Apply time filter
+        if aggregation == 'raw':
+            query = query.gte("timestamp", start_time.isoformat()).lte("timestamp", end_time.isoformat())
+        else:
+            # For aggregated tables, use minute_window or hour_window
+            time_column = 'minute_window' if aggregation == '1min' else 'hour_window'
+            query = query.gte(time_column, start_time.isoformat()).lte(time_column, end_time.isoformat())
+
+        # Apply implementation type filter
+        if implementation_type:
+            query = query.eq("implementation_type", implementation_type)
+
+        # Order by time descending and limit to 1000 records
+        if aggregation == 'raw':
+            query = query.order("timestamp", desc=True).limit(1000)
+        else:
+            time_column = 'minute_window' if aggregation == '1min' else 'hour_window'
+            query = query.order(time_column, desc=True).limit(1000)
+
+        # Execute query (run in thread pool since Supabase client is sync)
+        result = await asyncio.to_thread(lambda: query.execute())
+
+        # Calculate summary statistics
+        metrics = result.data
+        summary = {
+            'total_records': len(metrics),
+            'time_range_hours': time_range_hours,
+            'aggregation': aggregation,
+            'implementation_type': implementation_type or 'all'
+        }
+
+        if metrics and aggregation != 'raw':
+            # Calculate aggregate statistics from the data
+            total_ops = sum(m.get('total_operations', 0) for m in metrics)
+            total_hits = sum(m.get('hits', 0) for m in metrics)
+            total_misses = sum(m.get('misses', 0) for m in metrics)
+
+            summary.update({
+                'total_operations': total_ops,
+                'total_hits': total_hits,
+                'total_misses': total_misses,
+                'overall_hit_rate': round((total_hits / (total_hits + total_misses) * 100), 2) if (total_hits + total_misses) > 0 else 0,
+                'avg_response_time_ms': round(sum(m.get('avg_response_time_ms', 0) for m in metrics) / len(metrics), 2) if metrics else 0
+            })
+
+        return web.json_response({
+            "metrics": metrics,
+            "summary": summary,
+            "timestamp": log_timestamp()
+        })
+
+    except Exception as e:
+        logger.error(f"[MONITORING] Error fetching cache metrics: {e}")
+        import traceback
+        logger.error(f"[MONITORING] Traceback: {traceback.format_exc()}")
+        return web.json_response({
+            "error": str(e),
+            "metrics": [],
+            "summary": {},
+            "timestamp": log_timestamp()
+        }, status=500)
+
+
 async def get_current_metrics(request: web.Request) -> web.Response:
     """
     Get current system metrics for testing baseline comparison.
@@ -812,6 +1172,7 @@ async def periodic_metrics_broadcast():
     Periodically broadcast semaphore and WebSocket health metrics to dashboard.
 
     PHASE 2.4 ENHANCEMENT (2025-10-26): EXAI-recommended periodic monitoring
+    PHASE 1 DASHBOARD INTEGRATION (2025-10-31): Added cache metrics
     Broadcasts every 5 seconds to keep dashboard updated with latest metrics.
     """
     while True:
@@ -825,6 +1186,9 @@ async def periodic_metrics_broadcast():
                 # Broadcast WebSocket health
                 await _broadcast_websocket_health()
 
+                # PHASE 1 (2025-10-31): Broadcast cache metrics
+                await _broadcast_cache_metrics()
+
         except Exception as e:
             logger.error(f"Error in periodic metrics broadcast: {e}")
 
@@ -833,11 +1197,22 @@ async def start_monitoring_server(host: str = "0.0.0.0", port: int = 8080) -> No
     """
     Start monitoring server with both WebSocket and HTTP file serving.
 
+    PHASE 2.4.6: Integrated graceful shutdown support
+
     Args:
         host: Host to bind to
         port: Port to bind to
     """
     logger.info(f"[MONITORING] Starting monitoring server on {host}:{port}")
+
+    # PHASE 2.4.6: Initialize graceful shutdown handler
+    try:
+        from src.monitoring.persistence.graceful_shutdown import get_shutdown_handler
+        shutdown_handler = get_shutdown_handler()
+        logger.info("[MONITORING] Graceful shutdown handler initialized")
+    except Exception as e:
+        logger.warning(f"[MONITORING] Failed to initialize graceful shutdown: {e}")
+        shutdown_handler = None
 
     # Create aiohttp application
     app = web.Application()
@@ -858,9 +1233,19 @@ async def start_monitoring_server(host: str = "0.0.0.0", port: int = 8080) -> No
     app.router.add_get('/monitoring_dashboard.html', serve_dashboard)
     app.router.add_get('/status', status_handler)
 
+    # Phase 2.4.3: Dashboard Endpoints for Feature Flags and Metrics (2025-11-01)
+    app.router.add_get('/metrics/validation', get_validation_metrics)
+    app.router.add_get('/metrics/adapter', get_adapter_metrics)
+    app.router.add_get('/flags/status', get_flags_status)
+    app.router.add_post('/metrics/flush', post_metrics_flush)
+    app.router.add_get('/health/flags', get_health_flags)
+
     # AI Auditor API routes (2025-10-24)
     app.router.add_get('/api/auditor/observations', get_auditor_observations)
     app.router.add_post('/api/auditor/observations/{observation_id}/acknowledge', acknowledge_observation)
+
+    # Cache Metrics API routes (Week 2-3 Monitoring Phase - 2025-10-31)
+    app.router.add_get('/api/cache-metrics', get_cache_metrics)
 
     # Testing API routes (Phase 0.4 - 2025-10-24)
     app.router.add_get('/api/metrics/current', get_current_metrics)
@@ -900,6 +1285,12 @@ async def start_monitoring_server(host: str = "0.0.0.0", port: int = 8080) -> No
         await asyncio.Future()
     finally:
         broadcast_task.cancel()
+
+        # PHASE 2.4.6: Execute graceful shutdown
+        if shutdown_handler:
+            logger.info("[MONITORING] Executing graceful shutdown sequence...")
+            shutdown_handler.execute_shutdown()
+            logger.info("[MONITORING] Graceful shutdown completed")
 
 
 # Hook for monitoring system to broadcast events

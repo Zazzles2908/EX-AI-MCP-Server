@@ -32,6 +32,102 @@ PROVIDER_GLM = "glm"
 PROVIDER_SUPABASE_ONLY = "supabase_only"
 PROVIDER_AUTO = "auto"
 
+# Phase A2 Cleanup: Merged from tools/provider_config.py
+# Provider file size limits (in bytes)
+PROVIDER_LIMITS = {
+    "kimi": {
+        "max_size_mb": 100,
+        "max_size_bytes": 100 * 1024 * 1024,
+        "timeout_seconds": 300,
+        "supports_download": True,
+        "persistent_files": True,
+        "description": "Kimi (Moonshot) - Persistent files, 100MB limit"
+    },
+    "glm": {
+        "max_size_mb": 20,
+        "max_size_bytes": 20 * 1024 * 1024,
+        "timeout_seconds": 180,
+        "supports_download": False,
+        "persistent_files": False,
+        "session_bound": True,
+        "description": "GLM (ZhipuAI) - Session-bound files, 20MB limit"
+    },
+    "supabase_only": {
+        "max_size_mb": 5000,  # 5GB Supabase limit
+        "max_size_bytes": 5000 * 1024 * 1024,
+        "timeout_seconds": 600,
+        "supports_download": True,
+        "persistent_files": True,
+        "description": "Supabase only - Large files, no provider upload"
+    }
+}
+
+
+def get_provider_limit(provider: str, limit_type: str = "max_size_bytes"):
+    """
+    Get provider-specific limit.
+
+    Args:
+        provider: Provider name ('kimi', 'glm', 'supabase_only')
+        limit_type: Type of limit to retrieve
+
+    Returns:
+        Limit value or None if not found
+    """
+    if provider in PROVIDER_LIMITS:
+        return PROVIDER_LIMITS[provider].get(limit_type)
+    return None
+
+
+def validate_file_size(file_size: int, provider: str) -> tuple[bool, str]:
+    """
+    Validate file size against provider limits.
+
+    Args:
+        file_size: File size in bytes
+        provider: Provider name
+
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    if provider not in PROVIDER_LIMITS:
+        return False, f"Unknown provider: {provider}"
+
+    max_size = PROVIDER_LIMITS[provider]["max_size_bytes"]
+    max_size_mb = PROVIDER_LIMITS[provider]["max_size_mb"]
+
+    if file_size > max_size:
+        file_size_mb = file_size / (1024 * 1024)
+        return False, f"File too large for {provider}: {file_size_mb:.1f}MB > {max_size_mb}MB"
+
+    return True, ""
+
+
+def auto_select_provider(file_size: int, preferred_provider: str = None) -> str:
+    """
+    Auto-select provider based on file size and preferences.
+
+    Args:
+        file_size: File size in bytes
+        preferred_provider: Optional preferred provider
+
+    Returns:
+        Selected provider name
+    """
+    # If preferred provider specified and file fits, use it
+    if preferred_provider and preferred_provider in PROVIDER_LIMITS:
+        is_valid, _ = validate_file_size(file_size, preferred_provider)
+        if is_valid:
+            return preferred_provider
+
+    # Auto-select based on file size
+    if file_size <= PROVIDER_LIMITS["glm"]["max_size_bytes"]:
+        return "glm"  # Default for small files
+    elif file_size <= PROVIDER_LIMITS["kimi"]["max_size_bytes"]:
+        return "kimi"  # For medium files
+    else:
+        return "supabase_only"  # Large files only in Supabase
+
 
 class SupabaseUploadManager:
     """Manages file uploads to Supabase Storage with deduplication and tracking."""
@@ -378,6 +474,160 @@ class UploadError(Exception):
 # PROVIDER ADAPTERS (Phase 1 Enhancement)
 # ============================================================================
 
+def _generic_provider_upload_adapter(
+    supabase_client,
+    file_path: str,
+    user_id: str,
+    filename: str,
+    bucket: str,
+    tags: List[str],
+    provider: str,
+    default_model_env: str,
+    default_model: str,
+    upload_purpose: str = "file-extract"
+) -> Dict[str, Any]:
+    """
+    Generic provider upload adapter (Phase A2 Cleanup: Consolidated from Kimi/GLM adapters).
+
+    Workflow:
+    1. Validate file size (provider-specific)
+    2. Upload to Supabase (persistent storage)
+    3. Upload to provider SDK (Kimi/GLM)
+    4. Store mapping in file_id_mappings table
+    5. Return unified response with both IDs
+
+    Args:
+        supabase_client: Supabase client instance
+        file_path: Path to file
+        user_id: User ID
+        filename: Filename
+        bucket: Storage bucket
+        tags: List of tags
+        provider: Provider name ("kimi" or "glm")
+        default_model_env: Environment variable name for default model
+        default_model: Default model if env var not set
+        upload_purpose: Upload purpose ("file-extract" for Kimi, "agent" for GLM)
+
+    Returns:
+        Unified response with both Supabase and provider file IDs
+
+    Raises:
+        ValueError: If file exceeds size limit
+        UploadError: If upload fails
+    """
+    from tools.file_id_mapper import FileIdMapper
+
+    # 1. Validate file size (provider-specific)
+    file_size = os.path.getsize(file_path)
+    is_valid, error_msg = validate_file_size(file_size, provider)
+    if not is_valid:
+        raise ValueError(error_msg)
+
+    logger.info(f"Starting {provider.upper()} upload adapter for {filename} ({file_size} bytes)")
+
+    # 2. Upload to Supabase
+    upload_manager = SupabaseUploadManager(supabase_client, bucket)
+    supabase_result = upload_manager.upload_file(
+        file_path=file_path,
+        user_id=user_id,
+        filename=filename,
+        bucket=bucket,
+        tags=tags
+    )
+
+    supabase_file_id = supabase_result['file_id']
+
+    try:
+        # 3. Upload to provider SDK
+        from src.providers.registry import ModelProviderRegistry
+
+        # Get provider instance
+        model = os.getenv(default_model_env, default_model)
+        provider_instance = ModelProviderRegistry.get_provider_for_model(model)
+
+        # Upload to provider
+        provider_file_id = provider_instance.upload_file(file_path, purpose=upload_purpose)
+
+        logger.info(f"✅ Uploaded to {provider.upper()}: {provider_file_id}")
+
+        # 4. Store mapping (with session info for GLM)
+        mapper = FileIdMapper(supabase_client)
+        mapping_kwargs = {
+            "supabase_id": supabase_file_id,
+            "provider_id": provider_file_id,
+            "provider": provider,
+            "user_id": user_id,
+            "status": "completed"
+        }
+
+        # GLM-specific: Add session info
+        session_info = None
+        if provider == "glm":
+            now = datetime.utcnow()
+            session_info = {
+                "model": model,
+                "created_at": now.isoformat(),
+                "expires_at": (now + timedelta(hours=24)).isoformat(),
+                "session_id": f"glm_session_{user_id}_{int(now.timestamp())}"
+            }
+            mapping_kwargs["session_info"] = session_info
+
+        mapper.store_mapping(**mapping_kwargs)
+
+        # 5. Return unified response
+        response = {
+            "success": True,
+            "supabase_file_id": supabase_file_id,
+            "provider_file_id": provider_file_id,
+            "provider": provider,
+            "file_size": file_size,
+            "filename": filename,
+            "upload_time": datetime.utcnow().isoformat(),
+            "deduplicated": supabase_result.get('deduplicated', False),
+            "metadata_id": supabase_result.get('metadata_id')
+        }
+
+        # GLM-specific: Add session info to response
+        if session_info:
+            response["session_info"] = session_info
+
+        return response
+
+    except Exception as e:
+        logger.error(f"❌ {provider.upper()} upload failed: {e}")
+
+        # Store failed mapping for retry
+        mapper = FileIdMapper(supabase_client)
+        mapper.store_mapping(
+            supabase_id=supabase_file_id,
+            provider_id=None,
+            provider=provider,
+            user_id=user_id,
+            status="failed"
+        )
+
+        # Don't fail the whole operation - Supabase upload succeeded
+        logger.warning(
+            f"Provider upload failed but Supabase upload succeeded. "
+            f"User: {user_id}, File: {filename}, Provider: {provider}, "
+            f"Supabase ID: {supabase_file_id}, Error: {str(e)}"
+        )
+
+        return {
+            "success": True,
+            "supabase_file_id": supabase_file_id,
+            "provider_file_id": None,
+            "provider": provider,
+            "file_size": file_size,
+            "filename": filename,
+            "upload_time": datetime.utcnow().isoformat(),
+            "deduplicated": supabase_result.get('deduplicated', False),
+            "metadata_id": supabase_result.get('metadata_id'),
+            "provider_upload_failed": True,
+            "error": str(e)
+        }
+
+
 def _kimi_upload_adapter(
     supabase_client,
     file_path: str,
@@ -387,13 +637,7 @@ def _kimi_upload_adapter(
     tags: List[str]
 ) -> Dict[str, Any]:
     """
-    Kimi-specific upload adapter.
-
-    Workflow:
-    1. Upload to Supabase (persistent storage)
-    2. Upload to Kimi SDK (100MB limit, persistent files)
-    3. Store mapping in file_id_mappings table
-    4. Return unified response with both IDs
+    Kimi-specific upload adapter (Phase A2 Cleanup: Thin wrapper around generic adapter).
 
     Args:
         supabase_client: Supabase client instance
@@ -410,98 +654,18 @@ def _kimi_upload_adapter(
         ValueError: If file exceeds size limit
         UploadError: If upload fails
     """
-    from tools.provider_config import validate_file_size
-    from tools.file_id_mapper import FileIdMapper
-
-    # Validate file size
-    file_size = os.path.getsize(file_path)
-    is_valid, error_msg = validate_file_size(file_size, "kimi")
-    if not is_valid:
-        raise ValueError(error_msg)
-
-    logger.info(f"Starting Kimi upload adapter for {filename} ({file_size} bytes)")
-
-    # 1. Upload to Supabase
-    upload_manager = SupabaseUploadManager(supabase_client, bucket)
-    supabase_result = upload_manager.upload_file(
+    return _generic_provider_upload_adapter(
+        supabase_client=supabase_client,
         file_path=file_path,
         user_id=user_id,
         filename=filename,
         bucket=bucket,
-        tags=tags
+        tags=tags,
+        provider="kimi",
+        default_model_env="KIMI_DEFAULT_MODEL",
+        default_model="kimi-k2-0905-preview",
+        upload_purpose="file-extract"
     )
-
-    supabase_file_id = supabase_result['file_id']
-
-    try:
-        # 2. Upload to Kimi SDK
-        from src.providers.registry import ModelProviderRegistry
-
-        # Get Kimi provider
-        kimi_model = os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview")
-        provider = ModelProviderRegistry.get_provider_for_model(kimi_model)
-
-        # Upload to Kimi
-        kimi_file_id = provider.upload_file(file_path, purpose="file-extract")
-
-        logger.info(f"✅ Uploaded to Kimi: {kimi_file_id}")
-
-        # 3. Store mapping
-        mapper = FileIdMapper(supabase_client)
-        mapper.store_mapping(
-            supabase_id=supabase_file_id,
-            provider_id=kimi_file_id,
-            provider="kimi",
-            user_id=user_id,
-            status="completed"
-        )
-
-        # 4. Return unified response
-        return {
-            "success": True,
-            "supabase_file_id": supabase_file_id,
-            "provider_file_id": kimi_file_id,
-            "provider": "kimi",
-            "file_size": file_size,
-            "filename": filename,
-            "upload_time": datetime.utcnow().isoformat(),
-            "deduplicated": supabase_result.get('deduplicated', False),
-            "metadata_id": supabase_result.get('metadata_id')
-        }
-
-    except Exception as e:
-        logger.error(f"❌ Kimi upload failed: {e}")
-
-        # Store failed mapping for retry
-        mapper = FileIdMapper(supabase_client)
-        mapper.store_mapping(
-            supabase_id=supabase_file_id,
-            provider_id=None,
-            provider="kimi",
-            user_id=user_id,
-            status="failed"
-        )
-
-        # Don't fail the whole operation - Supabase upload succeeded
-        logger.warning(
-            f"Provider upload failed but Supabase upload succeeded. "
-            f"User: {user_id}, File: {filename}, Provider: kimi, "
-            f"Supabase ID: {supabase_file_id}, Error: {str(e)}"
-        )
-
-        return {
-            "success": True,
-            "supabase_file_id": supabase_file_id,
-            "provider_file_id": None,
-            "provider": "kimi",
-            "file_size": file_size,
-            "filename": filename,
-            "upload_time": datetime.utcnow().isoformat(),
-            "deduplicated": supabase_result.get('deduplicated', False),
-            "metadata_id": supabase_result.get('metadata_id'),
-            "provider_upload_failed": True,
-            "error": str(e)
-        }
 
 
 def _glm_upload_adapter(
@@ -513,13 +677,7 @@ def _glm_upload_adapter(
     tags: List[str]
 ) -> Dict[str, Any]:
     """
-    GLM-specific upload adapter.
-
-    Workflow:
-    1. Upload to Supabase (persistent storage)
-    2. Upload to GLM SDK (20MB limit, session-bound files)
-    3. Store mapping + session info in file_id_mappings table
-    4. Return unified response with both IDs
+    GLM-specific upload adapter (Phase A2 Cleanup: Thin wrapper around generic adapter).
 
     Args:
         supabase_client: Supabase client instance
@@ -536,108 +694,18 @@ def _glm_upload_adapter(
         ValueError: If file exceeds size limit
         UploadError: If upload fails
     """
-    from tools.provider_config import validate_file_size
-    from tools.file_id_mapper import FileIdMapper
-
-    # Validate file size
-    file_size = os.path.getsize(file_path)
-    is_valid, error_msg = validate_file_size(file_size, "glm")
-    if not is_valid:
-        raise ValueError(error_msg)
-
-    logger.info(f"Starting GLM upload adapter for {filename} ({file_size} bytes)")
-
-    # 1. Upload to Supabase
-    upload_manager = SupabaseUploadManager(supabase_client, bucket)
-    supabase_result = upload_manager.upload_file(
+    return _generic_provider_upload_adapter(
+        supabase_client=supabase_client,
         file_path=file_path,
         user_id=user_id,
         filename=filename,
         bucket=bucket,
-        tags=tags
+        tags=tags,
+        provider="glm",
+        default_model_env="GLM_DEFAULT_MODEL",
+        default_model="glm-4.6",
+        upload_purpose="agent"
     )
-
-    supabase_file_id = supabase_result['file_id']
-
-    try:
-        # 2. Upload to GLM SDK
-        from src.providers.registry import ModelProviderRegistry
-
-        # Get GLM provider
-        glm_model = os.getenv("GLM_DEFAULT_MODEL", "glm-4.6")
-        provider = ModelProviderRegistry.get_provider_for_model(glm_model)
-
-        # Upload to GLM
-        glm_file_id = provider.upload_file(file_path, purpose="agent")
-
-        logger.info(f"✅ Uploaded to GLM: {glm_file_id}")
-
-        # 3. Store mapping with session info
-        now = datetime.utcnow()
-        session_info = {
-            "model": glm_model,
-            "created_at": now.isoformat(),
-            "expires_at": (now + timedelta(hours=24)).isoformat(),
-            "session_id": f"glm_session_{user_id}_{int(now.timestamp())}"
-        }
-
-        mapper = FileIdMapper(supabase_client)
-        mapper.store_mapping(
-            supabase_id=supabase_file_id,
-            provider_id=glm_file_id,
-            provider="glm",
-            user_id=user_id,
-            session_info=session_info,
-            status="completed"
-        )
-
-        # 4. Return unified response
-        return {
-            "success": True,
-            "supabase_file_id": supabase_file_id,
-            "provider_file_id": glm_file_id,
-            "provider": "glm",
-            "file_size": file_size,
-            "filename": filename,
-            "upload_time": datetime.utcnow().isoformat(),
-            "deduplicated": supabase_result.get('deduplicated', False),
-            "metadata_id": supabase_result.get('metadata_id'),
-            "session_info": session_info
-        }
-
-    except Exception as e:
-        logger.error(f"❌ GLM upload failed: {e}")
-
-        # Store failed mapping for retry
-        mapper = FileIdMapper(supabase_client)
-        mapper.store_mapping(
-            supabase_id=supabase_file_id,
-            provider_id=None,
-            provider="glm",
-            user_id=user_id,
-            status="failed"
-        )
-
-        # Don't fail the whole operation - Supabase upload succeeded
-        logger.warning(
-            f"Provider upload failed but Supabase upload succeeded. "
-            f"User: {user_id}, File: {filename}, Provider: glm, "
-            f"Supabase ID: {supabase_file_id}, Error: {str(e)}"
-        )
-
-        return {
-            "success": True,
-            "supabase_file_id": supabase_file_id,
-            "provider_file_id": None,
-            "provider": "glm",
-            "file_size": file_size,
-            "filename": filename,
-            "upload_time": datetime.utcnow().isoformat(),
-            "deduplicated": supabase_result.get('deduplicated', False),
-            "metadata_id": supabase_result.get('metadata_id'),
-            "provider_upload_failed": True,
-            "error": str(e)
-        }
 
 
 def upload_file_with_provider(
@@ -670,7 +738,7 @@ def upload_file_with_provider(
         ValueError: If parameters are invalid or file exceeds limits
         UploadError: If upload fails
     """
-    from tools.provider_config import auto_select_provider
+    # Phase A2 Cleanup: Removed import (now defined in this file)
 
     # Validate required parameters
     if not user_id:
@@ -757,7 +825,8 @@ def upload_file_with_app_context(
         Dict with upload results including success status, file_id, etc.
     """
     from tools.temp_file_handler import temp_handler
-    from utils.path_validation import validate_file_path
+    # Phase 1 Path Consolidation (2025-10-31): Import from validation subdirectory
+    from utils.path.validation import validate_file_path
     from src.storage.supabase_client import get_storage_manager
 
     temp_path = None

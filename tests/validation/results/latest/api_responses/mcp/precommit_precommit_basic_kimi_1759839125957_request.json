@@ -1,0 +1,18 @@
+{
+  "op": "call_tool",
+  "request_id": "precommit_basic_kimi_1759839125957",
+  "name": "precommit",
+  "arguments": {
+    "step": "Run pre-commit checks on the specified files",
+    "step_number": 1,
+    "total_steps": 1,
+    "next_step_required": false,
+    "findings": "Pre-commit validation requested",
+    "files_checked": [
+      "tool_validation_suite/fixtures/sample_code.py"
+    ],
+    "path": ".",
+    "model": "kimi-k2-0905-preview",
+    "use_assistant_model": false
+  }
+}
