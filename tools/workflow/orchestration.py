@@ -197,18 +197,33 @@ class OrchestrationMixin:
                     pass
                 response_data = await self.handle_work_completion(response_data, request, arguments)
             else:
-                # AUTO-EXECUTION: Continue internally instead of forcing pause
-                logger.info(f"[AUTO-EXEC] {self.get_name()}: Starting auto-execution for step {request.step_number}")
+                # CRITICAL FIX (2025-10-31): DISABLE AUTO-EXECUTION
+                # Root cause: Recursive auto-execution causes up to 50 API calls per tool invocation
+                # Impact: API rate limiting, client timeouts, socket failures, semaphore leaks
+                # EXAI Consultation: e4b33353-a710-4e19-9419-318c7a3cf317
+                # Recommendation: Disable auto-execution entirely for predictable behavior
+                logger.info(f"{self.get_name()}: Auto-execution DISABLED - user must call tool again for next step")
+                response_data["status"] = "next_step_required"
+                response_data["message"] = (
+                    f"Investigation requires another step (step {request.step_number + 1}/{request.total_steps}). "
+                    "Please call the tool again to continue."
+                )
+                # Provide next_call guidance for user
+                response_data["next_call"] = {
+                    "tool": self.get_name(),
+                    "arguments": {
+                        "step_number": request.step_number + 1,
+                        "total_steps": request.total_steps,
+                        "step": "Continue investigation based on current findings",
+                        "findings": request.findings,
+                        "next_step_required": True,
+                        "continuation_id": response_data.get("continuation_id")
+                    }
+                }
                 try:
-                    send_progress(f"{self.get_name()}: Auto-executing next step...")
+                    send_progress(f"{self.get_name()}: Step {request.step_number}/{request.total_steps} complete - manual continuation required")
                 except Exception:
                     pass
-                try:
-                    response_data = await self._auto_execute_next_step(response_data, request, arguments)
-                    logger.info(f"[AUTO-EXEC] {self.get_name()}: Auto-execution completed, status={response_data.get('status')}")
-                except Exception as auto_exec_error:
-                    logger.error(f"[AUTO-EXEC] {self.get_name()}: Auto-execution failed: {auto_exec_error}", exc_info=True)
-                    raise
             
             # Allow tools to customize the final response
             response_data = self.customize_workflow_response(response_data, request)
