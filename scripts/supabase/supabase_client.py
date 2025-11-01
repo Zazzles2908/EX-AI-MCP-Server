@@ -33,12 +33,16 @@ if not SUPABASE_SERVICE_ROLE_KEY:
 # CLIENT INSTANCES
 # ============================================================================
 
+# PHASE 2 FIX (2025-11-01): Use centralized singleton to prevent duplicate initialization
+# This eliminates 2 of the 4 duplicate Supabase client initializations
+from src.storage.supabase_singleton import get_supabase_client
+
 # Client for user-authenticated operations (uses anon key)
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+supabase: Client = get_supabase_client(use_admin=False)
 
 # Client for admin/server operations (uses service role key)
 # WARNING: Never expose this client to client-side code!
-supabase_admin: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+supabase_admin: Client = get_supabase_client(use_admin=True)
 
 # ============================================================================
 # HELPER FUNCTIONS
