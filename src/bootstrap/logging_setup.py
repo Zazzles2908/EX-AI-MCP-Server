@@ -57,11 +57,36 @@ def setup_logging(
     # (root logger may have its own handlers from async_logging setup)
     logger.propagate = False
     
-    # Create formatter
-    formatter = logging.Formatter(
-        "%(asctime)s %(levelname)s %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
-    )
+    # CRITICAL FIX (2025-11-01): Use Melbourne timezone for all timestamps
+    # EXAI Consultation: 63c00b70-364b-4351-bf6c-5a105e553dce
+    # Import timezone helper for Melbourne/AEDT timestamps
+    timezone_loaded = False
+    try:
+        from utils.timezone_helper import MELBOURNE_TZ
+        from datetime import datetime
+
+        class MelbourneFormatter(logging.Formatter):
+            """Custom formatter that uses Melbourne timezone"""
+            def formatTime(self, record, datefmt=None):
+                dt = datetime.fromtimestamp(record.created, tz=MELBOURNE_TZ)
+                if datefmt:
+                    return dt.strftime(datefmt)
+                else:
+                    return dt.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+        formatter = MelbourneFormatter(
+            "%(asctime)s %(levelname)s %(name)s: %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S %Z"
+        )
+        timezone_loaded = True
+    except ImportError as e:
+        # Fallback to standard formatter if timezone_helper not available
+        formatter = logging.Formatter(
+            "%(asctime)s %(levelname)s %(name)s: %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S"
+        )
+        # Log warning about timezone fallback (will use logger after it's configured)
+        print(f"WARNING: Failed to load Melbourne timezone - falling back to UTC: {e}", file=sys.stderr)
     
     # Add console handler
     if console_logging:
@@ -96,7 +121,12 @@ def setup_logging(
         except Exception as e:
             # Never let logging setup break the application
             logger.warning(f"Failed to setup file logging: {e}")
-    
+
+    # PHASE 1 FIX (2025-11-01): Re-log timezone warning if helper failed to load
+    # EXAI Consultation: 63c00b70-364b-4351-bf6c-5a105e553dce
+    if not timezone_loaded:
+        logger.warning("Melbourne timezone unavailable - using UTC timestamps")
+
     return logger
 
 

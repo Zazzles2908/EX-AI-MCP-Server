@@ -1,0 +1,501 @@
+﻿PS C:\Project\EX-AI-MCP-Server> docker logs --tail 500 exai-mcp-daemon 2>&1 
+2025-11-01 09:36:57 INFO __main__: [MAIN] Server list: ['coroutine', 'coroutine', 'coroutine', 'coroutine', 'coroutine']
+2025-11-01 09:36:57 INFO config.timeouts: === TIMEOUT CONFIGURATION ===
+2025-11-01 09:36:57 INFO config.timeouts: Tool Timeouts:
+2025-11-01 09:36:57 INFO config.timeouts:   Simple Tool: 30s
+2025-11-01 09:36:57 INFO config.timeouts:   Workflow Tool: 300s
+2025-11-01 09:36:57 INFO config.timeouts:   Expert Analysis: 300s
+2025-11-01 09:36:57 INFO config.timeouts: Provider Timeouts:
+2025-11-01 09:36:57 INFO config.timeouts:   GLM: 45s
+2025-11-01 09:36:57 INFO config.timeouts:   Kimi: 90s
+2025-11-01 09:36:57 INFO config.timeouts:   Kimi Web Search: 120s
+2025-11-01 09:36:57 INFO config.timeouts: Calculated Timeouts:
+2025-11-01 09:36:57 INFO config.timeouts:   Daemon: 450s (1.5x workflow)
+2025-11-01 09:36:57 INFO config.timeouts:   Shim: 600s (2.0x workflow)
+2025-11-01 09:36:57 INFO config.timeouts:   Client: 750s (2.5x workflow)
+2025-11-01 09:36:57 INFO config.timeouts: === END TIMEOUT CONFIGURATION ===
+2025-11-01 09:36:57 INFO src.bootstrap.singletons: Configuring providers (first-time initialization)
+2025-11-01 09:36:57 INFO src.server.providers.provider_detection: Kimi API key found - Moonshot AI models available
+2025-11-01 09:36:57 INFO src.server.providers.provider_detection: GLM API key found - ZhipuAI models available
+2025-11-01 09:36:57 INFO src.server.providers.provider_diagnostics: Available providers: Kimi, GLM
+2025-11-01 09:36:57 INFO src.providers.kimi: Kimi provider using centralized timeout: 90s
+2025-11-01 09:36:57 INFO root: Model allow-list not configured for OpenAI Compatible - all models permitted. To restrict access, set KIMI_ALLOWED_MODELS with comma-separated model names.
+2025-11-01 09:36:57 INFO root: Using extended timeouts for custom endpoint: https://api.moonshot.ai/v1
+2025-11-01 09:36:57 INFO src.providers.glm: GLM provider using SDK with base_url=https://api.z.ai/api/paas/v4, timeout=45s, max_retries=3
+2025-11-01 09:36:58 INFO src.server.providers.provider_diagnostics: Providers configured: KIMI, GLM; GLM models: 6; Kimi models: 18
+2025-11-01 09:36:58 INFO src.server.providers.provider_restrictions: No model restrictions configured - all models allowed
+2025-11-01 09:36:58 INFO src.bootstrap.singletons: Providers configured successfully
+2025-11-01 09:36:58 INFO src.bootstrap.singletons: [PROVIDER_TOOLS] Attempting to import kimi_manage_files from tools.providers.kimi.kimi_files.KimiManageFilesTool
+2025-11-01 09:36:58 INFO src.bootstrap.singletons: [PROVIDER_TOOLS] Successfully registered kimi_manage_files
+2025-11-01 09:36:58 INFO src.bootstrap.singletons: [PROVIDER_TOOLS] Attempting to import kimi_intent_analysis from tools.providers.kimi.kimi_intent.KimiIntentAnalysisTool
+2025-11-01 09:36:58 INFO src.bootstrap.singletons: [PROVIDER_TOOLS] Successfully registered kimi_intent_analysis
+2025-11-01 09:36:58 INFO src.bootstrap.singletons: Registering provider-specific tools: ['kimi_intent_analysis', 'kimi_manage_files']
+2025-11-01 09:36:58 INFO utils.conversation.storage_factory: [STORAGE_FACTORY] Initializing conversation storage at startup...
+2025-11-01 09:36:58 INFO utils.conversation.storage_factory: [STORAGE_FACTORY] Creating conversation storage: backend=dual, fallback=True
+2025-11-01 09:36:58 INFO src.storage.supabase_client: [SUPABASE_INIT] SUPABASE_URL=SET
+2025-11-01 09:36:58 INFO src.storage.supabase_client: [SUPABASE_INIT] SUPABASE_SERVICE_ROLE_KEY=SET
+2025-11-01 09:36:58 INFO src.storage.supabase_client: Supabase storage initialized: https://mxaazuhlqewmkweewyaz.supabase.co
+2025-11-01 09:36:58 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/schema_version?select=version&limit=1 "HTTP/2 200 OK"
+2025-11-01 09:36:58 INFO utils.caching.base_cache_manager: [CONVERSATION_CACHE] L1 initialized: TTLCache(maxsize=100, ttl=300s)
+2025-11-01 09:36:58 INFO utils.caching.base_cache_manager: [CONVERSATION_CACHE] Base cache manager initialized
+2025-11-01 09:36:58 INFO utils.conversation.cache_manager: [CACHE_MANAGER] Conversation cache manager initialized (L1_TTL=300s, L2_TTL=1800s)
+2025-11-01 09:36:58 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Will use async queue for writes
+2025-11-01 09:36:58 INFO utils.infrastructure.storage_backend: Redis storage initialized (ttl=86400s) at redis://:****@redis:6379/0
+2025-11-01 09:36:58 INFO utils.infrastructure.storage_backend: Initialized Redis conversation storage
+2025-11-01 09:36:58 INFO utils.conversation.storage_factory: Initialized dual storage (Supabase + in-memory) with context engineering
+2025-11-01 09:36:58 INFO utils.conversation.storage_factory: [STORAGE_FACTORY] Singleton storage instance created: DualStorageConversation
+2025-11-01 09:36:58 INFO utils.conversation.storage_factory: [STORAGE_FACTORY] Startup initialization complete: DualStorageConversation
+2025-11-01 09:36:58 INFO src.daemon.warmup: [WARMUP] ========================================
+2025-11-01 09:36:58 INFO src.daemon.warmup: [WARMUP] Starting connection warmup...
+2025-11-01 09:36:58 INFO src.daemon.warmup: [WARMUP] ========================================
+2025-11-01 09:36:58 INFO src.daemon.monitoring_endpoint: [MONITORING] Starting monitoring server on 0.0.0.0:8080
+2025-11-01 09:36:58 INFO src.monitoring.persistence.graceful_shutdown: Signal handlers registered (SIGTERM, SIGINT)
+2025-11-01 09:36:58 INFO src.daemon.monitoring_endpoint: [MONITORING] Graceful shutdown handler initialized
+2025-11-01 09:36:58 INFO src.daemon.monitoring_endpoint: [MONITORING] Registered /events endpoint for test event ingestion
+2025-11-01 09:36:58 INFO src.monitoring.metrics: [METRICS] Starting periodic updates (interval: 60s)
+2025-11-01 09:36:58 INFO utils.monitoring.ai_auditor: [AI_AUDITOR] Starting auditor service, connecting to ws://localhost:8080/ws
+2025-11-01 09:36:58 INFO src.daemon.warmup: [WARMUP] Initializing Supabase connection...
+2025-11-01 09:36:58 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=id&limit=1 "HTTP/2 200 OK"
+2025-11-01 09:36:58 INFO src.daemon.warmup: [WARMUP] ✅ Supabase connection warmed up successfully (0.081s)
+2025-11-01 09:36:58 INFO src.daemon.warmup: [WARMUP] Initializing Redis connection...
+2025-11-01 09:36:59 INFO src.daemon.monitoring_endpoint: [MONITORING] Monitoring server running on ws://0.0.0.0:8080
+2025-11-01 09:36:59 INFO src.daemon.monitoring_endpoint: [MONITORING] 🔍 Semaphore Monitor: http://0.0.0.0:8080/semaphore_monitor.html
+2025-11-01 09:36:59 INFO src.daemon.monitoring_endpoint: [MONITORING] 📊 Full Dashboard: http://0.0.0.0:8080/monitoring_dashboard.html
+2025-11-01 09:36:59 INFO src.daemon.monitoring_endpoint: [MONITORING] Started periodic metrics broadcast (every 5s)
+2025-11-01 09:36:59 INFO src.daemon.health_endpoint: [HEALTH] Health check server running on http://0.0.0.0:8082/health
+2025-11-01 09:36:59 INFO src.daemon.health_endpoint: [HEALTH] WebSocket health endpoint: http://0.0.0.0:8082/health/websocket
+2025-11-01 09:36:59 INFO src.daemon.monitoring_endpoint: [MONITORING] Dashboard connected from 127.0.0.1
+2025-11-01 09:36:59 INFO utils.monitoring.ai_auditor: [AI_AUDITOR] Connected to monitoring WebSocket
+2025-11-01 09:36:59 INFO src.daemon.warmup: [WARMUP] ✅ Redis connection warmed up successfully (0.027s)
+2025-11-01 09:36:59 INFO src.daemon.warmup: [WARMUP] ========================================
+2025-11-01 09:36:59 INFO src.daemon.warmup: [WARMUP] ✅ All connections warmed up successfully (0.245s)
+2025-11-01 09:36:59 INFO src.daemon.warmup: [WARMUP] ========================================
+2025-11-01 09:36:59 INFO src.daemon.conversation_queue: [CONV_QUEUE] Consumer started (max_size=1000, warning_threshold=500)
+2025-11-01 09:36:59 INFO src.daemon.conversation_queue: [CONV_QUEUE] Global queue initialized
+2025-11-01 09:36:59 INFO src.daemon.session_semaphore_manager: [SESSION_SEM] Initialized SessionSemaphoreManager (max_concurrent_per_session=1, cleanup_interval=300s, inactive_timeout=300s)
+2025-11-01 09:36:59 INFO src.daemon.session_semaphore_manager: [SESSION_SEM] Cleanup task started
+2025-11-01 09:36:59 INFO src.daemon.session_semaphore_manager: [SESSION_SEM] Global session semaphore manager initialized
+2025-11-01 09:36:59 INFO src.daemon.ws.request_router: [PORT_ISOLATION] RequestRouter initialized for port 8079
+2025-11-01 09:36:59 INFO utils.infrastructure.semantic_cache_legacy: Semantic cache initialized (TTL=600s, max_size=1000, max_response_size=1048576 bytes)
+2025-11-01 09:36:59 INFO utils.infrastructure.semantic_cache_legacy: Initialized global semantic cache (TTL=600s, max_size=1000, max_response_size=1048576 bytes)
+2025-11-01 09:36:59 INFO src.daemon.ws.request_router: [SEMANTIC_CACHE] Initialized semantic cache
+2025-11-01 09:36:59 INFO src.daemon.conversation_queue: [CONV_QUEUE] Consumer loop started
+2025-11-01 09:36:59 INFO src.daemon.session_semaphore_manager: [SESSION_SEM] Cleanup task started
+2025-11-01 09:36:59 INFO src.daemon.ws.health_monitor: [HEALTH] Starting health writer (interval: 10.0s)
+2025-11-01 09:36:59 INFO src.daemon.ws.health_monitor: [HEALTH] Starting periodic semaphore health check (interval: 30.0s)
+2025-11-01 09:36:59 INFO src.daemon.ws.session_handler: [SESSION_CLEANUP] Starting periodic cleanup (interval: 300s)
+2025-11-01 09:37:20 INFO aiohttp.access: 172.18.0.1 [01/Nov/2025:08:37:20 +1000] "GET /health HTTP/1.1" 404 174 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; en-AU) WindowsPowerShell/5.1.26100.6899"   
+2025-11-01 09:37:46 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=id&limit=1 "HTTP/2 200 OK"
+2025-11-01 09:37:46 INFO src.daemon.monitoring.memory_monitor: Memory monitor initialized: warning=80.0%, critical=90.0%, leak_threshold=100.0MB/h
+2025-11-01 09:37:46 INFO src.daemon.monitoring.memory_monitor: Memory baseline set: RSS=121.78MB
+2025-11-01 09:37:46 INFO aiohttp.access: 172.18.0.1 [01/Nov/2025:08:37:46 +1000] "GET /health HTTP/1.1" 200 1251 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; en-AU) WindowsPowerShell/5.1.26100.6899"  
+2025-11-01 09:38:23 INFO src.daemon.connection_manager: ConnectionManager initialized: max_connections=2000, max_per_ip=100
+2025-11-01 09:38:23 INFO src.resilience.rate_limiter: RateLimiter initialized: global=1000/100.0t/s, ip=100/10.0t/s, user=50/5.0t/s, cleanup_interval=3600s
+2025-11-01 09:38:23 INFO src.daemon.connection_manager: Connection registered: d-QTiObxUAs6KV8cEmMjT2336hpmVYhXNCoZgwOH_h4 from 172.18.0.1 (total: 1, ip_total: 1)
+2025-11-01 09:38:23 INFO src.daemon.ws.connection_manager: [WS_CONNECTION] New connection from 172.18.0.1:43194 (id: d-QTiObxUAs6KV8cEmMjT2336hpmVYhXNCoZgwOH_h4)
+2025-11-01 09:38:23 INFO src.daemon.session_manager: [SESSION_MANAGER] Created session vscode-instance-1 (total sessions: 1)
+2025-11-01 09:38:23 INFO tools.chat: TOOL_EXEC_DEBUG: execute() method ENTERED for tool 'chat'
+2025-11-01 09:38:23 INFO tools.chat: chat tool called with arguments: ['prompt', 'continuation_id', 'files', 'model', 'use_websearch']
+2025-11-01 09:38:23 INFO tools.chat: TOOL_EXEC_DEBUG: Arguments stored, about to send progress
+2025-11-01 09:38:23 INFO mcp_activity: [PROGRESS] chat: Starting execution
+2025-11-01 09:38:23 INFO mcp_activity: [PROGRESS] chat: Request validated
+2025-11-01 09:38:23 INFO tools.chat: TOOL_EXEC_DEBUG: About to create ModelContext for model 'glm-4.6'
+2025-11-01 09:38:23 INFO tools.chat: TOOL_EXEC_DEBUG: ModelContext created successfully for glm-4.6
+2025-11-01 09:38:23 INFO mcp_activity: [PROGRESS] chat: Model/context ready: glm-4.6
+2025-11-01 09:38:23 INFO utils.conversation.global_storage: [GLOBAL_STORAGE] Created global storage instance: DualStorageConversation (id=133246802101648)
+2025-11-01 09:38:23 INFO utils.caching.base_cache_manager: [CONVERSATION_CACHE] L2 (Redis) connected: redis:6379/0
+2025-11-01 09:38:23 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.63c00b70-364b-4351-bf6c-5a105e553dce "HTTP/2 200 OK"       
+2025-11-01 09:38:23 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_by_continuation_id took 0.095s
+2025-11-01 09:38:23 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.asc&limit=5 "HTTP/2 200 OK"
+2025-11-01 09:38:23 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_messages took 0.048s
+2025-11-01 09:38:23 INFO utils.conversation.supabase_memory: [CONTEXT_PRUNING] Loaded 5 messages for 63c00b70-364b-4351-bf6c-5a105e553dce (limit=5)
+2025-11-01 09:38:23 INFO utils.conversation.supabase_memory: [REQUEST_CACHE STORE] Cached thread 63c00b70-364b-4351-bf6c-5a105e553dce for this request (loaded from Supabase)
+2025-11-01 09:38:23 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.147s
+2025-11-01 09:38:23 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.63c00b70-364b-4351-bf6c-5a105e553dce "HTTP/2 200 OK"       
+2025-11-01 09:38:23 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.asc&limit=10 "HTTP/2 200 OK"
+2025-11-01 09:38:23 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata=None, type=<class 'NoneType'>
+2025-11-01 09:38:23 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=63c00b70-364b-4351-bf6c-5a105e553dce, storage_metadata={}
+2025-11-01 09:38:23 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 09:38:23 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 09:38:23 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.095s
+2025-11-01 09:38:23 INFO root: MODEL_CONTEXT_DEBUG: Getting provider for model 'glm-4.6'
+2025-11-01 09:38:23 INFO root: MODEL_CONTEXT_DEBUG: get_provider_for_model returned: <src.providers.glm.GLMModelProvider object at 0x792ff065f8c0>
+2025-11-01 09:38:23 INFO utils.conversation.supabase_memory: [REQUEST_CACHE HIT] Thread 63c00b70-364b-4351-bf6c-5a105e553dce from request cache (0ms, no Supabase query)
+2025-11-01 09:38:23 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 09:38:23 INFO tools.shared.base_tool_file_handling: [FILE_PROCESSING] chat tool will embed new files: broadcaster.py, flags.py, __init__.py, semantic_cache.py, request_router.py, run_ws_daemon.py, unified_collector.py, supabase-realtime.js, 20251101_unified_metrics_rpc_functions.sql
+2025-11-01 09:38:23 INFO tools.chat: TOOL_EXEC_DEBUG: About to access provider property for model 'glm-4.6'
+2025-11-01 09:38:23 INFO tools.chat: TOOL_EXEC_DEBUG: Model context object: <utils.model.context.ModelContext object at 0x792ff0367230>
+2025-11-01 09:38:23 INFO tools.chat: TOOL_EXEC_DEBUG: Provider obtained: <src.providers.glm.GLMModelProvider object at 0x792ff065f8c0>
+2025-11-01 09:38:23 INFO mcp_activity: [PROGRESS] chat: Generating response (~22,536 tokens)
+2025-11-01 09:38:23 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 09:38:23 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 09:38:23 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 09:38:23 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 09:38:23 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 09:38:23 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 09:38:23 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 09:38:27 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 09:38:53 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 09:38:53 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 09:38:53 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 09:38:53 INFO tools.chat: Received response from glm API for chat
+2025-11-01 09:38:53 INFO mcp_activity: [PROGRESS] 📝 Processing response...
+2025-11-01 09:38:53 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.asc&limit=10 "HTTP/2 200 OK"
+2025-11-01 09:38:53 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101063825fc11757bbb334cee', 'created': 1761950305, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 29694}}}, type=<class 'dict'>
+2025-11-01 09:38:53 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=63c00b70-364b-4351-bf6c-5a105e553dce, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101063825fc11757bbb334cee', 'created': 1761950305, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 29694}}}}
+2025-11-01 09:38:53 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 09:38:53 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 09:38:53 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.098s
+2025-11-01 09:38:53 INFO utils.conversation.supabase_memory: [REQUEST_CACHE HIT] Thread 63c00b70-364b-4351-bf6c-5a105e553dce from request cache (0ms, no Supabase query)
+2025-11-01 09:38:53 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 09:38:53 INFO tools.chat: chat tool completed successfully
+2025-11-01 09:38:53 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 09:38:53 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 09:38:53 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fbroadcaster.py&original_name=eq.broadcaster.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 09:38:54 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/broadcaster.py "HTTP/2 200 OK"     
+2025-11-01 09:38:54 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 09:38:54 INFO src.storage.supabase_client: Uploaded file: broadcaster.py -> 578f6e12-8dee-4663-af9c-7bebefde91de
+2025-11-01 09:38:54 INFO src.storage.file_handler: Uploaded file: broadcaster.py -> 578f6e12-8dee-4663-af9c-7bebefde91de
+2025-11-01 09:38:54 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fflags.py&original_name=eq.flags.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 09:38:54 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/flags.py "HTTP/2 200 OK"
+2025-11-01 09:38:54 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 09:38:54 INFO src.storage.supabase_client: Uploaded file: flags.py -> c3767432-3b6b-4a44-9171-9d309fa1f37a
+2025-11-01 09:38:54 INFO src.storage.file_handler: Uploaded file: flags.py -> c3767432-3b6b-4a44-9171-9d309fa1f37a
+2025-11-01 09:38:54 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2F__init__.py&original_name=eq.__init__.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 09:38:54 INFO src.storage.supabase_client: File already exists: __init__.py -> 088d4785-bcd3-425b-b55a-0940d7df8258
+2025-11-01 09:38:54 INFO src.storage.supabase_client: Uploaded file: __init__.py -> 088d4785-bcd3-425b-b55a-0940d7df8258
+2025-11-01 09:38:54 INFO src.storage.file_handler: Uploaded file: __init__.py -> 088d4785-bcd3-425b-b55a-0940d7df8258
+2025-11-01 09:38:54 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fsemantic_cache.py&original_name=eq.semantic_cache.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 09:38:54 INFO src.storage.supabase_client: File already exists: semantic_cache.py -> 9a0db54b-d3ce-4b34-a4bf-9fc183d5f58a
+2025-11-01 09:38:54 INFO src.storage.supabase_client: Uploaded file: semantic_cache.py -> 9a0db54b-d3ce-4b34-a4bf-9fc183d5f58a
+2025-11-01 09:38:54 INFO src.storage.file_handler: Uploaded file: semantic_cache.py -> 9a0db54b-d3ce-4b34-a4bf-9fc183d5f58a
+2025-11-01 09:38:54 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Frequest_router.py&original_name=eq.request_router.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 09:38:54 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/request_router.py "HTTP/2 200 OK"  
+2025-11-01 09:38:54 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 09:38:54 INFO src.storage.supabase_client: Uploaded file: request_router.py -> 24b9e5e1-d05a-45c3-a69a-22dea910605f
+2025-11-01 09:38:54 INFO src.storage.file_handler: Uploaded file: request_router.py -> 24b9e5e1-d05a-45c3-a69a-22dea910605f
+2025-11-01 09:38:54 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Frun_ws_daemon.py&original_name=eq.run_ws_daemon.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 09:38:54 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/run_ws_daemon.py "HTTP/2 200 OK"   
+2025-11-01 09:38:54 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 09:38:54 INFO src.storage.supabase_client: Uploaded file: run_ws_daemon.py -> 3eb5d38d-1969-43b5-849c-a3627c7162c5
+2025-11-01 09:38:54 INFO src.storage.file_handler: Uploaded file: run_ws_daemon.py -> 3eb5d38d-1969-43b5-849c-a3627c7162c5
+2025-11-01 09:38:54 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Funified_collector.py&original_name=eq.unified_collector.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 09:38:54 INFO src.storage.supabase_client: File already exists: unified_collector.py -> c2a28aa1-fd88-455a-8368-d7bb21b2b10e
+2025-11-01 09:38:54 INFO src.storage.supabase_client: Uploaded file: unified_collector.py -> c2a28aa1-fd88-455a-8368-d7bb21b2b10e
+2025-11-01 09:38:54 INFO src.storage.file_handler: Uploaded file: unified_collector.py -> c2a28aa1-fd88-455a-8368-d7bb21b2b10e
+2025-11-01 09:38:55 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fsupabase-realtime.js&original_name=eq.supabase-realtime.js&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 09:38:55 INFO src.storage.supabase_client: File already exists: supabase-realtime.js -> 82c03175-df8c-4dca-8b68-074b6a518838
+2025-11-01 09:38:55 INFO src.storage.supabase_client: Uploaded file: supabase-realtime.js -> 82c03175-df8c-4dca-8b68-074b6a518838
+2025-11-01 09:38:55 INFO src.storage.file_handler: Uploaded file: supabase-realtime.js -> 82c03175-df8c-4dca-8b68-074b6a518838
+2025-11-01 09:38:55 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversation_files "HTTP/2 201 Created"
+2025-11-01 09:38:55 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversation_files "HTTP/2 201 Created"
+2025-11-01 09:38:55 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversation_files "HTTP/2 409 Conflict"
+2025-11-01 09:38:55 ERROR src.storage.supabase_client: Failed to link file to conversation: {'message': 'duplicate key value violates unique constraint "conversation_files_pkey"', 'code': '23505', 'hint': None, 'details': 'Key (conversation_id, file_id)=(73eecb1f-3c21-4208-977e-9e724f6a9f19, 088d4785-bcd3-425b-b55a-0940d7df8258) already exists.'}
+2025-11-01 09:38:55 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversation_files "HTTP/2 409 Conflict"
+2025-11-01 09:38:55 ERROR src.storage.supabase_client: Failed to link file to conversation: {'message': 'duplicate key value violates unique constraint "conversation_files_pkey"', 'code': '23505', 'hint': None, 'details': 'Key (conversation_id, file_id)=(73eecb1f-3c21-4208-977e-9e724f6a9f19, 9a0db54b-d3ce-4b34-a4bf-9fc183d5f58a) already exists.'}
+2025-11-01 09:38:55 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversation_files "HTTP/2 201 Created"
+2025-11-01 09:38:55 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversation_files "HTTP/2 201 Created"
+2025-11-01 09:38:55 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversation_files "HTTP/2 409 Conflict"
+2025-11-01 09:38:55 ERROR src.storage.supabase_client: Failed to link file to conversation: {'message': 'duplicate key value violates unique constraint "conversation_files_pkey"', 'code': '23505', 'hint': None, 'details': 'Key (conversation_id, file_id)=(73eecb1f-3c21-4208-977e-9e724f6a9f19, c2a28aa1-fd88-455a-8368-d7bb21b2b10e) already exists.'}
+2025-11-01 09:38:55 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversation_files "HTTP/2 409 Conflict"
+2025-11-01 09:38:55 ERROR src.storage.supabase_client: Failed to link file to conversation: {'message': 'duplicate key value violates unique constraint "conversation_files_pkey"', 'code': '23505', 'hint': None, 'details': 'Key (conversation_id, file_id)=(73eecb1f-3c21-4208-977e-9e724f6a9f19, 82c03175-df8c-4dca-8b68-074b6a518838) already exists.'}
+2025-11-01 09:38:55 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 09:38:55 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:38:55 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:49:16 INFO src.monitoring.persistence.graceful_shutdown: Received signal SIGTERM, initiating graceful shutdown
+2025-11-01 09:49:16 INFO src.monitoring.persistence.graceful_shutdown: Initiating graceful shutdown (timeout: 30s)
+2025-11-01 09:49:16 INFO src.daemon.ws.session_handler: [SESSION_CLEANUP] Periodic cleanup task stopped
+2025-11-01 09:49:16 INFO src.daemon.ws.health_monitor: [HEALTH] Periodic semaphore health check stopped
+2025-11-01 09:49:16 INFO src.daemon.ws.health_monitor: [HEALTH] Health writer stopped
+2025-11-01 09:49:16 INFO src.daemon.connection_manager: Connection unregistered: d-QTiObxUAs6KV8cEmMjT2336hpmVYhXNCoZgwOH_h4 from 172.18.0.1 (duration: 653.72s, remaining: 0)
+2025-11-01 09:49:16 INFO src.daemon.session_manager: [SESSION_MANAGER] Removed session vscode-instance-1 (total sessions: 0)
+2025-11-01 09:49:16 INFO root: [ASYNC_LOGGING] Shutting down async logging listener
+2025-11-01 09:49:23 INFO root: [ASYNC_LOGGING] Async-safe logging configured successfully
+2025-11-01 09:49:23 INFO root: [LOGGING] Configured websockets library logging to suppress handshake noise
+2025-11-01 09:49:23 INFO src.daemon.env_validation: Validation Summary: 10 valid, 0 warnings, 0 critical errors
+2025-11-01 09:49:23 INFO src.bootstrap.env_loader: [ENV_LOADER] ✅ Loaded environment from: /app/.env
+2025-11-01 09:49:23 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_URL: SET
+2025-11-01 09:49:23 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_PASSWORD: SET
+2025-11-01 09:49:23 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_URL: SET
+2025-11-01 09:49:23 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_SERVICE_ROLE_KEY: SET
+2025-11-01 09:49:23 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_ANON_KEY: SET
+2025-11-01 09:49:23 INFO src.bootstrap.env_loader: [ENV_LOADER] LOG_LEVEL: WARN
+2025-11-01 09:49:24 INFO src.bootstrap.singletons: Building tool registry (first-time initialization)
+2025-11-01 09:49:24 INFO src.storage.supabase_client: [SUPABASE_INIT] SUPABASE_URL=SET
+2025-11-01 09:49:24 INFO src.storage.supabase_client: [SUPABASE_INIT] SUPABASE_SERVICE_ROLE_KEY=SET
+2025-11-01 09:49:24 INFO src.storage.supabase_client: Supabase storage initialized: https://mxaazuhlqewmkweewyaz.supabase.co
+2025-11-01 09:49:25 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/schema_version?select=version&limit=1 "HTTP/2 200 OK"
+2025-11-01 09:49:25 INFO src.storage.hybrid_supabase_manager: HybridSupabaseManager initialized for autonomous operations (project: mxaazuhlqewmkweewyaz)
+2025-11-01 09:49:25 INFO src.storage.supabase_client: [SUPABASE_INIT] SUPABASE_URL=SET
+2025-11-01 09:49:25 INFO src.storage.supabase_client: [SUPABASE_INIT] SUPABASE_SERVICE_ROLE_KEY=SET
+2025-11-01 09:49:25 INFO src.storage.supabase_client: Supabase storage initialized: https://mxaazuhlqewmkweewyaz.supabase.co
+2025-11-01 09:49:25 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/schema_version?select=version&limit=1 "HTTP/2 200 OK"
+2025-11-01 09:49:25 INFO src.storage.hybrid_supabase_manager: HybridSupabaseManager initialized for autonomous operations (project: mxaazuhlqewmkweewyaz)
+2025-11-01 09:49:25 INFO src.security.rate_limiter: [RATE_LIMITER] Connecting to Redis at redis:6379 (password: SET)
+2025-11-01 09:49:25 INFO src.security.rate_limiter: ✅ Rate limiter connected to Redis at redis:6379
+2025-11-01 09:49:25 INFO tools.smart_file_query: [SMART_FILE_QUERY] Rate limiter initialized
+2025-11-01 09:49:25 INFO src.security.audit_logger: [AUDIT_LOGGER] SUPABASE_URL: SET
+2025-11-01 09:49:25 INFO src.security.audit_logger: [AUDIT_LOGGER] SUPABASE_SERVICE_ROLE_KEY: SET
+2025-11-01 09:49:25 INFO src.security.audit_logger: ✅ Audit logger connected to Supabase
+2025-11-01 09:49:25 INFO tools.smart_file_query: [SMART_FILE_QUERY] Audit logger initialized
+2025-11-01 09:49:25 INFO src.bootstrap.singletons: Tool registry built successfully with 19 tools
+2025-11-01 09:49:25 INFO src.daemon.session_manager: [SESSION_MANAGER] Initialized with timeout=3600s, max_sessions=10, cleanup_interval=300s
+2025-11-01 09:49:25 INFO src.daemon.middleware.semaphores: [PORT_SEM] Created semaphore for port 8079 with limit 8
+2025-11-01 09:49:25 INFO src.daemon.middleware.semaphores: [PORT_SEM] Created provider semaphore for port 8079, provider KIMI with limit 3
+2025-11-01 09:49:25 INFO src.daemon.middleware.semaphores: [PORT_SEM] Created provider semaphore for port 8079, provider GLM with limit 3
+2025-11-01 09:49:25 INFO src.middleware.correlation: [CORRELATION] Correlation ID logging configured
+2025-11-01 09:49:25 INFO __main__: [MAIN] Correlation ID logging configured
+2025-11-01 09:49:25 INFO src.daemon.monitoring_endpoint: [MONITORING] Broadcast hook installed
+2025-11-01 09:49:25 INFO __main__: [MAIN] Monitoring broadcast hook configured
+2025-11-01 09:49:25 INFO src.monitoring.metrics: [METRICS] Prometheus metrics server started on port 8000
+2025-11-01 09:49:25 INFO src.monitoring.metrics: [METRICS] Metrics available at http://localhost:8000/metrics
+2025-11-01 09:49:25 INFO __main__: [MAIN] Metrics server started on port 8000
+2025-11-01 09:49:25 INFO __main__: [MAIN] Adding monitoring server to servers list (host=0.0.0.0, port=8080)
+2025-11-01 09:49:25 INFO __main__: [MAIN] Monitoring server task added successfully
+2025-11-01 09:49:25 INFO __main__: [MAIN] Monitoring dashboard will be available at http://localhost:8080/monitoring_dashboard.html
+2025-11-01 09:49:25 INFO __main__: [MAIN] Adding health server to servers list (host=0.0.0.0, port=8082)
+2025-11-01 09:49:25 INFO __main__: [MAIN] Health server task added successfully
+2025-11-01 09:49:25 INFO __main__: [MAIN] Health check will be available at http://localhost:8082/health
+2025-11-01 09:49:25 INFO __main__: [MAIN] Adding periodic metrics updates to servers list
+2025-11-01 09:49:25 INFO __main__: [MAIN] Periodic metrics updates task added successfully
+2025-11-01 09:49:25 INFO __main__: [MAIN] Periodic metrics updates enabled (60s interval)
+2025-11-01 09:49:25 INFO src.storage.supabase_client: [SUPABASE_INIT] SUPABASE_URL=SET
+2025-11-01 09:49:25 INFO src.storage.supabase_client: [SUPABASE_INIT] SUPABASE_SERVICE_ROLE_KEY=SET
+2025-11-01 09:49:25 INFO src.storage.supabase_client: Supabase storage initialized: https://mxaazuhlqewmkweewyaz.supabase.co
+2025-11-01 09:49:25 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/schema_version?select=version&limit=1 "HTTP/2 200 OK"
+2025-11-01 09:49:25 INFO utils.monitoring.ai_auditor: [AI_AUDITOR] Initialized with model=glm-4.5-flash, batch_size=10, max_hourly_calls=60
+2025-11-01 09:49:25 INFO __main__: [MAIN] AI Auditor service enabled (model: glm-4.5-flash, batch_size: 10)
+2025-11-01 09:49:25 INFO __main__: [MAIN] Starting 5 servers concurrently
+2025-11-01 09:49:25 INFO __main__: [MAIN] Server list: ['coroutine', 'coroutine', 'coroutine', 'coroutine', 'coroutine']
+2025-11-01 09:49:25 INFO config.timeouts: === TIMEOUT CONFIGURATION ===
+2025-11-01 09:49:25 INFO config.timeouts: Tool Timeouts:
+2025-11-01 09:49:25 INFO config.timeouts:   Simple Tool: 30s
+2025-11-01 09:49:25 INFO config.timeouts:   Workflow Tool: 300s
+2025-11-01 09:49:25 INFO config.timeouts:   Expert Analysis: 300s
+2025-11-01 09:49:25 INFO config.timeouts: Provider Timeouts:
+2025-11-01 09:49:25 INFO config.timeouts:   GLM: 45s
+2025-11-01 09:49:25 INFO config.timeouts:   Kimi: 90s
+2025-11-01 09:49:25 INFO config.timeouts:   Kimi Web Search: 120s
+2025-11-01 09:49:25 INFO config.timeouts: Calculated Timeouts:
+2025-11-01 09:49:25 INFO config.timeouts:   Daemon: 450s (1.5x workflow)
+2025-11-01 09:49:25 INFO config.timeouts:   Shim: 600s (2.0x workflow)
+2025-11-01 09:49:25 INFO config.timeouts:   Client: 750s (2.5x workflow)
+2025-11-01 09:49:25 INFO config.timeouts: === END TIMEOUT CONFIGURATION ===
+2025-11-01 09:49:25 INFO src.bootstrap.singletons: Configuring providers (first-time initialization)
+2025-11-01 09:49:25 INFO src.server.providers.provider_detection: Kimi API key found - Moonshot AI models available
+2025-11-01 09:49:25 INFO src.server.providers.provider_detection: GLM API key found - ZhipuAI models available
+2025-11-01 09:49:25 INFO src.server.providers.provider_diagnostics: Available providers: Kimi, GLM
+2025-11-01 09:49:25 INFO src.providers.kimi: Kimi provider using centralized timeout: 90s
+2025-11-01 09:49:25 INFO root: Model allow-list not configured for OpenAI Compatible - all models permitted. To restrict access, set KIMI_ALLOWED_MODELS with comma-separated model names.
+2025-11-01 09:49:25 INFO root: Using extended timeouts for custom endpoint: https://api.moonshot.ai/v1
+2025-11-01 09:49:25 INFO src.providers.glm: GLM provider using SDK with base_url=https://api.z.ai/api/paas/v4, timeout=45s, max_retries=3
+2025-11-01 09:49:26 INFO src.server.providers.provider_diagnostics: Providers configured: KIMI, GLM; GLM models: 6; Kimi models: 18
+2025-11-01 09:49:26 INFO src.server.providers.provider_restrictions: No model restrictions configured - all models allowed
+2025-11-01 09:49:26 INFO src.bootstrap.singletons: Providers configured successfully
+2025-11-01 09:49:26 INFO src.bootstrap.singletons: [PROVIDER_TOOLS] Attempting to import kimi_manage_files from tools.providers.kimi.kimi_files.KimiManageFilesTool
+2025-11-01 09:49:26 INFO src.bootstrap.singletons: [PROVIDER_TOOLS] Successfully registered kimi_manage_files
+2025-11-01 09:49:26 INFO src.bootstrap.singletons: [PROVIDER_TOOLS] Attempting to import kimi_intent_analysis from tools.providers.kimi.kimi_intent.KimiIntentAnalysisTool
+2025-11-01 09:49:26 INFO src.bootstrap.singletons: [PROVIDER_TOOLS] Successfully registered kimi_intent_analysis
+2025-11-01 09:49:26 INFO src.bootstrap.singletons: Registering provider-specific tools: ['kimi_intent_analysis', 'kimi_manage_files']
+2025-11-01 09:49:26 INFO utils.conversation.storage_factory: [STORAGE_FACTORY] Initializing conversation storage at startup...
+2025-11-01 09:49:26 INFO utils.conversation.storage_factory: [STORAGE_FACTORY] Creating conversation storage: backend=dual, fallback=True
+2025-11-01 09:49:26 INFO src.storage.supabase_client: [SUPABASE_INIT] SUPABASE_URL=SET
+2025-11-01 09:49:26 INFO src.storage.supabase_client: [SUPABASE_INIT] SUPABASE_SERVICE_ROLE_KEY=SET
+2025-11-01 09:49:26 INFO src.storage.supabase_client: Supabase storage initialized: https://mxaazuhlqewmkweewyaz.supabase.co
+2025-11-01 09:49:26 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/schema_version?select=version&limit=1 "HTTP/2 200 OK"
+2025-11-01 09:49:26 INFO utils.caching.base_cache_manager: [CONVERSATION_CACHE] L1 initialized: TTLCache(maxsize=100, ttl=300s)
+2025-11-01 09:49:26 INFO utils.caching.base_cache_manager: [CONVERSATION_CACHE] Base cache manager initialized
+2025-11-01 09:49:26 INFO utils.conversation.cache_manager: [CACHE_MANAGER] Conversation cache manager initialized (L1_TTL=300s, L2_TTL=1800s)
+2025-11-01 09:49:26 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Will use async queue for writes
+2025-11-01 09:49:26 INFO utils.infrastructure.storage_backend: Redis storage initialized (ttl=86400s) at redis://:****@redis:6379/0
+2025-11-01 09:49:26 INFO utils.infrastructure.storage_backend: Initialized Redis conversation storage
+2025-11-01 09:49:26 INFO utils.conversation.storage_factory: Initialized dual storage (Supabase + in-memory) with context engineering
+2025-11-01 09:49:26 INFO utils.conversation.storage_factory: [STORAGE_FACTORY] Singleton storage instance created: DualStorageConversation
+2025-11-01 09:49:26 INFO utils.conversation.storage_factory: [STORAGE_FACTORY] Startup initialization complete: DualStorageConversation
+2025-11-01 09:49:26 INFO src.daemon.warmup: [WARMUP] ========================================
+2025-11-01 09:49:26 INFO src.daemon.warmup: [WARMUP] Starting connection warmup...
+2025-11-01 09:49:26 INFO src.daemon.warmup: [WARMUP] ========================================
+2025-11-01 09:49:26 INFO src.daemon.monitoring_endpoint: [MONITORING] Starting monitoring server on 0.0.0.0:8080
+2025-11-01 09:49:26 INFO src.monitoring.persistence.graceful_shutdown: Signal handlers registered (SIGTERM, SIGINT)
+2025-11-01 09:49:26 INFO src.daemon.monitoring_endpoint: [MONITORING] Graceful shutdown handler initialized
+2025-11-01 09:49:26 INFO src.daemon.monitoring_endpoint: [MONITORING] Registered /events endpoint for test event ingestion
+2025-11-01 09:49:26 INFO src.monitoring.metrics: [METRICS] Starting periodic updates (interval: 60s)
+2025-11-01 09:49:26 INFO utils.monitoring.ai_auditor: [AI_AUDITOR] Starting auditor service, connecting to ws://localhost:8080/ws
+2025-11-01 09:49:26 INFO src.daemon.warmup: [WARMUP] Initializing Supabase connection...
+2025-11-01 09:49:26 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=id&limit=1 "HTTP/2 200 OK"
+2025-11-01 09:49:26 INFO src.daemon.warmup: [WARMUP] ✅ Supabase connection warmed up successfully (0.073s)
+2025-11-01 09:49:26 INFO src.daemon.warmup: [WARMUP] Initializing Redis connection...
+2025-11-01 09:49:26 INFO src.daemon.monitoring_endpoint: [MONITORING] Monitoring server running on ws://0.0.0.0:8080
+2025-11-01 09:49:26 INFO src.daemon.monitoring_endpoint: [MONITORING] 🔍 Semaphore Monitor: http://0.0.0.0:8080/semaphore_monitor.html
+2025-11-01 09:49:26 INFO src.daemon.monitoring_endpoint: [MONITORING] 📊 Full Dashboard: http://0.0.0.0:8080/monitoring_dashboard.html
+2025-11-01 09:49:26 INFO src.daemon.monitoring_endpoint: [MONITORING] Started periodic metrics broadcast (every 5s)
+2025-11-01 09:49:26 INFO src.daemon.health_endpoint: [HEALTH] Health check server running on http://0.0.0.0:8082/health
+2025-11-01 09:49:26 INFO src.daemon.health_endpoint: [HEALTH] WebSocket health endpoint: http://0.0.0.0:8082/health/websocket
+2025-11-01 09:49:26 INFO src.daemon.monitoring_endpoint: [MONITORING] Dashboard connected from 127.0.0.1
+2025-11-01 09:49:26 INFO utils.monitoring.ai_auditor: [AI_AUDITOR] Connected to monitoring WebSocket
+2025-11-01 09:49:26 INFO src.daemon.warmup: [WARMUP] ✅ Redis connection warmed up successfully (0.027s)
+2025-11-01 09:49:26 INFO src.daemon.warmup: [WARMUP] ========================================
+2025-11-01 09:49:26 INFO src.daemon.warmup: [WARMUP] ✅ All connections warmed up successfully (0.231s)
+2025-11-01 09:49:26 INFO src.daemon.warmup: [WARMUP] ========================================
+2025-11-01 09:49:26 INFO src.daemon.conversation_queue: [CONV_QUEUE] Consumer started (max_size=1000, warning_threshold=500)
+2025-11-01 09:49:26 INFO src.daemon.conversation_queue: [CONV_QUEUE] Global queue initialized
+2025-11-01 09:49:26 INFO src.daemon.session_semaphore_manager: [SESSION_SEM] Initialized SessionSemaphoreManager (max_concurrent_per_session=1, cleanup_interval=300s, inactive_timeout=300s)
+2025-11-01 09:49:26 INFO src.daemon.session_semaphore_manager: [SESSION_SEM] Cleanup task started
+2025-11-01 09:49:26 INFO src.daemon.session_semaphore_manager: [SESSION_SEM] Global session semaphore manager initialized
+2025-11-01 09:49:26 INFO src.daemon.ws.request_router: [PORT_ISOLATION] RequestRouter initialized for port 8079
+2025-11-01 09:49:26 INFO utils.infrastructure.semantic_cache_legacy: Semantic cache initialized (TTL=600s, max_size=1000, max_response_size=1048576 bytes)
+2025-11-01 09:49:26 INFO utils.infrastructure.semantic_cache_legacy: Initialized global semantic cache (TTL=600s, max_size=1000, max_response_size=1048576 bytes)
+2025-11-01 09:49:26 INFO src.daemon.ws.request_router: [SEMANTIC_CACHE] Initialized semantic cache
+2025-11-01 09:49:26 INFO src.daemon.conversation_queue: [CONV_QUEUE] Consumer loop started
+2025-11-01 09:49:26 INFO src.daemon.session_semaphore_manager: [SESSION_SEM] Cleanup task started
+2025-11-01 09:49:26 INFO src.daemon.ws.health_monitor: [HEALTH] Starting health writer (interval: 10.0s)
+2025-11-01 09:49:26 INFO src.daemon.ws.health_monitor: [HEALTH] Starting periodic semaphore health check (interval: 30.0s)
+2025-11-01 09:49:26 INFO src.daemon.ws.session_handler: [SESSION_CLEANUP] Starting periodic cleanup (interval: 300s)
+2025-11-01 09:50:21 INFO src.daemon.connection_manager: ConnectionManager initialized: max_connections=2000, max_per_ip=100
+2025-11-01 09:50:21 INFO src.resilience.rate_limiter: RateLimiter initialized: global=1000/100.0t/s, ip=100/10.0t/s, user=50/5.0t/s, cleanup_interval=3600s
+2025-11-01 09:50:21 INFO src.daemon.connection_manager: Connection registered: 7-UJFAFG9m8pyUTMm4Kvel0y4-bZ-gQr6C8-HAr9Wk4 from 172.18.0.1 (total: 1, ip_total: 1)
+2025-11-01 09:50:21 INFO src.daemon.ws.connection_manager: [WS_CONNECTION] New connection from 172.18.0.1:41688 (id: 7-UJFAFG9m8pyUTMm4Kvel0y4-bZ-gQr6C8-HAr9Wk4)
+2025-11-01 09:50:21 INFO src.daemon.session_manager: [SESSION_MANAGER] Created session vscode-instance-1 (total sessions: 1)
+2025-11-01 09:50:21 INFO tools.chat: TOOL_EXEC_DEBUG: execute() method ENTERED for tool 'chat'
+2025-11-01 09:50:21 INFO tools.chat: chat tool called with arguments: ['prompt', 'continuation_id', 'files', 'model', 'use_websearch']
+2025-11-01 09:50:21 INFO tools.chat: TOOL_EXEC_DEBUG: Arguments stored, about to send progress
+2025-11-01 09:50:21 INFO mcp_activity: [PROGRESS] chat: Starting execution
+2025-11-01 09:50:21 INFO mcp_activity: [PROGRESS] chat: Request validated
+2025-11-01 09:50:21 INFO tools.chat: TOOL_EXEC_DEBUG: About to create ModelContext for model 'glm-4.6'
+2025-11-01 09:50:21 INFO tools.chat: TOOL_EXEC_DEBUG: ModelContext created successfully for glm-4.6
+2025-11-01 09:50:21 INFO mcp_activity: [PROGRESS] chat: Model/context ready: glm-4.6
+2025-11-01 09:50:21 INFO utils.conversation.global_storage: [GLOBAL_STORAGE] Created global storage instance: DualStorageConversation (id=123533758023056)
+2025-11-01 09:50:21 INFO utils.caching.base_cache_manager: [CONVERSATION_CACHE] L2 (Redis) connected: redis:6379/0
+2025-11-01 09:50:21 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.63c00b70-364b-4351-bf6c-5a105e553dce "HTTP/2 200 OK"       
+2025-11-01 09:50:21 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_by_continuation_id took 0.094s
+2025-11-01 09:50:22 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.asc&limit=5 "HTTP/2 200 OK"
+2025-11-01 09:50:22 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_messages took 0.047s
+2025-11-01 09:50:22 INFO utils.conversation.supabase_memory: [CONTEXT_PRUNING] Loaded 5 messages for 63c00b70-364b-4351-bf6c-5a105e553dce (limit=5)
+2025-11-01 09:50:22 INFO utils.conversation.supabase_memory: [REQUEST_CACHE STORE] Cached thread 63c00b70-364b-4351-bf6c-5a105e553dce for this request (loaded from Supabase)
+2025-11-01 09:50:22 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.144s
+2025-11-01 09:50:22 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.63c00b70-364b-4351-bf6c-5a105e553dce "HTTP/2 200 OK"       
+2025-11-01 09:50:22 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.asc&limit=10 "HTTP/2 200 OK"
+2025-11-01 09:50:22 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata=None, type=<class 'NoneType'>
+2025-11-01 09:50:22 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=63c00b70-364b-4351-bf6c-5a105e553dce, storage_metadata={}
+2025-11-01 09:50:22 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 09:50:22 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 09:50:22 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.099s
+2025-11-01 09:50:22 INFO root: MODEL_CONTEXT_DEBUG: Getting provider for model 'glm-4.6'
+2025-11-01 09:50:22 INFO root: MODEL_CONTEXT_DEBUG: get_provider_for_model returned: <src.providers.glm.GLMModelProvider object at 0x705a71fb38c0>
+2025-11-01 09:50:22 INFO utils.conversation.supabase_memory: [REQUEST_CACHE HIT] Thread 63c00b70-364b-4351-bf6c-5a105e553dce from request cache (0ms, no Supabase query)
+2025-11-01 09:50:22 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 09:50:22 INFO tools.shared.base_tool_file_handling: [FILE_PROCESSING] chat tool will embed new files: EXAI_ARCHITECTURE_REVIEW__SIMPLIFICATION_STRATEGY.md
+2025-11-01 09:50:22 INFO tools.chat: TOOL_EXEC_DEBUG: About to access provider property for model 'glm-4.6'
+2025-11-01 09:50:22 INFO tools.chat: TOOL_EXEC_DEBUG: Model context object: <utils.model.context.ModelContext object at 0x705a71cbacf0>
+2025-11-01 09:50:22 INFO tools.chat: TOOL_EXEC_DEBUG: Provider obtained: <src.providers.glm.GLMModelProvider object at 0x705a71fb38c0>
+2025-11-01 09:50:22 INFO mcp_activity: [PROGRESS] chat: Generating response (~7,333 tokens)
+2025-11-01 09:50:22 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 09:50:22 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 09:50:22 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 09:50:22 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 09:50:22 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 09:50:22 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 09:50:22 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 09:50:24 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 09:50:44 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 09:50:44 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 09:50:44 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 09:50:44 INFO tools.chat: Received response from glm API for chat
+2025-11-01 09:50:44 INFO mcp_activity: [PROGRESS] 📝 Processing response...
+2025-11-01 09:50:44 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.asc&limit=10 "HTTP/2 200 OK"
+2025-11-01 09:50:44 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101065023d8e66a080e4b4fb5', 'created': 1761951023, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 22549}}}, type=<class 'dict'>
+2025-11-01 09:50:44 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=63c00b70-364b-4351-bf6c-5a105e553dce, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101065023d8e66a080e4b4fb5', 'created': 1761951023, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 22549}}}}
+2025-11-01 09:50:44 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 09:50:44 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 09:50:44 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.096s
+2025-11-01 09:50:44 INFO utils.conversation.supabase_memory: [REQUEST_CACHE HIT] Thread 63c00b70-364b-4351-bf6c-5a105e553dce from request cache (0ms, no Supabase query)
+2025-11-01 09:50:44 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 09:50:44 INFO tools.chat: chat tool completed successfully
+2025-11-01 09:50:45 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 09:50:45 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 09:50:45 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2FEXAI_ARCHITECTURE_REVIEW__SIMPLIFICATION_STRATEGY.md&original_name=eq.EXAI_ARCHITECTURE_REVIEW__SIMPLIFICATION_STRATEGY.md&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 09:50:45 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/EXAI_ARCHITECTURE_REVIEW__SIMPLIFICATION_STRATEGY.md "HTTP/2 200 OK"
+2025-11-01 09:50:45 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 09:50:45 INFO src.storage.supabase_client: Uploaded file: EXAI_ARCHITECTURE_REVIEW__SIMPLIFICATION_STRATEGY.md -> 5bddbaab-0402-4c6b-b552-72fc0f1f09ee
+2025-11-01 09:50:45 INFO src.storage.file_handler: Uploaded file: EXAI_ARCHITECTURE_REVIEW__SIMPLIFICATION_STRATEGY.md -> 5bddbaab-0402-4c6b-b552-72fc0f1f09ee
+2025-11-01 09:50:45 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversation_files "HTTP/2 201 Created"
+2025-11-01 09:50:45 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 09:50:45 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk
+2025-11-01 09:50:45 INFO src.daemon.ws.connection_manager: [SAMPLED] [SAFE_SEND] Successfully sent op=stream_chunk

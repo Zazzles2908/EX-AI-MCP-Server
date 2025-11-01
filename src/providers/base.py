@@ -186,6 +186,59 @@ class ModelResponse:
         """Get total tokens used."""
         return self.usage.get("total_tokens", 0)
 
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert ModelResponse to JSON-serializable dictionary.
+
+        Used for caching and serialization to Redis/JSON storage.
+        Handles enum conversion and adds type marker for deserialization.
+
+        Returns:
+            Dictionary representation of ModelResponse
+        """
+        return {
+            "content": self.content,
+            "usage": self.usage,
+            "model_name": self.model_name,
+            "friendly_name": self.friendly_name,
+            "provider": self.provider.value if isinstance(self.provider, ProviderType) else self.provider,
+            "metadata": self.metadata,
+            "__type__": "ModelResponse"  # Type marker for deserialization
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ModelResponse":
+        """
+        Create ModelResponse from dictionary (inverse of to_dict).
+
+        Handles backward compatibility for cached data without type markers.
+        Properly reconstructs ProviderType enum from string values.
+
+        Args:
+            data: Dictionary representation of ModelResponse
+
+        Returns:
+            Reconstructed ModelResponse instance
+        """
+        # Handle backward compatibility for cached data without type marker
+        if "__type__" not in data:
+            # This might be legacy data - try to convert provider if it's a string
+            if "provider" in data and isinstance(data["provider"], str):
+                try:
+                    data["provider"] = ProviderType(data["provider"])
+                except ValueError:
+                    # If provider string is invalid, use a default
+                    data["provider"] = ProviderType.GOOGLE
+
+        return cls(
+            content=data["content"],
+            usage=data.get("usage", {}),
+            model_name=data.get("model_name", ""),
+            friendly_name=data.get("friendly_name", ""),
+            provider=ProviderType(data["provider"]) if isinstance(data["provider"], str) else data["provider"],
+            metadata=data.get("metadata", {})
+        )
+
 
 class ModelProvider(ABC):
     """Abstract base class for model providers."""

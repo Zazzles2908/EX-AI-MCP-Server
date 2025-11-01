@@ -51,14 +51,8 @@ from src.utils.logging_utils import get_logger, SamplingLogger
 
 # PHASE 1 WEEK 1 (2025-11-01): Semantic cache integration
 # EXAI Consultation: 943d110e-7903-443a-b7fc-03fe7904e147
-# EXAI Fix (2025-11-01): Use correct cache metrics interface
+# PHASE 3 FIX (2025-11-01): Removed cache_metrics_collector (deleted)
 from utils.infrastructure.semantic_cache import get_semantic_cache
-from utils.monitoring.cache_metrics_collector import (
-    record_cache_hit,
-    record_cache_miss,
-    record_cache_set,
-    record_cache_error
-)
 
 # Module-specific configuration
 _MODULE_LOG_LEVEL = os.getenv("LOG_LEVEL_REQUEST_ROUTER", os.getenv("LOG_LEVEL", "ERROR"))
@@ -463,8 +457,7 @@ class ToolExecutor:
         # EXAI Fix (2025-11-01): Use correct cache interface with individual parameters
         # Check cache BEFORE acquiring semaphores (early return optimization)
         cache_params = None
-        # EXAI Enhancement: Detect implementation type from environment
-        implementation_type = 'base' if os.getenv('SEMANTIC_CACHE_USE_BASE_MANAGER', 'false').lower() == 'true' else 'legacy'
+        # PHASE 3 FIX (2025-11-01): Removed implementation_type (unused after metrics removal)
 
         if self.semantic_cache and self._should_cache_tool(name) and self._should_cache_request(arguments):
             try:
@@ -475,44 +468,16 @@ class ToolExecutor:
                 cached_result = self.semantic_cache.get(**cache_params)
 
                 if cached_result is not None:
-                    # Cache hit! Record metric and return cached result
-                    # Generate cache key for metrics logging only
-                    cache_key_for_metrics = hashlib.sha256(
-                        json.dumps(cache_params, sort_keys=True).encode()
-                    ).hexdigest()
-
-                    record_cache_hit(
-                        cache_key=cache_key_for_metrics,
-                        implementation_type=implementation_type,
-                        response_time_ms=int((time.perf_counter() - start_time) * 1000)
-                    )
+                    # Cache hit! Return cached result
+                    # PHASE 3 FIX (2025-11-01): Cache metrics removed
                     logger.info(f"[SEMANTIC_CACHE] Cache HIT for {name} (prompt: {cache_params['prompt'][:50]}...)")
                     return True, cached_result, None
                 else:
-                    # Cache miss - record metric and continue with execution
-                    cache_key_for_metrics = hashlib.sha256(
-                        json.dumps(cache_params, sort_keys=True).encode()
-                    ).hexdigest()
-
-                    record_cache_miss(
-                        cache_key=cache_key_for_metrics,
-                        implementation_type=implementation_type,
-                        response_time_ms=int((time.perf_counter() - start_time) * 1000)
-                    )
+                    # Cache miss - continue with execution
                     logger.info(f"[SEMANTIC_CACHE] Cache MISS for {name} (prompt: {cache_params['prompt'][:50]}...)")
             except Exception as e:
                 # Cache error - log and continue with normal execution
                 logger.error(f"[SEMANTIC_CACHE] Cache check error for {name}: {e}")
-                if cache_params:
-                    cache_key_for_metrics = hashlib.sha256(
-                        json.dumps(cache_params, sort_keys=True).encode()
-                    ).hexdigest()
-                    record_cache_error(
-                        cache_key=cache_key_for_metrics,
-                        implementation_type=implementation_type,
-                        error_type=type(e).__name__,
-                        error_message=str(e)
-                    )
 
         # Determine which semaphore to use
         provider_name = self._get_provider_for_tool(name)
@@ -603,8 +568,7 @@ class ToolExecutor:
         # EXAI Consultation: 943d110e-7903-443a-b7fc-03fe7904e147
         # EXAI Fix (2025-11-01): Use correct cache interface with individual parameters
         if success and outputs and cache_params and self.semantic_cache:
-            # EXAI Enhancement: Detect implementation type from environment
-            implementation_type = 'base' if os.getenv('SEMANTIC_CACHE_USE_BASE_MANAGER', 'false').lower() == 'true' else 'legacy'
+            # PHASE 3 FIX (2025-11-01): Removed implementation_type (unused after metrics removal)
             try:
                 # Call cache.set() with individual parameters + response
                 self.semantic_cache.set(
@@ -612,30 +576,11 @@ class ToolExecutor:
                     response=outputs
                 )
 
-                # Generate cache key for metrics logging only
-                cache_key_for_metrics = hashlib.sha256(
-                    json.dumps(cache_params, sort_keys=True).encode()
-                ).hexdigest()
-
-                record_cache_set(
-                    cache_key=cache_key_for_metrics,
-                    implementation_type=implementation_type,
-                    response_time_ms=int(total_latency_ms),
-                    cache_size=len(str(outputs))  # Approximate size
-                )
+                # PHASE 3 FIX (2025-11-01): Cache metrics removed
                 logger.info(f"[SEMANTIC_CACHE] Cached result for {name} (prompt: {cache_params['prompt'][:50]}...)")
             except Exception as e:
                 # Cache set error - log but don't fail the request
                 logger.error(f"[SEMANTIC_CACHE] Failed to cache result for {name}: {e}")
-                cache_key_for_metrics = hashlib.sha256(
-                    json.dumps(cache_params, sort_keys=True).encode()
-                ).hexdigest()
-                record_cache_error(
-                    cache_key=cache_key_for_metrics,
-                    implementation_type=implementation_type,
-                    error_type=type(e).__name__,
-                    error_message=str(e)
-                )
 
         # Return result after semaphores are released
         return success, outputs, error_msg

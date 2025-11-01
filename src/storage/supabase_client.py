@@ -254,15 +254,9 @@ class SupabaseStorageManager:
         if not self._enabled:
             raise RuntimeError("Supabase storage not configured")
 
-        if self._client is None:
-            # Create client - supabase-py uses httpx internally with default connection pooling
-            self._client = create_client(
-                self.url,
-                self.service_key  # Use service key for server operations
-            )
-            logger.debug("Supabase client created")
-
-        return self._client
+        # PHASE 1 FIX (2025-11-01): Use centralized singleton instead of creating new client
+        from src.storage.supabase_singleton import get_supabase_client
+        return get_supabase_client(use_admin=True)
 
     def close(self):
         """Close the Supabase client"""
@@ -472,31 +466,41 @@ class SupabaseStorageManager:
     def get_conversation_messages(
         self,
         conversation_id: str,
-        limit: int = 100
+        limit: int = 50,
+        offset: int = 0
     ) -> List[Dict]:
         """
-        Get all messages for a conversation
-        
+        Get messages for a conversation with optimized pagination.
+
+        PHASE 3 OPTIMIZATION (2025-11-01):
+        - Reduced default limit from 100 to 50 (50% reduction)
+        - Added pagination support with offset parameter
+        - Uses composite index for efficient queries
+        - Target performance: <0.2s (from 0.544s)
+
         Args:
             conversation_id: UUID of the conversation
-            limit: Maximum number of messages to retrieve
-        
+            limit: Maximum number of messages to retrieve (default: 50, reduced from 100)
+            offset: Pagination offset (default: 0)
+
         Returns:
-            List of message dicts (ordered by timestamp)
+            List of message dicts (ordered by created_at DESC for recent-first)
         """
         if not self._enabled:
             return []
-        
+
         try:
             client = self.get_client()
+            # PHASE 3 FIX: Use range() for efficient pagination with composite index
+            # Index: idx_messages_conversation_id_created (conversation_id, created_at DESC)
             result = client.table("messages").select("*").eq(
                 "conversation_id", conversation_id
-            ).order("created_at").limit(limit).execute()
-            
+            ).order("created_at", desc=True).range(offset, offset + limit - 1).execute()
+
             messages = result.data if result.data else []
-            logger.debug(f"Retrieved {len(messages)} messages for conversation {conversation_id}")
+            logger.debug(f"Retrieved {len(messages)} messages for conversation {conversation_id} (offset={offset}, limit={limit})")
             return messages
-            
+
         except Exception as e:
             logger.error(f"Failed to get messages for {conversation_id}: {e}")
             return []
@@ -935,7 +939,8 @@ class SupabaseStorageManager:
                 "file_id": file_id
             }
 
-            result = client.table("conversation_files").insert(data).execute()
+            # PHASE 1 FIX (2025-11-01): Use upsert to handle duplicates
+            result = client.table("conversation_files").upsert(data).execute()
 
             if result.data:
                 logger.debug(f"Linked file {file_id} to conversation {conversation_id}")
@@ -944,8 +949,53 @@ class SupabaseStorageManager:
             return False
 
         except Exception as e:
+            # PHASE 1 FIX: Don't log duplicate key errors as errors
+            if "duplicate key" in str(e).lower():
+                logger.debug(f"File {file_id} already linked to conversation {conversation_id}")
+                return True
             logger.error(f"Failed to link file to conversation: {e}")
             return False
+
+    def link_files_to_conversation_batch(
+        self,
+        conversation_id: str,
+        file_ids: list[str]
+    ) -> dict:
+        """
+        PHASE 1 FIX (2025-11-01): Batch link multiple files to a conversation.
+
+        Reduces N+1 queries by batching file linking operations.
+
+        Args:
+            conversation_id: UUID of the conversation
+            file_ids: List of file UUIDs to link
+
+        Returns:
+            Dictionary with success count and errors
+        """
+        if not self._enabled or not file_ids:
+            return {"success": 0, "errors": []}
+
+        try:
+            client = self.get_client()
+
+            # Build batch data
+            batch_data = [
+                {"conversation_id": conversation_id, "file_id": file_id}
+                for file_id in file_ids
+            ]
+
+            # Use upsert to handle duplicates
+            result = client.table("conversation_files").upsert(batch_data).execute()
+
+            success_count = len(result.data) if result.data else 0
+            logger.info(f"[BATCH_LINK] Linked {success_count}/{len(file_ids)} files to conversation {conversation_id}")
+
+            return {"success": success_count, "errors": []}
+
+        except Exception as e:
+            logger.error(f"[BATCH_LINK] Failed to batch link files: {e}")
+            return {"success": 0, "errors": [str(e)]}
 
     # ========================================================================
     # PROVIDER FILE UPLOAD TRACKING (Phase 2.3.2)
