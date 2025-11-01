@@ -1,0 +1,500 @@
+﻿2025-11-01 20:03:50 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 20:03:50 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 20:03:50 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 20:03:50 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 20:03:50 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 20:03:50 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 20:03:50 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 20:03:52 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 20:04:02 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 20:04:02 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 20:04:02 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 20:04:02 INFO tools.chat: Received response from glm API for chat
+2025-11-01 20:04:02 INFO mcp_activity: [PROGRESS] ­ƒôØ Processing response...
+2025-11-01 20:04:02 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:04:02 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101170351994f1a946f5141b8', 'created': 1761987831, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 11594}}}, type=<class 'dict'>
+2025-11-01 20:04:02 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101170351994f1a946f5141b8', 'created': 1761987831, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 11594}}}}
+2025-11-01 20:04:02 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:04:02 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:04:02 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.073s
+2025-11-01 20:04:02 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 20:04:02 INFO tools.chat: chat tool completed successfully
+2025-11-01 20:04:02 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:04:02 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:04:02 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:04:02 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:04:26 INFO src.daemon.ws.request_router: [SAMPLED] Session: vscode-instance-2
+2025-11-01 20:04:26 INFO tools.chat: TOOL_EXEC_DEBUG: execute() method ENTERED for tool 'chat'
+2025-11-01 20:04:26 INFO tools.chat: chat tool called with arguments: ['prompt', 'continuation_id', 'model', 'use_websearch']
+2025-11-01 20:04:26 INFO tools.chat: TOOL_EXEC_DEBUG: Arguments stored, about to send progress
+2025-11-01 20:04:26 INFO mcp_activity: [PROGRESS] chat: Starting execution
+2025-11-01 20:04:26 INFO mcp_activity: [PROGRESS] chat: Request validated
+2025-11-01 20:04:26 INFO tools.chat: TOOL_EXEC_DEBUG: About to create ModelContext for model 'glm-4.6'
+2025-11-01 20:04:26 INFO tools.chat: TOOL_EXEC_DEBUG: ModelContext created successfully for glm-4.6
+2025-11-01 20:04:26 INFO mcp_activity: [PROGRESS] chat: Model/context ready: glm-4.6
+2025-11-01 20:04:27 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19 "HTTP/2 200 OK"
+2025-11-01 20:04:27 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_by_continuation_id took 0.082s
+2025-11-01 20:04:27 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=5 "HTTP/2 200 OK"
+2025-11-01 20:04:27 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_messages took 0.057s
+2025-11-01 20:04:27 INFO utils.conversation.supabase_memory: [CONTEXT_PRUNING] Loaded 4 messages for 73eecb1f-3c21-4208-977e-9e724f6a9f19 (limit=5)
+2025-11-01 20:04:27 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.141s
+2025-11-01 20:04:27 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:04:27 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata=None, type=<class 'NoneType'>
+2025-11-01 20:04:27 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={}
+2025-11-01 20:04:27 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:04:27 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:04:27 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.067s
+2025-11-01 20:04:27 INFO root: MODEL_CONTEXT_DEBUG: Getting provider for model 'glm-4.6'
+2025-11-01 20:04:27 INFO root: MODEL_CONTEXT_DEBUG: get_provider_for_model returned: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:04:27 INFO tools.chat: TOOL_EXEC_DEBUG: About to access provider property for model 'glm-4.6'
+2025-11-01 20:04:27 INFO tools.chat: TOOL_EXEC_DEBUG: Model context object: <utils.model.context.ModelContext object at 0x7c05642d87d0>
+2025-11-01 20:04:27 INFO tools.chat: TOOL_EXEC_DEBUG: Provider obtained: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:04:27 INFO mcp_activity: [PROGRESS] chat: Generating response (~146 tokens)
+2025-11-01 20:04:27 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 20:04:27 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 20:04:27 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 20:04:27 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 20:04:27 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 20:04:27 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 20:04:27 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 20:04:30 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 20:04:33 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 20:04:33 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 20:04:33 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 20:04:33 INFO tools.chat: Received response from glm API for chat
+2025-11-01 20:04:33 INFO mcp_activity: [PROGRESS] ­ƒôØ Processing response...
+2025-11-01 20:04:33 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:04:33 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101170427b60a5e3029634c87', 'created': 1761987867, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 6191}}}, type=<class 'dict'>
+2025-11-01 20:04:33 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101170427b60a5e3029634c87', 'created': 1761987867, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 6191}}}}
+2025-11-01 20:04:33 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:04:33 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:04:33 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.079s
+2025-11-01 20:04:33 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 20:04:33 INFO tools.chat: chat tool completed successfully
+2025-11-01 20:04:33 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:04:33 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:04:33 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:04:33 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:06:09 INFO tools.chat: TOOL_EXEC_DEBUG: execute() method ENTERED for tool 'chat'
+2025-11-01 20:06:09 INFO tools.chat: chat tool called with arguments: ['prompt', 'continuation_id', 'model', 'use_websearch']
+2025-11-01 20:06:09 INFO tools.chat: TOOL_EXEC_DEBUG: Arguments stored, about to send progress
+2025-11-01 20:06:09 INFO mcp_activity: [PROGRESS] chat: Starting execution
+2025-11-01 20:06:09 INFO mcp_activity: [PROGRESS] chat: Request validated
+2025-11-01 20:06:09 INFO tools.chat: TOOL_EXEC_DEBUG: About to create ModelContext for model 'glm-4.6'
+2025-11-01 20:06:09 INFO tools.chat: TOOL_EXEC_DEBUG: ModelContext created successfully for glm-4.6
+2025-11-01 20:06:09 INFO mcp_activity: [PROGRESS] chat: Model/context ready: glm-4.6
+2025-11-01 20:06:09 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19 "HTTP/2 200 OK"
+2025-11-01 20:06:09 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_by_continuation_id took 0.365s
+2025-11-01 20:06:09 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=5 "HTTP/2 200 OK"
+2025-11-01 20:06:09 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_messages took 0.061s
+2025-11-01 20:06:09 INFO utils.conversation.supabase_memory: [CONTEXT_PRUNING] Loaded 5 messages for 73eecb1f-3c21-4208-977e-9e724f6a9f19 (limit=5)
+2025-11-01 20:06:09 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.429s
+2025-11-01 20:06:09 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:06:09 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata=None, type=<class 'NoneType'>
+2025-11-01 20:06:09 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={}
+2025-11-01 20:06:09 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:06:09 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:06:09 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.045s
+2025-11-01 20:06:09 INFO root: MODEL_CONTEXT_DEBUG: Getting provider for model 'glm-4.6'
+2025-11-01 20:06:09 INFO root: MODEL_CONTEXT_DEBUG: get_provider_for_model returned: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:06:09 INFO tools.chat: TOOL_EXEC_DEBUG: About to access provider property for model 'glm-4.6'
+2025-11-01 20:06:09 INFO tools.chat: TOOL_EXEC_DEBUG: Model context object: <utils.model.context.ModelContext object at 0x7c0557568640>
+2025-11-01 20:06:09 INFO tools.chat: TOOL_EXEC_DEBUG: Provider obtained: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:06:09 INFO mcp_activity: [PROGRESS] chat: Generating response (~178 tokens)
+2025-11-01 20:06:09 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 20:06:09 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 20:06:09 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 20:06:09 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 20:06:09 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 20:06:09 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 20:06:09 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 20:06:11 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 20:06:20 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 20:06:20 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 20:06:20 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 20:06:20 INFO tools.chat: Received response from glm API for chat
+2025-11-01 20:06:20 INFO mcp_activity: [PROGRESS] ­ƒôØ Processing response...
+2025-11-01 20:06:20 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:06:20 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101170610c8599481c0d74789', 'created': 1761987970, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 10824}}}, type=<class 'dict'>
+2025-11-01 20:06:20 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101170610c8599481c0d74789', 'created': 1761987970, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 10824}}}}
+2025-11-01 20:06:20 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:06:20 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:06:20 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.073s
+2025-11-01 20:06:20 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 20:06:20 INFO tools.chat: chat tool completed successfully
+2025-11-01 20:06:20 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:06:20 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:06:20 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:06:20 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:08:59 INFO tools.chat: TOOL_EXEC_DEBUG: execute() method ENTERED for tool 'chat'
+2025-11-01 20:08:59 INFO tools.chat: chat tool called with arguments: ['prompt', 'continuation_id', 'model', 'use_websearch']
+2025-11-01 20:08:59 INFO tools.chat: TOOL_EXEC_DEBUG: Arguments stored, about to send progress
+2025-11-01 20:08:59 INFO mcp_activity: [PROGRESS] chat: Starting execution
+2025-11-01 20:08:59 INFO mcp_activity: [PROGRESS] chat: Request validated
+2025-11-01 20:08:59 INFO tools.chat: TOOL_EXEC_DEBUG: About to create ModelContext for model 'glm-4.6'
+2025-11-01 20:08:59 INFO tools.chat: TOOL_EXEC_DEBUG: ModelContext created successfully for glm-4.6
+2025-11-01 20:08:59 INFO mcp_activity: [PROGRESS] chat: Model/context ready: glm-4.6
+2025-11-01 20:09:00 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19 "HTTP/2 200 OK"
+2025-11-01 20:09:00 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_by_continuation_id took 0.362s
+2025-11-01 20:09:00 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=5 "HTTP/2 200 OK"
+2025-11-01 20:09:00 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_messages took 0.044s
+2025-11-01 20:09:00 INFO utils.conversation.supabase_memory: [CONTEXT_PRUNING] Loaded 5 messages for 73eecb1f-3c21-4208-977e-9e724f6a9f19 (limit=5)
+2025-11-01 20:09:00 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.409s
+2025-11-01 20:09:00 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:09:00 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata=None, type=<class 'NoneType'>
+2025-11-01 20:09:00 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={}
+2025-11-01 20:09:00 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:09:00 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:09:00 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.042s
+2025-11-01 20:09:00 INFO root: MODEL_CONTEXT_DEBUG: Getting provider for model 'glm-4.6'
+2025-11-01 20:09:00 INFO root: MODEL_CONTEXT_DEBUG: get_provider_for_model returned: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:09:00 INFO tools.chat: TOOL_EXEC_DEBUG: About to access provider property for model 'glm-4.6'
+2025-11-01 20:09:00 INFO tools.chat: TOOL_EXEC_DEBUG: Model context object: <utils.model.context.ModelContext object at 0x7c0557569940>
+2025-11-01 20:09:00 INFO tools.chat: TOOL_EXEC_DEBUG: Provider obtained: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:09:00 INFO mcp_activity: [PROGRESS] chat: Generating response (~410 tokens)
+2025-11-01 20:09:00 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 20:09:00 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 20:09:00 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 20:09:00 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 20:09:00 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 20:09:00 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 20:09:00 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 20:09:01 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 20:09:06 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 20:09:06 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 20:09:06 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 20:09:06 INFO tools.chat: Received response from glm API for chat
+2025-11-01 20:09:06 INFO mcp_activity: [PROGRESS] ­ƒôØ Processing response...
+2025-11-01 20:09:06 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:09:06 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '2025110117090037c5f1985f7545d1', 'created': 1761988141, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 6159}}}, type=<class 'dict'>
+2025-11-01 20:09:06 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '2025110117090037c5f1985f7545d1', 'created': 1761988141, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 6159}}}}
+2025-11-01 20:09:06 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:09:06 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:09:06 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.076s
+2025-11-01 20:09:06 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 20:09:06 INFO tools.chat: chat tool completed successfully
+2025-11-01 20:09:06 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:09:06 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:09:06 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:09:06 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:10:22 INFO src.daemon.ws.request_router: [SAMPLED] Request ID: 28334e7b-6dfa-4458-b744-8e54b96a88bb
+2025-11-01 20:10:22 INFO tools.smart_file_query: [SMART_FILE_QUERY] execute() called with arguments: ['file_path', 'question', 'provider']
+2025-11-01 20:10:22 INFO tools.smart_file_query: [SMART_FILE_QUERY] File: /mnt/project/EX-AI-MCP-Server/docs/05_CURRENT_WORK/2025-11-01.01/PHASE6_ARCHITECTURE_REVIEW__ENTRY_POINTS.md, Size: 0.04MB
+2025-11-01 20:10:22 INFO tools.smart_file_query: [SMART_FILE_QUERY] Rate limit check passed for system
+2025-11-01 20:10:22 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/provider_file_uploads?select=%2A&sha256=eq.9fff921d089404b2bb15fdc09575cf1a78fd9bfe707374d0075d7f8e7a2729a9&provider=eq.kimi "HTTP/2 200 OK"
+2025-11-01 20:10:22 INFO tools.smart_file_query: [SMART_FILE_QUERY] Deduplication MISS - uploading new file
+2025-11-01 20:10:22 INFO tools.supabase_upload: Starting KIMI upload adapter for PHASE6_ARCHITECTURE_REVIEW__ENTRY_POINTS.md (42947 bytes)
+2025-11-01 20:10:22 INFO tools.supabase_upload: Calculating SHA256 for PHASE6_ARCHITECTURE_REVIEW__ENTRY_POINTS.md (42947 bytes)
+2025-11-01 20:10:22 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/file_metadata?select=%2A&sha256_hash=eq.9fff921d089404b2bb15fdc09575cf1a78fd9bfe707374d0075d7f8e7a2729a9&user_id=eq.system&limit=1 "HTTP/2 200 OK"
+2025-11-01 20:10:22 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/file_operations "HTTP/2 201 Created"
+2025-11-01 20:10:22 INFO tools.supabase_upload: Uploading PHASE6_ARCHITECTURE_REVIEW__ENTRY_POINTS.md to system/9f/9fff921d089404b2bb15fdc09575cf1a78fd9bfe707374d0075d7f8e7a2729a9/PHASE6_ARCHITECTURE_REVIEW__ENTRY_POINTS.md
+2025-11-01 20:10:22 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/system/9f/9fff921d089404b2bb15fdc09575cf1a78fd9bfe707374d0075d7f8e7a2729a9/PHASE6_ARCHITECTURE_REVIEW__ENTRY_POINTS.md "HTTP/2 200 OK"
+2025-11-01 20:10:22 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/file_metadata "HTTP/2 201 Created"
+2025-11-01 20:10:22 INFO httpx: HTTP Request: PATCH https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/file_operations?id=eq.60e73e2a-75a8-4616-8a4f-a48f67fb2769 "HTTP/2 200 OK"
+2025-11-01 20:10:22 INFO tools.supabase_upload: Upload completed: PHASE6_ARCHITECTURE_REVIEW__ENTRY_POINTS.md -> system/9f/9fff921d089404b2bb15fdc09575cf1a78fd9bfe707374d0075d7f8e7a2729a9/PHASE6_ARCHITECTURE_REVIEW__ENTRY_POINTS.md
+2025-11-01 20:10:24 INFO httpx: HTTP Request: POST https://api.moonshot.ai/v1/files "HTTP/1.1 200 OK"
+2025-11-01 20:10:24 INFO tools.supabase_upload: Ô£à Uploaded to KIMI: d42ssvq1ol7h6f1r2kr0
+2025-11-01 20:10:24 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/file_id_mappings "HTTP/2 201 Created"
+2025-11-01 20:10:24 INFO tools.file_id_mapper: Stored mapping: system/9f/9fff921d089404b2bb15fdc09575cf1a78fd9bfe707374d0075d7f8e7a2729a9/PHASE6_ARCHITECTURE_REVIEW__ENTRY_POINTS.md -> kimi:d42ssvq1ol7h6f1r2kr0
+2025-11-01 20:10:24 INFO tools.monitoring.async_upload_metrics: Upload: type=async, success=False, duration=1748.27ms, size=0.04MB, provider=kimi
+2025-11-01 20:10:24 ERROR tools.smart_file_query: [SMART_FILE_QUERY] Upload failed: ValueError - kimi upload returned no file ID
+2025-11-01 20:10:24 ERROR tools.smart_file_query: [SMART_FILE_QUERY] Upload failed with kimi: kimi upload returned no file ID
+2025-11-01 20:10:24 INFO tools.smart_file_query: [SMART_FILE_QUERY] Attempting fallback to glm
+2025-11-01 20:10:24 INFO tools.supabase_upload: Starting GLM upload adapter for PHASE6_ARCHITECTURE_REVIEW__ENTRY_POINTS.md (42947 bytes)
+2025-11-01 20:10:24 INFO tools.supabase_upload: Calculating SHA256 for PHASE6_ARCHITECTURE_REVIEW__ENTRY_POINTS.md (42947 bytes)
+2025-11-01 20:10:24 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/file_metadata?select=%2A&sha256_hash=eq.9fff921d089404b2bb15fdc09575cf1a78fd9bfe707374d0075d7f8e7a2729a9&user_id=eq.system&limit=1 "HTTP/2 200 OK"
+2025-11-01 20:10:24 INFO tools.supabase_upload: File with hash 9fff921d089404b2bb15fdc09575cf1a78fd9bfe707374d0075d7f8e7a2729a9 already exists, creating reference
+2025-11-01 20:10:24 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/file_metadata "HTTP/2 201 Created"
+2025-11-01 20:10:25 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/files "HTTP/1.1 200 OK"
+2025-11-01 20:10:25 INFO tools.supabase_upload: Ô£à Uploaded to GLM: 1761988225149-6fe7584525734d458281340100de4efa.md
+2025-11-01 20:10:25 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/file_id_mappings "HTTP/2 201 Created"
+2025-11-01 20:10:25 INFO tools.file_id_mapper: Stored mapping: system/9f/9fff921d089404b2bb15fdc09575cf1a78fd9bfe707374d0075d7f8e7a2729a9/PHASE6_ARCHITECTURE_REVIEW__ENTRY_POINTS.md -> glm:1761988225149-6fe7584525734d458281340100de4efa.md
+2025-11-01 20:10:25 INFO tools.monitoring.async_upload_metrics: Upload: type=async, success=False, duration=1531.71ms, size=0.04MB, provider=glm
+2025-11-01 20:10:25 ERROR tools.smart_file_query: [SMART_FILE_QUERY] Upload failed: ValueError - glm upload returned no file ID
+2025-11-01 20:10:25 ERROR tools.smart_file_query: [SMART_FILE_QUERY] Fallback upload also failed: glm upload returned no file ID
+2025-11-01 20:10:25 ERROR tools.smart_file_query: [SMART_FILE_QUERY] execute() failed: Upload failed with both providers. Primary: kimi upload returned no file ID, Fallback: glm upload returned no file ID
+Traceback (most recent call last):
+  File "/app/tools/smart_file_query.py", line 354, in _run_async
+    file_id = await self._upload_file(normalized_path, provider)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/tools/smart_file_query.py", line 505, in _upload_file
+    raise ValueError(f"{provider} upload returned no file ID")
+ValueError: kimi upload returned no file ID
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/tools/smart_file_query.py", line 373, in _run_async
+    file_id = await self._upload_file(normalized_path, fallback_provider)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/tools/smart_file_query.py", line 505, in _upload_file
+    raise ValueError(f"{provider} upload returned no file ID")
+ValueError: glm upload returned no file ID
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/tools/smart_file_query.py", line 208, in execute
+    result = await self._run_async(**arguments)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/tools/smart_file_query.py", line 378, in _run_async
+    raise ValueError(f"Upload failed with both providers. Primary: {e}, Fallback: {fallback_error}")
+ValueError: Upload failed with both providers. Primary: kimi upload returned no file ID, Fallback: glm upload returned no file ID
+2025-11-01 20:10:42 INFO tools.chat: TOOL_EXEC_DEBUG: execute() method ENTERED for tool 'chat'
+2025-11-01 20:10:42 INFO tools.chat: chat tool called with arguments: ['prompt', 'continuation_id', 'model', 'use_websearch']
+2025-11-01 20:10:42 INFO tools.chat: TOOL_EXEC_DEBUG: Arguments stored, about to send progress
+2025-11-01 20:10:42 INFO mcp_activity: [PROGRESS] chat: Starting execution
+2025-11-01 20:10:42 INFO mcp_activity: [PROGRESS] chat: Request validated
+2025-11-01 20:10:42 INFO tools.chat: TOOL_EXEC_DEBUG: About to create ModelContext for model 'glm-4.6'
+2025-11-01 20:10:42 INFO tools.chat: TOOL_EXEC_DEBUG: ModelContext created successfully for glm-4.6
+2025-11-01 20:10:42 INFO mcp_activity: [PROGRESS] chat: Model/context ready: glm-4.6
+2025-11-01 20:10:42 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19 "HTTP/2 200 OK"
+2025-11-01 20:10:42 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_by_continuation_id took 0.105s
+2025-11-01 20:10:42 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=5 "HTTP/2 200 OK"
+2025-11-01 20:10:42 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_messages took 0.053s
+2025-11-01 20:10:42 INFO utils.conversation.supabase_memory: [CONTEXT_PRUNING] Loaded 5 messages for 73eecb1f-3c21-4208-977e-9e724f6a9f19 (limit=5)
+2025-11-01 20:10:42 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.161s
+2025-11-01 20:10:42 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:10:42 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata=None, type=<class 'NoneType'>
+2025-11-01 20:10:42 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={}
+2025-11-01 20:10:42 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:10:42 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:10:42 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.053s
+2025-11-01 20:10:42 INFO root: MODEL_CONTEXT_DEBUG: Getting provider for model 'glm-4.6'
+2025-11-01 20:10:42 INFO root: MODEL_CONTEXT_DEBUG: get_provider_for_model returned: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:10:42 INFO tools.chat: TOOL_EXEC_DEBUG: About to access provider property for model 'glm-4.6'
+2025-11-01 20:10:42 INFO tools.chat: TOOL_EXEC_DEBUG: Model context object: <utils.model.context.ModelContext object at 0x7c05575b1a30>
+2025-11-01 20:10:42 INFO tools.chat: TOOL_EXEC_DEBUG: Provider obtained: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:10:42 INFO mcp_activity: [PROGRESS] chat: Generating response (~528 tokens)
+2025-11-01 20:10:42 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 20:10:42 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 20:10:42 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 20:10:42 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 20:10:42 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 20:10:42 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 20:10:42 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 20:10:43 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 20:10:57 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 20:10:57 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 20:10:57 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 20:10:57 INFO tools.chat: Received response from glm API for chat
+2025-11-01 20:10:57 INFO mcp_activity: [PROGRESS] ­ƒôØ Processing response...
+2025-11-01 20:10:58 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:10:58 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '202511011710422a4dee7e316d4ca9', 'created': 1761988242, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 15395}}}, type=<class 'dict'>
+2025-11-01 20:10:58 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '202511011710422a4dee7e316d4ca9', 'created': 1761988242, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 15395}}}}
+2025-11-01 20:10:58 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:10:58 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:10:58 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.333s
+2025-11-01 20:10:58 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 20:10:58 INFO tools.chat: chat tool completed successfully
+2025-11-01 20:10:58 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:10:58 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:10:58 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:10:58 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:11:54 INFO tools.chat: TOOL_EXEC_DEBUG: execute() method ENTERED for tool 'chat'
+2025-11-01 20:11:54 INFO tools.chat: chat tool called with arguments: ['prompt', 'continuation_id', 'model', 'use_websearch']
+2025-11-01 20:11:54 INFO tools.chat: TOOL_EXEC_DEBUG: Arguments stored, about to send progress
+2025-11-01 20:11:54 INFO mcp_activity: [PROGRESS] chat: Starting execution
+2025-11-01 20:11:54 INFO mcp_activity: [PROGRESS] chat: Request validated
+2025-11-01 20:11:54 INFO tools.chat: TOOL_EXEC_DEBUG: About to create ModelContext for model 'glm-4.6'
+2025-11-01 20:11:54 INFO tools.chat: TOOL_EXEC_DEBUG: ModelContext created successfully for glm-4.6
+2025-11-01 20:11:54 INFO mcp_activity: [PROGRESS] chat: Model/context ready: glm-4.6
+2025-11-01 20:11:54 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19 "HTTP/2 200 OK"
+2025-11-01 20:11:54 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_by_continuation_id took 0.079s
+2025-11-01 20:11:55 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=5 "HTTP/2 200 OK"
+2025-11-01 20:11:55 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_messages took 0.043s
+2025-11-01 20:11:55 INFO utils.conversation.supabase_memory: [CONTEXT_PRUNING] Loaded 5 messages for 73eecb1f-3c21-4208-977e-9e724f6a9f19 (limit=5)
+2025-11-01 20:11:55 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.124s
+2025-11-01 20:11:55 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:11:55 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata=None, type=<class 'NoneType'>
+2025-11-01 20:11:55 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={}
+2025-11-01 20:11:55 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:11:55 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:11:55 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.053s
+2025-11-01 20:11:55 INFO root: MODEL_CONTEXT_DEBUG: Getting provider for model 'glm-4.6'
+2025-11-01 20:11:55 INFO root: MODEL_CONTEXT_DEBUG: get_provider_for_model returned: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:11:55 INFO tools.chat: TOOL_EXEC_DEBUG: About to access provider property for model 'glm-4.6'
+2025-11-01 20:11:55 INFO tools.chat: TOOL_EXEC_DEBUG: Model context object: <utils.model.context.ModelContext object at 0x7c0556fbff00>
+2025-11-01 20:11:55 INFO tools.chat: TOOL_EXEC_DEBUG: Provider obtained: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:11:55 INFO mcp_activity: [PROGRESS] chat: Generating response (~421 tokens)
+2025-11-01 20:11:55 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 20:11:55 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 20:11:55 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 20:11:55 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 20:11:55 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 20:11:55 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 20:11:55 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 20:11:56 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 20:12:08 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 20:12:08 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 20:12:08 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 20:12:08 INFO tools.chat: Received response from glm API for chat
+2025-11-01 20:12:08 INFO mcp_activity: [PROGRESS] ­ƒôØ Processing response...
+2025-11-01 20:12:08 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:12:08 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101171155e04a8d30c8e04efd', 'created': 1761988315, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 13302}}}, type=<class 'dict'>
+2025-11-01 20:12:08 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101171155e04a8d30c8e04efd', 'created': 1761988315, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 13302}}}}
+2025-11-01 20:12:08 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:12:08 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:12:08 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.089s
+2025-11-01 20:12:08 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 20:12:08 INFO tools.chat: chat tool completed successfully
+2025-11-01 20:12:08 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:12:08 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:12:08 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:12:08 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:13:06 INFO src.daemon.ws.request_router: [SAMPLED] === PROCESSING ===
+2025-11-01 20:13:06 INFO tools.chat: TOOL_EXEC_DEBUG: execute() method ENTERED for tool 'chat'
+2025-11-01 20:13:06 INFO tools.chat: chat tool called with arguments: ['prompt', 'continuation_id', 'model', 'use_websearch']
+2025-11-01 20:13:06 INFO tools.chat: TOOL_EXEC_DEBUG: Arguments stored, about to send progress
+2025-11-01 20:13:06 INFO mcp_activity: [PROGRESS] chat: Starting execution
+2025-11-01 20:13:06 INFO mcp_activity: [PROGRESS] chat: Request validated
+2025-11-01 20:13:06 INFO tools.chat: TOOL_EXEC_DEBUG: About to create ModelContext for model 'glm-4.6'
+2025-11-01 20:13:06 INFO tools.chat: TOOL_EXEC_DEBUG: ModelContext created successfully for glm-4.6
+2025-11-01 20:13:06 INFO mcp_activity: [PROGRESS] chat: Model/context ready: glm-4.6
+2025-11-01 20:13:07 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19 "HTTP/2 200 OK"
+2025-11-01 20:13:07 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_by_continuation_id took 0.384s
+2025-11-01 20:13:07 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=5 "HTTP/2 200 OK"
+2025-11-01 20:13:07 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_messages took 0.044s
+2025-11-01 20:13:07 INFO utils.conversation.supabase_memory: [CONTEXT_PRUNING] Loaded 5 messages for 73eecb1f-3c21-4208-977e-9e724f6a9f19 (limit=5)
+2025-11-01 20:13:07 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.431s
+2025-11-01 20:13:07 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:13:07 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata=None, type=<class 'NoneType'>
+2025-11-01 20:13:07 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={}
+2025-11-01 20:13:07 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:13:07 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:13:07 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.044s
+2025-11-01 20:13:07 INFO root: MODEL_CONTEXT_DEBUG: Getting provider for model 'glm-4.6'
+2025-11-01 20:13:07 INFO root: MODEL_CONTEXT_DEBUG: get_provider_for_model returned: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:13:07 INFO tools.chat: TOOL_EXEC_DEBUG: About to access provider property for model 'glm-4.6'
+2025-11-01 20:13:07 INFO tools.chat: TOOL_EXEC_DEBUG: Model context object: <utils.model.context.ModelContext object at 0x7c0557c13bd0>
+2025-11-01 20:13:07 INFO tools.chat: TOOL_EXEC_DEBUG: Provider obtained: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:13:07 INFO mcp_activity: [PROGRESS] chat: Generating response (~269 tokens)
+2025-11-01 20:13:07 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 20:13:07 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 20:13:07 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 20:13:07 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 20:13:07 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 20:13:07 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 20:13:07 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 20:13:08 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 20:13:16 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 20:13:16 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 20:13:16 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 20:13:16 INFO tools.chat: Received response from glm API for chat
+2025-11-01 20:13:16 INFO mcp_activity: [PROGRESS] ­ƒôØ Processing response...
+2025-11-01 20:13:16 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:13:16 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101171307a20cee7f3bd34713', 'created': 1761988387, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 9366}}}, type=<class 'dict'>
+2025-11-01 20:13:16 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101171307a20cee7f3bd34713', 'created': 1761988387, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 9366}}}}
+2025-11-01 20:13:16 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:13:16 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:13:16 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.082s
+2025-11-01 20:13:16 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 20:13:16 INFO tools.chat: chat tool completed successfully
+2025-11-01 20:13:16 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:13:16 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:13:16 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:13:16 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:14:50 INFO tools.chat: TOOL_EXEC_DEBUG: execute() method ENTERED for tool 'chat'
+2025-11-01 20:14:50 INFO tools.chat: chat tool called with arguments: ['prompt', 'continuation_id', 'model', 'use_websearch']
+2025-11-01 20:14:50 INFO tools.chat: TOOL_EXEC_DEBUG: Arguments stored, about to send progress
+2025-11-01 20:14:50 INFO mcp_activity: [PROGRESS] chat: Starting execution
+2025-11-01 20:14:50 INFO mcp_activity: [PROGRESS] chat: Request validated
+2025-11-01 20:14:50 INFO tools.chat: TOOL_EXEC_DEBUG: About to create ModelContext for model 'glm-4.6'
+2025-11-01 20:14:50 INFO tools.chat: TOOL_EXEC_DEBUG: ModelContext created successfully for glm-4.6
+2025-11-01 20:14:50 INFO mcp_activity: [PROGRESS] chat: Model/context ready: glm-4.6
+2025-11-01 20:14:51 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19 "HTTP/2 200 OK"
+2025-11-01 20:14:51 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_by_continuation_id took 0.385s
+2025-11-01 20:14:51 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=5 "HTTP/2 200 OK"
+2025-11-01 20:14:51 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_messages took 0.049s
+2025-11-01 20:14:51 INFO utils.conversation.supabase_memory: [CONTEXT_PRUNING] Loaded 5 messages for 73eecb1f-3c21-4208-977e-9e724f6a9f19 (limit=5)
+2025-11-01 20:14:51 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.436s
+2025-11-01 20:14:51 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:14:51 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata=None, type=<class 'NoneType'>
+2025-11-01 20:14:51 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={}
+2025-11-01 20:14:51 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:14:51 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:14:51 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.046s
+2025-11-01 20:14:51 INFO root: MODEL_CONTEXT_DEBUG: Getting provider for model 'glm-4.6'
+2025-11-01 20:14:51 INFO root: MODEL_CONTEXT_DEBUG: get_provider_for_model returned: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:14:51 INFO tools.chat: TOOL_EXEC_DEBUG: About to access provider property for model 'glm-4.6'
+2025-11-01 20:14:51 INFO tools.chat: TOOL_EXEC_DEBUG: Model context object: <utils.model.context.ModelContext object at 0x7c055759a250>
+2025-11-01 20:14:51 INFO tools.chat: TOOL_EXEC_DEBUG: Provider obtained: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:14:51 INFO mcp_activity: [PROGRESS] chat: Generating response (~275 tokens)
+2025-11-01 20:14:51 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 20:14:51 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 20:14:51 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 20:14:51 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 20:14:51 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 20:14:51 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 20:14:51 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 20:14:52 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 20:15:03 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 20:15:03 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 20:15:03 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 20:15:03 INFO tools.chat: Received response from glm API for chat
+2025-11-01 20:15:03 INFO mcp_activity: [PROGRESS] ­ƒôØ Processing response...
+2025-11-01 20:15:03 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:15:03 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101171451c0bb4f4c5821463c', 'created': 1761988491, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 12093}}}, type=<class 'dict'>
+2025-11-01 20:15:03 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101171451c0bb4f4c5821463c', 'created': 1761988491, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 12093}}}}
+2025-11-01 20:15:03 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:15:03 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:15:03 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.097s
+2025-11-01 20:15:03 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 20:15:03 INFO tools.chat: chat tool completed successfully
+2025-11-01 20:15:03 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:15:03 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:15:03 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:15:03 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:17:20 INFO tools.chat: TOOL_EXEC_DEBUG: execute() method ENTERED for tool 'chat'
+2025-11-01 20:17:20 INFO tools.chat: chat tool called with arguments: ['prompt', 'continuation_id', 'model', 'use_websearch']
+2025-11-01 20:17:20 INFO tools.chat: TOOL_EXEC_DEBUG: Arguments stored, about to send progress
+2025-11-01 20:17:20 INFO mcp_activity: [PROGRESS] chat: Starting execution
+2025-11-01 20:17:20 INFO mcp_activity: [PROGRESS] chat: Request validated
+2025-11-01 20:17:20 INFO tools.chat: TOOL_EXEC_DEBUG: About to create ModelContext for model 'glm-4.6'
+2025-11-01 20:17:20 INFO tools.chat: TOOL_EXEC_DEBUG: ModelContext created successfully for glm-4.6
+2025-11-01 20:17:20 INFO mcp_activity: [PROGRESS] chat: Model/context ready: glm-4.6
+2025-11-01 20:17:20 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19 "HTTP/2 200 OK"
+2025-11-01 20:17:20 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_by_continuation_id took 0.377s
+2025-11-01 20:17:20 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=5 "HTTP/2 200 OK"
+2025-11-01 20:17:20 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_messages took 0.047s
+2025-11-01 20:17:20 INFO utils.conversation.supabase_memory: [CONTEXT_PRUNING] Loaded 5 messages for 73eecb1f-3c21-4208-977e-9e724f6a9f19 (limit=5)
+2025-11-01 20:17:20 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.426s
+2025-11-01 20:17:20 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:17:20 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata=None, type=<class 'NoneType'>
+2025-11-01 20:17:20 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={}
+2025-11-01 20:17:20 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:17:20 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:17:20 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.050s
+2025-11-01 20:17:20 INFO root: MODEL_CONTEXT_DEBUG: Getting provider for model 'glm-4.6'
+2025-11-01 20:17:20 INFO root: MODEL_CONTEXT_DEBUG: get_provider_for_model returned: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:17:20 INFO tools.chat: TOOL_EXEC_DEBUG: About to access provider property for model 'glm-4.6'
+2025-11-01 20:17:20 INFO tools.chat: TOOL_EXEC_DEBUG: Model context object: <utils.model.context.ModelContext object at 0x7c05575d2550>
+2025-11-01 20:17:20 INFO tools.chat: TOOL_EXEC_DEBUG: Provider obtained: <src.providers.glm.GLMModelProvider object at 0x7c0564d656a0>
+2025-11-01 20:17:20 INFO mcp_activity: [PROGRESS] chat: Generating response (~421 tokens)
+2025-11-01 20:17:20 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 20:17:20 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 20:17:20 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 20:17:20 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 20:17:20 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 20:17:20 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 20:17:20 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 20:17:22 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 20:17:47 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 20:17:47 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 20:17:47 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 20:17:47 INFO tools.chat: Received response from glm API for chat
+2025-11-01 20:17:47 INFO mcp_activity: [PROGRESS] ­ƒôØ Processing response...
+2025-11-01 20:17:47 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.986f2030-5623-4f54-a969-dfe03c18d5bf&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 20:17:47 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101171721c224cb1df4744274', 'created': 1761988641, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 26127}}}, type=<class 'dict'>
+2025-11-01 20:17:47 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=73eecb1f-3c21-4208-977e-9e724f6a9f19, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101171721c224cb1df4744274', 'created': 1761988641, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 26127}}}}
+2025-11-01 20:17:47 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:17:47 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:17:47 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.073s
+2025-11-01 20:17:47 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 20:17:47 INFO tools.chat: chat tool completed successfully
+2025-11-01 20:17:47 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:17:47 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 20:17:47 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 20:17:47 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 21:21:26 INFO src.daemon.session_manager: [SESSION_MANAGER] Cleaned up 1 stale sessions (total sessions: 0)
+2025-11-01 21:21:26 INFO src.daemon.ws.session_handler: [SESSION_CLEANUP] Cleaned up 1 stale sessions

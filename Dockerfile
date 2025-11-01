@@ -72,9 +72,12 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD python scripts/runtime/health_check.py || exit 1
 
 # Set environment variables
+# CRITICAL FIX (2025-11-01): Removed LOG_LEVEL=INFO hardcode
+# - Previously hardcoded LOG_LEVEL=INFO overrode .env.docker settings
+# - Now LOG_LEVEL is read from .env.docker (mounted as .env in container)
+# - This allows proper configuration via environment files
 ENV PYTHONUNBUFFERED=1 \
     PYTHONIOENCODING=utf-8 \
-    LOG_LEVEL=INFO \
     EXAI_WS_HOST=0.0.0.0 \
     EXAI_WS_PORT=8079
 

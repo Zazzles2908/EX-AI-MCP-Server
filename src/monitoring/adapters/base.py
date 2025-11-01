@@ -21,25 +21,39 @@ logger = logging.getLogger(__name__)
 class UnifiedMonitoringEvent:
     """
     Unified monitoring event model.
-    
+
     Both WebSocket and Realtime adapters normalize their events to this format.
     This ensures the dashboard code remains unchanged during migration.
+
+    Phase 2.6.1 Enhancement:
+    - Added category field for event classification
+    - Added sequence_id for reconciliation and ordering
     """
     event_type: str
     timestamp: datetime
     source: str  # 'websocket', 'realtime', 'redis', etc.
     data: Dict[str, Any]
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
+    category: Optional[str] = None  # EventCategory.value (e.g., 'critical', 'performance')
+    sequence_id: Optional[int] = None  # For reconciliation and ordering
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
-        return {
+        result = {
             'event_type': self.event_type,
             'timestamp': self.timestamp.isoformat(),
             'source': self.source,
             'data': self.data,
             'metadata': self.metadata,
         }
+
+        # Include category and sequence_id if present
+        if self.category:
+            result['category'] = self.category
+        if self.sequence_id is not None:
+            result['sequence_id'] = self.sequence_id
+
+        return result
 
 
 @dataclass

@@ -17,8 +17,8 @@
     <script src="/static/js/auditor-panel.js"></script>
     <!-- PHASE 0.4 (2025-10-24): Testing Panel -->
     <script src="/static/js/testing-panel.js"></script>
-    <!-- Week 2-3 Monitoring Phase (2025-10-31): Cache Metrics Panel -->
-    <script src="/static/js/cache-metrics-panel.js"></script>
+    <!-- PHASE 3 FIX (2025-11-01): Cache Metrics Panel REMOVED (redundant, will use unified collector in Phase 4) -->
+    <!-- <script src="/static/js/cache-metrics-panel.js"></script> -->
     <!-- PHASE 1 REFACTORING (2025-10-23): CSS extracted to /static/css/dashboard.css (290 lines removed) -->
 </head>
 <body>
@@ -55,12 +55,12 @@
             <div class="health-label">Response (p95)</div>
             <parameter name="health-details">ms</div>
         </div>
-        <!-- PHASE 1 DASHBOARD INTEGRATION (2025-10-31): Cache Metrics -->
-        <div class="health-indicator" id="cacheHealthIndicator">
+        <!-- PHASE 3 FIX (2025-11-01): Cache Health Indicator REMOVED (will use unified metrics in Phase 4) -->
+        <!-- <div class="health-indicator" id="cacheHealthIndicator">
             <div class="health-score" id="cacheHitRate">--</div>
             <div class="health-label">Cache Hit Rate</div>
             <div class="health-details" id="cacheImplementation">--</div>
-        </div>
+        </div> -->
     </div>
 
     <!-- PHASE 3.4 (2025-10-23): Session & Conversation Metrics Panel -->
@@ -491,12 +491,9 @@
                 // PHASE 3.1 (2025-10-23): Handle historical data response
                 console.log('[CHARTS] Received historical data:', data.data?.length || 0, 'events');
                 populateChartsWithHistoricalData(data.data);
-            } else if (data.type === 'cache_metrics') {
-                // PHASE 1 DASHBOARD INTEGRATION (2025-10-31): Handle cache metrics
-                if (data.data && dashboard) {
-                    dashboard.updateCacheMetrics(data.data);
-                }
             }
+            // PHASE 3 FIX (2025-11-01): Cache metrics handling REMOVED (redundant)
+            // Will be replaced by unified metrics in Phase 4
         }
         
         function updateAllStats(stats) {
@@ -872,8 +869,8 @@
             initializeCharts();
             initializeWebSocket();
 
-            // Week 2-3 Monitoring Phase (2025-10-31): Initialize cache metrics panel
-            initCacheMetrics();
+            // PHASE 3 FIX (2025-11-01): Cache metrics panel initialization REMOVED (redundant)
+            // initCacheMetrics();
         });
 
         // Week 2-3 Monitoring Phase (2025-10-31): Cache Metrics Panel Functions

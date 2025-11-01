@@ -43,11 +43,12 @@ from src.utils.logging_utils import get_logger, SamplingLogger
 logger = get_logger(__name__)
 
 # PHASE 3 (2025-10-28): Create sampling loggers with different rates for different operations
-# Expected impact: 85-90% log volume reduction while maintaining visibility
-SAFE_SEND_SAMPLE_RATE = float(os.getenv("SAFE_SEND_SAMPLE_RATE", "0.01"))  # 1%
-MSG_LOOP_SAMPLE_RATE = float(os.getenv("MSG_LOOP_SAMPLE_RATE", "0.001"))   # 0.1%
-SESSION_SAMPLE_RATE = float(os.getenv("SESSION_SAMPLE_RATE", "0.05"))      # 5%
-CLEANUP_SAMPLE_RATE = float(os.getenv("CLEANUP_SAMPLE_RATE", "0.0001"))    # 0.01%
+# PHASE 3.2 FIX (2025-11-01): Reduced sampling rates by 10x to eliminate log spam
+# Expected impact: 90-95% log volume reduction while maintaining visibility
+SAFE_SEND_SAMPLE_RATE = float(os.getenv("SAFE_SEND_SAMPLE_RATE", "0.001"))  # 0.1% (was 1%)
+MSG_LOOP_SAMPLE_RATE = float(os.getenv("MSG_LOOP_SAMPLE_RATE", "0.0001"))   # 0.01% (was 0.1%)
+SESSION_SAMPLE_RATE = float(os.getenv("SESSION_SAMPLE_RATE", "0.01"))      # 1% (was 5%)
+CLEANUP_SAMPLE_RATE = float(os.getenv("CLEANUP_SAMPLE_RATE", "0.00001"))    # 0.001% (was 0.01%)
 
 safe_send_sampler = SamplingLogger(logger, sample_rate=SAFE_SEND_SAMPLE_RATE)
 msg_loop_sampler = SamplingLogger(logger, sample_rate=MSG_LOOP_SAMPLE_RATE)
@@ -125,10 +126,11 @@ async def _safe_send(
     # Legacy fallback (if ResilientWebSocketManager not initialized or failed)
     try:
         # PHASE 3.1 (2025-10-28): Migrated to sampling logger (1% sampling)
+        # PHASE 3.2 FIX (2025-11-01): Changed to DEBUG level to reduce log spam
         # EXAI Consultation: 7e59bfd7-a9cc-4a19-9807-5ebd84082cab
-        safe_send_sampler.info(f"[SAFE_SEND] Attempting to send op={payload.get('op')} size={data_size} bytes", key="safe_send")
+        safe_send_sampler.debug(f"[SAFE_SEND] Attempting to send op={payload.get('op')} size={data_size} bytes", key="safe_send")
         await ws.send(message_json)
-        safe_send_sampler.info(f"[SAFE_SEND] Successfully sent op={payload.get('op')}", key="safe_send")
+        safe_send_sampler.debug(f"[SAFE_SEND] Successfully sent op={payload.get('op')}", key="safe_send")
 
         # PHASE 3 (2025-10-18): Monitor successful sends (sample 1 in 10 for performance)
         if hash(payload.get("request_id", "")) % 10 == 0:

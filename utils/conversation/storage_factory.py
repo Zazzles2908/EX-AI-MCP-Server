@@ -287,17 +287,8 @@ class DualStorageConversation:
     # Legacy text-based history building is no longer used.
     # Modern approach: Use get_messages_array() for SDK-native message format.
 
-    def clear_request_cache(self):
-        """
-        Clear the request-scoped thread cache in Supabase storage.
-
-        BUG FIX #13 (2025-10-20): Delegate to Supabase storage's cache clearing.
-        This prevents memory leaks and stale data being served across requests.
-        """
-        if hasattr(self.supabase, 'clear_request_cache'):
-            self.supabase.clear_request_cache()
-        else:
-            logger.warning("[REQUEST_CACHE] Supabase storage has no clear_request_cache method")
+    # PHASE 2 FIX (2025-11-01): Removed clear_request_cache() method
+    # Request-scoped cache has been eliminated as part of cache layer reduction
 
 
 # ============================================================================

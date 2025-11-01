@@ -36,29 +36,30 @@ _redis_client: Optional[redis.Redis] = None
 async def warmup_supabase() -> Client:
     """
     Initialize and verify Supabase connection.
-    
+
     Returns:
         Initialized Supabase client
-        
+
     Raises:
         Exception if connection fails
     """
     global _supabase_client
-    
+
     try:
         logger.info("[WARMUP] Initializing Supabase connection...")
         start_time = asyncio.get_event_loop().time()
-        
-        # Create Supabase client
-        _supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
-        
+
+        # PHASE 1 FIX (2025-11-01): Use centralized singleton
+        from src.storage.supabase_singleton import get_supabase_client
+        _supabase_client = get_supabase_client(use_admin=True)
+
         # Run a lightweight query to verify connection
         # Using conversations table as it's guaranteed to exist
         result = _supabase_client.table("conversations").select("id").limit(1).execute()
-        
+
         elapsed = asyncio.get_event_loop().time() - start_time
         logger.info(f"[WARMUP] ✅ Supabase connection warmed up successfully ({elapsed:.3f}s)")
-        
+
         return _supabase_client
         
     except Exception as e:

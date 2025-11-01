@@ -324,64 +324,9 @@ async def _broadcast_websocket_health() -> None:
             logger.debug(f"Failed to send WebSocket health to dashboard client: {e}")
 
 
-async def _broadcast_cache_metrics() -> None:
-    """
-    Broadcast semantic cache metrics to all connected dashboard clients.
-
-    PHASE 1 DASHBOARD INTEGRATION (2025-10-31): Cache migration monitoring
-    Tracks legacy vs new implementation usage, hit/miss rates, and errors.
-    """
-    if not _dashboard_clients:
-        return
-
-    try:
-        import os
-        from utils.infrastructure.semantic_cache import get_semantic_cache
-
-        # Get cache instance
-        cache = get_semantic_cache()
-        stats = cache.get_stats()
-
-        # Determine implementation type
-        use_base_manager = os.getenv('SEMANTIC_CACHE_USE_BASE_MANAGER', 'false').lower() == 'true'
-        implementation_type = "new" if use_base_manager else "legacy"
-
-        # Calculate hit rate
-        hits = stats.get('hits', 0)
-        misses = stats.get('misses', 0)
-        total_requests = hits + misses
-        hit_rate = (hits / total_requests * 100) if total_requests > 0 else 0
-
-        # Get error count
-        error_count = stats.get('errors', 0) + stats.get('size_rejections', 0)
-
-        # Prepare cache metrics
-        cache_metrics = {
-            "implementation": implementation_type,
-            "hit_rate": round(hit_rate, 2),
-            "hits": hits,
-            "misses": misses,
-            "total_requests": total_requests,
-            "error_count": error_count,
-            "size_rejections": stats.get('size_rejections', 0),
-            "cache_size": stats.get('size', 0),
-            "max_size": stats.get('max_size', 0)
-        }
-
-        event = {
-            "type": "cache_metrics",
-            "data": cache_metrics,
-            "timestamp": log_timestamp()
-        }
-
-        for client in _dashboard_clients:
-            try:
-                await client.send_str(json.dumps(event))
-            except Exception as e:
-                logger.debug(f"Failed to send cache metrics to dashboard client: {e}")
-
-    except Exception as e:
-        logger.error(f"Failed to get cache metrics: {e}")
+# PHASE 3 FIX (2025-11-01): Removed _broadcast_cache_metrics() - redundant with unified collector
+# EXAI Consultation: 63c00b70-364b-4351-bf6c-5a105e553dce
+# Cache metrics will be handled by UnifiedMetricsCollector + Supabase Realtime in Phase 4
 
 
 def _should_broadcast_metrics_change(current: dict, last: Optional[dict]) -> bool:
@@ -878,6 +823,35 @@ async def post_metrics_flush(request: web.Request) -> web.Response:
         }, status=500)
 
 
+async def monitoring_health_handler(request: web.Request) -> web.Response:
+    """
+    PHASE 1 FIX (2025-11-01): Health check endpoint for monitoring port.
+
+    Returns:
+        200 OK with basic health status
+    """
+    try:
+        from utils.timezone_helper import utc_now_iso
+
+        return web.json_response({
+            'status': 'healthy',
+            'timestamp_utc': utc_now_iso(),
+            'port': 8080,
+            'service': 'monitoring',
+            'components': {
+                'websocket': 'healthy',
+                'dashboard': 'healthy',
+                'metrics': 'healthy'
+            }
+        })
+    except Exception as e:
+        logger.error(f"[MONITORING_HEALTH] Error: {e}")
+        return web.json_response({
+            'status': 'unhealthy',
+            'error': str(e)
+        }, status=503)
+
+
 async def get_health_flags(request: web.Request) -> web.Response:
     """
     Get flag configuration health check.
@@ -1186,8 +1160,7 @@ async def periodic_metrics_broadcast():
                 # Broadcast WebSocket health
                 await _broadcast_websocket_health()
 
-                # PHASE 1 (2025-10-31): Broadcast cache metrics
-                await _broadcast_cache_metrics()
+                # PHASE 3 FIX (2025-11-01): Removed cache metrics broadcasting (redundant)
 
         except Exception as e:
             logger.error(f"Error in periodic metrics broadcast: {e}")
@@ -1239,6 +1212,9 @@ async def start_monitoring_server(host: str = "0.0.0.0", port: int = 8080) -> No
     app.router.add_get('/flags/status', get_flags_status)
     app.router.add_post('/metrics/flush', post_metrics_flush)
     app.router.add_get('/health/flags', get_health_flags)
+
+    # PHASE 1 FIX (2025-11-01): Add /health endpoint to monitoring port
+    app.router.add_get('/health', monitoring_health_handler)
 
     # AI Auditor API routes (2025-10-24)
     app.router.add_get('/api/auditor/observations', get_auditor_observations)

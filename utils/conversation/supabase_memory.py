@@ -66,11 +66,9 @@ class SupabaseConversationMemory:
 
         # BUG FIX #11 (2025-10-19): Add in-memory thread cache to eliminate redundant get_thread() calls
         # This prevents multiple get_thread() calls within the same request from hitting Supabase
-        # Expected improvement: 0.905s → 0.3s (eliminates 3x redundant calls)
-        # BUG FIX #13 (2025-10-20): This is a REQUEST-SCOPED cache that MUST be cleared after each request
-        # Without clearing, it becomes a memory leak and serves stale data across requests
-        self._thread_cache = {}
-        self._request_cache_enabled = True  # Can be disabled for debugging
+        # PHASE 2 FIX (2025-11-01): Removed request-scoped cache (L0)
+        # Consolidating to 2 cache layers: Supabase (L3) + Redis (L2 via BaseCacheManager)
+        # Request-scoped cache was causing complexity without significant performance benefit
 
         # BUG FIX #11 (Phase 1b - 2025-10-20): Use async queue instead of ThreadPoolExecutor
         # When USE_ASYNC_SUPABASE=true, writes are submitted to async queue
@@ -118,14 +116,9 @@ class SupabaseConversationMemory:
             return None
 
         try:
-            # BUG FIX #11 & #13: Check in-memory thread cache first (L0 - request-level cache)
-            # This eliminates redundant Supabase queries WITHIN a single request
-            # Cache is cleared after each request completes (see request_handler.py)
-            if self._request_cache_enabled and continuation_id in self._thread_cache:
-                logger.info(f"[REQUEST_CACHE HIT] Thread {continuation_id} from request cache (0ms, no Supabase query)")
-                return self._thread_cache[continuation_id]
-
-            # PERFORMANCE FIX: Check cache first (L1 → L2)
+            # PHASE 2 FIX (2025-11-01): Removed request-scoped cache
+            # Now using only L2 (Redis via BaseCacheManager) → L3 (Supabase)
+            # PERFORMANCE FIX: Check cache first (L2 → L3)
             cached_conv = self.cache.get_conversation(continuation_id)
             cached_messages = self.cache.get_messages(continuation_id)
 
@@ -141,12 +134,6 @@ class SupabaseConversationMemory:
                     'updated_at': cached_conv.get('updated_at')
                 }
                 logger.debug(f"[CACHE HIT] Retrieved thread {continuation_id} from cache ({len(cached_messages)} messages)")
-
-                # BUG FIX #11 & #13: Store in request cache for subsequent calls in same request
-                if self._request_cache_enabled:
-                    self._thread_cache[continuation_id] = thread
-                    logger.debug(f"[REQUEST_CACHE STORE] Cached thread {continuation_id} for this request")
-
                 return thread
 
             # Cache miss - load from Supabase (L3)
@@ -185,11 +172,6 @@ class SupabaseConversationMemory:
                 'created_at': conv.get('created_at'),
                 'updated_at': conv.get('updated_at')
             }
-
-            # BUG FIX #11 & #13: Store in request cache for subsequent calls in same request
-            if self._request_cache_enabled:
-                self._thread_cache[continuation_id] = thread
-                logger.info(f"[REQUEST_CACHE STORE] Cached thread {continuation_id} for this request (loaded from Supabase)")
 
             logger.debug(f"Retrieved thread {continuation_id} with {len(messages)} messages (cached for next request)")
             return thread
@@ -249,12 +231,15 @@ class SupabaseConversationMemory:
                     upload_immediately=True
                 )
 
-                # Extract file IDs and link to conversation
+                # PHASE 1 FIX (2025-11-01): Batch link files to reduce HTTP calls
                 for file_info in processed_files:
                     file_id = file_info.get('file_id')
                     if file_id:
                         file_ids.append(file_id)
-                        self.storage.link_file_to_conversation(conv_id, file_id)
+
+                # Batch link all files at once
+                if file_ids:
+                    self.storage.link_files_to_conversation_batch(conv_id, file_ids)
 
             # Prepare message metadata
             msg_metadata = metadata or {}
@@ -282,11 +267,6 @@ class SupabaseConversationMemory:
             if msg_id:
                 # Invalidate cache after write
                 self.cache.invalidate(continuation_id)
-
-                # Invalidate thread cache after write
-                if continuation_id in self._thread_cache:
-                    del self._thread_cache[continuation_id]
-
                 logger.debug(f"[BACKGROUND_WRITE] Saved turn for {continuation_id}: {role} message")
             else:
                 logger.error(f"[BACKGROUND_WRITE] Failed to save message for {continuation_id}")
@@ -497,12 +477,15 @@ class SupabaseConversationMemory:
                 )
                 log_operation_time("SupabaseMemory.process_files", start_time)
 
-                # Extract file IDs and link to conversation
+                # PHASE 1 FIX (2025-11-01): Batch link files to reduce HTTP calls
                 for file_info in processed_files:
                     file_id = file_info.get('file_id')
                     if file_id:
                         file_ids.append(file_id)
-                        self.storage.link_file_to_conversation(conv_id, file_id)
+
+                # Batch link all files at once
+                if file_ids:
+                    self.storage.link_files_to_conversation_batch(conv_id, file_ids)
 
             # Prepare message metadata (use standardized metadata from Phase 1)
             msg_metadata = storage_metadata or {}
@@ -532,11 +515,6 @@ class SupabaseConversationMemory:
             if msg_id:
                 # PERFORMANCE FIX: Invalidate cache after write
                 self.cache.invalidate(continuation_id)
-
-                # BUG FIX #11: Invalidate thread cache after write to force reload on next get_thread()
-                if continuation_id in self._thread_cache:
-                    del self._thread_cache[continuation_id]
-
                 logger.debug(f"Saved turn for {continuation_id}: {role} message (cache invalidated)")
                 return True
             else:
@@ -561,25 +539,8 @@ class SupabaseConversationMemory:
     # Modern approach: Use get_messages_array() for SDK-native message format.
     # SDKs (Kimi/GLM) receive message arrays directly, not text strings.
 
-    def clear_request_cache(self):
-        """
-        Clear the request-scoped thread cache.
-
-        BUG FIX #13 (2025-10-20): This MUST be called after each request completes
-        to prevent memory leaks and stale data being served across requests.
-
-        The thread cache is designed to eliminate redundant Supabase queries WITHIN
-        a single request, but it must be cleared BETWEEN requests.
-        """
-        if not self._request_cache_enabled:
-            return
-
-        cache_size = len(self._thread_cache)
-        if cache_size > 0:
-            logger.debug(f"[REQUEST_CACHE] Clearing {cache_size} cached threads")
-            self._thread_cache.clear()
-        else:
-            logger.debug("[REQUEST_CACHE] No cached threads to clear")
+    # PHASE 2 FIX (2025-11-01): Removed clear_request_cache() method
+    # Request-scoped cache has been eliminated as part of cache layer reduction
 
 
 # Global instance
