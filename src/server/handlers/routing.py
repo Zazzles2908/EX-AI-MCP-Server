@@ -1,11 +1,13 @@
 """
-Request Handler Routing Module
+Handler Routing Module
 
 This module handles tool name resolution and filtering including:
 - Tool name normalization (case handling)
 - Thinking tool aliasing (deepthink → thinkdeep)
 - Client allow/deny list enforcement
 - Unknown tool suggestions using difflib
+
+Phase 6.4 (2025-11-01): Renamed from request_handler_routing.py to routing.py
 
 ARCHITECTURE NOTE (v2.0.2+):
 - This module delegates to singleton registry via src/server/registry_bridge
@@ -16,7 +18,7 @@ ARCHITECTURE NOTE (v2.0.2+):
 
 import difflib
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Callable
 from mcp.types import TextContent
 
 logger = logging.getLogger(__name__)
@@ -105,7 +107,7 @@ def suggest_tool_name(name: str, tool_map: Dict[str, Any], env_true_func) -> Opt
     return None
 
 
-def handle_unknown_tool(name: str, tool_map: Dict[str, Any], env_true_func) -> list[TextContent]:
+def handle_unknown_tool(name: str, tool_map: Dict[str, Any], env_true_func: Callable[[str, str], bool] = None) -> list[TextContent]:
     """
     Handle unknown tool requests gracefully with suggestions.
     

@@ -1,5 +1,5 @@
 """
-Request Handler Execution Module
+Handler Execution Module
 
 This module handles tool execution orchestration including:
 - Tool execution with model context
@@ -8,14 +8,18 @@ This module handles tool execution orchestration including:
 - File size validation
 - Model context creation
 - Optional features (date injection, smart websearch, client defaults)
+
+Phase 6.4 (2025-11-01): Renamed from request_handler_execution.py to execution.py
 """
 
 import logging
-import os
 import datetime
 import re
+import os
 from typing import Any, Dict, Callable, Optional
 from mcp.types import TextContent
+
+from src.core.env_config import ClientConfig
 
 logger = logging.getLogger(__name__)
 
@@ -72,23 +76,22 @@ def validate_file_sizes(arguments: Dict[str, Any], model_name: str, env_true_fun
     return None
 
 
-def inject_optional_features(arguments: Dict[str, Any], tool_name: str, env_true_func, os_module=os) -> Dict[str, Any]:
+def inject_optional_features(arguments: Dict[str, Any], tool_name: str, env_true_func) -> Dict[str, Any]:
     """
     Inject optional features like date, websearch, and client-aware defaults.
-    
+
     Args:
         arguments: Tool arguments
         tool_name: Tool name
         env_true_func: Function to check environment variables
-        os_module: OS module (for testing)
-        
+
     Returns:
         Updated arguments
     """
     # Optional date injection for temporal awareness
     try:
         if env_true_func("INJECT_CURRENT_DATE", "true"):
-            fmt = os_module.getenv("DATE_FORMAT", "%Y-%m-%d")
+            fmt = os.getenv("DATE_FORMAT", "%Y-%m-%d")
             today = datetime.datetime.now().strftime(fmt)
             arguments["_today"] = today
     except (AttributeError, ValueError, TypeError) as e:
@@ -124,13 +127,13 @@ def inject_optional_features(arguments: Dict[str, Any], tool_name: str, env_true
             logger.debug(f"Server module not available for client info: {e}")
             _srv = None  # type: ignore
         ci = get_client_info_from_context(_srv) or {}
-        # Check CLIENT_ env vars first, then legacy CLAUDE_ vars for backward compatibility
-        if env_true_func("CLIENT_DEFAULTS_USE_WEBSEARCH", os_module.getenv("CLAUDE_DEFAULTS_USE_WEBSEARCH", "false")):
+        # Check CLIENT_ env vars via centralized config
+        if ClientConfig.defaults_use_websearch():
             if "use_websearch" not in arguments:
                 arguments["use_websearch"] = True
         if tool_name == "thinkdeep" and "thinking_mode" not in arguments:
-            # Prefer CLIENT_ prefix, fallback to legacy CLAUDE_ prefix for backward compatibility
-            default_thinking = (os_module.getenv("CLIENT_DEFAULT_THINKING_MODE") or os_module.getenv("CLAUDE_DEFAULT_THINKING_MODE", "medium")).strip().lower()
+            # Use CLIENT_ prefix via centralized config
+            default_thinking = ClientConfig.get_default_thinking_mode()
             arguments["thinking_mode"] = default_thinking
     except (ImportError, AttributeError, KeyError) as e:
         logger.debug(f"Client-aware defaults failed: {e}")

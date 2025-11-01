@@ -1,5 +1,5 @@
 """
-Request Handler Model Resolution Module
+Handler Model Resolution Module
 
 This module centralizes all model resolution logic including:
 - Centralized auto routing policy
@@ -8,6 +8,8 @@ This module centralizes all model resolution logic including:
 - Intelligent selection by tool category
 - Hidden sentinel handling
 - Provider validation and fallback
+
+Phase 6.4 (2025-11-01): Renamed from request_handler_model_resolution.py to model_resolution.py
 """
 
 import logging

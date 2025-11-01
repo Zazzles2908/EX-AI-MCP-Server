@@ -1,10 +1,15 @@
 """
-Request Handler Module - Thin Orchestrator
+Handler Orchestrator Module - Thin Orchestrator Pattern
 
 This module serves as a thin orchestrator that delegates to specialized helper modules.
 It maintains 100% backward compatibility while achieving 93% code reduction through modularization.
 
-Refactored: 2025-09-30
+Phase 6.4 Refactoring (2025-11-01): Renamed from request_handler.py to orchestrator.py
+- Removed redundant 'request_handler_' prefix from all handler modules
+- Cleaner naming: init.py, routing.py, model_resolution.py, context.py, etc.
+- Improved code organization and maintainability
+
+Original Refactoring: 2025-09-30
 Original: 1,345 lines -> Refactored: ~95 lines (93% reduction)
 Modules: 8 total (7 helpers + 1 main orchestrator)
 """
@@ -16,12 +21,12 @@ from typing import Any
 from mcp.types import TextContent
 
 # Import all helper modules
-from .request_handler_init import initialize_request
-from .request_handler_routing import normalize_tool_name, handle_unknown_tool
-from .request_handler_model_resolution import resolve_auto_model_legacy, validate_and_fallback_model
-from .request_handler_context import reconstruct_context, integrate_session_cache, auto_select_consensus_models
-from .request_handler_monitoring import execute_with_monitor
-from .request_handler_execution import (
+from .init import initialize_request
+from .routing import normalize_tool_name, handle_unknown_tool
+from .model_resolution import resolve_auto_model_legacy, validate_and_fallback_model
+from .context import reconstruct_context, integrate_session_cache, auto_select_consensus_models
+from .monitoring import execute_with_monitor
+from .execution import (
     create_model_context,
     validate_file_sizes,
     inject_optional_features,
@@ -29,7 +34,7 @@ from .request_handler_execution import (
     execute_tool_without_model,
     normalize_result,
 )
-from .request_handler_post_processing import (
+from .post_processing import (
     handle_files_required,
     auto_continue_workflows,
     attach_progress_and_summary,
@@ -80,7 +85,7 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
     # Step 3: Get tool from registry
     tool = tool_map.get(name)
     if not tool:
-        return handle_unknown_tool(name, tool_map)
+        return handle_unknown_tool(name, tool_map, _env_true)
     
     # Step 4: Reconstruct conversation context if continuation_id present
     arguments = await reconstruct_context(name, arguments, req_id)
@@ -103,7 +108,7 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
         )
     else:
         # Resolve model using centralized auto routing
-        from .request_handler_model_resolution import _route_auto_model
+        from .model_resolution import _route_auto_model
         requested_model = arguments.get("model") or os.getenv("DEFAULT_MODEL", "glm-4.5-flash")
         routed_model = _route_auto_model(name, requested_model, arguments)
         model_name = routed_model or requested_model
@@ -165,18 +170,11 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
                                         req_id, overall_start, 1 + steps)
     write_session_cache(arguments)
 
-    # BUG FIX #13 (2025-10-20): Clear request-scoped cache after each request
-    # CRITICAL FIX (2025-10-24): Use global_storage to ensure we clear the SAME cache
-    # that was used during the request (prevents 4x Supabase duplication)
-    # The thread cache eliminates redundant Supabase queries WITHIN a request,
-    # but must be cleared BETWEEN requests
+    # PHASE 2 FIX (2025-11-01): Removed request-scoped cache clearing
+    # Request-scoped cache has been eliminated as part of cache layer reduction
+    # Now using only L2 (Redis via BaseCacheManager) → L3 (Supabase)
     try:
-        logger.info(f"[REQUEST_CACHE] Attempting to clear cache for request {req_id}")
-        from utils.conversation.global_storage import clear_request_cache, get_global_storage
-        storage = get_global_storage()
-        logger.info(f"[REQUEST_CACHE] Got global storage: {type(storage).__name__} (id={id(storage)})")
-        clear_request_cache()
-        logger.info(f"[REQUEST_CACHE] Successfully cleared request cache")
+        logger.debug(f"[REQUEST_COMPLETE] Request {req_id} completed successfully")
     except Exception as e:
         # Don't fail the request if cache cleanup fails
         logger.error(f"[REQUEST_CACHE] Failed to clear request cache: {e}", exc_info=True)

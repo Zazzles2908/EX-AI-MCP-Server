@@ -1,5 +1,5 @@
 """
-Request Handler Initialization Module
+Handler Initialization Module
 
 This module contains all initialization logic for the request handler including:
 - Environment setup and configuration
@@ -7,6 +7,8 @@ This module contains all initialization logic for the request handler including:
 - Tool registry building
 - Request ID generation
 - Shared utility functions
+
+Phase 6.4 (2025-11-01): Renamed from request_handler_init.py to init.py
 
 ARCHITECTURE NOTE (v2.0.2+):
 - This module delegates to singleton registry via src/server/registry_bridge
