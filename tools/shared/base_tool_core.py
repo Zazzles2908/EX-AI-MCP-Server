@@ -4,15 +4,58 @@ Core Tool Interface for EXAI MCP Tools
 This module provides the fundamental base class interface and abstract methods
 that all tools must implement.
 
+RESPONSIBILITY:
+===============
+
+BaseToolCore defines the CONTRACT that all tools must fulfill. It specifies:
+- Required metadata (name, description, category)
+- Configuration interface (temperature, model selection)
+- Abstract methods that subclasses must implement
+- Shared caching infrastructure (OpenRouter registry)
+
+This is the FOUNDATION of the mixin composition pattern. All other mixins
+(ModelManagementMixin, FileHandlingMixin, ResponseFormattingMixin) build
+upon this core interface.
+
+DESIGN RATIONALE:
+=================
+
+**Why Separate from base_tool.py?**
+- Size: 381 lines of core interface logic warrants its own file
+- Cohesion: All abstract methods and core contracts in one place
+- Evolution: Core interface changes independently of composition logic
+- Testing: Core interface can be tested without mixin dependencies
+
+**Why Not Merge with base_tool_response.py?**
+- Different concerns: Interface definition vs. response formatting
+- Independent evolution: Response formatting changes frequently
+- Maintainability: Combined file would be ~549 lines (too large)
+- Decision: MAINTAIN SEPARATION (Phase 6.3 - 2025-11-01)
+
+CACHING STRATEGY:
+=================
+
+**OpenRouter Registry Cache:**
+- Class-level cache shared across ALL tool instances
+- Prevents redundant registry loads (expensive operation)
+- Initialized on first access, reused for all subsequent calls
+- Cache stored on BaseToolCore class directly (not subclasses)
+
+This ensures that even with multiple tool instances, the registry
+is loaded only once per process lifetime.
+
 Key Components:
 - BaseToolCore: Abstract base class defining the core tool interface
 - Abstract methods for tool metadata and configuration
 - Core configuration methods with default implementations
+- Shared caching infrastructure for expensive operations
 """
 
 import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
+
+from tools.shared.schema_enhancer import SchemaEnhancer, get_default_related_tools
 
 if TYPE_CHECKING:
     from tools.models import ToolModelCategory
@@ -35,24 +78,35 @@ class BaseToolCore(ABC):
     """
     
     # Class-level cache for OpenRouter registry to avoid multiple loads
-    _openrouter_registry_cache = None
-    
+    _openrouter_registry_cache: Optional[Any] = None
+
     @classmethod
-    def _get_openrouter_registry(cls):
-        """Get cached OpenRouter registry instance, creating if needed."""
+    def _get_openrouter_registry(cls) -> Any:
+        """
+        Get cached OpenRouter registry instance, creating if needed.
+
+        Returns:
+            OpenRouterModelRegistry: Shared registry instance for all tools
+        """
         # Use BaseToolCore class directly to ensure cache is shared across all subclasses
         if BaseToolCore._openrouter_registry_cache is None:
             from src.providers.openrouter_registry import OpenRouterModelRegistry
-            
+
             BaseToolCore._openrouter_registry_cache = OpenRouterModelRegistry()
             logger.debug("Created cached OpenRouter registry instance")
         return BaseToolCore._openrouter_registry_cache
-    
-    def __init__(self):
+
+    def __init__(self) -> None:
+        """
+        Initialize the tool and cache metadata.
+
+        This caches tool metadata (name, description, temperature) at initialization
+        to avoid repeated calls to abstract methods during tool execution.
+        """
         # Cache tool metadata at initialization to avoid repeated calls
-        self.name = self.get_name()
-        self.description = self.get_description()
-        self.default_temperature = self.get_default_temperature()
+        self.name: str = self.get_name()
+        self.description: str = self.get_description()
+        self.default_temperature: float = self.get_default_temperature()
         # Tool initialization complete
     
     # ================================================================================
@@ -112,77 +166,19 @@ class BaseToolCore(ABC):
 
         The enhanced schema is backward-compatible with standard JSON Schema validators.
 
+        Implementation delegated to SchemaEnhancer utility class (Phase 6.3 - 2025-11-01).
+
         Returns:
             dict[str, Any]: Enhanced JSON Schema with capability metadata
         """
         # Get base schema from the tool
         base_schema = self.get_input_schema()
 
-        # Add capability hints to file parameters if present
-        if "properties" in base_schema and "files" in base_schema["properties"]:
-            base_schema["properties"]["files"]["x-capability-hints"] = {
-                "threshold": "5KB",
-                "alternative_tool": "kimi_upload_files",
-                "benefit": "Saves 70-80% tokens for large files",
-                "usage": "Use 'files' parameter for <5KB files, 'kimi_upload_files' tool for >5KB files"
-            }
-            base_schema["properties"]["files"]["x-decision-matrix"] = {
-                "file_size": {
-                    "<5KB": "Use 'files' parameter - embeds content as text in prompt",
-                    ">5KB": "Use 'kimi_upload_files' tool - saves 70-80% tokens, enables persistent reference"
-                }
-            }
+        # Get related tools from the tool (allows customization)
+        related_tools = self._get_related_tools()
 
-        # Add capability hints to continuation_id if present
-        if "properties" in base_schema and "continuation_id" in base_schema["properties"]:
-            base_schema["properties"]["continuation_id"]["x-capability-hints"] = {
-                "usage_pattern": "Multi-turn conversations",
-                "how_it_works": "Automatically retrieves conversation history",
-                "benefit": "Enables coherent multi-turn workflows without repeating context"
-            }
-            base_schema["properties"]["continuation_id"]["x-examples"] = [
-                {
-                    "scenario": "First call",
-                    "returns": "continuation_id='abc123'",
-                    "next_call": "Include continuation_id='abc123' in subsequent calls"
-                }
-            ]
-
-        # Add capability hints to model parameter if present
-        if "properties" in base_schema and "model" in base_schema["properties"]:
-            base_schema["properties"]["model"]["x-capability-hints"] = {
-                "default": "glm-4.5-flash",
-                "recommended": {
-                    "simple_tasks": "glm-4.5-flash (fast, cost-effective)",
-                    "complex_analysis": "glm-4.6 (comprehensive reasoning)",
-                    "vision_tasks": "glm-4.5v (image understanding)"
-                }
-            }
-            base_schema["properties"]["model"]["x-decision-matrix"] = {
-                "task_complexity": {
-                    "simple": "glm-4.5-flash - Quick responses, lower cost",
-                    "moderate": "glm-4.5 - Balanced performance",
-                    "complex": "glm-4.6 - Deep reasoning, comprehensive analysis"
-                }
-            }
-
-        # Add capability hints to use_websearch if present
-        if "properties" in base_schema and "use_websearch" in base_schema["properties"]:
-            base_schema["properties"]["use_websearch"]["x-capability-hints"] = {
-                "when_to_enable": [
-                    "Researching best practices",
-                    "Exploring frameworks/technologies",
-                    "Finding current documentation",
-                    "Architectural design discussions"
-                ],
-                "overhead": "Adds payload size and processing time even when not actively searching",
-                "recommendation": "Enable selectively for tools that benefit from external knowledge"
-            }
-
-        # Add tool relationship metadata (can be overridden by specific tools)
-        base_schema["x-related-tools"] = self._get_related_tools()
-
-        return base_schema
+        # Use SchemaEnhancer to enhance the schema
+        return SchemaEnhancer.enhance_schema(base_schema, related_tools)
 
     def _get_related_tools(self) -> dict[str, list[str]]:
         """
@@ -194,10 +190,7 @@ class BaseToolCore(ABC):
         Returns:
             dict: Dictionary with 'escalation' and 'alternatives' keys
         """
-        return {
-            "escalation": [],
-            "alternatives": []
-        }
+        return get_default_related_tools()
 
     @abstractmethod
     def get_system_prompt(self) -> str:
