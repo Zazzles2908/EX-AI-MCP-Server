@@ -1,11 +1,13 @@
 """
-Request Handler Context Module
+Handler Context Module
 
 This module manages conversation context and caching including:
 - Thread context reconstruction from continuation_id
 - Session cache integration
 - Continuation ID management
 - Consensus auto-model selection
+
+Phase 6.4 (2025-11-01): Renamed from request_handler_context.py to context.py
 """
 
 import logging

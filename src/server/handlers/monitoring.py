@@ -1,5 +1,5 @@
 """
-Request Handler Monitoring Module
+Handler Monitoring Module
 
 This module provides execution monitoring and progress tracking including:
 - Watchdog and heartbeat implementation
@@ -7,6 +7,8 @@ This module provides execution monitoring and progress tracking including:
 - Progress capture integration
 - Cancellation support
 - JSONL event recording
+
+Phase 6.4 (2025-11-01): Renamed from request_handler_monitoring.py to monitoring.py
 """
 
 import asyncio

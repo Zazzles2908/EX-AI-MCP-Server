@@ -1,5 +1,5 @@
 """
-Request Handler Post-Processing Module
+Handler Post-Processing Module
 
 This module handles post-execution processing including:
 - Files required to continue handling
@@ -8,15 +8,19 @@ This module handles post-execution processing including:
 - Activity summary generation
 - Session cache write-back
 - Evidence tap (Kimi bridge tracing)
+
+Phase 6.4 (2025-11-01): Renamed from request_handler_post_processing.py to post_processing.py
 """
 
 import logging
-import os
 import json
 import glob
 import time
+import os
 from typing import Any, Dict, Callable, Optional
 from mcp.types import TextContent
+
+from src.core.env_config import ClientConfig
 
 logger = logging.getLogger(__name__)
 
@@ -181,7 +185,7 @@ async def auto_continue_workflows(
         max_steps = int(os.getenv("EX_AUTOCONTINUE_MAX_STEPS", "3"))
         # Apply optional per-client workflow step cap (generic with legacy fallback)
         try:
-            cap = int((os.getenv("CLIENT_MAX_WORKFLOW_STEPS") or os.getenv("CLAUDE_MAX_WORKFLOW_STEPS", "0") or "0"))
+            cap = ClientConfig.get_max_workflow_steps()
             if cap > 0:
                 max_steps = min(max_steps, cap)
         except Exception as e:
