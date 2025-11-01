@@ -761,10 +761,9 @@ async def main_async() -> None:
                 logger.warning(f"[WS_ERROR] Unexpected error handling connection: {e}")
 
     # PHASE 4 (2025-10-19): Initialize resilient WebSocket manager
-    # TEMPORARY WORKAROUND (2025-10-28): Disable resilient WebSocket manager for load testing
-    # Root cause: asyncio.create_task() in start_background_tasks() causes await to hang
-    # TODO: Debug and fix the asyncio event loop issue after load test completes
-    logger.info("[DEBUG] ⚠️  SKIPPING ResilientWebSocketManager for load test")
+    # REVERTED (2025-10-31): Testing with ONLY auto-execution fix first
+    # Temporarily disable to test if auto-execution fix alone solves the issue
+    logger.info("[DEBUG] ⚠️  TEMPORARILY DISABLING ResilientWebSocketManager for isolated testing")
     global _resilient_ws
     _resilient_ws = None
     # _resilient_ws = ResilientWebSocketManager(fallback_send=_safe_send)

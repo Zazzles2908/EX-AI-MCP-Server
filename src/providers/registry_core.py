@@ -55,6 +55,13 @@ class ModelProviderRegistry:
     _telemetry: dict[str, dict[str, Any]] = {}
     _telemetry_lock = threading.RLock()
 
+    # PHASE 2 FIX (2025-11-01): Cache for get_available_models to prevent redundant calls
+    # EXAI Consultation: 63c00b70-364b-4351-bf6c-5a105e553dce
+    _models_cache: Optional[dict[str, ProviderType]] = None
+    _models_cache_timestamp: Optional[float] = None
+    _models_cache_ttl: int = int(os.getenv("REGISTRY_CACHE_TTL", "300"))  # 5 minutes default, env override
+    _models_cache_lock = threading.RLock()
+
     # Provider priority order for model selection
     # Native APIs first (prioritize Kimi/GLM per project usage), then custom endpoints, then catch-all providers
     PROVIDER_PRIORITY_ORDER = [
@@ -82,6 +89,19 @@ class ModelProviderRegistry:
     # ================================================================================
 
     @classmethod
+    def _invalidate_models_cache(cls) -> None:
+        """
+        Invalidate the models cache.
+        Called when providers are registered/deregistered.
+
+        PHASE 2 FIX (2025-11-01): Cache invalidation for get_available_models
+        """
+        with cls._models_cache_lock:
+            cls._models_cache = None
+            cls._models_cache_timestamp = None
+            logging.debug("REGISTRY_CACHE: Models cache invalidated")
+
+    @classmethod
     def register_provider(cls, provider_type: ProviderType, provider_class: type[ModelProvider]) -> None:
         """
         Register a new provider class.
@@ -93,6 +113,8 @@ class ModelProviderRegistry:
         instance = cls()
         instance._providers[provider_type] = provider_class
         logging.debug(f"Registered provider {provider_type.name} (total: {len(instance._providers)})")
+        # PHASE 2 FIX: Invalidate cache when provider registered
+        cls._invalidate_models_cache()
 
     @classmethod
     def get_provider(cls, provider_type: ProviderType, force_new: bool = False) -> Optional[ModelProvider]:
@@ -200,17 +222,17 @@ class ModelProviderRegistry:
         Returns:
             ModelProvider instance that supports this model
         """
-        logging.info(f"REGISTRY_DEBUG: get_provider_for_model called with model_name='{model_name}'")
+        logging.debug(f"REGISTRY_DEBUG: get_provider_for_model called with model_name='{model_name}'")
 
         # Check providers in priority order
         instance = cls()
-        logging.info(f"REGISTRY_DEBUG: Registry instance: {instance}, _providers={instance._providers}")
-        logging.info(f"REGISTRY_DEBUG: PROVIDER_PRIORITY_ORDER: {cls.PROVIDER_PRIORITY_ORDER}")
+        logging.debug(f"REGISTRY_DEBUG: Registry instance: {instance}, _providers={instance._providers}")
+        logging.debug(f"REGISTRY_DEBUG: PROVIDER_PRIORITY_ORDER: {cls.PROVIDER_PRIORITY_ORDER}")
 
         for provider_type in cls.PROVIDER_PRIORITY_ORDER:
-            logging.info(f"REGISTRY_DEBUG: Checking provider_type {provider_type}")
+            logging.debug(f"REGISTRY_DEBUG: Checking provider_type {provider_type}")
             if provider_type in instance._providers:
-                logging.info(f"REGISTRY_DEBUG: Found {provider_type} in registry")
+                logging.debug(f"REGISTRY_DEBUG: Found {provider_type} in registry")
 
                 # Health gating: skip if circuit is OPEN (only when enabled and not log-only)
                 if _health_enabled() and _cb_enabled():
@@ -221,19 +243,19 @@ class ModelProviderRegistry:
 
                 # Get or create provider instance
                 provider = cls.get_provider(provider_type)
-                logging.info(f"REGISTRY_DEBUG: Got provider instance: {provider}")
+                logging.debug(f"REGISTRY_DEBUG: Got provider instance: {provider}")
                 if provider:
                     validates = provider.validate_model_name(model_name)
-                    logging.info(f"REGISTRY_DEBUG: Provider {provider_type} validate_model_name('{model_name}') = {validates}")
+                    logging.debug(f"REGISTRY_DEBUG: Provider {provider_type} validate_model_name('{model_name}') = {validates}")
                     if validates:
-                        logging.info(f"REGISTRY_DEBUG: Returning provider {provider_type} for model {model_name}")
+                        logging.debug(f"REGISTRY_DEBUG: Returning provider {provider_type} for model {model_name}")
                         return provider
                 else:
-                    logging.info(f"REGISTRY_DEBUG: get_provider returned None for {provider_type}")
+                    logging.debug(f"REGISTRY_DEBUG: get_provider returned None for {provider_type}")
             else:
-                logging.info(f"REGISTRY_DEBUG: {provider_type} not found in registry")
+                logging.debug(f"REGISTRY_DEBUG: {provider_type} not found in registry")
 
-        logging.info(f"REGISTRY_DEBUG: No provider found for model {model_name}")
+        logging.debug(f"REGISTRY_DEBUG: No provider found for model {model_name}")
         return None
 
     @staticmethod
@@ -286,12 +308,27 @@ class ModelProviderRegistry:
         """
         Get mapping of all available models to their providers.
 
+        PHASE 2 FIX (2025-11-01): Implements caching with TTL to prevent redundant calls
+        EXAI Consultation: 63c00b70-364b-4351-bf6c-5a105e553dce
+
         Args:
             respect_restrictions: If True, filter out models not allowed by restrictions
 
         Returns:
             Dict mapping model names to provider types
         """
+        import time
+
+        # PHASE 2 FIX: Check cache first
+        with cls._models_cache_lock:
+            if cls._models_cache is not None and cls._models_cache_timestamp is not None:
+                cache_age = time.time() - cls._models_cache_timestamp
+                if cache_age < cls._models_cache_ttl:
+                    logging.debug(f"REGISTRY_CACHE: Returning cached models (age={cache_age:.1f}s, ttl={cls._models_cache_ttl}s)")
+                    return cls._models_cache.copy()
+                else:
+                    logging.debug(f"REGISTRY_CACHE: Cache expired (age={cache_age:.1f}s, ttl={cls._models_cache_ttl}s)")
+
         # Import here to avoid circular imports
         from utils.model.restrictions import get_restriction_service
         import inspect
@@ -304,21 +341,22 @@ class ModelProviderRegistry:
         # CRITICAL DEBUG (2025-10-24): Log registry state and caller info
         caller_frame = inspect.stack()[1]
         caller_info = f"{caller_frame.filename}:{caller_frame.lineno} in {caller_frame.function}"
-        logging.info(f"REGISTRY_DEBUG: get_available_models called from {caller_info}")
-        logging.info(f"REGISTRY_DEBUG: instance id={id(instance)}, _providers={instance._providers}")
+        logging.debug(f"REGISTRY_DEBUG: get_available_models called from {caller_info}")
+        logging.debug(f"REGISTRY_DEBUG: instance id={id(instance)}, _providers={instance._providers}")
+        logging.debug(f"REGISTRY_CACHE: Cache miss - fetching models from providers")
 
         for provider_type in instance._providers:
-            logging.info(f"REGISTRY_DEBUG: Processing provider {provider_type.name}")
+            logging.debug(f"REGISTRY_DEBUG: Processing provider {provider_type.name}")
             provider = cls.get_provider(provider_type)
             if not provider:
-                logging.info(f"REGISTRY_DEBUG: get_provider returned None for {provider_type.name}")
+                logging.debug(f"REGISTRY_DEBUG: get_provider returned None for {provider_type.name}")
                 continue
 
-            logging.info(f"REGISTRY_DEBUG: Got provider instance for {provider_type.name}: {provider}")
+            logging.debug(f"REGISTRY_DEBUG: Got provider instance for {provider_type.name}: {provider}")
 
             try:
                 available = provider.list_models(respect_restrictions=respect_restrictions)
-                logging.info(f"REGISTRY_DEBUG: Provider {provider_type.name} returned {len(available)} models: {available}")
+                logging.debug(f"REGISTRY_DEBUG: Provider {provider_type.name} returned {len(available)} models: {available}")
             except NotImplementedError:
                 logging.warning("Provider %s does not implement list_models", provider_type)
                 continue
@@ -337,18 +375,24 @@ class ModelProviderRegistry:
                 # so registry should NOT filter them again.
                 # TEST COVERAGE: tests/test_provider_routing_bugs.py::TestOpenRouterAliasRestrictions
                 # =====================================================================================
-                logging.info(f"REGISTRY_DEBUG: Checking model {model_name}, restriction_service={restriction_service}, respect_restrictions={respect_restrictions}")
+                logging.debug(f"REGISTRY_DEBUG: Checking model {model_name}, restriction_service={restriction_service}, respect_restrictions={respect_restrictions}")
                 if (
                     restriction_service
                     and not respect_restrictions  # Only filter if provider didn't already filter
                     and not restriction_service.is_allowed(provider_type, model_name)
                 ):
-                    logging.info(f"REGISTRY_DEBUG: Model {model_name} filtered by restrictions")
+                    logging.debug(f"REGISTRY_DEBUG: Model {model_name} filtered by restrictions")
                     continue
-                logging.info(f"REGISTRY_DEBUG: Adding model {model_name} to registry")
+                logging.debug(f"REGISTRY_DEBUG: Adding model {model_name} to registry")
                 models[model_name] = provider_type
 
-        logging.info(f"REGISTRY_DEBUG: Returning {len(models)} models: {list(models.keys())}")
+        # PHASE 2 FIX: Update cache with fresh data
+        with cls._models_cache_lock:
+            cls._models_cache = models.copy()
+            cls._models_cache_timestamp = time.time()
+            logging.debug(f"REGISTRY_CACHE: Cache updated with {len(models)} models")
+
+        logging.debug(f"REGISTRY_DEBUG: Returning {len(models)} models: {list(models.keys())}")
         return models
 
     @classmethod

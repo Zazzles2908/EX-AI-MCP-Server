@@ -93,6 +93,21 @@ API_LATENCY = Histogram(
     buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0, 120.0, float('inf')]
 )
 
+# Phase 6.3 (2025-11-01): Critical response time tracking for very slow responses (>25s)
+CRITICAL_API_LATENCY = Histogram(
+    'mcp_critical_api_latency_seconds',
+    'Critical API call latency (>25s)',
+    ['provider', 'model'],
+    buckets=[25.0, 30.0, 45.0, 60.0, 90.0, 120.0, float('inf')]
+)
+
+# Phase 6.3 (2025-11-01): Response time classification for better monitoring
+API_RESPONSE_CLASSIFICATION = Counter(
+    'mcp_api_response_classification_total',
+    'API response time classification',
+    ['provider', 'model', 'classification']  # classification: fast/acceptable/slow/critical
+)
+
 API_ERRORS = Counter(
     'mcp_api_errors_total',
     'API call errors',
@@ -236,6 +251,35 @@ FILE_UPLOADS = Counter(
 # HELPER FUNCTIONS
 # ============================================================================
 
+# Phase 6.3 (2025-11-01): Response time classification thresholds
+FAST_THRESHOLD = 2.0          # < 2 seconds
+ACCEPTABLE_THRESHOLD = 10.0   # 2-10 seconds
+SLOW_THRESHOLD = 25.0         # 10-25 seconds
+# CRITICAL_THRESHOLD = > 25 seconds
+
+
+def classify_response_time(latency: float) -> str:
+    """
+    Classify response time into categories for monitoring and alerting.
+
+    Phase 6.3 (2025-11-01): Added to track slow response patterns
+
+    Args:
+        latency: Response time in seconds
+
+    Returns:
+        Classification: fast/acceptable/slow/critical
+    """
+    if latency < FAST_THRESHOLD:
+        return "fast"
+    elif latency < ACCEPTABLE_THRESHOLD:
+        return "acceptable"
+    elif latency < SLOW_THRESHOLD:
+        return "slow"
+    else:
+        return "critical"
+
+
 def record_request(method: str, endpoint: str, status: str, duration: float) -> None:
     """Record a request with metrics"""
     REQUEST_COUNT.labels(method=method, endpoint=endpoint, status=status).inc()
@@ -270,10 +314,43 @@ def record_api_call(
     status: str,
     latency: Optional[float] = None
 ) -> None:
-    """Record an API call"""
+    """
+    Record an API call with enhanced slow response tracking.
+
+    Phase 6.3 (2025-11-01): Added critical latency tracking and classification
+
+    Args:
+        provider: API provider (kimi/glm)
+        model: Model name
+        status: Call status (success/error/timeout)
+        latency: Response time in seconds
+    """
     API_CALLS.labels(provider=provider, model=model, status=status).inc()
     if latency is not None:
         API_LATENCY.labels(provider=provider, model=model).observe(latency)
+
+        # Phase 6.3 (2025-11-01): Classify and track response times
+        classification = classify_response_time(latency)
+        API_RESPONSE_CLASSIFICATION.labels(
+            provider=provider,
+            model=model,
+            classification=classification
+        ).inc()
+
+        # Phase 6.3 (2025-11-01): Alert on critical responses (>25s)
+        if classification == "critical":
+            CRITICAL_API_LATENCY.labels(provider=provider, model=model).observe(latency)
+            logger.critical(
+                f"CRITICAL LATENCY: {provider}/{model} took {latency:.2f}s "
+                f"(threshold: {SLOW_THRESHOLD}s)"
+            )
+            # Record as error for alerting
+            record_api_error(provider, model, f"slow_response_{int(latency)}s")
+        elif classification == "slow":
+            logger.warning(
+                f"SLOW RESPONSE: {provider}/{model} took {latency:.2f}s "
+                f"(threshold: {ACCEPTABLE_THRESHOLD}s)"
+            )
 
 
 def record_api_error(provider: str, model: str, error_type: str) -> None:

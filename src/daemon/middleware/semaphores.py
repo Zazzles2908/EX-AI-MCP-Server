@@ -242,14 +242,15 @@ class SemaphoreGuard:
         """Release the semaphore with error handling and state tracking."""
         if self.acquired:
             try:
-                # CRITICAL FIX (2025-10-25): Check if semaphore is already at max before releasing
+                # REVERTED (2025-10-31): Testing with ONLY auto-execution fix first
+                # Check if semaphore is already at max before releasing
                 # Prevents "BoundedSemaphore released too many times" error when recovery system
                 # has already released this semaphore
                 if hasattr(self.semaphore, '_value') and hasattr(self.semaphore, '_bound_value'):
                     if self.semaphore._value >= self.semaphore._bound_value:
                         logger.warning(f"Semaphore {self.name} already at max value ({self.semaphore._value}/{self.semaphore._bound_value}), skipping release (likely recovered by recovery system)")
                         self.acquired = False  # CRITICAL: Update state
-                        return False
+                        return False  # REVERTED: Back to original behavior
 
                 self.semaphore.release()
                 self.acquired = False  # CRITICAL: Update state

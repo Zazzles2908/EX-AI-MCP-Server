@@ -192,21 +192,8 @@ def add_turn(
     )
 
 
-def clear_request_cache():
-    """
-    Clear the request-scoped thread cache in global storage
-    
-    This should be called after each request completes to prevent
-    memory leaks and stale data being served across requests.
-    """
-    storage = get_global_storage()
-    if hasattr(storage, 'clear_request_cache'):
-        storage.clear_request_cache()
-    elif hasattr(storage, 'supabase') and hasattr(storage.supabase, 'clear_request_cache'):
-        # Handle DualStorageConversation wrapper
-        storage.supabase.clear_request_cache()
-    else:
-        logger.warning(f"[GLOBAL_STORAGE] Storage {type(storage).__name__} has no clear_request_cache method")
+# PHASE 2 FIX (2025-11-01): Removed clear_request_cache() function
+# Request-scoped cache has been eliminated as part of cache layer reduction
 
 
 def get_messages_array(continuation_id: str, max_messages: int = 50) -> List[Dict[str, Any]]:

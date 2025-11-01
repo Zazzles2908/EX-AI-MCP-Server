@@ -25,10 +25,13 @@ import json
 import logging
 import os
 import threading
-from typing import Optional, Dict, Any, Callable
+from typing import Optional, Dict, Any, Callable, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from utils.caching.interface import CacheInterface
+
+if TYPE_CHECKING:
+    from src.providers.base import ModelResponse
 
 try:
     from cachetools import TTLCache, LRUCache
@@ -163,12 +166,117 @@ class BaseCacheManager(CacheInterface):
         return f"{self._cache_prefix}:{key}"
     
     def _serialize_value(self, value: Any) -> str:
-        """Serialize value for Redis storage. Override for custom serialization."""
+        """
+        Serialize value for Redis storage with ModelResponse support.
+
+        Handles:
+        - ModelResponse objects (via to_dict method)
+        - Other dataclasses (generic conversion)
+        - Primitive types (standard JSON)
+
+        Returns:
+            JSON string representation of value
+        """
+        # Handle ModelResponse objects - explicit type check first
+        # Phase 6.3 Fix (2025-11-01): Added explicit type check to ensure proper detection
+        if value.__class__.__name__ == 'ModelResponse':
+            if hasattr(value, 'to_dict') and callable(getattr(value, 'to_dict')):
+                return json.dumps(value.to_dict())
+            else:
+                # Fallback: ModelResponse without to_dict method (shouldn't happen)
+                logger.error(f"[{self._cache_prefix.upper()}_CACHE] ModelResponse missing to_dict method!")
+
+        # Handle other objects with to_dict method
+        if hasattr(value, 'to_dict') and callable(getattr(value, 'to_dict')):
+            return json.dumps(value.to_dict())
+
+        # Handle other dataclasses
+        if hasattr(value, '__dataclass_fields__'):
+            # Convert dataclass to dict, handling nested objects
+            result = {}
+            for field_name, field_def in value.__dataclass_fields__.items():
+                field_value = getattr(value, field_name)
+
+                # Handle enums
+                if hasattr(field_value, 'value'):
+                    result[field_name] = field_value.value
+                # Handle nested dataclasses
+                elif hasattr(field_value, '__dataclass_fields__'):
+                    result[field_name] = self._serialize_dataclass_to_dict(field_value)
+                else:
+                    result[field_name] = field_value
+
+            # Add type marker for deserialization
+            result["__type__"] = value.__class__.__name__
+            return json.dumps(result)
+
+        # Default JSON serialization for primitive types
         return json.dumps(value)
-    
+
     def _deserialize_value(self, data: str) -> Any:
-        """Deserialize value from Redis. Override for custom deserialization."""
-        return json.loads(data)
+        """
+        Deserialize value from Redis with ModelResponse support.
+
+        Handles:
+        - ModelResponse objects (via from_dict method)
+        - Other typed objects (basic reconstruction)
+        - Primitive types (standard JSON)
+        - Backward compatibility (legacy cached data)
+
+        Returns:
+            Deserialized value
+        """
+        try:
+            parsed = json.loads(data)
+
+            # Handle typed objects with __type__ marker
+            if isinstance(parsed, dict) and "__type__" in parsed:
+                type_name = parsed["__type__"]
+
+                # Handle ModelResponse
+                if type_name == "ModelResponse":
+                    from src.providers.base import ModelResponse
+                    return ModelResponse.from_dict(parsed)
+
+                # Handle other dataclasses (basic reconstruction)
+                # Note: This is a fallback - specific types should have their own from_dict methods
+                logger.warning(f"[{self._cache_prefix.upper()}_CACHE] Deserializing unknown type: {type_name}")
+                # Remove type marker and return as dict
+                parsed_copy = parsed.copy()
+                del parsed_copy["__type__"]
+                return parsed_copy
+
+            return parsed
+
+        except (json.JSONDecodeError, KeyError, AttributeError) as e:
+            logger.warning(f"[{self._cache_prefix.upper()}_CACHE] Deserialization error: {e}")
+            # Return raw data if deserialization fails
+            return data
+
+    def _serialize_dataclass_to_dict(self, obj: Any) -> dict[str, Any]:
+        """
+        Helper to serialize nested dataclasses to dict.
+
+        Recursively handles nested dataclasses and enums.
+
+        Args:
+            obj: Dataclass instance to serialize
+
+        Returns:
+            Dictionary representation
+        """
+        result = {}
+        for field_name, field_def in obj.__dataclass_fields__.items():
+            field_value = getattr(obj, field_name)
+
+            if hasattr(field_value, 'value'):
+                result[field_name] = field_value.value
+            elif hasattr(field_value, '__dataclass_fields__'):
+                result[field_name] = self._serialize_dataclass_to_dict(field_value)
+            else:
+                result[field_name] = field_value
+
+        return result
     
     def get(self, key: str) -> Optional[Any]:
         """

@@ -27,8 +27,7 @@ from src.daemon.ws_server import main_async
 from src.monitoring.metrics import init_metrics_server, start_periodic_updates
 from src.middleware.correlation import setup_correlation_logging
 
-# Week 2-3 Monitoring Phase (2025-10-31): Import cache metrics collector
-from utils.monitoring import start_collector, stop_collector
+# PHASE 3 FIX (2025-11-01): Removed cache metrics collector (deleted)
 
 
 async def main_with_monitoring():
@@ -141,12 +140,7 @@ async def main_with_monitoring():
             logger.error(f"[MAIN] Failed to start AI Auditor: {e}")
             auditor_enabled = False
 
-    # Week 2-3 Monitoring Phase (2025-10-31): Start cache metrics collector
-    try:
-        await start_collector()
-        logger.info("[MAIN] Cache metrics collector started successfully")
-    except Exception as e:
-        logger.error(f"[MAIN] Failed to start cache metrics collector: {e}")
+    # PHASE 3 FIX (2025-11-01): Removed cache metrics collector (deleted)
 
     logger.info(f"[MAIN] Starting {len(servers)} servers concurrently")
     logger.info(f"[MAIN] Server list: {[type(s).__name__ for s in servers]}")
@@ -168,12 +162,8 @@ async def main_with_monitoring():
         logger.error(f"[MAIN] Traceback: {traceback.format_exc()}")
         raise
     finally:
-        # Week 2-3 Monitoring Phase (2025-10-31): Stop cache metrics collector
-        try:
-            await stop_collector()
-            logger.info("[MAIN] Cache metrics collector stopped successfully")
-        except Exception as e:
-            logger.error(f"[MAIN] Failed to stop cache metrics collector: {e}")
+        # PHASE 3 FIX (2025-11-01): Removed cache metrics collector (deleted)
+        pass
 
 
 def main():

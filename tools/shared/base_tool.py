@@ -4,11 +4,83 @@ Core Tool Infrastructure for EXAI MCP Tools
 This module provides the fundamental base class for all tools by composing
 specialized mixins that handle different aspects of tool functionality.
 
-The BaseTool class is composed from:
-- BaseToolCore: Core interface and abstract methods
-- ModelManagementMixin: Model provider integration and selection
-- FileHandlingMixin: File processing and conversation-aware handling
-- ResponseFormattingMixin: Response formatting and instruction generation
+ARCHITECTURE OVERVIEW:
+=====================
+
+The BaseTool class uses a mixin-based composition pattern to separate concerns
+and maintain modularity. This design was chosen over a monolithic class to:
+
+1. **Separation of Concerns**: Each mixin handles a distinct responsibility
+2. **Independent Testing**: Mixins can be unit tested in isolation
+3. **Selective Inheritance**: Future tools can compose only needed functionality
+4. **Maintainability**: Changes to one concern don't affect others
+5. **Extensibility**: New mixins can be added without modifying existing code
+
+MIXIN COMPOSITION:
+==================
+
+The BaseTool class is composed from these mixins (in MRO order):
+
+1. **BaseToolCore** (base_tool_core.py - 381 lines)
+   - Core interface and abstract methods
+   - Tool metadata (name, description, category)
+   - Configuration methods with default implementations
+   - OpenRouter registry caching for model lookups
+
+2. **ModelManagementMixin** (base_tool_model_management.py)
+   - Model provider integration and selection
+   - Model context resolution and validation
+   - Provider-specific configuration handling
+   - Model capability checking
+
+3. **FileHandlingMixin** (base_tool_file_handling.py)
+   - File processing and conversation-aware handling
+   - Dual prioritization strategy for file deduplication
+   - Token-aware file embedding with graceful degradation
+   - Cross-tool file tracking and context integration
+
+4. **ResponseFormattingMixin** (base_tool_response.py - 168 lines)
+   - Response formatting and post-processing
+   - Web search instruction generation
+   - Language instruction generation
+   - Response parsing hooks
+
+ARCHITECTURAL DECISIONS:
+========================
+
+**Why Mixins Instead of Single File?**
+- Considered consolidating base_tool_core.py and base_tool_response.py
+- Decision: MAINTAIN SEPARATION (Phase 6.3 - 2025-11-01)
+- Rationale: Combined file would be ~576 lines, approaching unwieldy size
+- Benefits: Clear boundaries, independent evolution, better testability
+
+**Why Only base_tool.py Imports Mixins?**
+- Mixins are implementation details, not public interfaces
+- Tools inherit from BaseTool, never from mixins directly
+- This encapsulation allows internal refactoring without breaking tools
+
+**Import Dependencies:**
+- Only base_tool.py imports from base_tool_core.py and base_tool_response.py
+- No other files in codebase import these modules directly
+- Clean dependency graph prevents circular imports
+
+USAGE PATTERN:
+==============
+
+To create a new tool:
+1. Inherit from BaseTool (not from individual mixins)
+2. Implement all abstract methods from BaseToolCore
+3. Define a request model that inherits from ToolRequest
+4. Register the tool in tools/registry.py
+
+Example:
+    class MyTool(BaseTool):
+        def get_name(self) -> str:
+            return "my_tool"
+
+        async def execute(self, arguments: dict, on_chunk=None):
+            # Implementation here
+            pass
 
 This modular architecture keeps each component focused and maintainable while
 providing the full functionality needed by all tools.

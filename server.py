@@ -107,22 +107,6 @@ from src.server.handlers import (
     handle_list_tools,
 )
 
-# Auggie integration check
-AUGGIE_ACTIVE = _env_true("AUGGIE_ACTIVE")
-AUGGIE_WRAPPERS_AVAILABLE = False
-
-try:
-    from auggie.wrappers import AUGGIE_WRAPPERS_AVAILABLE  # type: ignore[import-not-found]
-except ImportError:
-    pass
-
-def detect_auggie_cli() -> bool:
-    """Detect if running under Auggie CLI."""
-    return any(
-        "auggie" in arg.lower() or "aug" in arg.lower()
-        for arg in sys.argv
-    )
-
 # Logging configuration
 class LocalTimeFormatter(logging.Formatter):
     """Custom formatter that uses local time instead of UTC."""
@@ -258,37 +242,6 @@ def register_provider_specific_tools() -> None:
     ensure_provider_tools_registered(TOOLS)
 
 # Auggie tool registration
-if (AUGGIE_ACTIVE or detect_auggie_cli()) and AUGGIE_WRAPPERS_AVAILABLE:
-    logger.info("Registering Auggie-optimized tools (aug_*) alongside originals")
-
-    class AugChatTool(ChatTool):
-        def get_name(self) -> str:
-            return "aug_chat"
-
-        def get_description(self) -> str:
-            return f"[Auggie-optimized] {super().get_description()}"
-
-    class AugThinkDeepTool(ThinkDeepTool):
-        def get_name(self) -> str:
-            return "aug_thinkdeep"
-
-        def get_description(self) -> str:
-            return f"[Auggie-optimized] {super().get_description()}"
-
-    class AugConsensusTool(ConsensusTool):
-        def get_name(self) -> str:
-            return "aug_consensus"
-
-        def get_description(self) -> str:
-            return f"[Auggie-optimized] {super().get_description()}"
-
-    # Register Auggie tools
-    TOOLS.update({
-        "aug_chat": AugChatTool(),
-        "aug_thinkdeep": AugThinkDeepTool(),
-        "aug_consensus": AugConsensusTool(),
-    })
-
 # Global state
 IS_AUTO_MODE = _env_true("EX_AUTO_MODE")
 
@@ -326,50 +279,13 @@ async def call_tool_handler(name: str, arguments: dict[str, Any]):
         # Emit toolcall JSONL for transparency
         try:
             import json as _json
+            from src.server.logging_utils import compute_preview_and_summary
+
             req_id = (arguments or {}).get("request_id")
             duration_s = round(time.time() - start_ts, 3)
-            # Compute adaptive preview and summary (raw output preserved)
-            def _clamp(v, lo, hi):
-                return max(lo, min(hi, v))
-            def _derive_bullets(text, max_bullets=5):
-                try:
-                    import re as _re
-                    if not text:
-                        return []
-                    parts = [_p.strip() for _p in _re.split(r'[\n\.;]+', str(text)) if _p.strip()]
-                    return parts[:max_bullets]
-                except Exception:
-                    return []
-            def _compute_preview_and_summary(args, res, duration_s):
-                import os as _os, re as _re, math as _math
-                # result text extraction
-                if isinstance(res, dict):
-                    res_text = str(res.get("result", "")) or str(res)
-                else:
-                    res_text = str(res)
-                out_chars = len(res_text or "")
-                retries = int((args or {}).get("retries", 0) or 0)
-                error_flag = 1 if (args or {}).get("error") else 0
-                base = _math.log10(max(1, out_chars)) + 0.4*retries + 0.3*error_flag + 0.002*(duration_s*1000.0)
-                env_max = int((_os.getenv("EXAI_TOOLCALL_PREVIEW_MAX_CHARS", "2000") or "2000"))
-                n = int(_clamp(round(120*base), 280, env_max))
-                preview = (res_text or "")[:n] + ("..." if out_chars > n else "")
-                sum_max_words = int((_os.getenv("EXAI_TOOLCALL_SUMMARY_MAX_WORDS", "600") or "600"))
-                target_words = int(_clamp(round(180*base), 150, sum_max_words))
-                words = _re.split(r'\s+', (res_text or "").strip())
-                summary_text = " ".join(words[:target_words])
-                prompt_text = (args or {}).get("prompt")
-                bullets = _derive_bullets(prompt_text, max_bullets=5)
-                return {
-                    "result_preview": preview,
-                    "result_preview_len": n,
-                    "result_truncated": out_chars > n,
-                    "prompt_bullets": bullets,
 
-                    "summary_words": target_words,
-                    "summary_text": summary_text
-                }
-            preview_info = _compute_preview_and_summary(arguments, result, duration_s)
+            # Compute adaptive preview and summary using extracted utility
+            preview_info = compute_preview_and_summary(arguments, result, duration_s)
             payload = {
                 "timestamp": time.time(),
                 "tool": name,
@@ -380,7 +296,9 @@ async def call_tool_handler(name: str, arguments: dict[str, Any]):
             logging.getLogger("toolcalls").info(_json.dumps(payload))
             # Optional raw mirror: write full model output (no system prompts) when enabled
             try:
-                import os as _os, json as _json, re as _re
+                import os as _os, json as _json
+                from src.server.logging_utils import redact_sensitive_data, truncate_large_text
+
                 flag = (_os.getenv("EXAI_TOOLCALL_LOG_RAW_FULL", "false") or "false").strip().lower() == "true"
                 if flag:
                     # Extract raw result text only (do not include prompts/system)
@@ -389,23 +307,13 @@ async def call_tool_handler(name: str, arguments: dict[str, Any]):
                     else:
                         _raw_text = str(result)
                     _raw_text = _raw_text or ""
-                    # Basic redaction for likely secrets
-                    try:
-                        _raw_text = _re.sub(r"sk-[A-Za-z0-9]{16,}", "sk-***REDACTED***", _raw_text)
-                        _raw_text = _re.sub(r"[A-Fa-f0-9]{32,}", "***REDACTED_HEX***", _raw_text)
-                        _raw_text = _re.sub(r"[A-Za-z0-9]{40,}", "***REDACTED_TOKEN***", _raw_text)
-                    except Exception:
-                        pass
-                    # Size cap ~10MB
-                    try:
-                        _cap = 10*1024*1024
-                        _bytes = _raw_text.encode("utf-8")
-                        _truncated = False
-                        if len(_bytes) > _cap:
-                            _raw_text = _bytes[: int(_cap*0.95)].decode("utf-8", errors="ignore") + "... [TRUNCATED]"
-                            _truncated = True
-                    except Exception:
-                        _truncated = False
+
+                    # Redact sensitive data using extracted utility
+                    _raw_text = redact_sensitive_data(_raw_text)
+
+                    # Truncate if too large using extracted utility
+                    _raw_text, _truncated = truncate_large_text(_raw_text, max_bytes=10*1024*1024)
+
                     _raw_payload = {
                         "timestamp": time.time(),
                         "tool": name,

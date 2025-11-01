@@ -6,6 +6,7 @@ Phase A2 Week 1 - Basic Security Infrastructure
 Uses Redis for fast lookups and sliding window counters
 """
 
+import os
 import redis
 import time
 import logging
@@ -16,13 +17,25 @@ logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
-    def __init__(self, redis_host: str = 'localhost', redis_port: int = 6379, redis_db: int = 0):
-        """Initialize rate limiter with Redis connection"""
+    def __init__(self, redis_host: str = 'redis', redis_port: int = 6379, redis_db: int = 0):
+        """Initialize rate limiter with Redis connection
+
+        CRITICAL FIX (2025-11-01): Changed default redis_host from 'localhost' to 'redis'
+        - In Docker containers, 'localhost' refers to the container itself
+        - 'redis' is the Docker service name that resolves to the Redis container
+        - This fixes "Connection refused" errors in containerized environments
+        """
         try:
+            # Get Redis password from environment for authentication
+            redis_password = os.getenv('REDIS_PASSWORD', '')
+
+            logger.info(f"[RATE_LIMITER] Connecting to Redis at {redis_host}:{redis_port} (password: {'SET' if redis_password else 'NOT SET'})")
+
             self.redis_client = redis.Redis(
-                host=redis_host, 
-                port=redis_port, 
-                db=redis_db, 
+                host=redis_host,
+                port=redis_port,
+                db=redis_db,
+                password=redis_password if redis_password else None,
                 decode_responses=True,
                 socket_connect_timeout=5
             )

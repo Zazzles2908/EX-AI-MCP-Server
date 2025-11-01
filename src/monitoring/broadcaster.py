@@ -18,6 +18,7 @@ from typing import Any, Dict, Optional, Set
 
 from src.monitoring.adapters.base import UnifiedMonitoringEvent
 from src.monitoring.adapters.factory import MonitoringAdapterFactory
+from src.monitoring.event_classifier import EventClassifier
 from utils.timezone_helper import log_timestamp
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,11 @@ class MonitoringBroadcaster:
             'direct_broadcasts': 0,
             'failed_broadcasts': 0,
         }
-        
+
+        # Phase 2.6.1: Event classification and sequence tracking
+        self._sequence_counter = 0
+        self._classifier = EventClassifier()
+
         self._initialize_adapter()
     
     def _initialize_adapter(self) -> None:
@@ -85,33 +90,63 @@ class MonitoringBroadcaster:
     def unregister_client(self, client: Any) -> None:
         """
         Unregister a WebSocket client.
-        
+
         Args:
             client: WebSocket client object
         """
         self._dashboard_clients.discard(client)
         logger.debug(f"[BROADCASTER] Unregistered client, total: {len(self._dashboard_clients)}")
+
+    def _create_unified_event(self, event_type: str, data: Dict[str, Any], source: str = 'monitoring_endpoint') -> UnifiedMonitoringEvent:
+        """
+        Create a unified monitoring event with classification and sequence ID.
+
+        Phase 2.6.1: Integrates event classification and sequence tracking.
+
+        Args:
+            event_type: Type of event
+            data: Event data dictionary
+            source: Source of the event
+
+        Returns:
+            UnifiedMonitoringEvent with classification and sequence ID
+        """
+        # Classify the event
+        category = self._classifier.classify(event_type, data)
+
+        # Get next sequence ID
+        self._sequence_counter += 1
+        sequence_id = self._sequence_counter
+
+        # Create unified event
+        event = UnifiedMonitoringEvent(
+            event_type=event_type,
+            timestamp=log_timestamp(),
+            source=source,
+            data=data,
+            metadata={'broadcast_mode': 'dual' if self._use_dual_mode else 'adapter' if self._use_adapter else 'direct'},
+            category=category.value,
+            sequence_id=sequence_id
+        )
+
+        return event
     
     async def broadcast_event(self, event_type: str, data: Dict[str, Any]) -> None:
         """
         Broadcast a monitoring event.
-        
+
+        Phase 2.6.1: Integrated event classification and sequence tracking.
+
         Args:
             event_type: Type of event (e.g., 'cache_metrics', 'session_metrics')
             data: Event data dictionary
         """
         try:
             self._metrics['total_broadcasts'] += 1
-            
-            # Create unified event
-            event = UnifiedMonitoringEvent(
-                event_type=event_type,
-                timestamp=log_timestamp(),
-                source='monitoring_endpoint',
-                data=data,
-                metadata={'broadcast_mode': 'dual' if self._use_dual_mode else 'adapter' if self._use_adapter else 'direct'}
-            )
-            
+
+            # Create unified event with classification and sequence ID
+            event = self._create_unified_event(event_type, data)
+
             # Broadcast via adapter if enabled
             if self._use_adapter and self.adapter:
                 try:
@@ -120,11 +155,11 @@ class MonitoringBroadcaster:
                 except Exception as e:
                     logger.error(f"[BROADCASTER] Adapter broadcast failed: {e}")
                     self._metrics['failed_broadcasts'] += 1
-            
+
             # Broadcast directly to WebSocket clients (always, for backward compatibility)
             await self._broadcast_direct(event_type, data)
             self._metrics['direct_broadcasts'] += 1
-        
+
         except Exception as e:
             logger.error(f"[BROADCASTER] Error broadcasting event: {e}")
             self._metrics['failed_broadcasts'] += 1
@@ -132,23 +167,19 @@ class MonitoringBroadcaster:
     async def broadcast_batch(self, events: list) -> None:
         """
         Broadcast multiple events efficiently.
-        
+
+        Phase 2.6.1: Integrated event classification and sequence tracking.
+
         Args:
             events: List of (event_type, data) tuples
         """
         try:
-            # Create unified events
+            # Create unified events with classification and sequence IDs
             unified_events = [
-                UnifiedMonitoringEvent(
-                    event_type=event_type,
-                    timestamp=log_timestamp(),
-                    source='monitoring_endpoint',
-                    data=data,
-                    metadata={'broadcast_mode': 'dual' if self._use_dual_mode else 'adapter' if self._use_adapter else 'direct'}
-                )
+                self._create_unified_event(event_type, data)
                 for event_type, data in events
             ]
-            
+
             # Broadcast via adapter if enabled
             if self._use_adapter and self.adapter:
                 try:
@@ -157,12 +188,12 @@ class MonitoringBroadcaster:
                 except Exception as e:
                     logger.error(f"[BROADCASTER] Adapter batch broadcast failed: {e}")
                     self._metrics['failed_broadcasts'] += len(events)
-            
+
             # Broadcast directly to WebSocket clients
             for event_type, data in events:
                 await self._broadcast_direct(event_type, data)
             self._metrics['direct_broadcasts'] += len(events)
-        
+
         except Exception as e:
             logger.error(f"[BROADCASTER] Error broadcasting batch: {e}")
             self._metrics['failed_broadcasts'] += len(events)
@@ -200,14 +231,20 @@ class MonitoringBroadcaster:
             logger.error(f"[BROADCASTER] Error in direct broadcast: {e}")
     
     async def get_metrics(self) -> Dict[str, Any]:
-        """Get broadcaster metrics."""
+        """
+        Get broadcaster metrics.
+
+        Phase 2.6.1: Includes event classification metrics.
+        """
         metrics = {
             'broadcaster_metrics': self._metrics,
             'connected_clients': len(self._dashboard_clients),
             'use_adapter': self._use_adapter,
             'use_dual_mode': self._use_dual_mode,
+            'sequence_counter': self._sequence_counter,
+            'classification_metrics': self._classifier.get_metrics(),
         }
-        
+
         # Add adapter metrics if available
         if self.adapter:
             try:
@@ -215,7 +252,7 @@ class MonitoringBroadcaster:
                 metrics['adapter_metrics'] = adapter_metrics
             except Exception as e:
                 logger.debug(f"[BROADCASTER] Failed to get adapter metrics: {e}")
-        
+
         return metrics
     
     async def health_check(self) -> bool:
@@ -235,9 +272,25 @@ class MonitoringBroadcaster:
             logger.error(f"[BROADCASTER] Health check failed: {e}")
             return False
 
+    def get_classification_metrics(self) -> Dict[str, Any]:
+        """
+        Get detailed classification metrics.
+
+        Phase 2.6.1: Returns classification accuracy and distribution.
+
+        Returns:
+            Dictionary with classification metrics
+        """
+        return {
+            'sequence_counter': self._sequence_counter,
+            'classification_metrics': self._classifier.get_metrics(),
+        }
+
     async def flush_metrics(self) -> Dict[str, Any]:
         """
         Flush metrics to database.
+
+        Phase 2.6.1: Includes classification metrics.
 
         Returns:
             Dictionary with flush result
@@ -247,7 +300,8 @@ class MonitoringBroadcaster:
             # In future, this will integrate with MetricsPersister
             result = {
                 'flushed': True,
-                'metrics': self._metrics,
+                'broadcaster_metrics': self._metrics,
+                'classification_metrics': self.get_classification_metrics(),
                 'timestamp': log_timestamp(),
             }
             logger.info("[BROADCASTER] Metrics flushed successfully")

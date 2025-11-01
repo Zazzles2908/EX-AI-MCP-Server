@@ -1,0 +1,506 @@
+﻿2025-11-01 11:51:07 INFO tools.chat: TOOL_EXEC_DEBUG: execute() method ENTERED for tool 'chat'
+2025-11-01 11:51:07 INFO tools.chat: chat tool called with arguments: ['prompt', 'files', 'continuation_id', 'model', 'use_websearch']
+2025-11-01 11:51:07 INFO tools.chat: TOOL_EXEC_DEBUG: Arguments stored, about to send progress
+2025-11-01 11:51:07 INFO mcp_activity: [PROGRESS] chat: Starting execution
+2025-11-01 11:51:07 INFO mcp_activity: [PROGRESS] chat: Request validated
+2025-11-01 11:51:07 INFO tools.chat: TOOL_EXEC_DEBUG: About to create ModelContext for model 'glm-4.6'
+2025-11-01 11:51:07 INFO tools.chat: TOOL_EXEC_DEBUG: ModelContext created successfully for glm-4.6
+2025-11-01 11:51:07 INFO mcp_activity: [PROGRESS] chat: Model/context ready: glm-4.6
+2025-11-01 11:51:08 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.63c00b70-364b-4351-bf6c-5a105e553dce "HTTP/2 200 OK"
+2025-11-01 11:51:08 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_by_continuation_id took 0.385s
+2025-11-01 11:51:08 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.desc&offset=0&limit=5 "HTTP/2 200 OK"
+2025-11-01 11:51:08 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_messages took 0.068s
+2025-11-01 11:51:08 INFO utils.conversation.supabase_memory: [CONTEXT_PRUNING] Loaded 5 messages for 63c00b70-364b-4351-bf6c-5a105e553dce (limit=5)
+2025-11-01 11:51:08 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.526s
+2025-11-01 11:51:08 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 11:51:08 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata=None, type=<class 'NoneType'>
+2025-11-01 11:51:08 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=63c00b70-364b-4351-bf6c-5a105e553dce, storage_metadata={}
+2025-11-01 11:51:08 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 11:51:08 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 11:51:08 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.071s
+2025-11-01 11:51:08 INFO root: MODEL_CONTEXT_DEBUG: Getting provider for model 'glm-4.6'
+2025-11-01 11:51:08 INFO root: MODEL_CONTEXT_DEBUG: get_provider_for_model returned: <src.providers.glm.GLMModelProvider object at 0x7b2208a0d2b0>
+2025-11-01 11:51:08 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 11:51:08 INFO tools.shared.base_tool_file_handling: [FILE_PROCESSING] chat tool will embed new files: server.py, config.py
+2025-11-01 11:51:08 INFO tools.chat: TOOL_EXEC_DEBUG: About to access provider property for model 'glm-4.6'
+2025-11-01 11:51:08 INFO tools.chat: TOOL_EXEC_DEBUG: Model context object: <utils.model.context.ModelContext object at 0x7b2208992190>
+2025-11-01 11:51:08 INFO tools.chat: TOOL_EXEC_DEBUG: Provider obtained: <src.providers.glm.GLMModelProvider object at 0x7b2208a0d2b0>
+2025-11-01 11:51:08 INFO mcp_activity: [PROGRESS] chat: Generating response (~5,833 tokens)
+2025-11-01 11:51:08 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 11:51:08 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 11:51:08 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 11:51:08 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 11:51:08 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 11:51:08 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 11:51:08 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 11:51:10 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 11:51:33 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 11:51:33 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 11:51:33 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 11:51:33 WARNING utils.caching.base_cache_manager: [SEMANTIC_CACHE] L2 write error: Object of type ModelResponse is not JSON serializable
+2025-11-01 11:51:33 INFO tools.chat: Received response from glm API for chat
+2025-11-01 11:51:33 INFO mcp_activity: [PROGRESS] ­ƒôØ Processing response...
+2025-11-01 11:51:33 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 11:51:33 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101085109de48138e9222472c', 'created': 1761958269, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 24780}}}, type=<class 'dict'>
+2025-11-01 11:51:33 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=63c00b70-364b-4351-bf6c-5a105e553dce, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101085109de48138e9222472c', 'created': 1761958269, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 24780}}}}
+2025-11-01 11:51:33 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 11:51:33 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 11:51:33 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.092s
+2025-11-01 11:51:33 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 11:51:33 INFO tools.chat: chat tool completed successfully
+2025-11-01 11:51:33 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 11:51:33 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 11:51:33 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fserver.py&original_name=eq.server.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 11:51:33 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/server.py "HTTP/2 200 OK"
+2025-11-01 11:51:33 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 11:51:33 INFO src.storage.supabase_client: Uploaded file: server.py -> 683a4379-83c6-4bc1-9cb2-c08ffbbe5114
+2025-11-01 11:51:33 INFO src.storage.file_handler: Uploaded file: server.py -> 683a4379-83c6-4bc1-9cb2-c08ffbbe5114
+2025-11-01 11:51:33 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fconfig.py&original_name=eq.config.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 11:51:33 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/config.py "HTTP/2 200 OK"
+2025-11-01 11:51:33 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 11:51:33 INFO src.storage.supabase_client: Uploaded file: config.py -> 9d67ffe1-ac1d-4464-869e-7ab877d5b47e
+2025-11-01 11:51:33 INFO src.storage.file_handler: Uploaded file: config.py -> 9d67ffe1-ac1d-4464-869e-7ab877d5b47e
+2025-11-01 11:51:33 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversation_files?columns=%22conversation_id%22%2C%22file_id%22 "HTTP/2 201 Created"
+2025-11-01 11:51:33 INFO src.storage.supabase_client: [BATCH_LINK] Linked 2/2 files to conversation 73eecb1f-3c21-4208-977e-9e724f6a9f19
+2025-11-01 11:51:33 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 11:51:33 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 12:05:06 INFO tools.chat: TOOL_EXEC_DEBUG: execute() method ENTERED for tool 'chat'
+2025-11-01 12:05:06 INFO tools.chat: chat tool called with arguments: ['prompt', 'continuation_id', 'model', 'use_websearch']
+2025-11-01 12:05:06 INFO tools.chat: TOOL_EXEC_DEBUG: Arguments stored, about to send progress
+2025-11-01 12:05:06 INFO mcp_activity: [PROGRESS] chat: Starting execution
+2025-11-01 12:05:06 INFO mcp_activity: [PROGRESS] chat: Request validated
+2025-11-01 12:05:06 INFO tools.chat: TOOL_EXEC_DEBUG: About to create ModelContext for model 'glm-4.6'
+2025-11-01 12:05:06 INFO tools.chat: TOOL_EXEC_DEBUG: ModelContext created successfully for glm-4.6
+2025-11-01 12:05:06 INFO mcp_activity: [PROGRESS] chat: Model/context ready: glm-4.6
+2025-11-01 12:05:06 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.63c00b70-364b-4351-bf6c-5a105e553dce "HTTP/2 200 OK"
+2025-11-01 12:05:06 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_by_continuation_id took 0.371s
+2025-11-01 12:05:06 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.desc&offset=0&limit=5 "HTTP/2 200 OK"
+2025-11-01 12:05:06 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_messages took 0.042s
+2025-11-01 12:05:06 INFO utils.conversation.supabase_memory: [CONTEXT_PRUNING] Loaded 5 messages for 63c00b70-364b-4351-bf6c-5a105e553dce (limit=5)
+2025-11-01 12:05:06 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.415s
+2025-11-01 12:05:07 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 12:05:07 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata=None, type=<class 'NoneType'>
+2025-11-01 12:05:07 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=63c00b70-364b-4351-bf6c-5a105e553dce, storage_metadata={}
+2025-11-01 12:05:07 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 12:05:07 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 12:05:07 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.040s
+2025-11-01 12:05:07 INFO root: MODEL_CONTEXT_DEBUG: Getting provider for model 'glm-4.6'
+2025-11-01 12:05:07 INFO root: MODEL_CONTEXT_DEBUG: get_provider_for_model returned: <src.providers.glm.GLMModelProvider object at 0x7b2208a0d2b0>
+2025-11-01 12:05:07 INFO tools.chat: TOOL_EXEC_DEBUG: About to access provider property for model 'glm-4.6'
+2025-11-01 12:05:07 INFO tools.chat: TOOL_EXEC_DEBUG: Model context object: <utils.model.context.ModelContext object at 0x7b2208a7e650>
+2025-11-01 12:05:07 INFO tools.chat: TOOL_EXEC_DEBUG: Provider obtained: <src.providers.glm.GLMModelProvider object at 0x7b2208a0d2b0>
+2025-11-01 12:05:07 INFO mcp_activity: [PROGRESS] chat: Generating response (~1,751 tokens)
+2025-11-01 12:05:07 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 12:05:07 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 12:05:07 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 12:05:07 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 12:05:07 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 12:05:07 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 12:05:07 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 12:05:08 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 12:06:10 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 12:06:10 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 12:06:10 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 12:06:10 WARNING utils.caching.base_cache_manager: [SEMANTIC_CACHE] L2 write error: Object of type ModelResponse is not JSON serializable
+2025-11-01 12:06:10 INFO tools.chat: Received response from glm API for chat
+2025-11-01 12:06:10 INFO mcp_activity: [PROGRESS] ­ƒôØ Processing response...
+2025-11-01 12:06:10 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 12:06:10 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '202511010905071c51e8d461e54e04', 'created': 1761959108, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 63685}}}, type=<class 'dict'>
+2025-11-01 12:06:10 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=63c00b70-364b-4351-bf6c-5a105e553dce, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '202511010905071c51e8d461e54e04', 'created': 1761959108, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 63685}}}}
+2025-11-01 12:06:10 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 12:06:10 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 12:06:10 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.112s
+2025-11-01 12:06:10 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 12:06:10 INFO tools.chat: chat tool completed successfully
+2025-11-01 12:06:10 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 12:06:10 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 12:06:10 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 12:06:10 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 12:27:45 INFO tools.chat: TOOL_EXEC_DEBUG: execute() method ENTERED for tool 'chat'
+2025-11-01 12:27:45 INFO tools.chat: chat tool called with arguments: ['prompt', 'files', 'continuation_id', 'model', 'use_websearch']
+2025-11-01 12:27:45 INFO tools.chat: TOOL_EXEC_DEBUG: Arguments stored, about to send progress
+2025-11-01 12:27:45 INFO mcp_activity: [PROGRESS] chat: Starting execution
+2025-11-01 12:27:45 INFO mcp_activity: [PROGRESS] chat: Request validated
+2025-11-01 12:27:45 INFO tools.chat: TOOL_EXEC_DEBUG: About to create ModelContext for model 'glm-4.6'
+2025-11-01 12:27:45 INFO tools.chat: TOOL_EXEC_DEBUG: ModelContext created successfully for glm-4.6
+2025-11-01 12:27:45 INFO mcp_activity: [PROGRESS] chat: Model/context ready: glm-4.6
+2025-11-01 12:27:46 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversations?select=%2A&continuation_id=eq.63c00b70-364b-4351-bf6c-5a105e553dce "HTTP/2 200 OK"
+2025-11-01 12:27:46 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_by_continuation_id took 0.408s
+2025-11-01 12:27:46 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.desc&offset=0&limit=5 "HTTP/2 200 OK"
+2025-11-01 12:27:46 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_conversation_messages took 0.060s
+2025-11-01 12:27:46 INFO utils.conversation.supabase_memory: [CONTEXT_PRUNING] Loaded 5 messages for 63c00b70-364b-4351-bf6c-5a105e553dce (limit=5)
+2025-11-01 12:27:46 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.471s
+2025-11-01 12:27:46 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 12:27:46 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata=None, type=<class 'NoneType'>
+2025-11-01 12:27:46 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=63c00b70-364b-4351-bf6c-5a105e553dce, storage_metadata={}
+2025-11-01 12:27:46 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 12:27:46 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 12:27:46 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.048s
+2025-11-01 12:27:46 INFO root: MODEL_CONTEXT_DEBUG: Getting provider for model 'glm-4.6'
+2025-11-01 12:27:46 INFO root: MODEL_CONTEXT_DEBUG: get_provider_for_model returned: <src.providers.glm.GLMModelProvider object at 0x7b2208a0d2b0>
+2025-11-01 12:27:46 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 12:27:46 INFO tools.shared.base_tool_file_handling: [FILE_PROCESSING] chat tool will embed new files: __init__.py, env_loader.py, logging_setup.py, singletons.py, __init__.py, utils.py, registry_bridge.py, fallback_orchestrator.py, mcp_handlers.py, request_handler.py, request_handler_execution.py, provider_config.py, provider_registration.py, __init__.py, registry.py, chat.py, base_tool.py, base_tool_file_handling.py, schema_builders.py, base.py, orchestration.py, schema_builders.py
+2025-11-01 12:27:47 INFO tools.chat: TOOL_EXEC_DEBUG: About to access provider property for model 'glm-4.6'
+2025-11-01 12:27:47 INFO tools.chat: TOOL_EXEC_DEBUG: Model context object: <utils.model.context.ModelContext object at 0x7b21fb9d5b50>
+2025-11-01 12:27:47 INFO tools.chat: TOOL_EXEC_DEBUG: Provider obtained: <src.providers.glm.GLMModelProvider object at 0x7b2208a0d2b0>
+2025-11-01 12:27:47 INFO mcp_activity: [PROGRESS] chat: Generating response (~35,575 tokens)
+2025-11-01 12:27:47 INFO tools.chat: Sending request to glm API for chat
+2025-11-01 12:27:47 INFO tools.chat: Using model: glm-4.6 via glm provider
+2025-11-01 12:27:47 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] provider_type=ProviderType.GLM, use_websearch=False, model_name=glm-4.6
+2025-11-01 12:27:47 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] ws.tools=None, ws.tool_choice=None
+2025-11-01 12:27:47 INFO src.providers.orchestration.websearch_adapter: [WEBSEARCH_DEBUG] Final provider_kwargs keys: []
+2025-11-01 12:27:47 INFO src.providers.glm_chat: [MONITORING_DEBUG] FUNCTION ENTRY: generate_content called for model=glm-4.6
+2025-11-01 12:27:47 INFO src.providers.glm_chat: GLM chat using SDK: model=glm-4.6, stream=True, messages_count=2
+2025-11-01 12:27:51 INFO httpx: HTTP Request: POST https://api.z.ai/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+2025-11-01 12:28:39 INFO src.providers.glm_chat: [MONITORING_DEBUG] FINALLY BLOCK ENTERED for model=glm-4.6
+2025-11-01 12:28:39 INFO src.providers.glm_chat: [MONITORING_DEBUG] About to call record_glm_event for model=glm-4.6, tokens=0, stream=True, error=None
+2025-11-01 12:28:39 INFO src.providers.glm_chat: [MONITORING_DEBUG] Successfully called record_glm_event
+2025-11-01 12:28:39 WARNING utils.caching.base_cache_manager: [SEMANTIC_CACHE] L2 write error: Object of type ModelResponse is not JSON serializable
+2025-11-01 12:28:39 INFO tools.chat: Received response from glm API for chat
+2025-11-01 12:28:39 INFO mcp_activity: [PROGRESS] ­ƒôØ Processing response...
+2025-11-01 12:28:39 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?select=%2A&conversation_id=eq.73eecb1f-3c21-4208-977e-9e724f6a9f19&order=created_at.desc&offset=0&limit=10 "HTTP/2 200 OK"
+2025-11-01 12:28:39 INFO utils.conversation.supabase_memory: [PHASE1_DEBUG] add_turn called with metadata={'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101092748b34f578653994e27', 'created': 1761960468, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 52535}}}, type=<class 'dict'>
+2025-11-01 12:28:39 INFO utils.conversation.supabase_memory: [PHASE1_METADATA] continuation_id=63c00b70-364b-4351-bf6c-5a105e553dce, storage_metadata={'model_metadata': {'model_provider': 'glm', 'model_name': 'glm-4.6', 'model_metadata': {'usage': None, 'metadata': {'streamed': True, 'model': 'glm-4.6', 'id': '20251101092748b34f578653994e27', 'created': 1761960468, 'tools': None, 'tool_choice': None, 'ai_response_time_ms': 52535}}}}
+2025-11-01 12:28:39 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Submitting write to async queue for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 12:28:39 INFO utils.conversation.supabase_memory: [ASYNC_SUPABASE] Queued write for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 12:28:39 INFO utils.performance.timing: [TIMING] SupabaseMemory.add_turn completed in 0.135s
+2025-11-01 12:28:39 INFO utils.performance.timing: [TIMING] SupabaseMemory.get_thread completed in 0.000s
+2025-11-01 12:28:39 INFO tools.chat: chat tool completed successfully
+2025-11-01 12:28:39 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 12:28:39 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 12:28:39 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2F__init__.py&original_name=eq.__init__.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:39 INFO src.storage.supabase_client: File already exists: __init__.py -> 088d4785-bcd3-425b-b55a-0940d7df8258
+2025-11-01 12:28:39 INFO src.storage.supabase_client: Uploaded file: __init__.py -> 088d4785-bcd3-425b-b55a-0940d7df8258
+2025-11-01 12:28:39 INFO src.storage.file_handler: Uploaded file: __init__.py -> 088d4785-bcd3-425b-b55a-0940d7df8258
+2025-11-01 12:28:39 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fenv_loader.py&original_name=eq.env_loader.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:40 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/env_loader.py "HTTP/2 200 OK"
+2025-11-01 12:28:40 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 12:28:40 INFO src.storage.supabase_client: Uploaded file: env_loader.py -> 97590c2e-a21b-4ad7-8a8e-b168a2b7a65e
+2025-11-01 12:28:40 INFO src.storage.file_handler: Uploaded file: env_loader.py -> 97590c2e-a21b-4ad7-8a8e-b168a2b7a65e
+2025-11-01 12:28:40 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Flogging_setup.py&original_name=eq.logging_setup.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:40 INFO src.storage.supabase_client: File already exists: logging_setup.py -> a72e90fd-3b31-4aa3-92fc-ec9fc178511c
+2025-11-01 12:28:40 INFO src.storage.supabase_client: Uploaded file: logging_setup.py -> a72e90fd-3b31-4aa3-92fc-ec9fc178511c
+2025-11-01 12:28:40 INFO src.storage.file_handler: Uploaded file: logging_setup.py -> a72e90fd-3b31-4aa3-92fc-ec9fc178511c
+2025-11-01 12:28:40 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fsingletons.py&original_name=eq.singletons.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:40 INFO src.storage.supabase_client: File already exists: singletons.py -> 7e81471b-efbc-49e6-9ed1-b30b8568f7a5
+2025-11-01 12:28:40 INFO src.storage.supabase_client: Uploaded file: singletons.py -> 7e81471b-efbc-49e6-9ed1-b30b8568f7a5
+2025-11-01 12:28:40 INFO src.storage.file_handler: Uploaded file: singletons.py -> 7e81471b-efbc-49e6-9ed1-b30b8568f7a5
+2025-11-01 12:28:40 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2F__init__.py&original_name=eq.__init__.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:40 INFO src.storage.supabase_client: File already exists: __init__.py -> 088d4785-bcd3-425b-b55a-0940d7df8258
+2025-11-01 12:28:40 INFO src.storage.supabase_client: Uploaded file: __init__.py -> 088d4785-bcd3-425b-b55a-0940d7df8258
+2025-11-01 12:28:40 INFO src.storage.file_handler: Uploaded file: __init__.py -> 088d4785-bcd3-425b-b55a-0940d7df8258
+2025-11-01 12:28:40 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Futils.py&original_name=eq.utils.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:40 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/utils.py "HTTP/2 200 OK"
+2025-11-01 12:28:40 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 12:28:40 INFO src.storage.supabase_client: Uploaded file: utils.py -> 589f0d57-c6f6-4196-a872-1d181c6e34b4
+2025-11-01 12:28:40 INFO src.storage.file_handler: Uploaded file: utils.py -> 589f0d57-c6f6-4196-a872-1d181c6e34b4
+2025-11-01 12:28:40 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fregistry_bridge.py&original_name=eq.registry_bridge.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:40 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/registry_bridge.py "HTTP/2 200 OK"
+2025-11-01 12:28:40 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 12:28:40 INFO src.storage.supabase_client: Uploaded file: registry_bridge.py -> 195933c3-9ac0-4dea-9d8a-686640de08cf
+2025-11-01 12:28:40 INFO src.storage.file_handler: Uploaded file: registry_bridge.py -> 195933c3-9ac0-4dea-9d8a-686640de08cf
+2025-11-01 12:28:40 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Ffallback_orchestrator.py&original_name=eq.fallback_orchestrator.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:41 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/fallback_orchestrator.py "HTTP/2 200 OK"
+2025-11-01 12:28:41 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 12:28:41 INFO src.storage.supabase_client: Uploaded file: fallback_orchestrator.py -> 6e509335-3110-459c-b309-7a570fdadc9e
+2025-11-01 12:28:41 INFO src.storage.file_handler: Uploaded file: fallback_orchestrator.py -> 6e509335-3110-459c-b309-7a570fdadc9e
+2025-11-01 12:28:41 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fmcp_handlers.py&original_name=eq.mcp_handlers.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:41 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/mcp_handlers.py "HTTP/2 200 OK"
+2025-11-01 12:28:41 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 12:28:41 INFO src.storage.supabase_client: Uploaded file: mcp_handlers.py -> a376afe4-fe0e-4492-b305-0791c56f44b0
+2025-11-01 12:28:41 INFO src.storage.file_handler: Uploaded file: mcp_handlers.py -> a376afe4-fe0e-4492-b305-0791c56f44b0
+2025-11-01 12:28:41 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Frequest_handler.py&original_name=eq.request_handler.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:41 INFO src.storage.supabase_client: File already exists: request_handler.py -> 16ec1a0e-f2e8-4e45-a6d1-ec296a9b55c9
+2025-11-01 12:28:41 INFO src.storage.supabase_client: Uploaded file: request_handler.py -> 16ec1a0e-f2e8-4e45-a6d1-ec296a9b55c9
+2025-11-01 12:28:41 INFO src.storage.file_handler: Uploaded file: request_handler.py -> 16ec1a0e-f2e8-4e45-a6d1-ec296a9b55c9
+2025-11-01 12:28:41 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Frequest_handler_execution.py&original_name=eq.request_handler_execution.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:41 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/request_handler_execution.py "HTTP/2 200 OK"
+2025-11-01 12:28:41 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 12:28:41 INFO src.storage.supabase_client: Uploaded file: request_handler_execution.py -> c08224de-5f03-4c24-b8aa-250f4ee1e138
+2025-11-01 12:28:41 INFO src.storage.file_handler: Uploaded file: request_handler_execution.py -> c08224de-5f03-4c24-b8aa-250f4ee1e138
+2025-11-01 12:28:41 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fprovider_config.py&original_name=eq.provider_config.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:41 INFO src.storage.supabase_client: File already exists: provider_config.py -> 5a0fd48f-10f5-4c6c-92bb-d79aa2c556c0
+2025-11-01 12:28:41 INFO src.storage.supabase_client: Uploaded file: provider_config.py -> 5a0fd48f-10f5-4c6c-92bb-d79aa2c556c0
+2025-11-01 12:28:41 INFO src.storage.file_handler: Uploaded file: provider_config.py -> 5a0fd48f-10f5-4c6c-92bb-d79aa2c556c0
+2025-11-01 12:28:41 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fprovider_registration.py&original_name=eq.provider_registration.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:41 INFO src.storage.supabase_client: File already exists: provider_registration.py -> 72391873-8e39-41df-a6bd-c336cbac6a27
+2025-11-01 12:28:41 INFO src.storage.supabase_client: Uploaded file: provider_registration.py -> 72391873-8e39-41df-a6bd-c336cbac6a27
+2025-11-01 12:28:41 INFO src.storage.file_handler: Uploaded file: provider_registration.py -> 72391873-8e39-41df-a6bd-c336cbac6a27
+2025-11-01 12:28:41 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2F__init__.py&original_name=eq.__init__.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:41 INFO src.storage.supabase_client: File already exists: __init__.py -> 088d4785-bcd3-425b-b55a-0940d7df8258
+2025-11-01 12:28:41 INFO src.storage.supabase_client: Uploaded file: __init__.py -> 088d4785-bcd3-425b-b55a-0940d7df8258
+2025-11-01 12:28:41 INFO src.storage.file_handler: Uploaded file: __init__.py -> 088d4785-bcd3-425b-b55a-0940d7df8258
+2025-11-01 12:28:41 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fregistry.py&original_name=eq.registry.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:41 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/registry.py "HTTP/2 200 OK"
+2025-11-01 12:28:42 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 12:28:42 INFO src.storage.supabase_client: Uploaded file: registry.py -> 9a715f33-91cd-49bd-86cf-b06d76355965
+2025-11-01 12:28:42 INFO src.storage.file_handler: Uploaded file: registry.py -> 9a715f33-91cd-49bd-86cf-b06d76355965
+2025-11-01 12:28:42 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fchat.py&original_name=eq.chat.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:42 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/chat.py "HTTP/2 200 OK"
+2025-11-01 12:28:42 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 12:28:42 INFO src.storage.supabase_client: Uploaded file: chat.py -> e36c3626-872e-4f49-8db7-7d41f3ac5ae2
+2025-11-01 12:28:42 INFO src.storage.file_handler: Uploaded file: chat.py -> e36c3626-872e-4f49-8db7-7d41f3ac5ae2
+2025-11-01 12:28:42 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fbase_tool.py&original_name=eq.base_tool.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:42 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/base_tool.py "HTTP/2 200 OK"
+docker : Traceback (most recent call last):
+At line:1 char:1
++ docker logs --tail 500 exai-mcp-daemon 2>&1 | Out-File -FilePath "doc ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "/app/scripts/ws/run_ws_daemon.py", line 24, in <module>
+    from src.daemon.ws_server import main_async
+  File "/app/src/daemon/ws_server.py", line 244, in <module>
+    from server import TOOLS as SERVER_TOOLS  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/server.py", line 95, in <module>
+    from src.server.utils import get_follow_up_instructions  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/server/__init__.py", line 11, in <module>
+    from .handlers import handle_list_tools, handle_get_prompt, handle_list_prompts, handle_call_tool
+  File "/app/src/server/handlers/__init__.py", line 6, in <module>
+    from .request_handler import handle_call_tool
+  File "/app/src/server/handlers/request_handler.py", line 24, in <module>
+    from .request_handler_execution import (
+    ...<6 lines>...
+    )
+  File "/app/src/server/handlers/request_handler_execution.py", line 76, in <module>
+    def inject_optional_features(arguments: Dict[str, Any], tool_name: str, env_true_func, os_module=os) -> Dict[str, Any]:
+                                                                                                     ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+2025-11-01 12:28:42 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 12:28:42 INFO src.storage.supabase_client: Uploaded file: base_tool.py -> 2bf4bec7-81d7-46a3-93fb-a6ead3ff73b5
+2025-11-01 12:28:42 INFO src.storage.file_handler: Uploaded file: base_tool.py -> 2bf4bec7-81d7-46a3-93fb-a6ead3ff73b5
+2025-11-01 12:28:42 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fbase_tool_file_handling.py&original_name=eq.base_tool_file_handling.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:42 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/base_tool_file_handling.py "HTTP/2 200 OK"
+2025-11-01 12:28:42 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 12:28:42 INFO src.storage.supabase_client: Uploaded file: base_tool_file_handling.py -> 87def2e8-39f2-45ef-90e3-62839ac1acd4
+2025-11-01 12:28:42 INFO src.storage.file_handler: Uploaded file: base_tool_file_handling.py -> 87def2e8-39f2-45ef-90e3-62839ac1acd4
+2025-11-01 12:28:42 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fschema_builders.py&original_name=eq.schema_builders.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:42 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/schema_builders.py "HTTP/2 200 OK"
+2025-11-01 12:28:42 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 12:28:42 INFO src.storage.supabase_client: Uploaded file: schema_builders.py -> 0becad51-5159-41ae-b45c-e2145e055e20
+2025-11-01 12:28:42 INFO src.storage.file_handler: Uploaded file: schema_builders.py -> 0becad51-5159-41ae-b45c-e2145e055e20
+2025-11-01 12:28:43 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fbase.py&original_name=eq.base.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:43 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/base.py "HTTP/2 200 OK"
+2025-11-01 12:28:43 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 12:28:43 INFO src.storage.supabase_client: Uploaded file: base.py -> 47d60881-6b60-460d-8bf2-b6ba2d81e8c7
+2025-11-01 12:28:43 INFO src.storage.file_handler: Uploaded file: base.py -> 47d60881-6b60-460d-8bf2-b6ba2d81e8c7
+2025-11-01 12:28:43 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Forchestration.py&original_name=eq.orchestration.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:43 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/storage/v1/object/user-files/contexts/63c00b70-364b-4351-bf6c-5a105e553dce/orchestration.py "HTTP/2 200 OK"
+2025-11-01 12:28:43 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files "HTTP/2 201 Created"
+2025-11-01 12:28:43 INFO src.storage.supabase_client: Uploaded file: orchestration.py -> 990ffafd-bc6f-426e-92a7-299d94236a1a
+2025-11-01 12:28:43 INFO src.storage.file_handler: Uploaded file: orchestration.py -> 990ffafd-bc6f-426e-92a7-299d94236a1a
+2025-11-01 12:28:43 INFO httpx: HTTP Request: GET https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/files?select=id&storage_path=eq.contexts%2F63c00b70-364b-4351-bf6c-5a105e553dce%2Fschema_builders.py&original_name=eq.schema_builders.py&file_type=eq.user_upload "HTTP/2 200 OK"
+2025-11-01 12:28:43 INFO src.storage.supabase_client: File already exists: schema_builders.py -> 0becad51-5159-41ae-b45c-e2145e055e20
+2025-11-01 12:28:43 INFO src.storage.supabase_client: Uploaded file: schema_builders.py -> 0becad51-5159-41ae-b45c-e2145e055e20
+2025-11-01 12:28:43 INFO src.storage.file_handler: Uploaded file: schema_builders.py -> 0becad51-5159-41ae-b45c-e2145e055e20
+2025-11-01 12:28:43 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/conversation_files?columns=%22conversation_id%22%2C%22file_id%22 "HTTP/2 500 Internal Server Error"
+2025-11-01 12:28:43 ERROR src.storage.supabase_client: [BATCH_LINK] Failed to batch link files: {'message': 'ON CONFLICT DO UPDATE command cannot affect row a second time', 'code': '21000', 'hint': 'Ensure that no rows proposed for insertion within the same command have duplicate constrained values.', 'details': None}
+2025-11-01 12:28:43 INFO httpx: HTTP Request: POST https://mxaazuhlqewmkweewyaz.supabase.co/rest/v1/messages?on_conflict=idempotency_key "HTTP/2 201 Created"
+2025-11-01 12:28:43 INFO utils.conversation.supabase_memory: [CONV_QUEUE] Processed update for 63c00b70-364b-4351-bf6c-5a105e553dce
+2025-11-01 12:45:24 INFO src.monitoring.persistence.graceful_shutdown: Received signal SIGTERM, initiating graceful shutdown
+2025-11-01 12:45:24 INFO src.monitoring.persistence.graceful_shutdown: Initiating graceful shutdown (timeout: 30s)
+2025-11-01 12:45:24 INFO src.daemon.ws.session_handler: [SESSION_CLEANUP] Periodic cleanup task stopped
+2025-11-01 12:45:24 INFO src.daemon.ws.health_monitor: [HEALTH] Periodic semaphore health check stopped
+2025-11-01 12:45:24 INFO src.daemon.ws.health_monitor: [HEALTH] Health writer stopped
+2025-11-01 12:45:24 INFO src.daemon.connection_manager: Connection unregistered: cx0EnQtqrUYjPFKtGWQgm0jTyRKD1yjVhhROaOjumxs from 172.18.0.1 (duration: 3957.39s, remaining: 0)
+2025-11-01 12:45:24 INFO src.daemon.session_manager: [SESSION_MANAGER] Removed session vscode-instance-1 (total sessions: 0)
+2025-11-01 12:45:24 INFO root: [ASYNC_LOGGING] Shutting down async logging listener
+2025-11-01 12:45:31 INFO root: [ASYNC_LOGGING] Async-safe logging configured successfully
+2025-11-01 12:45:31 INFO root: [LOGGING] Configured websockets library logging to suppress handshake noise
+2025-11-01 12:45:31 INFO src.daemon.env_validation: Validation Summary: 10 valid, 0 warnings, 0 critical errors
+2025-11-01 12:45:31 INFO src.bootstrap.env_loader: [ENV_LOADER] Ô£à Loaded environment from: /app/.env
+2025-11-01 12:45:31 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_URL: SET
+2025-11-01 12:45:31 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_PASSWORD: SET
+2025-11-01 12:45:31 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_URL: SET
+2025-11-01 12:45:31 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_SERVICE_ROLE_KEY: SET
+2025-11-01 12:45:31 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_ANON_KEY: SET
+2025-11-01 12:45:31 INFO src.bootstrap.env_loader: [ENV_LOADER] LOG_LEVEL: WARN
+2025-11-01 12:45:39 INFO root: [ASYNC_LOGGING] Async-safe logging configured successfully
+2025-11-01 12:45:39 INFO root: [LOGGING] Configured websockets library logging to suppress handshake noise
+2025-11-01 12:45:39 INFO src.daemon.env_validation: Validation Summary: 10 valid, 0 warnings, 0 critical errors
+2025-11-01 12:45:39 INFO src.bootstrap.env_loader: [ENV_LOADER] Ô£à Loaded environment from: /app/.env
+2025-11-01 12:45:39 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_URL: SET
+2025-11-01 12:45:39 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_PASSWORD: SET
+2025-11-01 12:45:39 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_URL: SET
+2025-11-01 12:45:39 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_SERVICE_ROLE_KEY: SET
+2025-11-01 12:45:39 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_ANON_KEY: SET
+2025-11-01 12:45:39 INFO src.bootstrap.env_loader: [ENV_LOADER] LOG_LEVEL: WARN
+2025-11-01 12:45:45 INFO root: [ASYNC_LOGGING] Async-safe logging configured successfully
+2025-11-01 12:45:45 INFO root: [LOGGING] Configured websockets library logging to suppress handshake noise
+2025-11-01 12:45:45 INFO src.daemon.env_validation: Validation Summary: 10 valid, 0 warnings, 0 critical errors
+2025-11-01 12:45:45 INFO src.bootstrap.env_loader: [ENV_LOADER] Ô£à Loaded environment from: /app/.env
+2025-11-01 12:45:45 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_URL: SET
+2025-11-01 12:45:45 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_PASSWORD: SET
+2025-11-01 12:45:45 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_URL: SET
+2025-11-01 12:45:45 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_SERVICE_ROLE_KEY: SET
+2025-11-01 12:45:45 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_ANON_KEY: SET
+2025-11-01 12:45:45 INFO src.bootstrap.env_loader: [ENV_LOADER] LOG_LEVEL: WARN
+2025-11-01 12:45:51 INFO root: [ASYNC_LOGGING] Async-safe logging configured successfully
+2025-11-01 12:45:51 INFO root: [LOGGING] Configured websockets library logging to suppress handshake noise
+2025-11-01 12:45:51 INFO src.daemon.env_validation: Validation Summary: 10 valid, 0 warnings, 0 critical errors
+2025-11-01 12:45:51 INFO src.bootstrap.env_loader: [ENV_LOADER] Ô£à Loaded environment from: /app/.env
+2025-11-01 12:45:51 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_URL: SET
+2025-11-01 12:45:51 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_PASSWORD: SET
+2025-11-01 12:45:51 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_URL: SET
+Traceback (most recent call last):
+2025-11-01 12:45:51 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_SERVICE_ROLE_KEY: SET
+2025-11-01 12:45:51 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_ANON_KEY: SET
+2025-11-01 12:45:51 INFO src.bootstrap.env_loader: [ENV_LOADER] LOG_LEVEL: WARN
+2025-11-01 12:45:57 INFO root: [ASYNC_LOGGING] Async-safe logging configured successfully
+2025-11-01 12:45:57 INFO root: [LOGGING] Configured websockets library logging to suppress handshake noise
+2025-11-01 12:45:57 INFO src.daemon.env_validation: Validation Summary: 10 valid, 0 warnings, 0 critical errors
+2025-11-01 12:45:57 INFO src.bootstrap.env_loader: [ENV_LOADER] Ô£à Loaded environment from: /app/.env
+2025-11-01 12:45:57 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_URL: SET
+2025-11-01 12:45:57 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_PASSWORD: SET
+2025-11-01 12:45:57 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_URL: SET
+2025-11-01 12:45:57 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_SERVICE_ROLE_KEY: SET
+2025-11-01 12:45:57 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_ANON_KEY: SET
+2025-11-01 12:45:57 INFO src.bootstrap.env_loader: [ENV_LOADER] LOG_LEVEL: WARN
+2025-11-01 12:46:04 INFO root: [ASYNC_LOGGING] Async-safe logging configured successfully
+2025-11-01 12:46:04 INFO root: [LOGGING] Configured websockets library logging to suppress handshake noise
+2025-11-01 12:46:04 INFO src.daemon.env_validation: Validation Summary: 10 valid, 0 warnings, 0 critical errors
+2025-11-01 12:46:04 INFO src.bootstrap.env_loader: [ENV_LOADER] Ô£à Loaded environment from: /app/.env
+2025-11-01 12:46:04 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_URL: SET
+2025-11-01 12:46:04 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_PASSWORD: SET
+2025-11-01 12:46:04 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_URL: SET
+2025-11-01 12:46:04 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_SERVICE_ROLE_KEY: SET
+2025-11-01 12:46:04 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_ANON_KEY: SET
+2025-11-01 12:46:04 INFO src.bootstrap.env_loader: [ENV_LOADER] LOG_LEVEL: WARN
+2025-11-01 12:46:11 INFO root: [ASYNC_LOGGING] Async-safe logging configured successfully
+2025-11-01 12:46:11 INFO root: [LOGGING] Configured websockets library logging to suppress handshake noise
+2025-11-01 12:46:11 INFO src.daemon.env_validation: Validation Summary: 10 valid, 0 warnings, 0 critical errors
+2025-11-01 12:46:11 INFO src.bootstrap.env_loader: [ENV_LOADER] Ô£à Loaded environment from: /app/.env
+2025-11-01 12:46:11 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_URL: SET
+2025-11-01 12:46:11 INFO src.bootstrap.env_loader: [ENV_LOADER] REDIS_PASSWORD: SET
+2025-11-01 12:46:11 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_URL: SET
+2025-11-01 12:46:11 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_SERVICE_ROLE_KEY: SET
+2025-11-01 12:46:11 INFO src.bootstrap.env_loader: [ENV_LOADER] SUPABASE_ANON_KEY: SET
+2025-11-01 12:46:11 INFO src.bootstrap.env_loader: [ENV_LOADER] LOG_LEVEL: WARN
+  File "/app/scripts/ws/run_ws_daemon.py", line 24, in <module>
+    from src.daemon.ws_server import main_async
+  File "/app/src/daemon/ws_server.py", line 244, in <module>
+    from server import TOOLS as SERVER_TOOLS  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/server.py", line 95, in <module>
+    from src.server.utils import get_follow_up_instructions  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/server/__init__.py", line 11, in <module>
+    from .handlers import handle_list_tools, handle_get_prompt, handle_list_prompts, handle_call_tool
+  File "/app/src/server/handlers/__init__.py", line 6, in <module>
+    from .request_handler import handle_call_tool
+  File "/app/src/server/handlers/request_handler.py", line 24, in <module>
+    from .request_handler_execution import (
+    ...<6 lines>...
+    )
+  File "/app/src/server/handlers/request_handler_execution.py", line 76, in <module>
+    def inject_optional_features(arguments: Dict[str, Any], tool_name: str, env_true_func, os_module=os) -> Dict[str, Any]:
+                                                                                                     ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+Traceback (most recent call last):
+  File "/app/scripts/ws/run_ws_daemon.py", line 24, in <module>
+    from src.daemon.ws_server import main_async
+  File "/app/src/daemon/ws_server.py", line 244, in <module>
+    from server import TOOLS as SERVER_TOOLS  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/server.py", line 95, in <module>
+    from src.server.utils import get_follow_up_instructions  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/server/__init__.py", line 11, in <module>
+    from .handlers import handle_list_tools, handle_get_prompt, handle_list_prompts, handle_call_tool
+  File "/app/src/server/handlers/__init__.py", line 6, in <module>
+    from .request_handler import handle_call_tool
+  File "/app/src/server/handlers/request_handler.py", line 24, in <module>
+    from .request_handler_execution import (
+    ...<6 lines>...
+    )
+  File "/app/src/server/handlers/request_handler_execution.py", line 76, in <module>
+    def inject_optional_features(arguments: Dict[str, Any], tool_name: str, env_true_func, os_module=os) -> Dict[str, Any]:
+                                                                                                     ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+Traceback (most recent call last):
+  File "/app/scripts/ws/run_ws_daemon.py", line 24, in <module>
+    from src.daemon.ws_server import main_async
+  File "/app/src/daemon/ws_server.py", line 244, in <module>
+    from server import TOOLS as SERVER_TOOLS  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/server.py", line 95, in <module>
+    from src.server.utils import get_follow_up_instructions  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/server/__init__.py", line 11, in <module>
+    from .handlers import handle_list_tools, handle_get_prompt, handle_list_prompts, handle_call_tool
+  File "/app/src/server/handlers/__init__.py", line 6, in <module>
+    from .request_handler import handle_call_tool
+  File "/app/src/server/handlers/request_handler.py", line 24, in <module>
+    from .request_handler_execution import (
+    ...<6 lines>...
+    )
+  File "/app/src/server/handlers/request_handler_execution.py", line 76, in <module>
+    def inject_optional_features(arguments: Dict[str, Any], tool_name: str, env_true_func, os_module=os) -> Dict[str, Any]:
+                                                                                                     ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+Traceback (most recent call last):
+  File "/app/scripts/ws/run_ws_daemon.py", line 24, in <module>
+    from src.daemon.ws_server import main_async
+  File "/app/src/daemon/ws_server.py", line 244, in <module>
+    from server import TOOLS as SERVER_TOOLS  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/server.py", line 95, in <module>
+    from src.server.utils import get_follow_up_instructions  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/server/__init__.py", line 11, in <module>
+    from .handlers import handle_list_tools, handle_get_prompt, handle_list_prompts, handle_call_tool
+  File "/app/src/server/handlers/__init__.py", line 6, in <module>
+    from .request_handler import handle_call_tool
+  File "/app/src/server/handlers/request_handler.py", line 24, in <module>
+    from .request_handler_execution import (
+    ...<6 lines>...
+    )
+  File "/app/src/server/handlers/request_handler_execution.py", line 76, in <module>
+    def inject_optional_features(arguments: Dict[str, Any], tool_name: str, env_true_func, os_module=os) -> Dict[str, Any]:
+                                                                                                     ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+Traceback (most recent call last):
+  File "/app/scripts/ws/run_ws_daemon.py", line 24, in <module>
+    from src.daemon.ws_server import main_async
+  File "/app/src/daemon/ws_server.py", line 244, in <module>
+    from server import TOOLS as SERVER_TOOLS  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/server.py", line 95, in <module>
+    from src.server.utils import get_follow_up_instructions  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/server/__init__.py", line 11, in <module>
+    from .handlers import handle_list_tools, handle_get_prompt, handle_list_prompts, handle_call_tool
+  File "/app/src/server/handlers/__init__.py", line 6, in <module>
+    from .request_handler import handle_call_tool
+  File "/app/src/server/handlers/request_handler.py", line 24, in <module>
+    from .request_handler_execution import (
+    ...<6 lines>...
+    )
+  File "/app/src/server/handlers/request_handler_execution.py", line 76, in <module>
+    def inject_optional_features(arguments: Dict[str, Any], tool_name: str, env_true_func, os_module=os) -> Dict[str, Any]:
+                                                                                                     ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+Traceback (most recent call last):
+  File "/app/scripts/ws/run_ws_daemon.py", line 24, in <module>
+    from src.daemon.ws_server import main_async
+  File "/app/src/daemon/ws_server.py", line 244, in <module>
+    from server import TOOLS as SERVER_TOOLS  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/server.py", line 95, in <module>
+    from src.server.utils import get_follow_up_instructions  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/server/__init__.py", line 11, in <module>
+    from .handlers import handle_list_tools, handle_get_prompt, handle_list_prompts, handle_call_tool
+  File "/app/src/server/handlers/__init__.py", line 6, in <module>
+    from .request_handler import handle_call_tool
+  File "/app/src/server/handlers/request_handler.py", line 24, in <module>
+    from .request_handler_execution import (
+    ...<6 lines>...
+    )
+  File "/app/src/server/handlers/request_handler_execution.py", line 76, in <module>
+    def inject_optional_features(arguments: Dict[str, Any], tool_name: str, env_true_func, os_module=os) -> Dict[str, Any]:
+                                                                                                     ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?

@@ -54,13 +54,11 @@ TOOL_MAP: Dict[str, tuple[str, str]] = {
     # Smart File Download (unified download interface)
     "smart_file_download": ("tools.smart_file_download", "SmartFileDownloadTool"),
     # Kimi utilities
-    # Phase A2 Cleanup: Removed kimi_upload_files and kimi_chat_with_files (redundant - use smart_file_query)
     "kimi_manage_files": ("tools.providers.kimi.kimi_files", "KimiManageFilesTool"),
     "kimi_intent_analysis": ("tools.providers.kimi.kimi_intent", "KimiIntentAnalysisTool"),
     "kimi_capture_headers": ("tools.providers.kimi.kimi_capture_headers", "KimiCaptureHeadersTool"),
     # GLM utilities
     "kimi_chat_with_tools": ("tools.providers.kimi.kimi_tools_chat", "KimiChatWithToolsTool"),
-    # Phase A2 Cleanup: Removed glm_upload_file and glm_multi_file_chat (redundant - use smart_file_query)
     "glm_web_search": ("tools.providers.glm.glm_web_search", "GLMWebSearchTool"),
     "glm_payload_preview": ("tools.providers.glm.glm_payload_preview", "GLMPayloadPreviewTool"),
     # Diagnostics
@@ -84,7 +82,7 @@ TOOL_MAP: Dict[str, tuple[str, str]] = {
 # ESSENTIAL (3 tools): Absolute must-haves for basic operation
 # CORE (8 tools): Frequently used for common workflows (80% of use cases)
 # ADVANCED (7 tools): Specialized tools for complex scenarios
-# HIDDEN (12 tools): Internal/diagnostic tools (Phase A2: removed 4 deprecated tools)
+# HIDDEN (12 tools): Internal/diagnostic tools
 #
 # Progressive disclosure: Agents see Essential + Core (10 tools) by default
 # Advanced tools revealed based on context or explicit request

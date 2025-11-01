@@ -19,15 +19,25 @@ class AuditLogger:
     def __init__(self, supabase_url: str = None, supabase_key: str = None):
         """
         Initialize audit logger with Supabase connection
-        
+
         Args:
             supabase_url: Supabase project URL
-            supabase_key: Supabase service key (should be stored securely)
+            supabase_key: Supabase service role key (should be stored securely)
+
+        CRITICAL FIX (2025-11-01): Changed environment variable from SUPABASE_SERVICE_KEY to SUPABASE_SERVICE_ROLE_KEY
+        - Supabase uses SUPABASE_SERVICE_ROLE_KEY as the standard name
+        - Previous code was looking for non-existent SUPABASE_SERVICE_KEY
+        - This caused "Supabase credentials not found" warnings despite credentials being set
         """
         # Get credentials from environment if not provided
         self.supabase_url = supabase_url or os.getenv('SUPABASE_URL')
-        self.supabase_key = supabase_key or os.getenv('SUPABASE_SERVICE_KEY')
-        
+        # CRITICAL FIX: Use SUPABASE_SERVICE_ROLE_KEY instead of SUPABASE_SERVICE_KEY
+        self.supabase_key = supabase_key or os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+
+        # Add transparent logging
+        logger.info(f"[AUDIT_LOGGER] SUPABASE_URL: {'SET' if self.supabase_url else 'NOT SET'}")
+        logger.info(f"[AUDIT_LOGGER] SUPABASE_SERVICE_ROLE_KEY: {'SET' if self.supabase_key else 'NOT SET'}")
+
         if not self.supabase_url or not self.supabase_key:
             logger.warning("⚠️ Supabase credentials not found. Audit logging will be disabled.")
             self.supabase = None
@@ -38,7 +48,7 @@ class AuditLogger:
             except Exception as e:
                 logger.error(f"Failed to connect to Supabase: {e}")
                 self.supabase = None
-        
+
         self.table_name = 'audit_logs'
     
     def log_file_access(self, 

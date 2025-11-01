@@ -1,7 +1,60 @@
 """
-Response Formatting Mixin for Zen MCP Tools
+Response Formatting Mixin for EXAI MCP Tools
 
 This module provides response formatting and instruction generation for tools.
+
+RESPONSIBILITY:
+===============
+
+ResponseFormattingMixin handles the OUTPUT side of tool execution:
+- Generating standardized instructions for AI models
+- Formatting responses for consistency
+- Post-processing hooks for response customization
+- Web search and language instruction generation
+
+This mixin is INDEPENDENT of the core interface and model management,
+allowing response formatting logic to evolve without affecting other concerns.
+
+DESIGN RATIONALE:
+=================
+
+**Why Separate from base_tool_core.py?**
+- Different concern: Response formatting vs. core interface
+- Independent evolution: Formatting logic changes frequently
+- Size: 168 lines is substantial enough for its own module
+- Testability: Response formatting can be tested independently
+- Decision: MAINTAIN SEPARATION (Phase 6.3 - 2025-11-01)
+
+**Why Not Merge with base_tool.py?**
+- Keeps composition orchestrator (base_tool.py) focused
+- Response formatting is an implementation detail, not composition logic
+- Allows future tools to override formatting without touching core
+
+INSTRUCTION GENERATION:
+=======================
+
+**Web Search Instructions:**
+- Standardized instructions for when web search is enabled
+- Tool-specific guidance can be added via tool_specific parameter
+- Consistent format across all tools for AI model clarity
+
+**Language Instructions:**
+- Generates language-specific instructions for code generation
+- Supports multiple programming languages
+- Extensible for new languages without modifying core logic
+
+RESPONSE FORMATTING HOOKS:
+==========================
+
+**format_response():**
+- Default implementation returns response as-is
+- Tools can override to customize response formatting
+- Useful for adding metadata, formatting code blocks, etc.
+
+**parse_response():**
+- Hook for parsing AI model responses
+- Default implementation returns response unchanged
+- Tools can override for custom parsing logic
 
 Key Components:
 - ResponseFormattingMixin: Handles response formatting and instruction generation

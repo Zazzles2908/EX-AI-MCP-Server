@@ -1,4 +1,4 @@
-# EX-AI MCP Server - Production-Ready v2.2
+# EX-AI MCP Server - Production-Ready v2.3
 
 ![Twin Entry-Points](https://img.shields.io/badge/twin--entry--points-safe-brightgreen)
 ![Tool Count](https://img.shields.io/badge/tools-29-blue)
@@ -6,23 +6,25 @@
 ![Phase A](https://img.shields.io/badge/Phase%20A-Complete-brightgreen)
 ![Phase B](https://img.shields.io/badge/Phase%20B-Complete-brightgreen)
 ![Phase C](https://img.shields.io/badge/Phase%20C-Complete-brightgreen)
+![Phase 2.6-2.7](https://img.shields.io/badge/Phase%202.6--2.7-In%20Progress-blue)
 
-> **2025-10-13 System Stabilization & Optimization** 🎉
+> **2025-11-01 Phase 2.6-2.7: WebSocket → Supabase Realtime Migration** 🚀
 >
-> **Phase A (Stabilize) - COMPLETE ✅**
-> - ✅ **Auth Token Error Fixed**: Resolved intermittent auth warnings
-> - ✅ **Critical Issues #7-10 Fixed**: Progress reports, file embedding, model auto-upgrade
-> - ✅ **System Stability Verified**: 24-hour stability test passed, 100% test success rate
+> **Phase 2.6-2.7 Strategy - APPROVED ✅**
+> - ✅ **Gradual Rollout Approach**: 8-week migration timeline (10% → 50% → 100%)
+> - ✅ **Dual-Write Pattern**: Zero data loss guarantee with validation pipeline
+> - ✅ **Circuit Breaker Safety**: Automated rollback within 30 seconds on failures
+> - ✅ **Event Classification**: Critical events migrate first, informational events follow
+> - ✅ **Dashboard Integration**: Supabase Realtime + feature flags for seamless transition
+> - ✅ **EXAI Validation**: Kimi thinking model analysis confirms strategy is optimal
 >
-> **Phase B (Cleanup) - COMPLETE ✅**
-> - ✅ **WorkflowTools Validated**: Critical daemon deadlock fixed, 5+ tools verified functional
-> - ✅ **Integration Tests**: 5/5 tests passing (100% success rate)
-> - ✅ **Multi-Provider Support**: GLM and Kimi both working seamlessly
->
-> **Phase C (Optimize) - COMPLETE ✅**
-> - ✅ **Performance Benchmarking**: Baseline established, no critical bottlenecks found
-> - ✅ **Documentation Consolidation**: Master index created, clear navigation, quick reference card
-> - ✅ **Testing Coverage**: Pragmatic completion, 38% coverage (up from 24%), utility tools 100% tested
+> **Key Achievements (Phase 2.0-2.5):**
+> - ✅ **Supabase Integration**: Complete monitoring schema with Realtime support
+> - ✅ **Metrics Persistence**: Resilient metrics collection with dead-letter queue
+> - ✅ **Dashboard Endpoints**: 5 REST endpoints for monitoring data access
+> - ✅ **Resilience Patterns**: Circuit breakers, retry logic, graceful degradation
+> - ✅ **Semantic Cache**: Integration with request router for performance optimization
+> - ✅ **Data Validation**: Comprehensive framework for event stream validation
 >
 > **Previous Achievements (2025-09-30):**
 > - ✅ **request_handler.py**: 1,345 → 160 lines (88% reduction)
@@ -32,11 +34,12 @@
 >
 > **Architecture:**
 > - GLM-first MCP WebSocket daemon with intelligent AI Manager routing
+> - Supabase Realtime for scalable event distribution (Phase 2.6+)
 > - Provider-native web browsing via GLM tools schema
 > - Kimi focused on file operations and document analysis
 > - Lean, modular codebase with thin orchestrator pattern
 > - Streaming via provider SSE flag, opt-in through env
-> - Observability to .logs/ (JSONL usage/errors)
+> - Observability to .logs/ (JSONL usage/errors) + Supabase monitoring schema
 >
 
 
@@ -63,8 +66,40 @@ A production-ready MCP (Model Context Protocol) server with intelligent routing 
 - **[docs/01_Core_Architecture/](docs/01_Core_Architecture/)** - System overview, SDK integration, Supabase audit trail
 - **[docs/02_Service_Components/](docs/02_Service_Components/)** - Daemon, Docker, MCP server, testing, UI, EXAI tools
 - **[docs/03_Data_Management/](docs/03_Data_Management/)** - User auth, tools/functions, file storage
-- **[docs/fix_implementation/](docs/fix_implementation/)** - Current work, fixes, roadmaps, progress tracking
+- **[docs/05_CURRENT_WORK/](docs/05_CURRENT_WORK/)** - Active implementation phases, strategic plans, completion reports
 - **[docs/guides/](docs/guides/)** - How-to guides and best practices
+
+### 🚀 Phase 2.6-2.7: WebSocket → Supabase Realtime Migration
+
+**Status**: 📋 **STRATEGY APPROVED & READY FOR IMPLEMENTATION**
+
+**Strategic Approach**: Gradual rollout with circuit breakers (8-week timeline)
+
+**Key Components**:
+1. **Event Classification System** - Categorize events by criticality (critical → informational → legacy)
+2. **Dual-Write Pattern** - Write to both WebSocket and Supabase simultaneously for zero data loss
+3. **Data Validation Pipeline** - Compare event streams hourly, detect discrepancies, trigger alerts
+4. **Automated Rollback** - Circuit breakers revert to WebSocket within 30 seconds on failures
+5. **Dashboard Integration** - Supabase Realtime + feature flags for seamless UI transition
+
+**Timeline**:
+- **Week 1-2**: Event classification + dual-write pattern
+- **Week 3-4**: Canary deployment (10% → 50% rollout)
+- **Week 5-6**: Dashboard integration + testing
+- **Week 7-8**: Full rollout (100%) + optimization
+
+**Documentation**:
+- [PHASE2_6_7_EXECUTIVE_SUMMARY__2025-11-01.md](docs/05_CURRENT_WORK/2025-11-01/PHASE2_6_7_EXECUTIVE_SUMMARY__2025-11-01.md) - Strategic overview
+- [PHASE2_6_7_STRATEGIC_IMPLEMENTATION_PLAN__2025-11-01.md](docs/05_CURRENT_WORK/2025-11-01/PHASE2_6_7_STRATEGIC_IMPLEMENTATION_PLAN__2025-11-01.md) - Detailed implementation plan
+- [KIMI_THINKING_ANALYSIS_SOLO_DEVELOPER_CONTEXT__2025-11-01.md](docs/05_CURRENT_WORK/2025-11-01/KIMI_THINKING_ANALYSIS_SOLO_DEVELOPER_CONTEXT__2025-11-01.md) - EXAI validation
+
+**Why This Strategy is Optimal**:
+- ✅ **Risk Mitigation**: Limits blast radius to 10% initially
+- ✅ **Data Integrity**: Dual-write ensures zero data loss
+- ✅ **Performance Validation**: Real-world data guides optimization
+- ✅ **User Experience**: Transparent rollout maintains trust
+- ✅ **Quick Recovery**: Feature flags enable instant rollback
+- ✅ **Timeline**: 8 weeks vs months for alternatives
 
 ---
 
