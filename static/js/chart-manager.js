@@ -180,7 +180,68 @@ class ChartManager {
             } catch (error) {
                 console.error('[CHARTS] Failed to create error rate chart:', error);
             }
-            
+
+            // DAY 1 (2025-11-03): Adaptive Timeout Accuracy Chart
+            try {
+                this.charts.timeoutAccuracy = new Chart(document.getElementById('timeoutAccuracyChart'), {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Predicted vs Actual',
+                            data: [],
+                            backgroundColor: '#667eea80',
+                            borderColor: '#667eea',
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 0 },
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: {
+                                    display: true,
+                                    text: 'Predicted Timeout (s)',
+                                    color: '#e0e0e0'
+                                },
+                                grid: { color: '#2a2f4a' },
+                                ticks: { color: '#a0a0a0' }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Actual Duration (s)',
+                                    color: '#e0e0e0'
+                                },
+                                grid: { color: '#2a2f4a' },
+                                ticks: { color: '#a0a0a0' }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: { color: '#e0e0e0' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const point = context.parsed;
+                                        const accuracy = ((point.y / point.x) * 100).toFixed(1);
+                                        return `Predicted: ${point.x}s, Actual: ${point.y}s (${accuracy}% accuracy)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log('[CHARTS] Timeout accuracy chart created successfully');
+            } catch (error) {
+                console.error('[CHARTS] Failed to create timeout accuracy chart:', error);
+            }
+
             console.log('[CHARTS] All charts initialized successfully');
             return true;
             
@@ -337,7 +398,38 @@ class ChartManager {
         if (this.charts.error.data.datasets[0].data.length > this.MAX_CHART_POINTS) {
             this.charts.error.data.datasets[0].data.shift();
         }
-        
+
+        // DAY 1 (2025-11-03): Update Adaptive Timeout Accuracy chart
+        // Look for events with adaptive_timeout metadata
+        const timeoutEvents = events.filter(e =>
+            e.metadata &&
+            e.metadata.adaptive_timeout &&
+            e.metadata.adaptive_timeout_ms
+        );
+
+        timeoutEvents.forEach(event => {
+            const metadata = event.metadata;
+            const actualDuration = metadata.adaptive_timeout_ms / 1000; // Convert to seconds
+
+            // Try to get predicted timeout from metadata
+            // This would come from the estimate API or adaptive timeout engine
+            let predictedTimeout = metadata.predicted_timeout_s || metadata.timeout_s;
+
+            // If no predicted timeout, skip this event
+            if (!predictedTimeout) return;
+
+            // Add data point: {x: predicted, y: actual}
+            this.charts.timeoutAccuracy.data.datasets[0].data.push({
+                x: predictedTimeout,
+                y: actualDuration
+            });
+
+            // Keep only last MAX_CHART_POINTS
+            if (this.charts.timeoutAccuracy.data.datasets[0].data.length > this.MAX_CHART_POINTS) {
+                this.charts.timeoutAccuracy.data.datasets[0].data.shift();
+            }
+        });
+
         // Update all charts
         Object.values(this.charts).forEach(chart => chart.update('none'));
         this.lastChartUpdate = now;

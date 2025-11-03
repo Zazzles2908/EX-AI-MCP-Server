@@ -24,6 +24,9 @@ load_env()
 # Import TimeoutConfig for coordinated timeout hierarchy
 from config import TimeoutConfig
 
+# Import adaptive timeout engine (Day 0 - 2025-11-03)
+from src.core.adaptive_timeout import get_engine, is_adaptive_timeout_enabled
+
 import websockets
 from mcp.server import Server
 from mcp.types import Tool, TextContent
@@ -533,7 +536,27 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextCon
         }))
         # Read until matching request_id with timeout
         # Use coordinated timeout hierarchy: shim timeout = 2x workflow tool timeout
-        timeout_s = float(TimeoutConfig.get_shim_timeout())  # Auto-calculated (default: 240s)
+        # Day 0 (2025-11-03): Add adaptive timeout support with feature flag
+        base_timeout_s = float(TimeoutConfig.get_shim_timeout())  # Auto-calculated (default: 240s)
+
+        if is_adaptive_timeout_enabled():
+            # Use adaptive timeout based on model performance
+            model_name = arguments.get("model", "unknown")
+            adaptive_engine = get_engine()
+            timeout_s, timeout_metadata = adaptive_engine.get_adaptive_timeout_safe(
+                model=model_name,
+                base_timeout=int(base_timeout_s),
+                apply_burst=True
+            )
+            timeout_s = float(timeout_s)
+            logger.info(
+                f"Adaptive timeout for {name} (model={model_name}): {timeout_s}s "
+                f"(source={timeout_metadata['source']}, confidence={timeout_metadata['confidence']:.2f})"
+            )
+        else:
+            # Use static timeout (legacy behavior)
+            timeout_s = base_timeout_s
+
         ack_grace = float(os.getenv("EXAI_SHIM_ACK_GRACE_SECS", "30"))
         deadline = asyncio.get_running_loop().time() + timeout_s
         while True:

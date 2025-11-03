@@ -379,8 +379,14 @@
                 <canvas id="errorChart"></canvas>
             </div>
         </div>
+        <div class="chart-card">
+            <h3>⏱️ Adaptive Timeout Accuracy</h3>
+            <div class="chart-container">
+                <canvas id="timeoutAccuracyChart"></canvas>
+            </div>
+        </div>
     </div>
-    
+
     <div class="event-log">
         <h2 style="color: #667eea; margin-bottom: 15px;">Recent Events</h2>
         <div id="eventLog"></div>
@@ -400,7 +406,8 @@
             events: null,
             response: null,
             throughput: null,
-            error: null
+            error: null,
+            timeoutAccuracy: null  // DAY 1 (2025-11-03): Adaptive Timeout Chart
         };
         const charts = window.charts; // Local reference for convenience
 
@@ -833,7 +840,8 @@
                 events: !!document.getElementById('eventsChart'),
                 response: !!document.getElementById('responseChart'),
                 throughput: !!document.getElementById('throughputChart'),
-                error: !!document.getElementById('errorChart')
+                error: !!document.getElementById('errorChart'),
+                timeoutAccuracy: !!document.getElementById('timeoutAccuracyChart')  // DAY 1 (2025-11-03)
             };
             console.log('[INIT] Canvas elements exist:', canvasCheck);
 
