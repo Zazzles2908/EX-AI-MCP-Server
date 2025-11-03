@@ -109,6 +109,7 @@ SESSION_ID = os.getenv("EXAI_SESSION_ID", str(uuid.uuid4()))
 EXAI_WS_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
 EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8079"))
 EXAI_WS_TOKEN = os.getenv("EXAI_WS_TOKEN", "")
+EXAI_JWT_TOKEN = os.getenv("EXAI_JWT_TOKEN", "")  # JWT authentication (added 2025-11-03)
 
 # Setup logging with instance-specific log file
 # CRITICAL FIX (2025-10-27): Each MCP instance needs its own log file to prevent race conditions
@@ -147,6 +148,12 @@ else:
     logger.warning("[AUTH] No auth token configured (EXAI_WS_TOKEN is empty). "
                    "If daemon requires auth, connections will fail. "
                    "Set EXAI_WS_TOKEN in .env file to match daemon's token.")
+
+# JWT authentication status (added 2025-11-03)
+if EXAI_JWT_TOKEN:
+    logger.info(f"[JWT_AUTH] JWT token configured (length: {len(EXAI_JWT_TOKEN)} chars)")
+else:
+    logger.info("[JWT_AUTH] No JWT token configured - using legacy auth only")
 MAX_MSG_BYTES = int(os.getenv("EXAI_WS_MAX_BYTES", str(32 * 1024 * 1024)))
 PING_INTERVAL = int(os.getenv("EXAI_WS_PING_INTERVAL", "45"))
 # CRITICAL FIX (2025-10-27): Changed default from 30 to 240 to match .env.docker
@@ -430,12 +437,16 @@ async def _ensure_ws():
                     open_timeout=EXAI_WS_HANDSHAKE_TIMEOUT,
                 )
 
-                # Hello handshake
-                await _ws.send(json.dumps({
+                # Hello handshake (with JWT support - added 2025-11-03)
+                hello_msg = {
                     "op": "hello",
                     "session_id": SESSION_ID,
                     "token": EXAI_WS_TOKEN,
-                }))
+                }
+                # Add JWT token if available
+                if EXAI_JWT_TOKEN:
+                    hello_msg["jwt"] = EXAI_JWT_TOKEN
+                await _ws.send(json.dumps(hello_msg))
 
                 # Wait for ack
                 ack_raw = await asyncio.wait_for(_ws.recv(), timeout=EXAI_WS_HANDSHAKE_TIMEOUT)
