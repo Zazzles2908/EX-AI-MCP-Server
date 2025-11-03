@@ -108,11 +108,19 @@ class KimiModelProvider(OpenAICompatibleProvider):
     def _prefix_hash(self, messages: list[dict[str, Any]]) -> str:
         return kimi_chat.prefix_hash(messages)
 
-    def chat_completions_create(self, *, model: str, messages: list[dict[str, Any]], tools: Optional[list[Any]] = None, tool_choice: Optional[Any] = None, temperature: float = 0.6, **kwargs) -> dict:
+    # ❌ REMOVED (2025-11-03): get_thinking_config() method
+    # External AI fact-check: thinking_mode_config dict was fiction
+    # No special configuration needed - thinking mode works automatically
+
+    def chat_completions_create(self, *, model: str, messages: list[dict[str, Any]], tools: Optional[list[Any]] = None, tool_choice: Optional[Any] = None, temperature: float = 0.6, thinking_enabled: bool = False, **kwargs) -> dict:
         """
         Wrapper that injects idempotency and Kimi context-cache headers, captures cache token, and returns normalized dict.
 
         PHASE 2.2.4 (2025-10-21): Updated to use session-managed wrapper for concurrent request handling.
+        CRITICAL FIX (2025-11-02): Added thinking_enabled parameter for kimi-thinking-preview support.
+
+        Args:
+            thinking_enabled: Enable thinking mode for models that support it
         """
         return kimi_chat.chat_completions_create_with_session(
             self.client,
@@ -121,6 +129,7 @@ class KimiModelProvider(OpenAICompatibleProvider):
             tools=tools,
             tool_choice=tool_choice,
             temperature=temperature,
+            thinking_enabled=thinking_enabled,  # CRITICAL FIX: Pass through thinking mode
             **kwargs
         )
 

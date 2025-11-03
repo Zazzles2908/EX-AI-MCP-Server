@@ -979,14 +979,19 @@ class SupabaseStorageManager:
         try:
             client = self.get_client()
 
-            # Build batch data
+            # Build batch data with unique constraint handling
             batch_data = [
                 {"conversation_id": conversation_id, "file_id": file_id}
                 for file_id in file_ids
             ]
 
-            # Use upsert to handle duplicates
-            result = client.table("conversation_files").upsert(batch_data).execute()
+            # CRITICAL FIX (2025-11-02): Use upsert with explicit on_conflict to prevent error 21000
+            # This ensures duplicates are ignored rather than causing "cannot affect row a second time"
+            result = client.table("conversation_files").upsert(
+                batch_data,
+                on_conflict='conversation_id,file_id',  # Composite unique constraint
+                ignore_duplicates=True  # Don't update existing links
+            ).execute()
 
             success_count = len(result.data) if result.data else 0
             logger.info(f"[BATCH_LINK] Linked {success_count}/{len(file_ids)} files to conversation {conversation_id}")
@@ -994,6 +999,23 @@ class SupabaseStorageManager:
             return {"success": success_count, "errors": []}
 
         except Exception as e:
+            # Enhanced error handling for specific PostgreSQL errors
+            error_str = str(e).lower()
+            if "21000" in error_str or "cannot affect row a second time" in error_str:
+                # Fallback: Try individual links to identify problematic ones
+                logger.warning(f"[BATCH_LINK] Batch failed due to duplicates, falling back to individual links")
+                success_count = 0
+                errors = []
+
+                for file_id in file_ids:
+                    try:
+                        if self.link_file_to_conversation(conversation_id, file_id):
+                            success_count += 1
+                    except Exception as individual_error:
+                        errors.append(f"file_id {file_id}: {individual_error}")
+
+                return {"success": success_count, "errors": errors}
+
             logger.error(f"[BATCH_LINK] Failed to batch link files: {e}")
             return {"success": 0, "errors": [str(e)]}
 

@@ -91,9 +91,11 @@ class ExpertAnalysisMixin:
             return False
         
         # Default logic for tools that support expert analysis
+        # FIXED (2025-11-03): Changed findings threshold from >= 2 to >= 1
+        # Even a single meaningful finding warrants expert validation
         return (
             len(consolidated_findings.relevant_files) > 0
-            or len(consolidated_findings.findings) >= 2
+            or len(consolidated_findings.findings) >= 1  # Changed from >= 2
             or len(consolidated_findings.issues_found) > 0
         )
 
@@ -484,11 +486,16 @@ class ExpertAnalysisMixin:
             # CRITICAL FIX (2025-10-21): Strengthen JSON enforcement with explicit schema
             # EXAI INSIGHT: Previous enforcement was too weak - models still returned conversational text
             # Solution: Provide explicit JSON schema and examples
+            # REVISION (2025-11-02): Further strengthened with explicit warnings and examples
             json_enforcement = (
                 "\n\n" + "="*80 + "\n"
                 "CRITICAL OUTPUT FORMAT REQUIREMENT - READ CAREFULLY\n"
                 "="*80 + "\n\n"
-                "You MUST respond with ONLY a valid JSON object. No other text is allowed.\n\n"
+                "⚠️ MANDATORY: You MUST respond with ONLY a valid JSON object. No other text is allowed.\n"
+                "❌ DO NOT include any explanatory text before or after the JSON\n"
+                "❌ DO NOT wrap the JSON in markdown code blocks\n"
+                "❌ DO NOT add any conversational text\n"
+                "✅ ONLY output the raw JSON object\n\n"
                 "REQUIRED JSON SCHEMA:\n"
                 "{\n"
                 '  "analysis": "Your detailed analysis here",\n'

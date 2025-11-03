@@ -204,7 +204,7 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
     "kimi-thinking-preview": ModelCapabilities(
         provider=ProviderType.KIMI,
         model_name="kimi-thinking-preview",
-        friendly_name="Kimi",
+        friendly_name="Kimi Thinking",
         context_window=131072,  # 128K = 131072 tokens
         max_output_tokens=8192,
         supports_images=True,
@@ -212,8 +212,13 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_function_calling=True,
         supports_streaming=True,
         supports_system_prompts=True,
-        supports_extended_thinking=True,
-        description="Kimi multimodal reasoning 128k",
+        supports_extended_thinking=True,  # ✅ KEEP: Model DOES support extended thinking
+        description="Kimi multimodal reasoning 128k with extended thinking (reasoning_content field)",
+        # ❌ REMOVED (2025-11-03): thinking_mode_config dict was fiction
+        # External AI fact-check: X-Moonshot-Thinking header does NOT exist
+        # Thinking mode works automatically - no special headers needed
+        # Response field is 'reasoning_content' (returned automatically)
+        aliases=["kimi-thinking"],
     ),
 }
 

@@ -160,6 +160,9 @@ class ModelCapabilities:
 
     # Thinking mode support (for models with thinking capabilities)
     max_thinking_tokens: int = 0  # Maximum thinking tokens for extended reasoning models
+    # ❌ REMOVED (2025-11-03): thinking_mode_config field
+    # External AI fact-check: This was fiction - no special config needed
+    # Thinking mode works automatically with kimi-thinking-preview
 
     # Custom model flag (for models that only work with custom endpoints)
     is_custom: bool = False  # Whether this model requires custom API endpoints

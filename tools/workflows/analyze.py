@@ -68,6 +68,8 @@ class AnalyzeTool(WorkflowTool):
             "Step 1: YOU analyze the code using view/codebase-retrieval\n"
             "  - Explore codebase structure and organization\n"
             "  - Identify architectural patterns and design decisions\n"
+            "  - Pass relevant_files (absolute paths) for context\n"
+            "  - Optionally include images (diagrams, mockups) for visual context\n"
             "  - Assess code quality and maintainability\n"
             "  - Note performance characteristics\n"
             "  - Understand business logic and data flow\n"

@@ -45,9 +45,9 @@ ENV PATH=/root/.local/bin:$PATH
 COPY src/ ./src/
 COPY tools/ ./tools/
 COPY utils/ ./utils/
-COPY systemprompts/ ./systemprompts/
+# COPY systemprompts/ ./systemprompts/  # REMOVED - directory doesn't exist (prompts are in src/prompts)
 COPY configurations/ ./configurations/
-COPY streaming/ ./streaming/
+# COPY streaming/ ./streaming/  # REMOVED - directory doesn't exist (2025-11-02)
 COPY scripts/ws/ ./scripts/ws/
 COPY scripts/runtime/ ./scripts/runtime/
 COPY static/ ./static/

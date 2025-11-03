@@ -529,9 +529,16 @@ class DocgenTool(WorkflowTool):
 
     def should_skip_expert_analysis(self, request, consolidated_findings) -> bool:
         """
-        Docgen tool skips expert analysis when the CLI agent has "certain" confidence.
+        Docgen tool expert analysis decision.
+
+        FIXED (2025-11-03): Removed confidence-based skipping logic that caused empty responses.
+        Now never skips expert analysis based on confidence level.
+        User can still disable expert analysis per-call with use_assistant_model=false parameter.
         """
-        return request.confidence == "certain" and not request.next_step_required
+        # REMOVED: Confidence-based skipping that caused empty responses
+        # Old logic: return request.confidence == "certain" and not request.next_step_required
+        # This caused tools to return zero-value responses when confidence was high
+        return False  # Never skip expert analysis based on confidence
 
     # Override inheritance hooks for docgen-specific behavior
 

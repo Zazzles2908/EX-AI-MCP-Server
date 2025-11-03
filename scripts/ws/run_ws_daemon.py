@@ -32,7 +32,7 @@ from src.middleware.correlation import setup_correlation_logging
 
 async def main_with_monitoring():
     """
-    Start WebSocket daemon, monitoring server, health server, metrics server, and AI auditor concurrently.
+    Start WebSocket daemon, monitoring server, health server, metrics server, AI auditor, and lifecycle manager concurrently.
     Uses asyncio.gather to run all servers in parallel.
 
     PHASE 3 CRITICAL GAPS (2025-10-18):
@@ -43,10 +43,27 @@ async def main_with_monitoring():
 
     PHASE 0.1 (2025-10-24):
     - Added AI Auditor service for real-time system observation
+
+    PHASE 2 HIGH (2025-11-02):
+    - Added FileLifecycleManager for periodic file cleanup
     """
     # Setup correlation ID logging
     setup_correlation_logging()
     logger.info("[MAIN] Correlation ID logging configured")
+
+    # PHASE 2 HIGH (2025-11-02): Initialize FileLifecycleManager
+    lifecycle_manager = None
+    try:
+        from src.file_management.lifecycle_manager import FileLifecycleManager
+        from src.storage.supabase_singleton import get_supabase_client
+
+        supabase_client = get_supabase_client(use_admin=True)
+        lifecycle_manager = FileLifecycleManager(supabase_client)
+        await lifecycle_manager.start()
+        logger.info("[MAIN] FileLifecycleManager started successfully")
+    except Exception as e:
+        logger.error(f"[MAIN] Failed to start FileLifecycleManager: {e}", exc_info=True)
+        logger.warning("[MAIN] Daemon will start but file cleanup will not run automatically")
 
     # Check if monitoring is enabled
     monitoring_enabled = os.getenv("MONITORING_ENABLED", "true").lower() in ("true", "1", "yes")
@@ -162,8 +179,13 @@ async def main_with_monitoring():
         logger.error(f"[MAIN] Traceback: {traceback.format_exc()}")
         raise
     finally:
-        # PHASE 3 FIX (2025-11-01): Removed cache metrics collector (deleted)
-        pass
+        # PHASE 2 HIGH (2025-11-02): Stop FileLifecycleManager gracefully
+        if lifecycle_manager:
+            try:
+                await lifecycle_manager.stop()
+                logger.info("[MAIN] FileLifecycleManager stopped successfully")
+            except Exception as e:
+                logger.error(f"[MAIN] Error stopping FileLifecycleManager: {e}", exc_info=True)
 
 
 def main():

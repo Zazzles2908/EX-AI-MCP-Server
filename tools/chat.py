@@ -66,6 +66,11 @@ class ChatRequest(ToolRequest):
     # Optional flags propagated to providers via capability layer and env-gated streaming
     use_websearch: Optional[bool] = Field(default=True, description="Enable provider-native web browsing when available")
     stream: Optional[bool] = Field(default=None, description="Request streaming when supported; env-gated per provider")
+    # CRITICAL FIX (2025-11-02): Kimi thinking mode support for kimi-thinking-preview
+    kimi_thinking: Optional[str] = Field(default=None, description=(
+        "Enable extended thinking mode for reasoning models (kimi-thinking-preview). "
+        "Options: 'enabled' to activate, None/omit for normal mode."
+    ))
 
 
 class ChatTool(SimpleTool):
@@ -156,6 +161,7 @@ class ChatTool(SimpleTool):
                 "model": self.get_model_field_schema(),
                 "temperature": {"type": "number", "description": "Response creativity (0-1, default 0.5)", "minimum": 0, "maximum": 1},
                 "thinking_mode": {"type": "string", "enum": ["minimal", "low", "medium", "high", "max"], "description": "Thinking depth selector"},
+                "kimi_thinking": {"type": "string", "enum": ["enabled"], "description": "Enable extended thinking mode for kimi-thinking-preview model (CRITICAL FIX 2025-11-02)"},
                 "use_websearch": {"type": "boolean", "description": "Enable provider-native web browsing", "default": True},
                 "stream": {"type": "boolean", "description": "Request streaming when supported; env-gated per provider", "default": False},
                 "continuation_id": {"type": "string", "description": "Thread continuation ID for multi-turn conversations."},
@@ -239,6 +245,15 @@ class ChatTool(SimpleTool):
             # Surface a clear validation error; callers will see this as tool error
             raise ValueError(f"[chat:security] {e}")
 
+        # CRITICAL FIX (2025-11-02): Inject current date to prevent models defaulting to 2024
+        # This ensures models have accurate temporal context for all responses
+        from datetime import datetime
+        current_date = datetime.now().strftime("%B %d, %Y")
+        current_year = datetime.now().year
+
+        # Add date context to the beginning of the prompt
+        date_context = f"CURRENT DATE: {current_date} (Year {current_year}). "
+
         # BUG FIX #14 (2025-10-20): Remove legacy text-based conversation building
         # The request handler now provides conversation history via _messages parameter
         # which is passed directly to SDK providers (Kimi/GLM) in their native format.
@@ -277,7 +292,12 @@ class ChatTool(SimpleTool):
         # BUG FIX #14 (2025-10-20): No longer build text preface
         # Conversation history is provided via _messages parameter to SDK providers
         base_prompt = self.prepare_chat_style_prompt(request)
-        return base_prompt
+
+        # CRITICAL FIX (2025-11-02): Prepend date context to ensure models know current date
+        # This prevents responses defaulting to 2024 or other outdated dates
+        final_prompt = f"{date_context}{base_prompt}"
+
+        return final_prompt
 
     def format_response(self, response: str, request: ChatRequest, model_info: Optional[dict] = None) -> str:
         """

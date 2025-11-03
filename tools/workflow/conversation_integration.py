@@ -68,65 +68,63 @@ class ConversationIntegrationMixin:
     def _extract_clean_workflow_content_for_history(self, response_data: dict) -> str:
         """
         Extract clean content from workflow response suitable for conversation history.
-        
-        This method removes internal workflow metadata, continuation offers, and
-        status information that should not appear when the conversation is
-        reconstructed for expert models or other tools.
-        
+
+        CRITICAL FIX (2025-11-03): Changed from whitelist to blacklist approach.
+        Previous implementation was too aggressive and stripped out ALL tool-specific
+        analysis fields (investigation_status, complete_investigation, etc.), causing
+        Supabase to only store empty 83-byte responses instead of full analysis.
+
+        New approach: Preserve ALL fields except explicitly excluded internal metadata.
+        This ensures tool-specific analysis content is never lost while still removing
+        internal workflow control fields.
+
         Args:
             response_data: The full workflow response data
-        
+
         Returns:
             str: Clean content suitable for conversation history storage
         """
         # Create a clean copy with only essential content for conversation history
         clean_data = {}
-        
-        # Include core content if present
-        if "content" in response_data:
-            clean_data["content"] = response_data["content"]
-        
-        # Include expert analysis if present (but clean it)
-        if "expert_analysis" in response_data:
-            expert_analysis = response_data["expert_analysis"]
-            if isinstance(expert_analysis, dict):
-                # Only include the actual analysis content, not metadata
-                clean_expert = {}
-                if "raw_analysis" in expert_analysis:
-                    clean_expert["analysis"] = expert_analysis["raw_analysis"]
-                elif "content" in expert_analysis:
-                    clean_expert["analysis"] = expert_analysis["content"]
-                if clean_expert:
-                    clean_data["expert_analysis"] = clean_expert
-        
-        # Include findings/issues if present (core workflow output)
-        if "complete_analysis" in response_data:
-            complete_analysis = response_data["complete_analysis"]
-            if isinstance(complete_analysis, dict):
-                clean_complete = {}
-                # Include essential analysis data without internal metadata
-                for key in ["findings", "issues_found", "relevant_context", "insights"]:
-                    if key in complete_analysis:
-                        clean_complete[key] = complete_analysis[key]
-                if clean_complete:
-                    clean_data["analysis_summary"] = clean_complete
-        
-        # Include step information for context but remove internal workflow metadata
-        if "step_number" in response_data:
-            clean_data["step_info"] = {
-                "step": response_data.get("step", ""),
-                "step_number": response_data.get("step_number", 1),
-                "total_steps": response_data.get("total_steps", 1),
-            }
-        
-        # Exclude problematic fields that should never appear in conversation history:
-        # - continuation_id (confuses LLMs with old IDs)
-        # - status (internal workflow state)
-        # - next_step_required (internal control flow)
-        # - analysis_status (internal tracking)
-        # - file_context (internal optimization info)
-        # - required_actions (internal workflow instructions)
-        
+
+        # Define fields to explicitly exclude (internal workflow metadata)
+        excluded_fields = {
+            'continuation_id',  # confuses LLMs with old IDs
+            'status',           # internal workflow state
+            'next_step_required',  # internal control flow
+            'analysis_status',  # internal tracking
+            'file_context',     # internal optimization info
+            'required_actions', # internal workflow instructions
+            'metadata',         # internal tool metadata
+            'next_steps',       # internal guidance
+            'important_considerations',  # internal guidance
+            'content_type',     # internal formatting
+            'timeout_duration', # internal error info
+        }
+
+        # Include all fields except excluded ones (BLACKLIST approach)
+        for key, value in response_data.items():
+            if key not in excluded_fields:
+                clean_data[key] = value
+
+        # Special handling for expert_analysis to clean internal metadata
+        if "expert_analysis" in clean_data and isinstance(clean_data["expert_analysis"], dict):
+            expert_analysis = clean_data["expert_analysis"]
+            clean_expert = {}
+
+            # Only include the actual analysis content, not metadata
+            if "raw_analysis" in expert_analysis:
+                clean_expert["analysis"] = expert_analysis["raw_analysis"]
+            elif "content" in expert_analysis:
+                clean_expert["analysis"] = expert_analysis["content"]
+
+            # Preserve other expert analysis fields except internal ones
+            for key, value in expert_analysis.items():
+                if key not in {'status', 'error', 'debug_info', 'timeout_duration'}:
+                    clean_expert[key] = value
+
+            clean_data["expert_analysis"] = clean_expert
+
         return json.dumps(clean_data, indent=2, ensure_ascii=False)
     
     # ================================================================================

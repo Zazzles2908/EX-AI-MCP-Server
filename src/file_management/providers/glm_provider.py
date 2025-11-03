@@ -22,6 +22,7 @@ from src.file_management.exceptions import (
     FileNotFoundError,
     FileValidationError
 )
+from src.file_management.comprehensive_validator import ComprehensiveFileValidator
 from src.providers.glm import GLMModelProvider
 
 logger = logging.getLogger(__name__)
@@ -78,17 +79,37 @@ class GLMFileProvider:
             file_path_obj = Path(file_path)
             if not file_path_obj.exists():
                 raise FileNotFoundError(file_path=file_path)
-            
-            # Get file info
-            file_size = file_path_obj.stat().st_size
-            mime_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
-            
-            # Calculate SHA256
-            file_hash = await self._calculate_file_hash(file_path)
+
+            # CRITICAL SECURITY FIX (2025-11-02): Comprehensive file validation
+            validator = ComprehensiveFileValidator()
+            validation_result = await validator.validate(file_path)
+
+            if not validation_result.get("valid", False):
+                errors = validation_result.get("errors", ["Unknown validation error"])
+                raise FileValidationError(
+                    f"File validation failed: {', '.join(errors)}",
+                    "glm",
+                    "VALIDATION_FAILED"
+                )
+
+            # Use validation metadata (already calculated SHA256, MIME type, etc.)
+            validation_metadata = validation_result.get("metadata", {})
+            file_size = validation_metadata.get("size", file_path_obj.stat().st_size)
+            mime_type = validation_metadata.get("mime_type", "application/octet-stream")
+            file_hash = validation_metadata.get("sha256", "")
             
             # Upload to GLM
-            purpose = metadata.purpose or "agent"
-            
+            # CRITICAL FIX (2025-11-02): Changed default from 'agent' to 'file'
+            purpose = metadata.purpose or "file"
+
+            # Validate purpose (CRITICAL)
+            if purpose != "file":
+                raise FileValidationError(
+                    f"Invalid purpose: '{purpose}'. GLM only supports 'file'",
+                    "glm",
+                    "INVALID_PURPOSE"
+                )
+
             try:
                 provider_file_id = self.provider.upload_file(file_path, purpose=purpose)
             except FileNotFoundError as e:

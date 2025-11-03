@@ -250,9 +250,11 @@ class PrecommitTool(WorkflowTool):
             return False
 
         # Check if we have meaningful investigation data
+        # FIXED (2025-11-03): Changed findings threshold from >= 2 to >= 1
+        # Even a single meaningful finding warrants expert validation
         return (
             len(consolidated_findings.relevant_files) > 0
-            or len(consolidated_findings.findings) >= 2
+            or len(consolidated_findings.findings) >= 1  # Changed from >= 2
             or len(consolidated_findings.issues_found) > 0
         )
 
@@ -418,9 +420,16 @@ class PrecommitTool(WorkflowTool):
 
     def should_skip_expert_analysis(self, request, consolidated_findings) -> bool:
         """
-        Precommit workflow skips expert analysis when the CLI agent has "certain" confidence.
+        Precommit workflow expert analysis decision.
+
+        FIXED (2025-11-03): Removed confidence-based skipping logic that caused empty responses.
+        Now never skips expert analysis based on confidence level.
+        User can still disable expert analysis per-call with use_assistant_model=false parameter.
         """
-        return request.confidence == "certain" and not request.next_step_required
+        # REMOVED: Confidence-based skipping that caused empty responses
+        # Old logic: return request.confidence == "certain" and not request.next_step_required
+        # This caused tools to return zero-value responses when confidence was high
+        return False  # Never skip expert analysis based on confidence
 
     def store_initial_issue(self, step_description: str):
         """Store initial request for expert analysis."""

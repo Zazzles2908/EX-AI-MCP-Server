@@ -275,6 +275,10 @@ class SupabaseConversationMemory:
             logger.error(f"[BACKGROUND_WRITE] Error adding turn to {continuation_id}: {e}")
 
     def _is_duplicate_message(self, conversation_id: str, content: str, role: str, limit: int = 10) -> bool:
+        # CRITICAL FIX (2025-11-02): Only check for duplicates on assistant messages, never user messages
+        # User messages were being incorrectly flagged as duplicates, causing message imbalance in Supabase
+        if role != 'assistant':
+            return False
         """
         Check if this message was recently saved to prevent duplicates.
 

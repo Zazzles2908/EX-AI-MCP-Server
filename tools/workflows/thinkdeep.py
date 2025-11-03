@@ -256,9 +256,16 @@ class ThinkDeepTool(WorkflowTool):
 
     def should_skip_expert_analysis(self, request, consolidated_findings) -> bool:
         """
-        ThinkDeep tool skips expert analysis when the CLI agent has "certain" confidence.
+        ThinkDeep tool expert analysis decision.
+
+        FIXED (2025-11-03): Removed confidence-based skipping logic that caused empty responses.
+        Now never skips expert analysis based on confidence level.
+        User can still disable expert analysis per-call with use_assistant_model=false parameter.
         """
-        return request.confidence == "certain" and not request.next_step_required
+        # REMOVED: Confidence-based skipping that caused empty responses
+        # Old logic: return request.confidence == "certain" and not request.next_step_required
+        # This caused tools to return zero-value responses when confidence was high
+        return False  # Never skip expert analysis based on confidence
 
     def get_completion_status(self) -> str:
         """ThinkDeep tools use thinking-specific status."""
@@ -526,7 +533,11 @@ but also acknowledge strong insights and valid conclusions.
 
     def should_call_expert_analysis(self, consolidated_findings, request=None) -> bool:
         """
-        Determine if expert analysis should be called based on confidence and completion.
+        Determine if expert analysis should be called based on completion.
+
+        FIXED (2025-11-03): Removed confidence-based skipping logic that caused empty responses.
+        Now always calls expert analysis when investigation is complete, regardless of confidence level.
+        User can still disable expert analysis per-call with use_assistant_model=false parameter.
         """
         # Short-circuit: If assistant model is disabled, do NOT call expert analysis
         try:
@@ -535,13 +546,9 @@ but also acknowledge strong insights and valid conclusions.
         except Exception:
             pass
 
-        if request:
-            try:
-                # Don't call expert analysis if confidence is "certain"
-                if request.confidence == "certain":
-                    return False
-            except AttributeError:
-                pass
+        # REMOVED: Confidence-based skipping that caused empty responses
+        # Old logic: if request.confidence == "certain": return False
+        # This caused tools to return zero-value responses when confidence was high
 
         # Call expert analysis if investigation is complete (when next_step_required is False)
         if request:
@@ -551,9 +558,11 @@ but also acknowledge strong insights and valid conclusions.
                 pass
 
         # Fallback: call expert analysis if we have meaningful findings
+        # FIXED (2025-11-03): Changed findings threshold from >= 2 to >= 1
+        # Even a single meaningful finding warrants expert validation
         return (
             len(consolidated_findings.relevant_files) > 0
-            or len(consolidated_findings.findings) >= 2
+            or len(consolidated_findings.findings) >= 1  # Changed from >= 2
             or len(consolidated_findings.issues_found) > 0
         )
 

@@ -64,6 +64,11 @@ aiohttp>=3.9.0  # HTTP server for health checks and metrics
 pybreaker>=1.0.0  # Circuit breaker pattern for external service calls
 
 # ============================================================================
+# SECURITY DEPENDENCIES (Batch 4.3 - 2025-11-02)
+# ============================================================================
+PyJWT>=2.8.0  # JWT authentication for WebSocket connections
+
+# ============================================================================
 # PERFORMANCE DEPENDENCIES (Phase 2 - 2025-10-28, Updated 2025-10-29)
 # ============================================================================
 xxhash>=3.0.0  # Fast hashing for message deduplication in resilient_websocket.py
