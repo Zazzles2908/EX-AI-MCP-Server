@@ -32,9 +32,13 @@ def build_websearch_provider_kwargs(
 
         logger.info(f"[WEBSEARCH_DEBUG] provider_type={provider_type}, use_websearch={use_websearch}, model_name={model_name}")
 
+        # CRITICAL FIX (2025-11-02): Ensure model_name is not empty string before passing to capabilities
+        # Empty model_name causes websearch schema to return empty tools
+        effective_model_name = model_name if model_name and model_name.strip() else None
+
         ws = caps.get_websearch_tool_schema({
             "use_websearch": bool(use_websearch),
-            "model_name": model_name
+            "model_name": effective_model_name
         })
 
         logger.info(f"[WEBSEARCH_DEBUG] ws.tools={ws.tools}, ws.tool_choice={ws.tool_choice}")

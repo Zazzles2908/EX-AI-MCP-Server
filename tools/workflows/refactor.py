@@ -237,20 +237,24 @@ class RefactorTool(WorkflowTool):
         """
         Decide when to call external model based on investigation completeness.
 
-        Don't call expert analysis if the CLI agent has certain or almost_certain confidence - trust their judgment.
+        FIXED (2025-11-03): Removed confidence-based skipping logic that caused empty responses.
+        Now always calls expert analysis when there's meaningful data, regardless of confidence level.
+        User can still disable expert analysis per-call with use_assistant_model=false parameter.
         """
         # Check if user requested to skip assistant model
         if request and not self.get_request_use_assistant_model(request):
             return False
 
-        # Check if refactoring work is complete with high confidence
-        if request and request.confidence in ["certain", "almost_certain"]:
-            return False
+        # REMOVED: Confidence-based skipping that caused empty responses
+        # Old logic: if request and request.confidence in ["certain", "almost_certain"]: return False
+        # This caused tools to return zero-value responses when confidence was high
 
-        # Check if we have meaningful investigation data
+        # Always call expert analysis if we have meaningful investigation data
+        # FIXED (2025-11-03): Changed findings threshold from >= 2 to >= 1
+        # Even a single meaningful finding warrants expert validation
         return (
             len(consolidated_findings.relevant_files) > 0
-            or len(consolidated_findings.findings) >= 2
+            or len(consolidated_findings.findings) >= 1  # Changed from >= 2
             or len(consolidated_findings.issues_found) > 0
         )
 
@@ -415,9 +419,11 @@ class RefactorTool(WorkflowTool):
 
     def should_skip_expert_analysis(self, request, consolidated_findings) -> bool:
         """
-        Refactor workflow skips expert analysis when the CLI agent has "certain" or "almost_certain" confidence.
+        FIXED (2025-11-03): Removed confidence-based skipping logic that caused empty responses.
+        Now never skips expert analysis based on confidence level.
+        User can still disable expert analysis per-call with use_assistant_model=false parameter.
         """
-        return request.confidence in ["certain", "almost_certain"] and not request.next_step_required
+        return False  # Never skip expert analysis based on confidence
 
     def store_initial_issue(self, step_description: str):
         """Store initial request for expert analysis."""

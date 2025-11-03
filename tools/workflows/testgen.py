@@ -460,9 +460,16 @@ class TestGenTool(WorkflowTool):
 
     def should_skip_expert_analysis(self, request, consolidated_findings) -> bool:
         """
-        Test generation workflow skips expert analysis when the CLI agent has "certain" confidence.
+        Test generation workflow expert analysis decision.
+
+        FIXED (2025-11-03): Removed confidence-based skipping logic that caused empty responses.
+        Now never skips expert analysis based on confidence level.
+        User can still disable expert analysis per-call with use_assistant_model=false parameter.
         """
-        return request.confidence == "certain" and not request.next_step_required
+        # REMOVED: Confidence-based skipping that caused empty responses
+        # Old logic: return request.confidence == "certain" and not request.next_step_required
+        # This caused tools to return zero-value responses when confidence was high
+        return False  # Never skip expert analysis based on confidence
 
     def store_initial_issue(self, step_description: str):
         """Store initial request for expert analysis."""

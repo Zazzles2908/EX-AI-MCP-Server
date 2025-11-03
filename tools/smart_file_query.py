@@ -67,6 +67,9 @@ from tools.monitoring.async_upload_metrics import get_metrics_collector, UploadM
 from src.security.rate_limiter import RateLimiter
 from src.security.audit_logger import AuditLogger
 
+# Batch 4.2 (2025-11-02): Path validation security
+from src.security.path_validator import get_global_validator, PathValidationError
+
 logger = logging.getLogger(__name__)
 
 
@@ -293,6 +296,18 @@ class SmartFileQueryTool(BaseTool):
 
         if was_converted:
             logger.info(f"[SMART_FILE_QUERY] Path converted: {file_path} → {normalized_path}")
+
+        # Batch 4.2: Security validation - check path against allowlist
+        path_validator = get_global_validator()
+        if path_validator:
+            try:
+                validated_path = path_validator.validate(normalized_path)
+                logger.info(f"[SMART_FILE_QUERY] Path validated: {validated_path}")
+            except PathValidationError as e:
+                logger.error(f"[SMART_FILE_QUERY] Path validation failed: {e}")
+                raise ValueError(f"Security: Path not allowed: {normalized_path}. Only paths within allowed prefixes are permitted.")
+        else:
+            logger.debug(f"[SMART_FILE_QUERY] Path validation disabled (EX_ALLOW_EXTERNAL_PATHS=true)")
 
         # Step 2: Check file exists and get size
         if not os.path.exists(normalized_path):

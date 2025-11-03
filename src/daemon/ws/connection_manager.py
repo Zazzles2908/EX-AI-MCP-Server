@@ -40,6 +40,9 @@ from utils.timezone_helper import log_timestamp
 # EXAI Consultation: 7e59bfd7-a9cc-4a19-9807-5ebd84082cab
 from src.utils.logging_utils import get_logger, SamplingLogger
 
+# Batch 4.3 (2025-11-02): JWT authentication
+from src.auth.jwt_validator import get_global_validator as get_jwt_validator
+
 logger = get_logger(__name__)
 
 # PHASE 3 (2025-10-28): Create sampling loggers with different rates for different operations
@@ -296,7 +299,7 @@ async def serve_connection(
                 cleanup_sampler.debug(f"Failed to send missing_hello error: {e}", key="cleanup")
             return
 
-        # Authenticate token
+        # Authenticate token (legacy EXAI_WS_TOKEN)
         token = hello.get("token", "") or ""  # PHASE 2.3 FIX (2025-10-25): Handle None token
         current_auth_token = await auth_token_manager.get()
         if current_auth_token and token != current_auth_token:
@@ -315,6 +318,35 @@ async def serve_connection(
             except Exception as e:
                 cleanup_sampler.debug(f"Failed to send unauthorized error: {e}", key="cleanup")
             return
+
+        # Batch 4.3 (2025-11-02): JWT authentication with grace period
+        jwt_validator = get_jwt_validator()
+        if jwt_validator:
+            jwt_token = hello.get("jwt", "") or ""
+            jwt_payload = jwt_validator.validate_token(jwt_token) if jwt_token else None
+
+            # Check if grace period is active
+            if jwt_validator.is_grace_period_active():
+                # Grace period: allow both JWT and legacy auth
+                if jwt_payload:
+                    logger.info(f"[JWT_AUTH] Valid JWT token (grace period active) - user: {jwt_payload.get('sub', 'unknown')}")
+                else:
+                    logger.info(f"[JWT_AUTH] No valid JWT token (grace period active) - allowing legacy auth")
+            else:
+                # Grace period ended: require JWT
+                if not jwt_payload:
+                    logger.warning(f"[JWT_AUTH] No valid JWT token and grace period ended - rejecting connection")
+                    try:
+                        await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "jwt_required"}, resilient_ws_manager=resilient_ws_manager)
+                        try:
+                            await ws.close(code=4003, reason="jwt_required")
+                        except Exception as e:
+                            cleanup_sampler.debug(f"Failed to close connection after jwt_required: {e}", key="cleanup")
+                    except Exception as e:
+                        cleanup_sampler.debug(f"Failed to send jwt_required error: {e}", key="cleanup")
+                    return
+                else:
+                    logger.info(f"[JWT_AUTH] Valid JWT token - user: {jwt_payload.get('sub', 'unknown')}")
 
         # Create session
         # MULTI-INSTANCE FIX (2025-10-26): Use client's session_id if provided and valid

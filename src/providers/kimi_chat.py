@@ -57,6 +57,7 @@ def chat_completions_create(
     max_output_tokens: Optional[int] = None,
     cache_id: Optional[str] = None,
     reset_cache_ttl: bool = False,
+    thinking_enabled: bool = False,  # CRITICAL FIX (2025-11-02): Enable thinking mode for kimi-thinking-preview
     **kwargs
 ) -> dict:
     """Wrapper that injects idempotency and Kimi context-cache headers, captures cache token, and returns normalized dict.
@@ -114,6 +115,11 @@ def chat_completions_create(
         if reset_cache_ttl:
             _safe_set("X-Msh-Context-Cache-Reset-TTL", "3600")
         logger.info(f"🔑 Kimi context cache: {cache_id} (reset_ttl={reset_cache_ttl})")
+
+    # ❌ REMOVED (2025-11-03): X-Moonshot-Thinking header DOES NOT EXIST
+    # External AI fact-check confirmed: No such header in Moonshot API docs
+    # Thinking mode works automatically with kimi-thinking-preview model
+    # Field name is 'reasoning_content' (returned automatically, no header needed)
 
     # Attach cached context token if available (legacy cache system)
     cache_token = None
@@ -294,6 +300,16 @@ def chat_completions_create(
                         content_text = ""
                 else:
                     content_text = ""
+
+                # ✅ FIXED (2025-11-03): Extract reasoning_content for kimi-thinking-preview
+                # Official field name is 'reasoning_content' (singular) per Moonshot API docs
+                # External AI fact-check: No need for triple fallback, single field only
+                reasoning_content = None
+                if msg:
+                    if hasattr(msg, "reasoning_content"):
+                        reasoning_content = msg.reasoning_content
+                    elif isinstance(msg, dict):
+                        reasoning_content = msg.get("reasoning_content")
             except ValueError as e:
                 # Re-raise validation errors - these indicate API problems
                 logger.error(f"Kimi API response validation failed (model: {model}): {e}")
@@ -474,6 +490,7 @@ def chat_completions_create(
         "provider": "KIMI",
         "model": model,
         "content": content_text or "",
+        "reasoning_content": locals().get('reasoning_content'),  # ✅ FIXED (2025-11-03): Correct field name per Moonshot API
         "tool_calls": tool_calls_data,  # Now properly extracted instead of hardcoded None
         "usage": _usage,
         "raw": getattr(raw_payload, "model_dump", lambda: raw_payload)() if hasattr(raw_payload, "model_dump") else raw_payload,
@@ -501,6 +518,7 @@ def chat_completions_create_with_continuation(
     max_output_tokens: Optional[int] = None,
     cache_id: Optional[str] = None,
     reset_cache_ttl: bool = False,
+    thinking_enabled: bool = False,  # CRITICAL FIX (2025-11-02): Pass through thinking mode
     enable_continuation: bool = True,
     max_continuation_attempts: int = 3,
     max_total_tokens: int = 32000,
@@ -543,6 +561,7 @@ def chat_completions_create_with_continuation(
         max_output_tokens=max_output_tokens,
         cache_id=cache_id,
         reset_cache_ttl=reset_cache_ttl,
+        thinking_enabled=thinking_enabled,  # CRITICAL FIX (2025-11-02): Pass through thinking mode
         **kwargs
     )
 
@@ -628,6 +647,7 @@ def chat_completions_create_with_session(
     max_output_tokens: Optional[int] = None,
     cache_id: Optional[str] = None,
     reset_cache_ttl: bool = False,
+    thinking_enabled: bool = False,  # CRITICAL FIX (2025-11-02): Pass through thinking mode
     enable_continuation: bool = True,
     max_continuation_attempts: int = 3,
     max_total_tokens: int = 32000,
@@ -683,6 +703,7 @@ def chat_completions_create_with_session(
             messages=messages,
             tools=tools,
             tool_choice=tool_choice,
+            thinking_enabled=thinking_enabled,  # CRITICAL FIX (2025-11-02): Pass through thinking mode
             temperature=temperature,
             max_output_tokens=max_output_tokens,
             cache_id=cache_id,

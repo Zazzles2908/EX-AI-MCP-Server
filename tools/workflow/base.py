@@ -464,9 +464,11 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
             True if expert analysis should be called
         """
         # Call expert analysis if we have relevant files or substantial findings
+        # FIXED (2025-11-03): Changed findings threshold from >= 2 to >= 1
+        # Even a single meaningful finding warrants expert validation
         return (
             len(consolidated_findings.relevant_files) > 0
-            or len(consolidated_findings.findings) >= 2
+            or len(consolidated_findings.findings) >= 1  # Changed from >= 2
             or len(consolidated_findings.issues_found) > 0
         )
 
