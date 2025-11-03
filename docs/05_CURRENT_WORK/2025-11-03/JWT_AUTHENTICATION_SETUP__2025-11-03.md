@@ -13,11 +13,13 @@ Added JWT (JSON Web Token) authentication support to the VSCode MCP client shim 
 
 ## 🔧 What Was Done
 
-### 1. Created JWT Token Generator Script ✅
-**File:** `scripts/generate_jwt_token.py`
+### 1. Created JWT Token Generator Scripts ✅
+**Files:**
+- `scripts/generate_jwt_token.py` - Single token generator
+- `scripts/generate_all_jwt_tokens.py` - Generate all three tokens at once
 
-A comprehensive script to generate JWT tokens with:
-- User ID (sub): jazeel@example.com
+**Features:**
+- User ID (sub): Unique per client
 - Issuer (iss): exai-mcp-server
 - Audience (aud): exai-mcp-client
 - Expiration: 365 days (configurable)
@@ -25,55 +27,75 @@ A comprehensive script to generate JWT tokens with:
 
 **Usage:**
 ```bash
-# Generate token for default user (expires in 365 days)
-python scripts/generate_jwt_token.py
+# Generate all tokens at once (recommended)
+python scripts/generate_all_jwt_tokens.py
 
-# Generate token for specific user (expires in 30 days)
-python scripts/generate_jwt_token.py --user-id jazeel@example.com --expires-days 30
-
-# Generate token that never expires (expires in 10 years)
-python scripts/generate_jwt_token.py --expires-days 3650
+# Generate single token for specific user
+python scripts/generate_jwt_token.py --user-id user@example.com --expires-days 365
 ```
 
-### 2. Generated JWT Token ✅
-**Token Details:**
-- User: jazeel@example.com
-- Expires: 2026-11-03 (1 year from now)
-- Issuer: exai-mcp-server
-- Audience: exai-mcp-client
-- Algorithm: HS256
+### 2. Generated Unique JWT Tokens for Each Client ✅
+**IMPORTANT:** Each MCP client has its own unique JWT token for better tracking and security.
 
-**Token:**
-```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqYXplZWxAZXhhbXBsZS5jb20iLCJpc3MiOiJleGFpLW1jcC1zZXJ2ZXIiLCJhdWQiOiJleGFpLW1jcC1jbGllbnQiLCJpYXQiOjE3NjIxMjQ3OTgsImV4cCI6MTc5MzY2MDc5OH0.kHUrEPaQfP3qo3m3s4hkABxto8p3CQXCHpjMFiGm1DQ
-```
+**VSCode Instance 1:**
+- User: vscode1@exai-mcp.local
+- Token: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ2c2NvZGUxQGV4YWktbWNwLmxvY2FsIiwiaXNzIjoiZXhhaS1tY3Atc2VydmVyIiwiYXVkIjoiZXhhaS1tY3AtY2xpZW50IiwiaWF0IjoxNzYyMTI1MDczLCJleHAiOjE3OTM2NjEwNzN9.ykhiz2bjw3GEXnAif_2CedGQqb2an4Qr0mmuIMsBZ3U`
+
+**VSCode Instance 2:**
+- User: vscode2@exai-mcp.local
+- Token: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ2c2NvZGUyQGV4YWktbWNwLmxvY2FsIiwiaXNzIjoiZXhhaS1tY3Atc2VydmVyIiwiYXVkIjoiZXhhaS1tY3AtY2xpZW50IiwiaWF0IjoxNzYyMTI1MDczLCJleHAiOjE3OTM2NjEwNzN9.gBhbfK5WHvgXrCVuDmL3hwFvVKQM1i0hsC9m1JDkPJo`
+
+**Claude Desktop:**
+- User: claude@exai-mcp.local
+- Token: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbGF1ZGVAZXhhaS1tY3AubG9jYWwiLCJpc3MiOiJleGFpLW1jcC1zZXJ2ZXIiLCJhdWQiOiJleGFpLW1jcC1jbGllbnQiLCJpYXQiOjE3NjIxMjUwNzMsImV4cCI6MTc5MzY2MTA3M30.hVzyioI0JRDgGnbVIq7NYZOsPiiOYjjuRXwAPBVtFn0`
+
+**All tokens expire:** 2026-11-03 (1 year)
 
 ### 3. Updated Configuration Files ✅
 
-#### `.env` - Added JWT Token
+#### `.env` - Added All JWT Tokens
 ```bash
 # JWT authentication (added 2025-11-03)
-# Generated with: python scripts/generate_jwt_token.py --user-id jazeel@example.com --expires-days 365
+# Generated with: python scripts/generate_all_jwt_tokens.py
 # Expires: 2026-11-03 (1 year)
-EXAI_JWT_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+# Each MCP client has its own unique JWT token for tracking
+
+# VSCode Instance 1 (vscode1@exai-mcp.local)
+EXAI_JWT_TOKEN_VSCODE1=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# VSCode Instance 2 (vscode2@exai-mcp.local)
+EXAI_JWT_TOKEN_VSCODE2=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Claude Desktop (claude@exai-mcp.local)
+EXAI_JWT_TOKEN_CLAUDE=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-#### `config/daemon/mcp-config.augmentcode.vscode1.json` - Added JWT Token
+#### `config/daemon/mcp-config.augmentcode.vscode1.json` - Added Unique JWT Token
 ```json
 {
   "env": {
     ...
-    "EXAI_JWT_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "EXAI_JWT_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ2c2NvZGUxQGV4YWktbWNwLmxvY2FsIi4uLg=="
   }
 }
 ```
 
-#### `config/daemon/mcp-config.augmentcode.vscode2.json` - Added JWT Token
+#### `config/daemon/mcp-config.augmentcode.vscode2.json` - Added Unique JWT Token
 ```json
 {
   "env": {
     ...
-    "EXAI_JWT_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "EXAI_JWT_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ2c2NvZGUyQGV4YWktbWNwLmxvY2FsIi4uLg=="
+  }
+}
+```
+
+#### `config/daemon/mcp-config.claude.json` - Added Unique JWT Token ✅ NEW
+```json
+{
+  "env": {
+    ...
+    "EXAI_JWT_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbGF1ZGVAZXhhaS1tY3AubG9jYWwiLi4uPQ=="
   }
 }
 ```
@@ -161,9 +183,22 @@ JWT_GRACE_PERIOD_DAYS=14  # Grace period for migration (0 = strict enforcement)
 ```
 
 ### After Changes (Expected)
+**VSCode Instance 1:**
 ```
 2025-11-03 21:XX:XX INFO scripts.runtime.run_ws_shim: [JWT_AUTH] JWT token configured (length: 205 chars)
-2025-11-03 21:XX:XX INFO src.daemon.ws.connection_manager: [JWT_AUTH] Valid JWT token (grace period active) - user: jazeel@example.com
+2025-11-03 21:XX:XX INFO src.daemon.ws.connection_manager: [JWT_AUTH] Valid JWT token (grace period active) - user: vscode1@exai-mcp.local
+```
+
+**VSCode Instance 2:**
+```
+2025-11-03 21:XX:XX INFO scripts.runtime.run_ws_shim: [JWT_AUTH] JWT token configured (length: 205 chars)
+2025-11-03 21:XX:XX INFO src.daemon.ws.connection_manager: [JWT_AUTH] Valid JWT token (grace period active) - user: vscode2@exai-mcp.local
+```
+
+**Claude Desktop:**
+```
+2025-11-03 21:XX:XX INFO scripts.runtime.run_ws_shim: [JWT_AUTH] JWT token configured (length: 205 chars)
+2025-11-03 21:XX:XX INFO src.daemon.ws.connection_manager: [JWT_AUTH] Valid JWT token (grace period active) - user: claude@exai-mcp.local
 ```
 
 ---
@@ -193,11 +228,13 @@ docker logs exai-mcp-daemon --tail 100 | Select-String "JWT_AUTH"
 
 ## 📋 Files Modified
 
-1. **scripts/generate_jwt_token.py** - NEW: JWT token generator script
-2. **.env** - Added EXAI_JWT_TOKEN
-3. **config/daemon/mcp-config.augmentcode.vscode1.json** - Added EXAI_JWT_TOKEN to env
-4. **config/daemon/mcp-config.augmentcode.vscode2.json** - Added EXAI_JWT_TOKEN to env
-5. **scripts/runtime/run_ws_shim.py** - Load and send JWT token in hello handshake
+1. **scripts/generate_jwt_token.py** - NEW: Single JWT token generator script
+2. **scripts/generate_all_jwt_tokens.py** - NEW: Generate all three tokens at once
+3. **.env** - Added EXAI_JWT_TOKEN_VSCODE1, EXAI_JWT_TOKEN_VSCODE2, EXAI_JWT_TOKEN_CLAUDE
+4. **config/daemon/mcp-config.augmentcode.vscode1.json** - Added unique EXAI_JWT_TOKEN for vscode1
+5. **config/daemon/mcp-config.augmentcode.vscode2.json** - Added unique EXAI_JWT_TOKEN for vscode2
+6. **config/daemon/mcp-config.claude.json** - Added unique EXAI_JWT_TOKEN for Claude Desktop
+7. **scripts/runtime/run_ws_shim.py** - Load and send JWT token in hello handshake
 
 ---
 
