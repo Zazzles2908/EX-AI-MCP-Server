@@ -75,6 +75,11 @@ xxhash>=3.0.0  # Fast hashing for message deduplication in resilient_websocket.p
 aiofiles>=23.2.0  # Async file operations to prevent event loop blocking
 
 # ============================================================================
+# ADAPTIVE TIMEOUT DEPENDENCIES (Day 0 - 2025-11-03)
+# ============================================================================
+numpy>=1.24.0  # Statistical calculations for adaptive timeout engine (P95, percentiles)
+
+# ============================================================================
 # CODE QUALITY DEPENDENCIES (2025-10-20, Updated 2025-10-27)
 # ============================================================================
 pyflakes>=3.0.0  # Static code analysis for finding bugs and code quality issues
