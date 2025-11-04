@@ -512,7 +512,8 @@ async def handle_list_tools() -> List[Tool]:
 
     ws = await _ensure_ws()
     logger.info(f"[LIST_TOOLS] Sending list_tools request to daemon")
-    await ws.send(json.dumps({"op": "list_tools"}))
+    req_id = str(uuid.uuid4())
+    await ws.send(json.dumps({"op": "list_tools", "request_id": req_id}))
 
     logger.info(f"[LIST_TOOLS] Waiting for daemon response...")
     raw = await ws.recv()
@@ -533,6 +534,7 @@ async def handle_list_tools() -> List[Tool]:
 
 @server.call_tool()
 async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
+    logger.info(f"[CALL_TOOL] ⚡ DECORATOR TRIGGERED! Tool: {name}, Args keys: {list(arguments.keys()) if arguments else []}")
     global _last_successful_call
     import time
 
@@ -540,9 +542,9 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextCon
         ws = await _ensure_ws()
         req_id = str(uuid.uuid4())
         await ws.send(json.dumps({
-            "op": "call_tool",
+            "op": "tool_call",  # Fixed: Changed from "call_tool" to match daemon expectation
             "request_id": req_id,
-            "name": name,
+            "tool": {"name": name},  # Fixed: Wrapped name in "tool" object as daemon expects
             "arguments": arguments or {},
         }))
         # Read until matching request_id with timeout
@@ -658,32 +660,56 @@ def main() -> None:
                 # CRITICAL FIX (2025-10-26): Use safe_stdio_server wrapper with retry logic
                 # This handles Windows OSError [Errno 22] when multiple VSCode instances start
                 async with safe_stdio_server() as (read_stream, write_stream):
-                    # Run server with shutdown monitoring
-                    server_task = asyncio.create_task(server.run(read_stream, write_stream, init_opts))
-                    shutdown_task = asyncio.create_task(_shutdown_event.wait())
+                    # Run server with shutdown monitoring and TaskGroup exception handling
+                    # FIX (2025-11-04): Wrap server.run() to catch TaskGroup exceptions
+                    # The MCP SDK's stdout_writer can crash with OSError [Errno 22] during operation
+                    try:
+                        server_task = asyncio.create_task(server.run(read_stream, write_stream, init_opts))
+                        shutdown_task = asyncio.create_task(_shutdown_event.wait())
 
-                    # Wait for either server completion or shutdown signal
-                    done, pending = await asyncio.wait(
-                        [server_task, shutdown_task],
-                        return_when=asyncio.FIRST_COMPLETED
-                    )
+                        # Wait for either server completion or shutdown signal
+                        done, pending = await asyncio.wait(
+                            [server_task, shutdown_task],
+                            return_when=asyncio.FIRST_COMPLETED
+                        )
 
-                    # If shutdown was triggered, cancel server
-                    if shutdown_task in done:
-                        logger.warning("[MAIN] Shutdown event triggered - cancelling server")
-                        server_task.cancel()
-                        try:
-                            await server_task
-                        except asyncio.CancelledError:
-                            pass
+                        # If shutdown was triggered, cancel server
+                        if shutdown_task in done:
+                            logger.warning("[MAIN] Shutdown event triggered - cancelling server")
+                            server_task.cancel()
+                            try:
+                                await server_task
+                            except asyncio.CancelledError:
+                                pass
 
-                    # Cancel pending tasks
-                    for task in pending:
-                        task.cancel()
-                        try:
-                            await task
-                        except asyncio.CancelledError:
-                            pass
+                        # Cancel pending tasks
+                        for task in pending:
+                            task.cancel()
+                            try:
+                                await task
+                            except asyncio.CancelledError:
+                                pass
+                    except BaseException as e:
+                        # Catch TaskGroup exceptions from server.run() operations
+                        # This handles OSError [Errno 22] from MCP SDK's stdout_writer
+                        import traceback
+                        error_msg = str(e)
+                        logger.error(f"[STDIO] Error during server operation: {e}")
+                        logger.error(f"[STDIO] Traceback: {traceback.format_exc()}")
+
+                        # Check if this is the known Windows stdio handle issue
+                        if "OSError" in error_msg and "Invalid argument" in error_msg:
+                            logger.error(
+                                "[STDIO] Windows stdio handle error detected (OSError [Errno 22]). "
+                                "This is likely due to MCP SDK stdout_writer crash. "
+                                "Session will restart automatically."
+                            )
+                            # Re-raise to trigger retry logic in safe_stdio_server
+                            raise
+                        else:
+                            # Different error - log and re-raise
+                            logger.error(f"[STDIO] Unexpected server error: {type(e).__name__}: {e}")
+                            raise
             except Exception as e:
                 # OSError handling is now done in safe_stdio_server wrapper
                 logger.error(f"[STDIO] Unexpected error in stdio_server: {e}")

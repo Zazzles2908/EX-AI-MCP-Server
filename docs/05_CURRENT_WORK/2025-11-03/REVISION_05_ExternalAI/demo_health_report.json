@@ -1,0 +1,88 @@
+{
+  "report_id": "health_report_1762159956",
+  "timestamp": "2025-11-03T16:52:37.080574",
+  "overall_status": "healthy",
+  "integrity_checks": [
+    {
+      "file_path": "/workspace/src/file_management/health/health_checker.py",
+      "file_size": 30628,
+      "checksum": "2499285850098e166aad6f5d6a88e57464686700a4c78e01a739c7cc2ecb369b",
+      "expected_checksum": null,
+      "is_valid": true,
+      "last_modified": "2025-11-03T16:50:48.353563",
+      "check_timestamp": "2025-11-03T16:52:37.070803"
+    },
+    {
+      "file_path": "/workspace/src/file_management/health/__init__.py",
+      "file_size": 1562,
+      "checksum": "39359fbd52691da58239fde3aedd2ac60cfd22a21e6a6d5a7157cb474088a825",
+      "expected_checksum": null,
+      "is_valid": true,
+      "last_modified": "2025-11-03T16:50:58.338610",
+      "check_timestamp": "2025-11-03T16:52:37.070279"
+    },
+    {
+      "file_path": "/workspace/src/file_management/health/requirements.txt",
+      "file_size": 602,
+      "checksum": "1f8d1dadbdcf76f25e566911f9e506b37456c3e1212c25ef9f9dff8ba2ba25e1",
+      "expected_checksum": null,
+      "is_valid": true,
+      "last_modified": "2025-11-03T16:51:05.207680",
+      "check_timestamp": "2025-11-03T16:52:37.070322"
+    }
+  ],
+  "storage_quota": {
+    "total_space": 1125899906842624,
+    "used_space": 23689583132672,
+    "available_space": 1102210323709952,
+    "usage_percentage": 2.104057651013136,
+    "warning_threshold": 80.0,
+    "critical_threshold": 90.0,
+    "check_timestamp": "2025-11-03T16:52:36.067281"
+  },
+  "accessibility_results": [
+    {
+      "file_path": "/workspace/src/file_management/health/health_checker.py",
+      "is_readable": true,
+      "is_writable": true,
+      "is_executable": true,
+      "permissions": "654",
+      "owner": "root",
+      "group": "root",
+      "check_timestamp": "2025-11-03T16:52:36.067429"
+    },
+    {
+      "file_path": "/workspace/src/file_management/health/__init__.py",
+      "is_readable": true,
+      "is_writable": true,
+      "is_executable": true,
+      "permissions": "654",
+      "owner": "root",
+      "group": "root",
+      "check_timestamp": "2025-11-03T16:52:36.067488"
+    },
+    {
+      "file_path": "/workspace/src/file_management/health/requirements.txt",
+      "is_readable": true,
+      "is_writable": true,
+      "is_executable": true,
+      "permissions": "654",
+      "owner": "root",
+      "group": "root",
+      "check_timestamp": "2025-11-03T16:52:36.067534"
+    }
+  ],
+  "performance_metrics": {
+    "upload_speed_mbps": 687.3654539495247,
+    "download_speed_mbps": 3236.3456790123455,
+    "file_access_time_ms": 0.8037090301513672,
+    "checksum_calculation_time_ms": 8.504390716552734,
+    "disk_io_read_mb": 0.0,
+    "disk_io_write_mb": 0.0,
+    "cpu_usage_percent": 8.2,
+    "memory_usage_percent": 37.0,
+    "check_timestamp": "2025-11-03T16:52:37.080530"
+  },
+  "alerts": [],
+  "recommendations": []
+}

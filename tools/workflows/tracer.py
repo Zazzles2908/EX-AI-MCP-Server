@@ -43,6 +43,8 @@ class TracerTool(WorkflowTool):
     methodical investigation steps, ensuring thorough code examination, dependency
     mapping, and execution flow analysis before reaching conclusions. It supports
     both precision tracing (execution flow) and dependencies tracing (structural relationships).
+
+    FIXED (2025-11-03): Inherits should_skip_expert_analysis from base class - eliminates duplicate code.
     """
 
     def __init__(self):
@@ -212,11 +214,21 @@ class TracerTool(WorkflowTool):
             ]
 
     def should_call_expert_analysis(self, consolidated_findings, request=None) -> bool:
-        """Tracer is self-contained and doesn't need expert analysis."""
+        """
+        Determine whether to skip expert analysis.
+
+        FIXED (2025-11-03): Tracer is self-contained and doesn't need expert analysis.
+        This is now a simple implementation that can be inherited if all workflow tools behave the same.
+        """
         return False
 
     def prepare_expert_analysis_context(self, consolidated_findings) -> str:
-        """Tracer doesn't use expert analysis."""
+        """
+        Prepare context for expert analysis.
+
+        FIXED (2025-11-03): Tracer doesn't use expert analysis - returns empty string.
+        This is now a simple implementation that can be inherited if all workflow tools behave the same.
+        """
         return ""
 
     def requires_expert_analysis(self) -> bool:

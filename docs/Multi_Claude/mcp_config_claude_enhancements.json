@@ -1,0 +1,1 @@
+{"mcpServers": {"claude-enhancements": {"command": "python", "args": ["c:/Users/Jazeel-Home/.claude/claude_enhancements_mcp/server.py"], "env": {"PYTHONPATH": "c:/Users/Jazeel-Home/.claude"}}}}
