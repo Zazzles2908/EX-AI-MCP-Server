@@ -5,11 +5,11 @@ mcp>=1.20.0
 openai>=1.55.2
 pydantic>=2.0.0
 python-dotenv>=1.0.0
-# DEPENDENCY FIX (2025-11-04): Removed zhipuai SDK to resolve PyJWT conflict with MCP 1.20.0
+# DEPENDENCY FIX (2025-11-04): Switched from zhipuai to zai-sdk to resolve PyJWT conflict
 # zhipuai requires PyJWT<2.9.0, but MCP 1.20.0 requires PyJWT>=2.10.1
-# SOLUTION: Use OpenAI SDK for GLM (proven compatible in tests/sdk/test_glm_openai_sdk.py)
-# GLM thinking mode works via extra_body={"thinking": {"type": "enabled"}}
-# zhipuai>=2.1.0  # REMOVED - conflicts with MCP 1.20.0
+# zai-sdk requires PyJWT>=2.8.0, which is COMPATIBLE with MCP 1.20.0
+# zai-sdk is the official Z.ai SDK with better features (higher file limits, longer retention)
+zai-sdk>=0.0.3.3  # Official Z.ai SDK - compatible with MCP 1.20.0
 importlib-resources>=5.0.0; python_version<"3.9"
 tiktoken>=0.5.0  # Token counting for context engineering
 
