@@ -437,7 +437,77 @@ class ConnectionMonitor:
                 f"({data_size_bytes} bytes"
                 f"{f', {response_time_ms:.2f}ms' if response_time_ms else ''})"
             )
-    
+
+    def record_duration(
+        self,
+        model: str,
+        duration_ms: float,
+        prompt_tokens: Optional[int] = None,
+        completion_tokens: Optional[int] = None,
+        request_type: str = "text_only",
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """
+        Record model duration for adaptive timeout calculation.
+
+        DAY 1 IMPLEMENTATION (2025-11-03): Adaptive Timeout Architecture
+        K2 Decision: Extend existing kimi/glm events with adaptive timeout metadata
+
+        This method reuses the existing record_event() infrastructure by detecting
+        the provider from the model name and adding adaptive timeout metadata to
+        the existing kimi/glm connection types.
+
+        Args:
+            model: Model name (e.g., "kimi-k2", "glm-4.6")
+            duration_ms: Actual duration in milliseconds
+            prompt_tokens: Number of prompt tokens (optional)
+            completion_tokens: Number of completion tokens (optional)
+            request_type: Type of request (text_only, file_based, file_reuse)
+            metadata: Additional metadata (optional)
+        """
+        # Detect provider from model name
+        model_lower = model.lower()
+        if "kimi" in model_lower or "k2" in model_lower or "moonshot" in model_lower:
+            provider = "kimi"
+        elif "glm" in model_lower or "zhipu" in model_lower:
+            provider = "glm"
+        else:
+            provider = "unknown"
+            logger.warning(f"[ADAPTIVE_TIMEOUT] Unknown provider for model: {model}")
+
+        # Calculate total tokens
+        total_tokens = 0
+        if prompt_tokens is not None and completion_tokens is not None:
+            total_tokens = prompt_tokens + completion_tokens
+
+        # Build adaptive timeout metadata
+        adaptive_metadata = {
+            "adaptive_timeout": True,
+            "model": model,
+            "request_type": request_type,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens,
+            "adaptive_timeout_ms": duration_ms,
+            **(metadata or {})
+        }
+
+        # Reuse existing record_event with adaptive timeout metadata
+        self.record_event(
+            connection_type=provider,
+            direction="duration_recorded",
+            script_name="adaptive_timeout.py",
+            function_name="record_duration",
+            data_size_bytes=total_tokens,  # Use tokens as data size
+            response_time_ms=duration_ms,
+            metadata=adaptive_metadata
+        )
+
+        logger.info(
+            f"[ADAPTIVE_TIMEOUT] Recorded duration for {model}: "
+            f"{duration_ms:.2f}ms ({total_tokens} tokens, {request_type})"
+        )
+
     def _update_stats(self, event: ConnectionEvent) -> None:
         """Update aggregated statistics (called with lock held)"""
         conn_type = event.connection_type

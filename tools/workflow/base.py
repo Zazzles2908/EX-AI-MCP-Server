@@ -471,6 +471,23 @@ class WorkflowTool(BaseTool, BaseWorkflowMixin):
             or len(consolidated_findings.findings) >= 1  # Changed from >= 2
             or len(consolidated_findings.issues_found) > 0
         )
+    def should_skip_expert_analysis(self, request, consolidated_findings) -> bool:
+        """
+        Determine whether to skip expert analysis.
+        
+        This is a shared implementation that eliminates code duplication across all workflow tools.
+        FIXED (2025-11-03): Removed confidence-based skipping logic that caused empty responses.
+        Now never skips expert analysis based on confidence level.
+        
+        Args:
+            request: The workflow request (may be None)
+            consolidated_findings: The consolidated findings from all work steps
+        
+        Returns:
+            False - Never skip expert analysis (always call it for validation)
+        """
+        return False
+
 
     def prepare_standard_expert_context(
         self, consolidated_findings, initial_description: str, context_sections: dict[str, str] = None

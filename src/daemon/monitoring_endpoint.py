@@ -445,6 +445,147 @@ def prepare_stats_for_dashboard(stats_dict):
     return stats_dict
 
 
+async def handle_timeout_estimate(request: web.Request) -> web.Response:
+    """
+    Estimate timeout for a model request using adaptive timeout engine.
+
+    DAY 1 IMPLEMENTATION (2025-11-03): Adaptive Timeout Architecture
+    K2 Decision: Call Moonshot /estimate API only when confidence < 0.5
+
+    POST /api/v1/timeout/estimate
+    Body: {
+        "model": "kimi-k2",
+        "messages": [...],  # Optional - for Moonshot estimate API
+        "request_type": "text"  # text, file, image, audio
+    }
+    Response: {
+        "timeout": 180,
+        "confidence": 0.85,
+        "source": "adaptive",  # adaptive, static, emergency, estimate
+        "metadata": {
+            "samples_used": 50,
+            "estimated_tokens": 1500,  # If estimate API was called
+            "provider": "kimi"
+        }
+    }
+    """
+    try:
+        # Parse request body
+        try:
+            body = await request.json()
+        except Exception as e:
+            return web.json_response({
+                "error": "Invalid JSON body",
+                "details": str(e)
+            }, status=400)
+
+        model = body.get("model")
+        messages = body.get("messages", [])
+        request_type = body.get("request_type", "text")
+
+        if not model:
+            return web.json_response({
+                "error": "Missing required field: model"
+            }, status=400)
+
+        # Import adaptive timeout engine
+        from src.core.adaptive_timeout import get_engine, is_adaptive_timeout_enabled
+
+        # Check if adaptive timeout is enabled
+        if not is_adaptive_timeout_enabled():
+            # Fallback to static timeout
+            base_timeout = 180  # Default 3 minutes
+            return web.json_response({
+                "timeout": base_timeout,
+                "confidence": 0.0,
+                "source": "static",
+                "metadata": {
+                    "reason": "adaptive_timeout_disabled"
+                }
+            })
+
+        # Get adaptive timeout engine
+        engine = get_engine()
+
+        # Get provider-specific config
+        provider_config = engine.get_provider_specific_config(model)
+        base_timeout = provider_config["base_timeout"]
+
+        # Get adaptive timeout with metadata
+        timeout, metadata = engine.get_adaptive_timeout_safe(model, base_timeout)
+
+        # K2 Decision: Call Moonshot estimate API only when confidence < 0.5
+        confidence = metadata.get("confidence", 0.0)
+
+        if confidence < 0.5 and messages and ("kimi" in model.lower() or "k2" in model.lower()):
+            # Low confidence - use Moonshot estimate API for better prediction
+            try:
+                # Import Moonshot client
+                import os
+                from openai import AsyncOpenAI
+
+                api_key = os.getenv("KIMI_API_KEY") or os.getenv("MOONSHOT_API_KEY")
+                if api_key:
+                    client = AsyncOpenAI(
+                        api_key=api_key,
+                        base_url="https://api.moonshot.ai/v1"
+                    )
+
+                    # Call estimate API (with timeout)
+                    import asyncio
+                    estimate_response = await asyncio.wait_for(
+                        client.chat.completions.create(
+                            model=model,
+                            messages=messages,
+                            max_tokens=1,  # Minimal tokens for estimate
+                            stream=False
+                        ),
+                        timeout=5.0  # 5 second timeout for estimate call
+                    )
+
+                    # Extract token estimate from usage
+                    if estimate_response.usage:
+                        estimated_tokens = estimate_response.usage.total_tokens
+
+                        # Calculate timeout based on tokens
+                        # Assume ~10 tokens/second for K2 (conservative estimate)
+                        tokens_per_second = 10
+                        estimated_duration = estimated_tokens / tokens_per_second
+
+                        # Add 50% buffer for safety
+                        timeout = int(estimated_duration * 1.5)
+
+                        # Update metadata
+                        metadata["source"] = "estimate"
+                        metadata["estimated_tokens"] = estimated_tokens
+                        metadata["tokens_per_second"] = tokens_per_second
+
+                        logger.info(f"[ESTIMATE_API] Used Moonshot estimate for {model}: {estimated_tokens} tokens → {timeout}s timeout")
+
+            except asyncio.TimeoutError:
+                logger.warning(f"[ESTIMATE_API] Moonshot estimate API timed out for {model}")
+            except Exception as e:
+                logger.warning(f"[ESTIMATE_API] Failed to call Moonshot estimate API: {e}")
+
+        # Detect provider for metadata
+        provider = engine.detect_provider(model)
+        metadata["provider"] = provider
+
+        return web.json_response({
+            "timeout": timeout,
+            "confidence": confidence,
+            "source": metadata.get("source", "adaptive"),
+            "metadata": metadata
+        })
+
+    except Exception as e:
+        logger.error(f"[ESTIMATE_API] Error in timeout estimate handler: {e}", exc_info=True)
+        return web.json_response({
+            "error": "Internal server error",
+            "details": str(e)
+        }, status=500)
+
+
 async def event_ingestion_handler(request: web.Request) -> web.WebSocketResponse:
     """
     Handle event ingestion from test generators (2025-10-27).
@@ -1222,6 +1363,9 @@ async def start_monitoring_server(host: str = "0.0.0.0", port: int = 8080) -> No
 
     # Cache Metrics API routes (Week 2-3 Monitoring Phase - 2025-10-31)
     app.router.add_get('/api/cache-metrics', get_cache_metrics)
+
+    # Adaptive Timeout API routes (Day 1 - 2025-11-03)
+    app.router.add_post('/api/v1/timeout/estimate', handle_timeout_estimate)
 
     # Testing API routes (Phase 0.4 - 2025-10-24)
     app.router.add_get('/api/metrics/current', get_current_metrics)

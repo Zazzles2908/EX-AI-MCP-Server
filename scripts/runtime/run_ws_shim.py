@@ -24,6 +24,9 @@ load_env()
 # Import TimeoutConfig for coordinated timeout hierarchy
 from config import TimeoutConfig
 
+# Import adaptive timeout engine (Day 0 - 2025-11-03)
+from src.core.adaptive_timeout import get_engine, is_adaptive_timeout_enabled
+
 import websockets
 from mcp.server import Server
 from mcp.types import Tool, TextContent
@@ -106,6 +109,7 @@ SESSION_ID = os.getenv("EXAI_SESSION_ID", str(uuid.uuid4()))
 EXAI_WS_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
 EXAI_WS_PORT = int(os.getenv("EXAI_WS_PORT", "8079"))
 EXAI_WS_TOKEN = os.getenv("EXAI_WS_TOKEN", "")
+EXAI_JWT_TOKEN = os.getenv("EXAI_JWT_TOKEN", "")  # JWT authentication (added 2025-11-03)
 
 # Setup logging with instance-specific log file
 # CRITICAL FIX (2025-10-27): Each MCP instance needs its own log file to prevent race conditions
@@ -144,6 +148,12 @@ else:
     logger.warning("[AUTH] No auth token configured (EXAI_WS_TOKEN is empty). "
                    "If daemon requires auth, connections will fail. "
                    "Set EXAI_WS_TOKEN in .env file to match daemon's token.")
+
+# JWT authentication status (added 2025-11-03)
+if EXAI_JWT_TOKEN:
+    logger.info(f"[JWT_AUTH] JWT token configured (length: {len(EXAI_JWT_TOKEN)} chars)")
+else:
+    logger.info("[JWT_AUTH] No JWT token configured - using legacy auth only")
 MAX_MSG_BYTES = int(os.getenv("EXAI_WS_MAX_BYTES", str(32 * 1024 * 1024)))
 PING_INTERVAL = int(os.getenv("EXAI_WS_PING_INTERVAL", "45"))
 # CRITICAL FIX (2025-10-27): Changed default from 30 to 240 to match .env.docker
@@ -427,12 +437,16 @@ async def _ensure_ws():
                     open_timeout=EXAI_WS_HANDSHAKE_TIMEOUT,
                 )
 
-                # Hello handshake
-                await _ws.send(json.dumps({
+                # Hello handshake (with JWT support - added 2025-11-03)
+                hello_msg = {
                     "op": "hello",
                     "session_id": SESSION_ID,
                     "token": EXAI_WS_TOKEN,
-                }))
+                }
+                # Add JWT token if available
+                if EXAI_JWT_TOKEN:
+                    hello_msg["jwt"] = EXAI_JWT_TOKEN
+                await _ws.send(json.dumps(hello_msg))
 
                 # Wait for ack
                 ack_raw = await asyncio.wait_for(_ws.recv(), timeout=EXAI_WS_HANDSHAKE_TIMEOUT)
@@ -498,7 +512,8 @@ async def handle_list_tools() -> List[Tool]:
 
     ws = await _ensure_ws()
     logger.info(f"[LIST_TOOLS] Sending list_tools request to daemon")
-    await ws.send(json.dumps({"op": "list_tools"}))
+    req_id = str(uuid.uuid4())
+    await ws.send(json.dumps({"op": "list_tools", "request_id": req_id}))
 
     logger.info(f"[LIST_TOOLS] Waiting for daemon response...")
     raw = await ws.recv()
@@ -519,6 +534,7 @@ async def handle_list_tools() -> List[Tool]:
 
 @server.call_tool()
 async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
+    logger.info(f"[CALL_TOOL] ⚡ DECORATOR TRIGGERED! Tool: {name}, Args keys: {list(arguments.keys()) if arguments else []}")
     global _last_successful_call
     import time
 
@@ -526,14 +542,34 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextCon
         ws = await _ensure_ws()
         req_id = str(uuid.uuid4())
         await ws.send(json.dumps({
-            "op": "call_tool",
+            "op": "tool_call",  # Fixed: Changed from "call_tool" to match daemon expectation
             "request_id": req_id,
-            "name": name,
+            "tool": {"name": name},  # Fixed: Wrapped name in "tool" object as daemon expects
             "arguments": arguments or {},
         }))
         # Read until matching request_id with timeout
         # Use coordinated timeout hierarchy: shim timeout = 2x workflow tool timeout
-        timeout_s = float(TimeoutConfig.get_shim_timeout())  # Auto-calculated (default: 240s)
+        # Day 0 (2025-11-03): Add adaptive timeout support with feature flag
+        base_timeout_s = float(TimeoutConfig.get_shim_timeout())  # Auto-calculated (default: 240s)
+
+        if is_adaptive_timeout_enabled():
+            # Use adaptive timeout based on model performance
+            model_name = arguments.get("model", "unknown")
+            adaptive_engine = get_engine()
+            timeout_s, timeout_metadata = adaptive_engine.get_adaptive_timeout_safe(
+                model=model_name,
+                base_timeout=int(base_timeout_s),
+                apply_burst=True
+            )
+            timeout_s = float(timeout_s)
+            logger.info(
+                f"Adaptive timeout for {name} (model={model_name}): {timeout_s}s "
+                f"(source={timeout_metadata['source']}, confidence={timeout_metadata['confidence']:.2f})"
+            )
+        else:
+            # Use static timeout (legacy behavior)
+            timeout_s = base_timeout_s
+
         ack_grace = float(os.getenv("EXAI_SHIM_ACK_GRACE_SECS", "30"))
         deadline = asyncio.get_running_loop().time() + timeout_s
         while True:
@@ -624,32 +660,56 @@ def main() -> None:
                 # CRITICAL FIX (2025-10-26): Use safe_stdio_server wrapper with retry logic
                 # This handles Windows OSError [Errno 22] when multiple VSCode instances start
                 async with safe_stdio_server() as (read_stream, write_stream):
-                    # Run server with shutdown monitoring
-                    server_task = asyncio.create_task(server.run(read_stream, write_stream, init_opts))
-                    shutdown_task = asyncio.create_task(_shutdown_event.wait())
+                    # Run server with shutdown monitoring and TaskGroup exception handling
+                    # FIX (2025-11-04): Wrap server.run() to catch TaskGroup exceptions
+                    # The MCP SDK's stdout_writer can crash with OSError [Errno 22] during operation
+                    try:
+                        server_task = asyncio.create_task(server.run(read_stream, write_stream, init_opts))
+                        shutdown_task = asyncio.create_task(_shutdown_event.wait())
 
-                    # Wait for either server completion or shutdown signal
-                    done, pending = await asyncio.wait(
-                        [server_task, shutdown_task],
-                        return_when=asyncio.FIRST_COMPLETED
-                    )
+                        # Wait for either server completion or shutdown signal
+                        done, pending = await asyncio.wait(
+                            [server_task, shutdown_task],
+                            return_when=asyncio.FIRST_COMPLETED
+                        )
 
-                    # If shutdown was triggered, cancel server
-                    if shutdown_task in done:
-                        logger.warning("[MAIN] Shutdown event triggered - cancelling server")
-                        server_task.cancel()
-                        try:
-                            await server_task
-                        except asyncio.CancelledError:
-                            pass
+                        # If shutdown was triggered, cancel server
+                        if shutdown_task in done:
+                            logger.warning("[MAIN] Shutdown event triggered - cancelling server")
+                            server_task.cancel()
+                            try:
+                                await server_task
+                            except asyncio.CancelledError:
+                                pass
 
-                    # Cancel pending tasks
-                    for task in pending:
-                        task.cancel()
-                        try:
-                            await task
-                        except asyncio.CancelledError:
-                            pass
+                        # Cancel pending tasks
+                        for task in pending:
+                            task.cancel()
+                            try:
+                                await task
+                            except asyncio.CancelledError:
+                                pass
+                    except BaseException as e:
+                        # Catch TaskGroup exceptions from server.run() operations
+                        # This handles OSError [Errno 22] from MCP SDK's stdout_writer
+                        import traceback
+                        error_msg = str(e)
+                        logger.error(f"[STDIO] Error during server operation: {e}")
+                        logger.error(f"[STDIO] Traceback: {traceback.format_exc()}")
+
+                        # Check if this is the known Windows stdio handle issue
+                        if "OSError" in error_msg and "Invalid argument" in error_msg:
+                            logger.error(
+                                "[STDIO] Windows stdio handle error detected (OSError [Errno 22]). "
+                                "This is likely due to MCP SDK stdout_writer crash. "
+                                "Session will restart automatically."
+                            )
+                            # Re-raise to trigger retry logic in safe_stdio_server
+                            raise
+                        else:
+                            # Different error - log and re-raise
+                            logger.error(f"[STDIO] Unexpected server error: {type(e).__name__}: {e}")
+                            raise
             except Exception as e:
                 # OSError handling is now done in safe_stdio_server wrapper
                 logger.error(f"[STDIO] Unexpected error in stdio_server: {e}")

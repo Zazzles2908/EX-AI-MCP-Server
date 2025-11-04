@@ -15,7 +15,7 @@ from unittest.mock import Mock, AsyncMock, patch
 from collections import defaultdict
 
 # Import the module under test
-from src.monitoring.resilient_websocket import ResilientWebSocket
+from src.monitoring.resilient_websocket import ResilientWebSocketManager
 
 
 class LogCapture:
@@ -74,7 +74,7 @@ def mock_websocket():
 
 @pytest.fixture
 def resilient_ws(mock_websocket, log_capture):
-    """Fixture for ResilientWebSocket with log capture."""
+    """Fixture for ResilientWebSocketManager with log capture."""
     # Set up log capture
     logger = logging.getLogger("src.monitoring.resilient_websocket")
     handler = MockLogHandler(log_capture)
@@ -82,8 +82,8 @@ def resilient_ws(mock_websocket, log_capture):
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
     
-    # Create ResilientWebSocket instance
-    rws = ResilientWebSocket(mock_websocket, "test-client-123")
+    # Create ResilientWebSocketManager instance
+    rws = ResilientWebSocketManager()
     
     yield rws
     

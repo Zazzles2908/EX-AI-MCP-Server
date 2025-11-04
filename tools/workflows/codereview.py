@@ -407,18 +407,6 @@ class CodeReviewTool(WorkflowTool):
         }
         return step_data
 
-    def should_skip_expert_analysis(self, request, consolidated_findings) -> bool:
-        """
-        Code review workflow expert analysis decision.
-
-        FIXED (2025-11-03): Removed confidence-based skipping logic that caused empty responses.
-        Now never skips expert analysis based on confidence level.
-        User can still disable expert analysis per-call with use_assistant_model=false parameter.
-        """
-        # REMOVED: Confidence-based skipping that caused empty responses
-        # Old logic: return request.confidence == "certain" and not request.next_step_required
-        # This caused tools to return zero-value responses when confidence was high
-        return False  # Never skip expert analysis based on confidence
 
     def store_initial_issue(self, step_description: str):
         """Store initial request for expert analysis."""

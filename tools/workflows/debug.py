@@ -593,18 +593,6 @@ class DebugIssueTool(WorkflowTool):
         }
         return step_data
 
-    def should_skip_expert_analysis(self, request, consolidated_findings) -> bool:
-        """
-        Debug tool expert analysis decision.
-
-        FIXED (2025-11-03): Removed confidence-based skipping logic that caused empty responses.
-        Now never skips expert analysis based on confidence level.
-        User can still disable expert analysis per-call with use_assistant_model=false parameter.
-        """
-        # REMOVED: Confidence-based skipping that caused empty responses
-        # Old logic: return request.confidence == "certain" and not request.next_step_required
-        # This caused tools to return zero-value responses when confidence was high
-        return False  # Never skip expert analysis based on confidence
 
     # Override inheritance hooks for debug-specific behavior
 

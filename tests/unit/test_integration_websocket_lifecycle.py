@@ -53,10 +53,10 @@ async def test_full_lifecycle():
     # Send messages and track metrics
     for i in range(5):
         message = {"type": "test", "data": f"message-{i}"}
-        message_id = manager._get_message_id(message)
+        message_id = manager.get_message_id(message)
 
         # Check deduplication
-        is_dup = manager._is_duplicate_message(message_id)
+        is_dup = manager.is_duplicate_message(message_id)
         assert not is_dup, f"First send of message {i} should not be duplicate"
 
         # Track metrics
@@ -64,7 +64,7 @@ async def test_full_lifecycle():
             manager.metrics.record_message_sent(client_id, latency_ms=10.0 + i)
 
         # Verify duplicate detection
-        is_dup2 = manager._is_duplicate_message(message_id)
+        is_dup2 = manager.is_duplicate_message(message_id)
         assert is_dup2, f"Second send of message {i} should be duplicate"
 
         # Track deduplication
@@ -125,19 +125,19 @@ async def test_full_lifecycle():
     
     print("\n[5/6] Testing message TTL cleanup...")
     # Test message deduplication TTL
-    manager._message_id_ttl = 1
+    manager.message_id_ttl = 1
     test_message = {"type": "ttl-test", "data": "test"}
-    msg_id = manager._get_message_id(test_message)
+    msg_id = manager.get_message_id(test_message)
     
     # Mark as sent
-    is_dup1 = manager._is_duplicate_message(msg_id)
+    is_dup1 = manager.is_duplicate_message(msg_id)
     assert not is_dup1, "First send should not be duplicate"
     
     # Wait for TTL to expire
     await asyncio.sleep(1.5)
     
     # Should not be duplicate after TTL (cleaned up)
-    is_dup2 = manager._is_duplicate_message(msg_id)
+    is_dup2 = manager.is_duplicate_message(msg_id)
     assert not is_dup2, "Message should not be duplicate after TTL cleanup"
     print("✅ Message TTL cleanup working correctly")
     

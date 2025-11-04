@@ -1,14 +1,18 @@
 # ============================================================================
 # CORE MCP AND API DEPENDENCIES
 # ============================================================================
-mcp>=1.0.0
+mcp>=1.20.0
 openai>=1.55.2
 pydantic>=2.0.0
 python-dotenv>=1.0.0
-# DEPENDENCY FIX (2025-10-21): Removed zai-sdk (not actually used in codebase)
-# The codebase uses zhipuai SDK everywhere, not zai-sdk
-# zai-sdk was planned but never implemented - removing to fix pyjwt conflict
-zhipuai>=2.1.0  # GLM chat and embeddings provider via z.ai proxy
+# DEPENDENCY FIX (2025-11-04): Switched from zhipuai to zai-sdk to resolve PyJWT conflict
+# zhipuai requires PyJWT<2.9.0, but MCP 1.20.0 requires PyJWT>=2.10.1
+# zai-sdk requires PyJWT>=2.8.0, which is COMPATIBLE with MCP 1.20.0
+# zai-sdk is the official Z.ai SDK with better features (higher file limits, longer retention)
+zai-sdk>=0.0.3.3  # Official Z.ai SDK - compatible with MCP 1.20.0
+
+# File management system dependencies (2025-11-04)
+asyncpg>=0.29.0  # PostgreSQL async driver for file management audit system
 importlib-resources>=5.0.0; python_version<"3.9"
 tiktoken>=0.5.0  # Token counting for context engineering
 
@@ -73,6 +77,11 @@ PyJWT>=2.8.0  # JWT authentication for WebSocket connections
 # ============================================================================
 xxhash>=3.0.0  # Fast hashing for message deduplication in resilient_websocket.py
 aiofiles>=23.2.0  # Async file operations to prevent event loop blocking
+
+# ============================================================================
+# ADAPTIVE TIMEOUT DEPENDENCIES (Day 0 - 2025-11-03)
+# ============================================================================
+numpy>=1.24.0  # Statistical calculations for adaptive timeout engine (P95, percentiles)
 
 # ============================================================================
 # CODE QUALITY DEPENDENCIES (2025-10-20, Updated 2025-10-27)
