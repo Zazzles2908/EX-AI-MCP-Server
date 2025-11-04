@@ -165,10 +165,23 @@ class ToolExecutor:
         Returns:
             Tuple of (success, outputs, error_msg)
         """
+        # DEBUG: Log tool execution attempt (MCP 1.20.0 compatibility check)
+        logger.info(f"[DEBUG] execute_tool called: name={name}, req_id={req_id}")
+        logger.info(f"[DEBUG] Available tools: {list(self.server_tools.keys())}")
+
         # Get tool
         tool = self.server_tools.get(name)
         if not tool:
+            logger.error(f"[DEBUG] Tool not found in registry: {name}")
             return False, None, f"Tool not found: {name}"
+
+        # DEBUG: Log tool object details
+        logger.info(f"[DEBUG] Tool found: {tool}, type: {type(tool)}")
+        logger.info(f"[DEBUG] Tool has execute method: {hasattr(tool, 'execute')}")
+        if hasattr(tool, 'execute'):
+            import inspect
+            sig = inspect.signature(tool.execute)
+            logger.info(f"[DEBUG] Tool execute signature: {sig}")
 
         # Check semantic cache first
         cache_params = None
@@ -306,11 +319,17 @@ class ToolExecutor:
                 """Forward streaming chunks to WebSocket client."""
                 await self._send_stream_chunk(ws, req_id, chunk, resilient_ws_manager)
 
+            # DEBUG: Log before tool execution
+            logger.info(f"[DEBUG] About to execute tool: {name}")
+            logger.info(f"[DEBUG] Arguments keys: {list(arguments.keys()) if arguments else []}")
+
             # Execute tool with timeout and streaming callback
+            logger.info(f"[DEBUG] Calling tool.execute() with on_chunk callback...")
             result = await asyncio.wait_for(
                 tool.execute(arguments, on_chunk=on_chunk),
                 timeout=self.call_timeout
             )
+            logger.info(f"[DEBUG] Tool execution completed successfully, result type: {type(result)}")
 
             # Extract outputs (result is already a list of TextContent)
             from src.daemon.ws.router_utils import normalize_outputs

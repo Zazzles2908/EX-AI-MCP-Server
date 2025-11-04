@@ -1,6 +1,37 @@
-"""File Recovery Module"""
+"""
+File Management Recovery Module
 
-from .recovery_manager import RecoveryManager
+This module provides comprehensive error recovery mechanisms for file management systems.
+"""
 
-__all__ = ['RecoveryManager']
+from .recovery_manager import (
+    ErrorRecoveryManager,
+    ErrorType,
+    RecoveryStrategy,
+    ErrorContext,
+    CircuitBreaker,
+    CircuitBreakerState,
+    RetryConfig,
+    FileOperationRollback,
+    SupabaseErrorTracker,
+    RecoveryStrategyManager,
+    FallbackStorageManager,
+    recovery_operation
+)
 
+__all__ = [
+    "ErrorRecoveryManager",
+    "ErrorType", 
+    "RecoveryStrategy",
+    "ErrorContext",
+    "CircuitBreaker",
+    "CircuitBreakerState",
+    "RetryConfig",
+    "FileOperationRollback", 
+    "SupabaseErrorTracker",
+    "RecoveryStrategyManager",
+    "FallbackStorageManager",
+    "recovery_operation"
+]
+
+__version__ = "1.0.0"

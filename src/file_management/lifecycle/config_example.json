@@ -1,0 +1,10 @@
+{
+  "database_path": "file_registry.db",
+  "local_storage_path": "./storage",
+  "archive_path": "./archive",
+  "backup_path": "./backup",
+  "registry_sync_interval": 300,
+  "cleanup_interval": 3600,
+  "moonshot_api_base": "https://api.moonshot.cn",
+  "moonshot_api_key": null
+}

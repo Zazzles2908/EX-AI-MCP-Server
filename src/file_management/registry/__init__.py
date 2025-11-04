@@ -1,6 +1,20 @@
-"""File Registry Module"""
+"""
+File Registry Package
 
-from .file_registry import FileRegistry
+Cross-platform file registry implementation with metadata management,
+search capabilities, and storage provider integration.
+"""
 
-__all__ = ['FileRegistry']
+from .file_registry import (
+    FileRegistry,
+    FileMetadata,
+    FileType,
+    CrossPlatformPath
+)
 
+__all__ = [
+    'FileRegistry',
+    'FileMetadata',
+    'FileType', 
+    'CrossPlatformPath'
+]

@@ -1,6 +1,29 @@
-"""File Lifecycle Module"""
+"""
+File Lifecycle Synchronization Package
 
-from .lifecycle_sync import LifecycleSync
+This package provides comprehensive file lifecycle management with automated
+state tracking, policy enforcement, and cloud storage synchronization.
+"""
 
-__all__ = ['LifecycleSync']
+from .lifecycle_sync import (
+    LifecycleSync,
+    LifecycleScheduler,
+    LifecycleState,
+    FileType,
+    LifecyclePolicy,
+    FileMetadata,
+    SyncOperation,
+    load_config
+)
 
+__version__ = "1.0.0"
+__all__ = [
+    "LifecycleSync",
+    "LifecycleScheduler", 
+    "LifecycleState",
+    "FileType",
+    "LifecyclePolicy",
+    "FileMetadata",
+    "SyncOperation",
+    "load_config"
+]
