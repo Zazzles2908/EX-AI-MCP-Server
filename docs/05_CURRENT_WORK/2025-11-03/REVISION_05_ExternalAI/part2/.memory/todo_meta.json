@@ -1,0 +1,13 @@
+{
+  "todos": {
+    "Coordinator": {
+      "1": {
+        "id": "1",
+        "content": "Fix EXAI-MCP Communication After System Cleanup",
+        "details": "After system cleanup, EXAI daemon is running but tool calls fail with 'Not connected' error.\n\nSymptoms:\n- Daemon restarted successfully after SIGTERM\n- list_tools works (returns 21 tools)\n- call_tool fails with 'Not connected'\n- WebSocket communication broken for tool calls\n- 5 shim processes running\n\nTasks:\n1. Diagnose WebSocket connection issues in MCP protocol\n2. Check MCP version compatibility (upgraded from 1.13.1 to 1.20.0)\n3. Fix protocol communication layer\n4. Verify tool call routing and decorator registration\n5. Test MiniMax ↔ EXAI communication",
+        "status": "pending",
+        "priority": "high"
+      }
+    }
+  }
+}

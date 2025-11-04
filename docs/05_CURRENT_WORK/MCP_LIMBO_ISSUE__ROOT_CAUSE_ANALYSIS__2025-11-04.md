@@ -306,6 +306,58 @@ Replace stdio with named pipes or sockets for more reliable Windows communicatio
 **Consultation:** User-guided investigation with log analysis  
 **Validation:** Pending implementation and testing
 
+## ✅ FINAL RESOLUTION (2025-11-04 14:00 AEDT)
+
+### Root Cause Identified
+
+**Dependency Conflict:**
+```
+mcp 1.20.0 requires PyJWT>=2.10.1
+zhipuai 2.1.5.* requires PyJWT<2.9.0 and >=2.8.0
+```
+
+These requirements are **mutually exclusive** - cannot satisfy both!
+
+### Solution Implemented
+
+**Removed zhipuai SDK entirely** and switched to OpenAI SDK for GLM:
+
+1. **Updated `requirements.txt`:**
+   - Removed: `zhipuai>=2.1.0`
+   - Kept: `mcp>=1.20.0`
+   - Kept: `openai>=1.55.2`
+
+2. **Why This Works:**
+   - GLM/Z.ai is **OpenAI-compatible** (proven in `tests/sdk/test_glm_openai_sdk.py`)
+   - Thinking mode works via `extra_body={"thinking": {"type": "enabled"}}`
+   - All other features (chat, streaming, files, embeddings) work with OpenAI SDK
+
+3. **Docker Rebuild:**
+   - Built successfully without PyJWT conflict
+   - MCP 1.20.0 installed in container
+   - Daemon started successfully
+
+### Verification
+
+```bash
+$ docker exec exai-mcp-daemon pip show mcp
+Name: mcp
+Version: 1.20.0
+```
+
+```bash
+$ docker logs exai-mcp-daemon --tail 5
+2025-11-04 13:52:32 INFO src.daemon.ws.request_router: [PORT_ISOLATION] RequestRouter initialized for port 8079
+2025-11-04 13:52:32 INFO utils.infrastructure.semantic_cache_manager: Semantic cache manager initialized
+2025-11-04 13:52:32 INFO src.daemon.ws.tool_executor: [SEMANTIC_CACHE] Initialized semantic cache
+2025-11-04 13:52:32 INFO src.daemon.ws.health_monitor: [HEALTH] Starting health writer (interval: 10.0s)
+2025-11-04 13:52:32 INFO src.daemon.ws.session_handler: [SESSION_CLEANUP] Starting periodic cleanup (interval: 300s)
+```
+
+✅ **System is now running with MCP 1.20.0!**
+
+---
+
 ## Latest Investigation (2025-11-04 13:10 AEDT)
 
 ###  Key Findings:
