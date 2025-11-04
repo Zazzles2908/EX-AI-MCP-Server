@@ -31,19 +31,20 @@ class GLMModelProvider(ModelProvider):
         self.client = HttpClient(self.base_url, api_key=self.api_key, api_key_header="Authorization", api_key_prefix="Bearer ")
         # Prefer official SDK; fallback to HTTP if not available
         try:
-            from zhipuai import ZhipuAI  # type: ignore
+            from zai import ZaiClient  # Official Z.ai SDK (compatible with MCP 1.20.0)
             self._use_sdk = True
-            # CRITICAL FIX: Pass base_url to SDK to use z.ai proxy instead of bigmodel.cn
-            # TRACK 2 FIX: Add timeout and retry configuration from TimeoutConfig
-            self._sdk_client = ZhipuAI(
+            # CRITICAL FIX: Use zai-sdk instead of zhipuai for MCP 1.20.0 compatibility
+            # zai-sdk requires PyJWT>=2.8.0 (compatible with MCP 1.20.0's PyJWT>=2.10.1)
+            # zhipuai requires PyJWT<2.9.0 (INCOMPATIBLE with MCP 1.20.0)
+            self._sdk_client = ZaiClient(
                 api_key=self.api_key,
                 base_url=self.base_url,
                 timeout=TimeoutConfig.GLM_TIMEOUT_SECS,  # Use centralized timeout config
                 max_retries=3,  # Retry logic with exponential backoff
             )
-            logger.info(f"GLM provider using SDK with base_url={self.base_url}, timeout={TimeoutConfig.GLM_TIMEOUT_SECS}s, max_retries=3")
+            logger.info(f"GLM provider using zai-sdk with base_url={self.base_url}, timeout={TimeoutConfig.GLM_TIMEOUT_SECS}s, max_retries=3")
         except Exception as e:
-            logger.warning("zhipuai SDK unavailable or failed to init; falling back to HTTP client: %s", e, exc_info=True)
+            logger.warning("zai-sdk unavailable or failed to init; falling back to HTTP client: %s", e, exc_info=True)
             self._use_sdk = False
 
     def get_provider_type(self) -> ProviderType:

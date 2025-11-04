@@ -261,7 +261,7 @@ class SupabaseConversationMemory:
                 role=role,
                 content=content,
                 metadata=msg_metadata,
-                client_timestamp=client_timestamp
+                timestamp=client_timestamp
             )
 
             if msg_id:
@@ -512,7 +512,7 @@ class SupabaseConversationMemory:
                 role=role,
                 content=content,
                 metadata=msg_metadata,
-                client_timestamp=client_timestamp
+                timestamp=client_timestamp
             )
             log_operation_time("SupabaseMemory.save_message", start_time)
 

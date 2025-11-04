@@ -10,6 +10,9 @@ python-dotenv>=1.0.0
 # zai-sdk requires PyJWT>=2.8.0, which is COMPATIBLE with MCP 1.20.0
 # zai-sdk is the official Z.ai SDK with better features (higher file limits, longer retention)
 zai-sdk>=0.0.3.3  # Official Z.ai SDK - compatible with MCP 1.20.0
+
+# File management system dependencies (2025-11-04)
+asyncpg>=0.29.0  # PostgreSQL async driver for file management audit system
 importlib-resources>=5.0.0; python_version<"3.9"
 tiktoken>=0.5.0  # Token counting for context engineering
 

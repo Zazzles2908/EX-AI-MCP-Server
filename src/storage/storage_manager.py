@@ -109,7 +109,8 @@ class SupabaseStorageManager:
     @track_storage_performance(operation_type="write")
     def save_conversation(
         self,
-        session_id: str,
+        session_id: str = None,
+        continuation_id: str = None,
         title: Optional[str] = None,
         metadata: Optional[Dict] = None
     ) -> Optional[str]:
@@ -117,7 +118,8 @@ class SupabaseStorageManager:
         Save or update a conversation
 
         Args:
-            session_id: Unique conversation identifier
+            session_id: Unique conversation identifier (legacy, optional)
+            continuation_id: Unique conversation continuation identifier (preferred)
             title: Optional conversation title
             metadata: Optional metadata (tool usage, model info, etc.)
 
@@ -127,25 +129,36 @@ class SupabaseStorageManager:
         if not self._enabled:
             return None
 
+        # Use continuation_id if provided, otherwise fall back to session_id
+        identifier = continuation_id or session_id
+        if not identifier:
+            logger.error("save_conversation requires either session_id or continuation_id")
+            return None
+
         try:
             client = self.get_client()
             data = {
-                "session_id": session_id,
-                "title": title or f"Conversation {session_id[:8]}",
+                "title": title or f"Conversation {identifier[:8]}",
                 "metadata": metadata or {}
             }
+
+            # Add the appropriate identifier field(s)
+            if continuation_id:
+                data["continuation_id"] = continuation_id
+            if session_id:
+                data["session_id"] = session_id
 
             result = client.table("conversations").upsert(data).execute()
 
             if result.data:
                 conversation_id = result.data[0]["id"]
-                logger.debug(f"Saved conversation: {session_id} -> {conversation_id}")
+                logger.debug(f"Saved conversation: {identifier} -> {conversation_id}")
                 return conversation_id
 
             return None
 
         except Exception as e:
-            logger.error(f"Failed to save conversation {session_id}: {e}")
+            logger.error(f"Failed to save conversation {identifier}: {e}")
             return None
 
     @track_storage_performance(operation_type="query")
@@ -178,6 +191,34 @@ class SupabaseStorageManager:
             logger.error(f"Failed to get conversation {session_id}: {e}")
             return None
 
+    @track_storage_performance(operation_type="query")
+    def get_conversation_by_continuation_id(self, continuation_id: str) -> Optional[Dict]:
+        """
+        Get conversation by continuation_id
+
+        Args:
+            continuation_id: Unique conversation continuation identifier
+
+        Returns:
+            Conversation record dict or None if not found
+        """
+        if not self._enabled:
+            return None
+
+        try:
+            client = self.get_client()
+            result = client.table("conversations").select("*").eq(
+                "continuation_id", continuation_id
+            ).execute()
+
+            if result.data and len(result.data) > 0:
+                return result.data[0]
+            return None
+
+        except Exception as e:
+            logger.error(f"Error getting conversation by continuation_id: {e}")
+            return None
+
     def _generate_idempotency_key(self, data: Dict[str, Any]) -> str:
         """
         Generate idempotency key for message deduplication
@@ -189,7 +230,7 @@ class SupabaseStorageManager:
             SHA256 hash as hex string
         """
         # Create stable string representation
-        content = f"{data.get('role', '')}:{data.get('content', '')}:{data.get('timestamp', '')}"
+        content = f"{data.get('role', '')}:{data.get('content', '')}:{data.get('created_at', '')}"
         return hashlib.sha256(content.encode('utf-8')).hexdigest()
 
     @track_storage_performance(operation_type="write")
@@ -227,7 +268,7 @@ class SupabaseStorageManager:
                 "role": role,
                 "content": content,
                 "metadata": metadata or {},
-                "timestamp": ts
+                "created_at": ts
             }
 
             # Generate idempotency key
@@ -277,7 +318,7 @@ class SupabaseStorageManager:
             client = self.get_client()
             query = client.table("messages").select("*").eq(
                 "conversation_id", conversation_id
-            ).order("timestamp", desc=False)
+            ).order("created_at", desc=False)
 
             if limit:
                 query = query.limit(limit)

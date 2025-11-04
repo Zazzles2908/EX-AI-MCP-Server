@@ -265,9 +265,9 @@ class RequestRouter:
                 await _safe_send(
                     ws,
                     {
-                        "op": "result",
+                        "op": "call_tool_res",  # CRITICAL FIX (2025-11-04): Changed from "result" to "call_tool_res"
                         "request_id": req_id,
-                        "result": cached_result,
+                        "outputs": cached_result,  # Changed from "result" to "outputs"
                         "from_cache": True
                     },
                     resilient_ws_manager=resilient_ws_manager
@@ -283,9 +283,9 @@ class RequestRouter:
                     await _safe_send(
                         ws,
                         {
-                            "op": "result",
+                            "op": "call_tool_res",  # CRITICAL FIX (2025-11-04): Changed from "result" to "call_tool_res"
                             "request_id": req_id,
-                            "result": result,
+                            "outputs": result,  # Changed from "result" to "outputs"
                             "from_inflight": True
                         },
                         resilient_ws_manager=resilient_ws_manager
@@ -308,13 +308,31 @@ class RequestRouter:
                 resilient_ws_manager
             )
 
-            # Set result in future
+            # Set result in future and send response
             if success:
                 inflight_future.set_result(outputs)
                 # Cache successful result
                 await self.cache_manager.cache_result(call_key, outputs)
+                # Send successful response to client
+                logger.info(f"[DEBUG_SEND] About to send result for {req_id}, outputs type: {type(outputs)}, len: {len(outputs) if isinstance(outputs, list) else 'N/A'}")
+                send_success = await _safe_send(
+                    ws,
+                    {
+                        "op": "call_tool_res",  # CRITICAL FIX (2025-11-04): Changed from "result" to "call_tool_res" to match shim expectation
+                        "request_id": req_id,
+                        "outputs": outputs  # Changed from "result" to "outputs" to match protocol
+                    },
+                    resilient_ws_manager=resilient_ws_manager
+                )
+                logger.info(f"[DEBUG_SEND] Send result for {req_id}: success={send_success}")
             else:
                 inflight_future.set_exception(Exception(error_msg or "Unknown error"))
+                # Send error response to client
+                await _safe_send(
+                    ws,
+                    create_error_response(req_id, ErrorCode.INTERNAL_ERROR, error_msg or "Unknown error"),
+                    resilient_ws_manager=resilient_ws_manager
+                )
 
         except Exception as e:
             logger.error(f"Error handling tool call: {e}", exc_info=True)

@@ -83,6 +83,7 @@ def generate_content(
     prompt: str,
     *,
     sdk_client: Any,
+    http_client: Any,
     model_name: str,
     system_prompt: Optional[str] = None,
     temperature: float = 0.3,
@@ -94,6 +95,7 @@ def generate_content(
     request_id: Optional[str] = None,
     on_chunk_callback: Optional[callable] = None,
     session_id: Optional[str] = None,
+    use_sdk: bool = False,
     **kwargs
 ) -> ModelResponse:
     """
@@ -101,7 +103,8 @@ def generate_content(
 
     Args:
         prompt: User prompt
-        sdk_client: ZhipuAI SDK client
+        sdk_client: ZhipuAI SDK client (can be None if use_sdk=False)
+        http_client: HTTP client for fallback
         model_name: Model name
         system_prompt: Optional system prompt
         temperature: Temperature (default 0.3)
@@ -113,6 +116,7 @@ def generate_content(
         request_id: Optional request ID
         on_chunk_callback: Optional callback for streaming chunks
         session_id: Optional session ID
+        use_sdk: Whether to use SDK client (default False)
         **kwargs: Additional parameters
 
     Returns:
@@ -144,21 +148,59 @@ def generate_content(
         )
 
         # Log request details
-        logger.debug(f"GLM request: model={model_name}, stream={stream}")
+        logger.debug(f"GLM request: model={model_name}, stream={stream}, use_sdk={use_sdk}")
 
-        # Apply circuit breaker and make request
-        @breaker
-        def _call_with_breaker():
-            return sdk_client.chat.completions.create(**payload)
+        # Use SDK if available, otherwise fall back to HTTP client
+        if use_sdk and sdk_client:
+            # Apply circuit breaker and make request with SDK
+            @breaker
+            def _call_with_breaker():
+                return sdk_client.chat.completions.create(**payload)
+        else:
+            # Fall back to HTTP client
+            @breaker
+            def _call_with_breaker():
+                return http_client.post("/chat/completions", json=payload)
 
         result = _call_with_breaker()
 
-        # Process result
-        content = result.choices[0].message.content if result.choices else ""
-        actual_model = result.model if hasattr(result, 'model') else model_name
-        response_id = result.id if hasattr(result, 'id') else None
-        created_ts = result.created if hasattr(result, 'created') else None
-        usage = dict(result.usage) if hasattr(result, 'usage') and result.usage else {}
+        # DEBUG: Log result type and attributes
+        logger.debug(f"GLM result type: {type(result)}, has choices: {hasattr(result, 'choices')}, is dict: {isinstance(result, dict)}")
+        if not isinstance(result, dict):
+            logger.debug(f"GLM result attributes: {dir(result)}")
+
+        # Process result - handle both SDK object and HTTP dict responses
+        if isinstance(result, dict):
+            # HTTP client returns dict
+            content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+            actual_model = result.get("model", model_name)
+            response_id = result.get("id")
+            created_ts = result.get("created")
+            usage = result.get("usage", {})
+        else:
+            # SDK returns object - handle both zai-sdk StreamResponse and regular response
+            # zai-sdk returns StreamResponse which needs to be consumed
+            if hasattr(result, '__iter__') and not hasattr(result, 'choices'):
+                # StreamResponse - consume the stream
+                chunks = []
+                for chunk in result:
+                    if hasattr(chunk, 'choices') and chunk.choices:
+                        delta = chunk.choices[0].delta
+                        if hasattr(delta, 'content') and delta.content:
+                            chunks.append(delta.content)
+                content = ''.join(chunks)
+                # Get metadata from last chunk
+                actual_model = chunk.model if hasattr(chunk, 'model') else model_name
+                response_id = chunk.id if hasattr(chunk, 'id') else None
+                created_ts = chunk.created if hasattr(chunk, 'created') else None
+                usage = {}  # Stream responses don't have usage info
+            else:
+                # Regular response object
+                content = result.choices[0].message.content if result.choices else ""
+                actual_model = result.model if hasattr(result, 'model') else model_name
+                response_id = result.id if hasattr(result, 'id') else None
+                created_ts = result.created if hasattr(result, 'created') else None
+                usage = dict(result.usage) if hasattr(result, 'usage') and result.usage else {}
 
         response_size = len(str(content).encode('utf-8'))
 

@@ -320,7 +320,7 @@ class ToolExecutor:
                 await self._send_stream_chunk(ws, req_id, chunk, resilient_ws_manager)
 
             # DEBUG: Log before tool execution
-            logger.info(f"[DEBUG] About to execute tool: {name}")
+            logger.info(f"[DEBUG] About to execute tool: {tool}")
             logger.info(f"[DEBUG] Arguments keys: {list(arguments.keys()) if arguments else []}")
 
             # Execute tool with timeout and streaming callback
