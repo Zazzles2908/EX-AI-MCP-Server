@@ -320,20 +320,25 @@ These requirements are **mutually exclusive** - cannot satisfy both!
 
 ### Solution Implemented
 
-**Removed zhipuai SDK entirely** and switched to OpenAI SDK for GLM:
+**Switched from zhipuai SDK to zai-sdk (official Z.ai SDK):**
 
 1. **Updated `requirements.txt`:**
-   - Removed: `zhipuai>=2.1.0`
-   - Kept: `mcp>=1.20.0`
-   - Kept: `openai>=1.55.2`
+   - Removed: `zhipuai>=2.1.0` (requires PyJWT <2.9.0)
+   - Added: `zai-sdk>=0.0.3.3` (requires PyJWT >=2.8.0)
+   - Kept: `mcp>=1.20.0` (requires PyJWT >=2.10.1)
 
 2. **Why This Works:**
-   - GLM/Z.ai is **OpenAI-compatible** (proven in `tests/sdk/test_glm_openai_sdk.py`)
-   - Thinking mode works via `extra_body={"thinking": {"type": "enabled"}}`
-   - All other features (chat, streaming, files, embeddings) work with OpenAI SDK
+   - `zai-sdk` is the **official Z.ai SDK** (not zhipuai)
+   - `zai-sdk` requires PyJWT >=2.8.0 which is **COMPATIBLE** with MCP 1.20.0
+   - Better features than zhipuai:
+     * Higher file size limits: 1GB vs 512MB
+     * Longer retention: 90 days vs 30 days
+     * Better rate limits: 100 vs 50 uploads/minute
+     * Built-in caching and retry mechanisms
 
 3. **Docker Rebuild:**
    - Built successfully without PyJWT conflict
+   - zai-sdk 0.0.4.2 installed in container
    - MCP 1.20.0 installed in container
    - Daemon started successfully
 
