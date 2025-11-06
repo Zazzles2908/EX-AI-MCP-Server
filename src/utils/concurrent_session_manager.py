@@ -531,6 +531,64 @@ class ConcurrentSessionManager:
 
         _logger.info("Session manager metrics reset")
 
+    def execute_sync(
+        self,
+        provider: str,
+        func: Callable,
+        *args,
+        request_id: Optional[str] = None,
+        timeout_seconds: Optional[float] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Execute a function synchronously within a managed session.
+
+        DEPENDENCY FIX (2025-11-05): Added to resolve interface mismatch
+        Provides backward compatibility for code expecting execute_sync method.
+
+        This is a wrapper around execute_with_session that returns a result_container
+        dict with 'result' and 'exception' keys, matching the expected interface.
+
+        Args:
+            provider: Provider name
+            func: Function to execute
+            *args: Positional arguments for func
+            request_id: Optional request ID
+            timeout_seconds: Optional timeout override
+            **kwargs: Keyword arguments for func
+
+        Returns:
+            Dict with keys:
+                - 'result': Function result if successful
+                - 'exception': Exception if one occurred
+                - 'completed': Boolean success flag
+        """
+        result_container = {'result': None, 'exception': None, 'completed': False}
+
+        try:
+            # Use execute_with_session for actual execution
+            result = self.execute_with_session(
+                provider=provider,
+                model="default",  # Default model for sync execution
+                func=func,
+                *args,
+                request_id=request_id,
+                timeout_seconds=timeout_seconds,
+                add_session_context=False,  # Don't add context for sync calls
+                enforce_timeout=True,
+                **kwargs
+            )
+
+            result_container['result'] = result
+            result_container['completed'] = True
+
+        except Exception as e:
+            _logger.error(f"execute_sync failed for provider {provider}: {e}")
+            result_container['exception'] = e
+            result_container['completed'] = False
+
+        return result_container
+
     def shutdown(self, timeout_seconds: float = 30.0) -> Dict[str, Any]:
         """
         Gracefully shutdown the session manager.

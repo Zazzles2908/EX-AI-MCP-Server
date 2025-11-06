@@ -386,11 +386,17 @@ class RequestRouter:
         resilient_ws_manager=None
     ) -> None:
         """Handle a list_tools request."""
+        import logging
+        logger = logging.getLogger("src.daemon.ws.request_router")
+        logger.info(f"[LIST_TOOLS] Handling list_tools request, req_id={req_id}")
+
         try:
             # Import the server tools registry
             # This needs to be imported dynamically to avoid circular imports
             try:
+                logger.info(f"[LIST_TOOLS] Attempting to import SERVER_TOOLS from server.py...")
                 from server import SERVER_TOOLS  # type: ignore
+                logger.info(f"[LIST_TOOLS] Successfully imported SERVER_TOOLS, type={type(SERVER_TOOLS)}, len={len(SERVER_TOOLS) if SERVER_TOOLS else 'N/A'}")
             except ImportError:
                 # Fallback - try to get from the registry
                 try:
@@ -425,10 +431,18 @@ class RequestRouter:
             tools_list = []
             if SERVER_TOOLS:
                 for tool in SERVER_TOOLS.values():
+                    # Tool is an object with attributes, not a dict
+                    name = getattr(tool, 'name', '')
+                    description = getattr(tool, 'description', '')
+                    # Get input schema - might be an attribute or method
+                    input_schema = getattr(tool, 'inputSchema', None)
+                    if input_schema is None:
+                        # Try to get via method
+                        input_schema = getattr(tool, 'get_input_schema', lambda: {"type": "object"})()
                     tools_list.append({
-                        "name": tool.get("name", ""),
-                        "description": tool.get("description", ""),
-                        "inputSchema": tool.get("inputSchema", {"type": "object"})
+                        "name": name,
+                        "description": description,
+                        "inputSchema": input_schema
                     })
 
             await _safe_send(

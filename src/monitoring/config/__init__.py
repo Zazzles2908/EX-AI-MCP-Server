@@ -12,7 +12,7 @@ from src.monitoring.config.dual_write_config import (
 )
 from src.monitoring.config.config_manager import (
     ConfigManager,
-    get_config_manager,
+    # DEPRECATED: get_config_manager removed - use dependency injection
 )
 
 __all__ = [
@@ -21,6 +21,6 @@ __all__ = [
     'AdapterHealthConfig',
     'AdapterType',
     'ConfigManager',
-    'get_config_manager',
+    # DEPRECATED: 'get_config_manager' - use ConfigManager() instead
 ]
 

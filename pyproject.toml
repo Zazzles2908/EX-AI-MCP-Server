@@ -27,7 +27,10 @@ dependencies = [
     "openai>=1.55.2",
     "pydantic>=2.0.0",
     "python-dotenv>=1.0.0",
-    "zhipuai>=2.1.0",
+    # DEPENDENCY FIX (2025-11-05): Switched from zhipuai to zai-sdk
+    # zhipuai requires PyJWT<2.9.0, conflicting with MCP 1.20.0 (requires PyJWT>=2.10.1)
+    # zai-sdk is compatible and provides better features
+    "zai-sdk>=0.0.3.3",
     "httpx>=0.28.0",
     "importlib-resources>=5.0.0; python_version<'3.9'",
 ]

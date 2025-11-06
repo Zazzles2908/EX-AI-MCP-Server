@@ -1024,7 +1024,7 @@ async def example_usage():
             end_date=end_date
         )
         
-        print(f"Generated report with {report['report_metadata']['total_events']} events")
+        logger.info(f"Generated report with {report['report_metadata']['total_events']} events")
         
     finally:
         await audit_logger.close()

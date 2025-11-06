@@ -760,7 +760,7 @@ class ErrorRecoveryManager:
             workflow["error"] = str(e)
             errors.append(str(e))
             
-        return len(errors) == 0, errors
+        return not errors, errors
         
     async def rollback_operations(self, operation_names: List[str]):
         """Rollback a list of operations"""
@@ -819,13 +819,13 @@ async def example_usage():
         )
         
         if success:
-            print(f"Operation succeeded: {result}")
+            logger.info(f"Operation succeeded: {result}")
         else:
-            print(f"Operation failed: {error}")
+            logger.info(f"Operation failed: {error}")
             
         # Get metrics
         metrics = await recovery_manager.get_recovery_metrics()
-        print(f"Recovery metrics: {metrics}")
+        logger.info(f"Recovery metrics: {metrics}")
         
         # Cleanup
         await recovery_manager.cleanup_recovery_resources()

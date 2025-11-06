@@ -20,6 +20,9 @@ from typing import Any, Optional, TYPE_CHECKING
 
 from src.providers.base import ModelProvider, ProviderType
 
+# Import error handling framework
+from src.daemon.error_handling import ProviderError, ErrorCode, log_error
+
 logger = logging.getLogger(__name__)
 from src.providers.registry_config import _apply_cost_aware, _apply_free_first
 from src.router.routing_cache import get_routing_cache
@@ -364,7 +367,8 @@ def call_with_fallback(
                     record_error(str(provider), model, "call_failed_none", "Provider returned None")
                 except Exception:
                     pass
-                raise RuntimeError(f"Provider returned None for model '{model}'")
+                log_error(ErrorCode.PROVIDER_ERROR, f"Provider returned None for model '{model}'")
+                raise ProviderError(provider, Exception(f"Provider returned None for model '{model}'"))
             # Best-effort usage capture for success telemetry
             usage = getattr(resp, "usage", {}) or {}
             cls.record_telemetry(
@@ -398,7 +402,8 @@ def call_with_fallback(
             continue
     if last_exc:
         raise last_exc
-    raise RuntimeError("No models available for fallback execution")
+    log_error(ErrorCode.PROVIDER_ERROR, "No models available for fallback execution")
+    raise ProviderError("Registry", Exception("No models available for fallback execution"))
 
 
 # ================================================================================

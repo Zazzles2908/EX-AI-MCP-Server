@@ -14,6 +14,9 @@ import os
 from pathlib import Path
 from typing import Any, Optional
 
+# Import error handling framework
+from src.daemon.error_handling import ProviderError, ErrorCode, log_error
+
 logger = logging.getLogger(__name__)
 
 
@@ -146,7 +149,8 @@ def upload_file(
 
     file_id = js.get("id") or js.get("data", {}).get("id")
     if not file_id:
-        raise RuntimeError(f"GLM upload did not return an id: {js}")
+        log_error(ErrorCode.PROVIDER_ERROR, "GLM upload did not return an id")
+        raise ProviderError("GLM", Exception(f"GLM upload did not return an id: {js}"))
     return str(file_id)
 
 
@@ -310,7 +314,8 @@ class GLMFileProvider:
 
         file_id = js.get("id") or js.get("data", {}).get("id")
         if not file_id:
-            raise RuntimeError(f"GLM upload did not return an id: {js}")
+            log_error(ErrorCode.PROVIDER_ERROR, "GLM upload did not return an id")
+            raise ProviderError("GLM", Exception(f"GLM upload did not return an id: {js}"))
 
         return str(file_id)
 

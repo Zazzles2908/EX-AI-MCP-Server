@@ -134,7 +134,26 @@ def chat_completions_create_with_continuation(
 
             # Extract content
             content = result.choices[0].message.content if result.choices else ""
-            usage = dict(result.usage) if hasattr(result, 'usage') and result.usage else {}
+
+            # CRITICAL FIX: Handle CompletionUsage object properly
+            # Convert usage object to dict safely, handling different usage object types
+            usage = {}
+            if hasattr(result, 'usage') and result.usage:
+                try:
+                    if isinstance(result.usage, dict):
+                        # Already a dict, use it directly
+                        usage = result.usage.copy()
+                    else:
+                        # Handle CompletionUsage object - extract attributes safely
+                        usage_obj = result.usage
+                        usage = {
+                            "prompt_tokens": getattr(usage_obj, 'prompt_tokens', 0),
+                            "completion_tokens": getattr(usage_obj, 'completion_tokens', 0),
+                            "total_tokens": getattr(usage_obj, 'total_tokens', 0),
+                        }
+                except Exception as e:
+                    logger.warning(f"[GLM_STREAMING] Failed to extract usage info: {e}")
+                    usage = {}
 
             return {
                 "content": content,

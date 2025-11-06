@@ -1,0 +1,40 @@
+{
+  "mcpServers": {
+    "gh-mcp": {
+      "command": "node",
+      "args": ["C:/Project/Git_cli/gh-cli/mcp/gh-mcp/dist/server.js"],
+      "env": { "GH_HOST": "github.com" }
+    },
+    "excalidraw-mermaid": {
+      "command": "node",
+      "args": ["C:/Project/exaclidraw/excalidraw/mcp-server/index.js"],
+      "env": { "PORT": "3003" }
+    },
+    "exai-mcp": {
+      "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
+      "args": [
+        "-u",
+        "C:/Project/EX-AI-MCP-Server/scripts/runtime/run_ws_shim.py"
+      ],
+      "env": {
+        "ENV_FILE": "C:/Project/EX-AI-MCP-Server/.env",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONIOENCODING": "utf-8",
+        "LOG_LEVEL": "INFO",
+        "EXAI_WS_HOST": "127.0.0.1",
+        "EXAI_WS_PORT": "8079",
+        "EXAI_JWT_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbGF1ZGVAZXhhaS1tY3AubG9jYWwiLCJpc3MiOiJleGFpLW1jcC1zZXJ2ZXIiLCJhdWQiOiJleGFpLW1jcC1jbGllbnQiLCJpYXQiOjE3NjIxMjUwNzMsImV4cCI6MTc5MzY2MTA3M30.hVzyioI0JRDgGnbVIq7NYZOsPiiOYjjuRXwAPBVtFn0"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:/Project",
+        "C:/Users/Jazeel-Home",
+        "C:/Project/ADP"
+      ]
+    }
+  }
+}

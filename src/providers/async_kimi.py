@@ -11,6 +11,9 @@ from . import kimi_config
 from . import async_kimi_chat
 from config import TimeoutConfig
 
+# Import error handling framework
+from src.daemon.error_handling import ProviderError, ErrorCode, log_error
+
 logger = logging.getLogger(__name__)
 
 
@@ -94,14 +97,13 @@ class AsyncKimiProvider(AsyncModelProvider):
             )
             
             logger.info(f"Async Kimi provider initialized with AsyncOpenAI (base_url={self.base_url})")
-            
+
         except ImportError as e:
-            raise RuntimeError(
-                "openai AsyncOpenAI not available. "
-                "Install with: pip install openai>=1.55.2"
-            ) from e
+            log_error(ErrorCode.PROVIDER_ERROR, "openai AsyncOpenAI not available", exc_info=True)
+            raise ProviderError("Kimi", Exception("openai AsyncOpenAI not available. Install with: pip install openai>=1.55.2")) from e
         except Exception as e:
-            raise RuntimeError(f"Failed to initialize async Kimi provider: {e}") from e
+            log_error(ErrorCode.PROVIDER_ERROR, f"Failed to initialize async Kimi provider: {e}", exc_info=True)
+            raise ProviderError("Kimi", e) from e
     
     def get_provider_type(self) -> ProviderType:
         """Get the provider type."""

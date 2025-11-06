@@ -20,6 +20,9 @@ import logging
 from typing import Dict, Any, Set, Callable, Optional
 from aiohttp.web_ws import WebSocketResponse
 
+# Import error handling framework
+from src.daemon.error_handling import ErrorCode, log_error
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,11 +30,11 @@ class DashboardBroadcaster:
     """Broadcasts monitoring data to all connected dashboard clients"""
 
     def __init__(self):
-        self.clients: Set[web.WebSocketResponse] = set()
+        self.clients: Set[WebSocketResponse] = set()
         self.event_handlers: list[Callable] = []
         self._broadcast_lock = asyncio.Lock()
 
-    def register_client(self, ws: web.WebSocketResponse):
+    def register_client(self, ws: WebSocketResponse):
         """
         Register a new dashboard client.
 
@@ -41,7 +44,7 @@ class DashboardBroadcaster:
         self.clients.add(ws)
         logger.debug(f"Dashboard client registered. Total clients: {len(self.clients)}")
 
-    def unregister_client(self, ws: web.WebSocketResponse):
+    def unregister_client(self, ws: WebSocketResponse):
         """
         Unregister a dashboard client.
 
@@ -139,7 +142,7 @@ class DashboardBroadcaster:
             try:
                 await handler(event_type, data)
             except Exception as e:
-                logger.error(f"Error in event handler: {e}")
+                log_error(ErrorCode.INTERNAL_ERROR, f"Error in event handler: {e}", exc_info=True)
 
     def get_client_count(self) -> int:
         """

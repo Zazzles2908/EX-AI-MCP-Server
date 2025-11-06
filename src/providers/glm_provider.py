@@ -27,6 +27,8 @@ from utils.timezone_helper import log_timestamp
 from src.resilience.circuit_breaker_manager import circuit_breaker_manager
 import pybreaker
 
+from src.daemon.error_handling import ProviderError, ErrorCode, log_error
+
 logger = logging.getLogger(__name__)
 
 
@@ -75,6 +77,22 @@ def build_payload(
 
     if kwargs.get("tool_choice"):
         payload["tool_choice"] = kwargs["tool_choice"]
+
+    # CRITICAL FIX (2025-11-05): Filter out thinking_mode parameter from kwargs
+    # This prevents thinking_mode from being passed to Completions.create()
+    if "thinking_mode" in kwargs:
+        thinking_mode_value = kwargs["thinking_mode"]
+        if thinking_mode_value and thinking_mode_value != "disabled":
+            logger.debug(f"[GLM_PROVIDER] build_payload: thinking_mode='{thinking_mode_value}' ignored for GLM provider")
+        else:
+            logger.debug(f"[GLM_PROVIDER] build_payload: thinking_mode disabled or empty")
+        # Remove thinking_mode from kwargs to prevent it from being added to payload
+        kwargs = {k: v for k, v in kwargs.items() if k != "thinking_mode"}
+
+    # Add any remaining kwargs to payload
+    for key, value in kwargs.items():
+        if key not in payload:  # Don't override existing keys
+            payload[key] = value
 
     return payload
 
@@ -134,35 +152,40 @@ def generate_content(
     stream_mode = stream
 
     try:
-        # Build payload
-        payload = build_payload(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            model_name=model_name,
-            temperature=temperature,
-            max_output_tokens=max_output_tokens,
-            stream=stream,
-            tools=tools,
-            tool_choice=tool_choice,
-            **kwargs
-        )
+        try:
+            # Build payload
+            payload = build_payload(
+                prompt=prompt,
+                system_prompt=system_prompt,
+                model_name=model_name,
+                temperature=temperature,
+                max_output_tokens=max_output_tokens,
+                stream=stream,
+                tools=tools,
+                tool_choice=tool_choice,
+                **kwargs
+            )
 
-        # Log request details
-        logger.debug(f"GLM request: model={model_name}, stream={stream}, use_sdk={use_sdk}")
+            # Log request details
+            logger.debug(f"GLM request: model={model_name}, stream={stream}, use_sdk={use_sdk}")
 
-        # Use SDK if available, otherwise fall back to HTTP client
-        if use_sdk and sdk_client:
-            # Apply circuit breaker and make request with SDK
-            @breaker
-            def _call_with_breaker():
-                return sdk_client.chat.completions.create(**payload)
-        else:
-            # Fall back to HTTP client
-            @breaker
-            def _call_with_breaker():
-                return http_client.post("/chat/completions", json=payload)
+            # Use SDK if available, otherwise fall back to HTTP client
+            if use_sdk and sdk_client:
+                # Apply circuit breaker and make request with SDK
+                @breaker
+                def _call_with_breaker():
+                    return sdk_client.chat.completions.create(**payload)
+            else:
+                # Fall back to HTTP client
+                @breaker
+                def _call_with_breaker():
+                    return http_client.post("/chat/completions", json=payload)
 
-        result = _call_with_breaker()
+            result = _call_with_breaker()
+        except Exception as inner_e:
+            import traceback
+            log_error(ErrorCode.PROVIDER_ERROR, f"GLM generate_content failed: {type(inner_e).__name__}: {inner_e}", request_id, exc_info=True)
+            raise ProviderError("GLM", inner_e) from inner_e
 
         # DEBUG: Log result type and attributes
         logger.debug(f"GLM result type: {type(result)}, has choices: {hasattr(result, 'choices')}, is dict: {isinstance(result, dict)}")
@@ -200,7 +223,35 @@ def generate_content(
                 actual_model = result.model if hasattr(result, 'model') else model_name
                 response_id = result.id if hasattr(result, 'id') else None
                 created_ts = result.created if hasattr(result, 'created') else None
-                usage = dict(result.usage) if hasattr(result, 'usage') and result.usage else {}
+
+                # CRITICAL FIX: Handle CompletionUsage object with comprehensive error handling
+                usage = {}
+                try:
+                    if hasattr(result, 'usage') and result.usage:
+                        # Try multiple approaches to safely extract usage info
+                        if isinstance(result.usage, dict):
+                            # Already a dict, use it directly
+                            usage = result.usage.copy()
+                        elif hasattr(result.usage, '__dict__'):
+                            # Object with attributes, extract them safely
+                            usage = {}
+                            for attr in ['prompt_tokens', 'completion_tokens', 'total_tokens', 'cost']:
+                                if hasattr(result.usage, attr):
+                                    usage[attr] = getattr(result.usage, attr, 0)
+                        else:
+                            # Try getattr with defaults
+                            usage = {
+                                "prompt_tokens": getattr(result.usage, 'prompt_tokens', 0),
+                                "completion_tokens": getattr(result.usage, 'completion_tokens', 0),
+                                "total_tokens": getattr(result.usage, 'total_tokens', 0),
+                            }
+
+                        logger.debug(f"[GLM_PROVIDER] Successfully extracted usage: {usage}")
+                    else:
+                        logger.debug("[GLM_PROVIDER] No usage info in result")
+                except Exception as e:
+                    log_error(ErrorCode.INTERNAL_ERROR, f"Failed to extract usage info: {e}", request_id, exc_info=True)
+                    usage = {}
 
         response_size = len(str(content).encode('utf-8'))
 
@@ -223,7 +274,7 @@ def generate_content(
 
     except pybreaker.CircuitBreakerError:
         # Circuit breaker is OPEN - GLM API is unavailable
-        logger.error("GLM circuit breaker OPEN - API unavailable")
+        log_error(ErrorCode.SERVICE_UNAVAILABLE, "GLM circuit breaker OPEN - API unavailable", request_id)
         error = "Circuit breaker OPEN - GLM API unavailable"
 
         # Return error response (graceful degradation)
@@ -240,9 +291,9 @@ def generate_content(
         )
 
     except Exception as e:
-        logger.error("GLM generate_content failed: %s", e)
+        log_error(ErrorCode.PROVIDER_ERROR, f"GLM generate_content failed: {e}", request_id, exc_info=True)
         error = str(e)
-        raise RuntimeError(f"GLM generate_content failed: {e}")
+        raise ProviderError("GLM", e) from e
 
     finally:
         # Record monitoring event
@@ -276,7 +327,7 @@ def generate_content(
             )
 
         except Exception as e:
-            logger.error(f"Failed to record monitoring event: {e}", exc_info=True)
+            log_error(ErrorCode.INTERNAL_ERROR, f"Failed to record monitoring event: {e}", request_id, exc_info=True)
 
 
 def chat_completions_create(
@@ -323,23 +374,85 @@ def chat_completions_create(
         payload["tool_choice"] = tool_choice
 
     # Add any additional kwargs
+    # CRITICAL FIX (2025-11-05): Transform thinking_mode parameter for GLM provider
+    # GLM expects thinking mode as {"thinking": {"type": "enabled"}} format, not thinking_mode parameter
+    logger.info(f"[GLM_PROVIDER] Processing {len(kwargs)} kwargs: {list(kwargs.keys())}")
     for key, value in kwargs.items():
-        if key not in payload:
+        if key in payload:
+            logger.debug(f"[GLM_PROVIDER] Skipping key '{key}' (already in payload)")
+            continue
+
+        # CRITICAL FIX: Explicitly filter out thinking_mode before it reaches Completions.create()
+        # This prevents the error "Completions.create() got an unexpected keyword argument 'thinking_mode'"
+        if key == "thinking_mode":
+            if value and value != "disabled":
+                # Convert thinking_mode string to GLM's thinking parameter format
+                payload["thinking"] = {"type": "enabled"}
+                logger.warning(f"[GLM_PROVIDER] Transformed thinking_mode='{value}' to GLM thinking format. Note: GLM's thinking mode support is limited.")
+            else:
+                logger.debug(f"[GLM_PROVIDER] Skipping thinking_mode (value={value})")
+            continue
+
+        # CRITICAL FIX (2025-11-06): Filter out on_chunk parameter
+        # GLM SDK doesn't support streaming callbacks (on_chunk)
+        if key == "on_chunk":
+            logger.warning(f"[GLM_PROVIDER] Skipping on_chunk parameter (streaming not supported) - value type: {type(value)}")
+            continue
+
+        # Filter out other thinking-related parameters that GLM doesn't understand
+        if key not in ("kimi_thinking",):
             payload[key] = value
+            logger.debug(f"[GLM_PROVIDER] Added key '{key}' to payload")
+
+    logger.info(f"[GLM_PROVIDER] Final payload keys: {list(payload.keys())}")
 
     try:
+        # CRITICAL DEBUG: Log thinking_mode status before calling Completions.create()
+        if "thinking_mode" in payload:
+            log_error(ErrorCode.INTERNAL_ERROR, f"CRITICAL: thinking_mode is still in payload! Payload keys: {list(payload.keys())}")
+
         # Make request with circuit breaker protection
         breaker = circuit_breaker_manager.get_breaker('glm')
 
         @breaker
         def _call_with_breaker():
+            # CRITICAL DEBUG: Check payload before calling Completions.create()
+            if "thinking_mode" in payload:
+                log_error(ErrorCode.INTERNAL_ERROR, f"ERROR: Passing thinking_mode to Completions.create()! Payload: {payload}")
+                raise ValueError(f"Internal error: thinking_mode not filtered from payload. Keys: {list(payload.keys())}")
             return sdk_client.chat.completions.create(**payload)
 
         result = _call_with_breaker()
 
-        # Extract response data
-        content = result.choices[0].message.content if result.choices else ""
-        usage = dict(result.usage) if hasattr(result, 'usage') and result.usage else {}
+        try:
+            # Extract response data
+            content = result.choices[0].message.content if result.choices else ""
+            # CRITICAL FIX: Handle CompletionUsage object with comprehensive error handling
+            usage = {}
+            if hasattr(result, 'usage') and result.usage:
+                # Try multiple approaches to safely extract usage info
+                if isinstance(result.usage, dict):
+                    # Already a dict, use it directly
+                    usage = result.usage.copy()
+                elif hasattr(result.usage, '__dict__'):
+                    # Object with attributes, extract them safely
+                    usage = {}
+                    for attr in ['prompt_tokens', 'completion_tokens', 'total_tokens', 'cost']:
+                        if hasattr(result.usage, attr):
+                            usage[attr] = getattr(result.usage, attr, 0)
+                else:
+                    # Try getattr with defaults
+                    usage = {
+                        "prompt_tokens": getattr(result.usage, 'prompt_tokens', 0),
+                        "completion_tokens": getattr(result.usage, 'completion_tokens', 0),
+                        "total_tokens": getattr(result.usage, 'total_tokens', 0),
+                    }
+                logger.debug(f"[GLM_PROVIDER] chat_completions: Successfully extracted usage: {usage}")
+            else:
+                logger.debug("[GLM_PROVIDER] chat_completions: No usage info in result")
+        except Exception as e:
+            log_error(ErrorCode.INTERNAL_ERROR, f"Failed to extract usage info: {type(e).__name__}: {e}", exc_info=True)
+            usage = {}
 
         # Return normalized response
         return {
@@ -356,9 +469,9 @@ def chat_completions_create(
         }
 
     except pybreaker.CircuitBreakerError:
-        logger.error("GLM circuit breaker OPEN during chat_completions_create")
-        raise RuntimeError("GLM API unavailable (circuit breaker open)")
+        log_error(ErrorCode.SERVICE_UNAVAILABLE, "GLM circuit breaker OPEN during chat_completions_create")
+        raise ProviderError("GLM", Exception("GLM API unavailable (circuit breaker open)"))
 
     except Exception as e:
-        logger.error("GLM chat_completions_create failed: %s", e)
-        raise RuntimeError(f"GLM chat completion failed: {e}")
+        log_error(ErrorCode.PROVIDER_ERROR, f"GLM chat_completions_create failed: {e}", exc_info=True)
+        raise ProviderError("GLM", e) from e

@@ -86,7 +86,7 @@ def setup_logging(
             datefmt="%Y-%m-%d %H:%M:%S"
         )
         # Log warning about timezone fallback (will use logger after it's configured)
-        print(f"WARNING: Failed to load Melbourne timezone - falling back to UTC: {e}", file=sys.stderr)
+        logger.info(f"WARNING: Failed to load Melbourne timezone - falling back to UTC: {e}", file=sys.stderr)
     
     # Add console handler
     if console_logging:

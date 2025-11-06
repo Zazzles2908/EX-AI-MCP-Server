@@ -132,21 +132,22 @@ class SmartFileQueryTool(BaseTool):
         - Files outside these directories are NOT accessible
         - If you need to analyze external files, they must be copied into the project first
 
-        🔧 PROVIDER CAPABILITIES:
-        - Kimi: ✅ Full file support, persistent uploads, 100MB limit
-        - GLM: ❌ NO file persistence (must re-upload each query), 20MB limit
-        - Auto: ALWAYS uses Kimi for file operations (GLM cannot handle pre-uploaded files)
+        ⚠️ CRITICAL PROVIDER LIMITATION:
+        - File analysis REQUIRES Kimi provider
+        - GLM-4.5-Flash: ❌ NO file support (20MB limit, no persistence)
+        - Kimi: ✅ Full file support (100MB limit, persistent uploads)
+        - Auto mode: ALWAYS selects Kimi for file operations
 
         Features:
         - Automatic SHA256-based deduplication (reuses existing uploads)
-        - Intelligent provider selection (ALWAYS Kimi for files)
-        - Automatic fallback (GLM fails → Kimi, vice versa)
+        - Intelligent provider selection (Kimi only for files)
+        - Clear messaging when GLM is requested but Kimi is used
         - Centralized Supabase tracking
         - Path validation and security checks
 
         Example: smart_file_query(file_path="/mnt/project/EX-AI-MCP-Server/src/file.py", question="Analyze this code")
 
-        Note: When files are provided, Kimi will ALWAYS be used regardless of provider setting due to GLM's file handling limitations.
+        Note: If you request GLM provider for file analysis, the system will automatically switch to Kimi and inform you why.
         """
     
     @staticmethod
@@ -156,8 +157,8 @@ class SmartFileQueryTool(BaseTool):
             "properties": {
                     "file_path": {
                     "type": "string",
-                    "description": "REQUIRED. Absolute Linux path to file within mounted directories. MUST start with /mnt/project/EX-AI-MCP-Server/ or /mnt/project/Personal_AI_Agent/. Files outside these directories are NOT accessible. Windows paths NOT supported.",
-                    "pattern": "^/mnt/project/(EX-AI-MCP-Server|Personal_AI_Agent)/.*"
+                    "description": "REQUIRED. Absolute Linux path to file within mounted directories. MUST start with /app/ or /mnt/project/EX-AI-MCP-Server/ or /mnt/project/Personal_AI_Agent/. Files outside these directories are NOT accessible. Windows paths NOT supported.",
+                    "pattern": "^/(app|mnt/project/(EX-AI-MCP-Server|Personal_AI_Agent))/.*"
                 },
                 "question": {
                     "type": "string",
@@ -346,8 +347,9 @@ class SmartFileQueryTool(BaseTool):
                 logger.warning(f"[SMART_FILE_QUERY] Rate limit check failed: {e}. Proceeding without rate limiting.")
 
         # Step 3: Select provider (always Kimi for file operations)
-        provider = self._select_provider(file_size_mb)
+        provider, provider_message = self._select_provider(file_size_mb, provider_pref)
         logger.debug(f"[SMART_FILE_QUERY] Selected provider: {provider}")
+        logger.info(f"[SMART_FILE_QUERY] Provider selection: {provider_message}")
 
         # Step 4: Check deduplication (async to avoid blocking)
         # FIX (2025-10-29): Run deduplication check in thread pool to avoid blocking event loop
@@ -433,7 +435,7 @@ class SmartFileQueryTool(BaseTool):
             logger.error(f"[SMART_FILE_QUERY] Query failed: {e}")
             raise
     
-    def _select_provider(self, file_size_mb: float) -> str:
+    def _select_provider(self, file_size_mb: float, provider_pref: str = "auto") -> Tuple[str, str]:
         """
         Select provider for file operations.
 
@@ -444,9 +446,10 @@ class SmartFileQueryTool(BaseTool):
 
         Args:
             file_size_mb: File size in MB
+            provider_pref: User's provider preference ('auto', 'kimi', 'glm')
 
         Returns:
-            'kimi' - the only supported provider for file operations
+            Tuple[str, str]: (selected_provider, explanation_message)
 
         Raises:
             ValueError: If file size exceeds 100MB limit
@@ -454,8 +457,23 @@ class SmartFileQueryTool(BaseTool):
         if file_size_mb > 100:
             raise ValueError(f"File size {file_size_mb:.2f}MB exceeds maximum limit of 100MB")
 
-        logger.debug(f"[SMART_FILE_QUERY] Using Kimi provider (size: {file_size_mb:.2f}MB)")
-        return "kimi"
+        if provider_pref == "glm":
+            # UX FIX (2025-11-05): Provide clear message when GLM is requested
+            message = (
+                f"GLM-4.5-Flash cannot analyze files (20MB limit, no persistence). "
+                f"Switching to Kimi provider (100MB limit, persistent uploads) for this operation."
+            )
+            logger.info(f"[SMART_FILE_QUERY] User requested GLM but using Kimi: {message}")
+            return "kimi", message
+        elif provider_pref == "auto":
+            message = f"Using Kimi provider for file analysis (size: {file_size_mb:.2f}MB)"
+            logger.debug(f"[SMART_FILE_QUERY] {message}")
+            return "kimi", message
+        else:
+            # provider_pref == "kimi"
+            message = f"Using Kimi provider as requested (size: {file_size_mb:.2f}MB)"
+            logger.debug(f"[SMART_FILE_QUERY] {message}")
+            return "kimi", message
     
     async def _upload_file(self, file_path: str, provider: str, **kwargs) -> str:
         """
@@ -509,12 +527,8 @@ class SmartFileQueryTool(BaseTool):
             )
 
             # Extract file_id from result
-            if provider == "kimi":
-                file_id = result.get('kimi_file_id')
-            elif provider == "glm":
-                file_id = result.get('glm_file_id')
-            else:
-                raise ValueError(f"Unknown provider: {provider}")
+            # CRITICAL FIX: Use 'provider_file_id' (unified field) instead of provider-specific fields
+            file_id = result.get('provider_file_id')
 
             if not file_id:
                 raise ValueError(f"{provider} upload returned no file ID")
@@ -562,32 +576,38 @@ class SmartFileQueryTool(BaseTool):
             Query result content (string)
         """
         if provider == "kimi":
-            # Get Kimi provider instance
-            model_to_use = model if model != "auto" else "kimi-k2-0905-preview"
-            provider_instance = ModelProviderRegistry.get_provider_for_model(model_to_use)
+            # Get Kimi provider instance (async version)
+            from src.providers.async_kimi import AsyncKimiProvider
 
-            if not provider_instance:
-                raise ValueError(f"No provider found for model: {model_to_use}")
+            # UX FIX (2025-11-05): Always use Kimi model, ignore user's model choice if GLM was requested
+            # User's model preference is respected for non-file operations, but files REQUIRE Kimi models
+            if model != "auto" and "glm" in model.lower():
+                logger.info(f"[SMART_FILE_QUERY] Ignoring GLM model '{model}', using Kimi model for file analysis")
+                model_to_use = "kimi-k2-0905-preview"
+            else:
+                model_to_use = model if model != "auto" else "kimi-k2-0905-preview"
 
-            # Build messages with file_ids
-            messages = [
-                {
-                    "role": "user",
-                    "content": question
-                }
-            ]
+            # Check for both KIMI_API_KEY and MOONSHOT_API_KEY (consistent with provider registry)
+            api_key = os.getenv("KIMI_API_KEY") or os.getenv("MOONSHOT_API_KEY")
+            if not api_key:
+                raise ValueError("KIMI_API_KEY or MOONSHOT_API_KEY not configured")
 
-            # Call provider's chat_completion_async directly
-            result = await provider_instance.chat_completion_async(
-                messages=messages,
-                model=model_to_use,
+            provider_instance = AsyncKimiProvider(api_key=api_key)
+
+            # Call provider's async generate_content with file_ids
+            result = await provider_instance.generate_content(
+                prompt=question,
+                model_name=model_to_use,
                 file_ids=[file_id]  # Kimi supports file_ids parameter
             )
 
-            # Extract content from result
-            if isinstance(result, dict):
+            # Extract content from ModelResponse object
+            if hasattr(result, 'content'):
+                return result.content
+            elif isinstance(result, dict):
                 return result.get('content', str(result))
-            return str(result)
+            else:
+                return str(result)
 
         elif provider == "glm":
             # GLM doesn't support pre-uploaded files

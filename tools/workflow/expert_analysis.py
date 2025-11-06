@@ -423,6 +423,7 @@ class ExpertAnalysisMixin:
             # This prevents hangs when using models like glm-4.5-flash that don't support thinking
             # ISSUE #10 FIX: Make auto-upgrade configurable via EXPERT_ANALYSIS_AUTO_UPGRADE env var
             import os
+            from src.providers.base import ProviderType
             auto_upgrade_enabled = os.getenv("EXPERT_ANALYSIS_AUTO_UPGRADE", "true").strip().lower() in ("true", "1", "yes")
 
             if provider and hasattr(provider, 'supports_thinking_mode'):
@@ -627,6 +628,42 @@ class ExpertAnalysisMixin:
                 f"Timeout: {max_wait}s"
             )
 
+            # CRITICAL FIX (2025-11-05): Handle GLM thinking_mode incompatibility
+            # GLM provider (zai-sdk) doesn't accept thinking_mode parameter even for models marked as supporting it
+            # Auto-fallback to Kimi when thinking mode is requested with GLM provider
+            thinking_mode_requested = expert_thinking_mode and expert_thinking_mode != "disabled"
+            if thinking_mode_requested and provider and provider.get_provider_type() == ProviderType.GLM:
+                logger.warning(
+                    f"[EXPERT_ANALYSIS] GLM provider does not support thinking_mode parameter with zai-sdk. "
+                    f"Auto-fallback to Kimi provider for thinking mode support. "
+                    f"This may affect cost/performance."
+                )
+                # CRITICAL FIX (2025-11-05): Use SYNC Kimi provider for thinking mode fallback
+                # Problem: AsyncKimiProvider.chat_completions_create() returns coroutine when called sync
+                # Solution: Use sync Kimi provider instead to avoid coroutine error in sync execution path
+                from src.providers.kimi import KimiModelProvider
+                from src.providers.base import ProviderType
+                kimi_api_key = os.getenv("KIMI_API_KEY") or os.getenv("MOONSHOT_API_KEY")
+                if kimi_api_key:
+                    # Create SYNC Kimi provider (not async) to avoid coroutine issues in sync path
+                    provider = KimiModelProvider(
+                        api_key=kimi_api_key,
+                        base_url=os.getenv("KIMI_API_URL", "https://api.moonshot.ai/v1")
+                    )
+                    model_name = "kimi-thinking-preview"
+                    # Update model context
+                    from utils.model.context import ModelContext
+                    self._model_context = ModelContext(model_name)
+                    self._current_model_name = model_name
+                    logger.info(f"[EXPERT_ANALYSIS] Successfully switched to SYNC Kimi provider with {model_name}")
+                else:
+                    logger.error(
+                        f"[EXPERT_ANALYSIS] Cannot fallback to Kimi: KIMI_API_KEY or MOONSHOT_API_KEY not configured. "
+                        f"Expert analysis will proceed without thinking mode."
+                    )
+                    # Disable thinking mode if Kimi is not available
+                    expert_thinking_mode = "disabled"
+
             if use_async_providers:
                 # PHASE 2: Native async provider path (no run_in_executor)
                 logger.info(f"[EXPERT_DEBUG] Using ASYNC providers for {self.get_name()}")
@@ -690,13 +727,23 @@ class ExpertAnalysisMixin:
                                     timeout=max_wait
                                 )
 
-                                # Convert dict response to ModelResponse-like object for compatibility
+                                # CRITICAL FIX: Handle ModelResponse objects (which don't have .get() method)
+                                # Convert ModelResponse to dict-like object for compatibility
                                 from types import SimpleNamespace
-                                model_response = SimpleNamespace(
-                                    content=raw_response.get('content', ''),
-                                    model=raw_response.get('model', model_name),
-                                    usage=raw_response.get('usage', {})
-                                )
+                                if hasattr(raw_response, 'content') and not isinstance(raw_response, dict):
+                                    # This is a ModelResponse object - convert to SimpleNamespace
+                                    model_response = SimpleNamespace(
+                                        content=raw_response.content,
+                                        model=getattr(raw_response, 'model', model_name),
+                                        usage=getattr(raw_response, 'usage', {})
+                                    )
+                                else:
+                                    # This is a dict response
+                                    model_response = SimpleNamespace(
+                                        content=raw_response.get('content', ''),
+                                        model=raw_response.get('model', model_name),
+                                        usage=raw_response.get('usage', {})
+                                    )
 
                                 logger.info(f"[EXPERT_DEBUG] Async provider.chat_completions_create() returned successfully (MESSAGE ARRAYS)")
                             else:
@@ -704,7 +751,7 @@ class ExpertAnalysisMixin:
                                 logger.info(f"[EXPERT_DEBUG] Calling async provider.generate_content()")
 
                                 # LEGACY PATH: Use text-based prompts
-                                model_response = await asyncio.wait_for(
+                                raw_response = await asyncio.wait_for(
                                     async_provider.generate_content(
                                         prompt=prompt,
                                         model_name=model_name,
@@ -716,6 +763,24 @@ class ExpertAnalysisMixin:
                                     ),
                                     timeout=max_wait
                                 )
+
+                                # CRITICAL FIX: Handle ModelResponse objects (which don't have .get() method)
+                                # Convert ModelResponse to dict-like object for compatibility
+                                from types import SimpleNamespace
+                                if hasattr(raw_response, 'content') and not isinstance(raw_response, dict):
+                                    # This is a ModelResponse object - convert to SimpleNamespace
+                                    model_response = SimpleNamespace(
+                                        content=raw_response.content,
+                                        model=getattr(raw_response, 'model', model_name),
+                                        usage=getattr(raw_response, 'usage', {})
+                                    )
+                                else:
+                                    # This is a dict response
+                                    model_response = SimpleNamespace(
+                                        content=raw_response.get('content', '') if isinstance(raw_response, dict) else str(raw_response),
+                                        model=raw_response.get('model', model_name) if isinstance(raw_response, dict) else model_name,
+                                        usage=raw_response.get('usage', {}) if isinstance(raw_response, dict) else {}
+                                    )
 
                                 logger.info(f"[EXPERT_DEBUG] Async provider.generate_content() returned successfully (LEGACY)")
 
@@ -768,13 +833,24 @@ class ExpertAnalysisMixin:
                             **provider_kwargs,
                         )
 
-                        # Convert dict response to ModelResponse-like object for compatibility
-                        from types import SimpleNamespace
-                        result = SimpleNamespace(
-                            content=raw_response.get('content', ''),
-                            model=raw_response.get('model', model_name),
-                            usage=raw_response.get('usage', {})
-                        )
+                        # CRITICAL FIX: Handle ModelResponse objects (which don't have .get() method)
+                        # Convert ModelResponse to dict-like object for compatibility
+                        if hasattr(raw_response, 'content') and not isinstance(raw_response, dict):
+                            # This is a ModelResponse object - convert to SimpleNamespace with .get() support
+                            from types import SimpleNamespace
+                            result = SimpleNamespace(
+                                content=raw_response.content,
+                                model=getattr(raw_response, 'model', model_name),
+                                usage=getattr(raw_response, 'usage', {})
+                            )
+                        else:
+                            # This is already a dict response
+                            from types import SimpleNamespace
+                            result = SimpleNamespace(
+                                content=raw_response.get('content', ''),
+                                model=raw_response.get('model', model_name),
+                                usage=raw_response.get('usage', {})
+                            )
                         logger.info(f"[EXPERT_DEBUG] provider.chat_completions_create() returned successfully (MESSAGE ARRAYS)")
                         return result
 
@@ -804,6 +880,16 @@ class ExpertAnalysisMixin:
                             **provider_kwargs,  # CRITICAL: Use adapter-validated kwargs instead of raw use_websearch
                         )
                         logger.info(f"[EXPERT_DEBUG] provider.generate_content() returned successfully (LEGACY)")
+                        # CRITICAL FIX: Handle ModelResponse objects (which don't have .get() method)
+                        # Convert ModelResponse to dict-like object for compatibility
+                        if hasattr(result, 'content') and not isinstance(result, dict):
+                            # This is a ModelResponse object - convert to SimpleNamespace with .get() support
+                            from types import SimpleNamespace
+                            return SimpleNamespace(
+                                content=result.content,
+                                model=getattr(result, 'model', model_name),
+                                usage=getattr(result, 'usage', {})
+                            )
                         return result
 
                     logger.info(f"[EXPERT_DEBUG] About to submit _invoke_provider to executor")

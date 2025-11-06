@@ -322,7 +322,11 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
             # NEW (2025-10-24): Store streaming callback for provider access
             self._on_chunk_callback = on_chunk
 
-            logger.info(f"{self.get_name()} tool called with arguments: {list(arguments.keys())}")
+            # FIX: Handle both dict and ToolRequest object types
+            if hasattr(arguments, 'keys'):
+                logger.info(f"{self.get_name()} tool called with arguments: {list(arguments.keys())}")
+            else:
+                logger.info(f"{self.get_name()} tool called with request object: {type(arguments).__name__}")
             logger.info(f"TOOL_EXEC_DEBUG: Arguments stored, about to send progress")
             try:
                 from utils.progress import send_progress
@@ -331,8 +335,14 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 pass
 
             # Validate request using the tool's Pydantic model
+            # FIX: Handle both dict and already-validated request objects
             request_model = self.get_request_model()
-            request = request_model(**arguments)
+            if isinstance(arguments, request_model):
+                # Arguments is already a validated request object
+                request = arguments
+            else:
+                # Arguments is a dict, validate it
+                request = request_model(**arguments)
             logger.debug(f"Request validation successful for {self.get_name()}")
             try:
                 from utils.progress import send_progress
@@ -363,7 +373,8 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
             self._current_model_name = model_name
 
             # Handle model context from arguments (for in-process testing)
-            if "_model_context" in arguments:
+            # FIX: Check if arguments is dict before checking for key
+            if isinstance(arguments, dict) and "_model_context" in arguments:
                 self._model_context = arguments["_model_context"]
                 logger.debug(f"{self.get_name()}: Using model context from arguments")
             else:
@@ -558,7 +569,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 except Exception:
                     pass
                 # NEW (2025-10-24): Pass streaming callback to provider
-                if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback:
+                if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and prov.supports_streaming(_model_name):
                     provider_kwargs["on_chunk"] = self._on_chunk_callback
 
                 # CRITICAL FIX (2025-10-26): Add logging to verify actual API calls
@@ -567,15 +578,29 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 logger.info(f"[{self.get_name()}] CALLING PROVIDER: {prov.__class__.__name__} with prompt length {len(prompt)}")
                 call_start = _time.time()
 
-                result = prov.generate_content(
-                    prompt=prompt,
-                    model_name=_model_name,
-                    system_prompt=system_prompt,
-                    temperature=temperature,
-                    thinking_mode=thinking_mode if prov.supports_thinking_mode(_model_name) else None,
-                    images=images if images else None,
+                # Build kwargs dict, excluding images if not supported
+                generate_kwargs = {
+                    "prompt": prompt,
+                    "model_name": _model_name,
+                    "system_prompt": system_prompt,
+                    "temperature": temperature,
                     **provider_kwargs,
-                )
+                }
+
+                # Only add thinking_mode if supported
+                thinking_mode_value = thinking_mode if prov.supports_thinking_mode(_model_name) else None
+                if thinking_mode_value:
+                    generate_kwargs["thinking_mode"] = thinking_mode_value
+
+                # Only add images if provider supports it
+                if images and prov.supports_images(_model_name):
+                    generate_kwargs["images"] = images
+
+                # Only add on_chunk if provider supports streaming
+                if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and prov.supports_streaming(_model_name):
+                    generate_kwargs["on_chunk"] = self._on_chunk_callback
+
+                result = prov.generate_content(**generate_kwargs)
 
                 # Log response time to verify real API calls (should be >100ms for real AI)
                 call_duration_ms = (_time.time() - call_start) * 1000
@@ -623,7 +648,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                         provider_kwargs["continuation_id"] = continuation_id
 
                     # NEW (2025-10-24): Pass streaming callback to provider (direct call path)
-                    if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback:
+                    if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and prov.supports_streaming(_model_name):
                         provider_kwargs["on_chunk"] = self._on_chunk_callback
 
                     # Try semantic cache first
@@ -650,15 +675,26 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                         model_response = cached_response
                     else:
                         logger.debug(f"Semantic cache MISS for {self.get_name()} (model={self._current_model_name})")
-                        model_response = provider.generate_content(
-                            prompt=prompt,
-                            model_name=self._current_model_name,
-                            system_prompt=system_prompt,
-                            temperature=temperature,
-                            thinking_mode=thinking_mode if provider.supports_thinking_mode(self._current_model_name) else None,
-                            images=images if images else None,
+
+                        # Build kwargs dict, excluding images if not supported
+                        generate_kwargs = {
+                            "prompt": prompt,
+                            "model_name": self._current_model_name,
+                            "system_prompt": system_prompt,
+                            "temperature": temperature,
                             **provider_kwargs,
-                        )
+                        }
+
+                        # Only add thinking_mode if supported
+                        thinking_mode_value = thinking_mode if provider.supports_thinking_mode(self._current_model_name) else None
+                        if thinking_mode_value:
+                            generate_kwargs["thinking_mode"] = thinking_mode_value
+
+                        # Only add images if provider supports it
+                        if images and provider.supports_images(self._current_model_name):
+                            generate_kwargs["images"] = images
+
+                        model_response = provider.generate_content(**generate_kwargs)
 
                         # Cache the response
                         if model_response is not None:
@@ -1238,7 +1274,11 @@ Please provide a thoughtful, comprehensive response:"""
         current_args = getattr(self, "_current_arguments", None)
         if current_args:
             # If server.py embedded conversation history, it stores original prompt separately
-            original_user_prompt = current_args.get("_original_user_prompt")
+            # FIX: Handle both dict and ToolRequest object types
+            if hasattr(current_args, 'get'):
+                original_user_prompt = current_args.get("_original_user_prompt")
+            else:
+                original_user_prompt = getattr(current_args, "_original_user_prompt", None)
             if original_user_prompt is not None:
                 # Use original user prompt for size validation (excludes conversation history)
                 return original_user_prompt

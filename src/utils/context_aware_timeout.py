@@ -211,17 +211,17 @@ if __name__ == "__main__":
         (250_000, "xxlarge context"),
     ]
     
-    print("\nContext-Aware Timeout Calculator")
-    print("=" * 60)
+    logger.info("\nContext-Aware Timeout Calculator")
+    logger.info("=" * 60)
     
     for tokens, description in test_cases:
         timeout = ContextAwareTimeout.calculate_timeout(tokens)
-        print(f"{description:20s} ({tokens:>7,} tokens) → {timeout:>2}s timeout")
+        logger.info(f"{description:20s} ({tokens:>7,} tokens) → {timeout:>2}s timeout")
     
-    print("\nWith custom base timeout (40s):")
-    print("=" * 60)
+    logger.info("\nWith custom base timeout (40s):")
+    logger.info("=" * 60)
     
     for tokens, description in test_cases:
         timeout = ContextAwareTimeout.calculate_timeout(tokens, base_timeout=40)
-        print(f"{description:20s} ({tokens:>7,} tokens) → {timeout:>2}s timeout")
+        logger.info(f"{description:20s} ({tokens:>7,} tokens) → {timeout:>2}s timeout")
 

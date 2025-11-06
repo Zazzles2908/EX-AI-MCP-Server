@@ -226,6 +226,9 @@ from src.bootstrap import ensure_tools_built, ensure_provider_tools_registered
 # Build tools once (idempotent - safe to call multiple times)
 TOOLS = ensure_tools_built()
 
+# Alias for daemon compatibility - the daemon looks for SERVER_TOOLS
+SERVER_TOOLS = TOOLS
+
 # NOTE: Provider-specific tools are NOT registered at import time
 # They will be registered on-demand when:
 # 1. main() is called (stdio server)

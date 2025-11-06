@@ -1,25 +1,12 @@
+"""Monitoring module - decomposed from monitoring_endpoint.py
+
+This module provides a cleaner, more maintainable structure for the monitoring
+system by splitting functionality into focused, single-purpose components.
+
+Components:
+- WebSocketHandler: WebSocket connections and health tracking
+- MetricsBroadcaster: Metrics collection and broadcasting
+- HealthTracker: Health check and tracking
+- HTTPEndpoints: HTTP API endpoints
+- SessionMonitor: Session lifecycle management
 """
-Monitoring module for EX-AI MCP Server.
-
-This module provides comprehensive monitoring capabilities including:
-- Memory usage tracking and alerting
-- Performance metrics collection
-- Resource utilization monitoring
-"""
-
-from .memory_monitor import (
-    MemoryMonitor,
-    MemoryMetrics,
-    MemoryAlert,
-    AlertLevel,
-    get_memory_monitor,
-)
-
-__all__ = [
-    "MemoryMonitor",
-    "MemoryMetrics",
-    "MemoryAlert",
-    "AlertLevel",
-    "get_memory_monitor",
-]
-

@@ -158,7 +158,7 @@ class PathValidator:
         Examples:
             >>> validator = PathValidator(["/app"])
             >>> path = validator.validate("/app/file.txt")
-            >>> print(path)
+            >>> logger.info(path)
             /app/file.txt
             >>> validator.validate("/etc/passwd")
             PathValidationError: Path not allowed: /etc/passwd

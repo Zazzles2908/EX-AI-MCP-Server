@@ -22,6 +22,7 @@ Usage:
 
 import os
 import logging
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Union, Callable
 from pathlib import Path
 
@@ -61,24 +62,25 @@ class ValidationError(Exception):
 # Validation Rules
 # =============================================================================
 
-class ValidationRule:
+class ValidationRule(ABC):
     """Base class for validation rules."""
-    
+
+    @abstractmethod
     def validate(self, value: Any, field_name: str) -> Any:
         """
         Validate a value and return the validated (possibly transformed) value.
-        
+
         Args:
             value: Value to validate
             field_name: Name of the field being validated
-        
+
         Returns:
             Validated value (possibly transformed)
-        
+
         Raises:
             ValidationError: If validation fails
         """
-        raise NotImplementedError
+        pass
 
 
 class TypeRule(ValidationRule):

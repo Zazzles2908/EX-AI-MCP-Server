@@ -135,7 +135,7 @@ class JWTValidator:
             >>> payload = validator.validate_token("eyJ...")
             >>> if payload:
             ...     user_id = payload.get("sub")
-            ...     print(f"Authenticated user: {user_id}")
+            ...     logger.info("Token validated successfully")
         """
         if not token:
             logger.debug("[JWT_VALIDATOR] Empty token provided")

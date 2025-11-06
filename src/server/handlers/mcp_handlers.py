@@ -12,6 +12,7 @@ ARCHITECTURE NOTE (v2.0.2+):
 """
 
 import logging
+import os
 from typing import Any, List
 from mcp.types import Tool, Prompt, TextContent, GetPromptResult, PromptMessage
 
@@ -65,20 +66,30 @@ async def handle_list_tools() -> list[Tool]:
     _reg = _get_reg()
     # Idempotent guard: build() delegates to singleton, safe to call multiple times
     _reg.build()
-    for tool in _reg.list_tools().values():
-        nm = tool.name.lower()
+    for tool_name, tool in _reg.list_tools().items():
+        nm = tool_name.lower()
         if allowlist and nm not in allowlist:
             continue
         if denylist and nm in denylist:
             continue
 
-        # Use enhanced schema if available, fallback to base schema for compatibility
-        if hasattr(tool, 'get_enhanced_input_schema'):
-            schema = tool.get_enhanced_input_schema()
-        else:
-            schema = tool.get_input_schema()
+        # Check if tool has the MCP workflow interface (get_description, get_input_schema, etc.)
+        # Workflow tools have full interface, but simple tools (like SmartFileDownloadTool) don't
+        if hasattr(tool, 'get_description') and (hasattr(tool, 'get_input_schema') or hasattr(tool, 'get_enhanced_input_schema')):
+            # Use enhanced schema if available, fallback to base schema for compatibility
+            if hasattr(tool, 'get_enhanced_input_schema'):
+                schema = tool.get_enhanced_input_schema()
+            else:
+                schema = tool.get_input_schema()
 
-        tools.append(Tool(name=tool.name, description=tool.description, inputSchema=schema))
+            # Get description from method or attribute
+            description = tool.get_description() if hasattr(tool, 'get_description') else getattr(tool, 'description', '')
+
+            tools.append(Tool(name=tool_name, description=description, inputSchema=schema))
+        else:
+            # Simple tool without MCP workflow interface - skip for now
+            # TODO: Add support for simple tools with basic schema
+            logger.debug(f"Skipping tool '{tool_name}' - does not have MCP workflow interface")
 
     # Log cache efficiency info
     if os.getenv("OPENROUTER_API_KEY") and os.getenv("OPENROUTER_API_KEY") != "your_openrouter_api_key_here":
@@ -114,10 +125,17 @@ async def handle_list_prompts() -> list[Prompt]:
     # Idempotent guard: build() delegates to singleton, safe to call multiple times
     _reg.build()
     for tool_name, tool in _reg.list_tools().items():
+        # FIX: Use getattr to safely get description, with fallback methods
+        tool_description = getattr(tool, 'description', None)
+        if not tool_description and hasattr(tool, 'get_description'):
+            tool_description = tool.get_description()
+        if not tool_description:
+            tool_description = f"Use {tool_name} tool"
+
         prompts.append(
             Prompt(
                 name=tool_name,
-                description=tool.description,
+                description=tool_description,
                 arguments=[],
             )
         )

@@ -772,11 +772,11 @@ async def example_usage():
     await checker.save_health_report(report, "/workspace/latest_health_report.json")
     
     # Print summary
-    print(f"Health Report Summary:")
-    print(f"Status: {report.overall_status.value}")
-    print(f"Files checked: {len(report.integrity_checks)}")
-    print(f"Alerts: {len(report.alerts)}")
-    print(f"Recommendations: {len(report.recommendations)}")
+    logger.info(f"Health Report Summary:")
+    logger.info(f"Status: {report.overall_status.value}")
+    logger.info(f"Files checked: {len(report.integrity_checks)}")
+    logger.info(f"Alerts: {len(report.alerts)}")
+    logger.info(f"Recommendations: {len(report.recommendations)}")
     
     return report
 

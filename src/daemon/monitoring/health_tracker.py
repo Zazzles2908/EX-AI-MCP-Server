@@ -1,113 +1,160 @@
 """
 Health Tracker Module
 
-Tracks WebSocket connection health metrics for monitoring dashboard.
+Handles health checks, status monitoring, and health-related validation.
+Extracted from monitoring_endpoint.py to improve maintainability.
 
-Split from monitoring_endpoint.py (2025-11-03) to eliminate god object.
-Originally part of 1,467-line monitoring_endpoint.py file.
-
-Responsibilities:
-- Track ping/pong latency
-- Track connection uptime
-- Track reconnection events
-- Track timeout warnings
-- Provide health metrics
+Components:
+- Health check endpoints
+- Flag configuration validation
+- Component health monitoring
 """
 
-import time
-from typing import Dict, Optional
+import asyncio
+import logging
+from aiohttp import web
+from utils.timezone_helper import log_timestamp, utc_now_iso
+from src.monitoring.flags import get_flag_manager
+
+from src.daemon.error_handling import log_error, ErrorCode
+
+logger = logging.getLogger(__name__)
 
 
-class WebSocketHealthTracker:
+async def monitoring_health_handler(request: web.Request) -> web.Response:
     """
-    Track WebSocket connection health metrics for monitoring dashboard.
+    PHASE 1 FIX (2025-11-01): Health check endpoint for monitoring port.
 
-    Tracks:
-    - Ping/pong latency
-    - Connection uptime
-    - Reconnection events
-    - Timeout warnings
+    Returns:
+        200 OK with basic health status
     """
+    try:
+        return web.json_response({
+            'status': 'healthy',
+            'timestamp_utc': utc_now_iso(),
+            'port': 8080,
+            'service': 'monitoring',
+            'components': {
+                'websocket': 'healthy',
+                'dashboard': 'healthy',
+                'metrics': 'healthy'
+            }
+        })
+    except Exception as e:
+        log_error(ErrorCode.INTERNAL_ERROR, f"Error: {e}", exc_info=True)
+        return web.json_response({
+            'status': 'unhealthy',
+            'error': str(e)
+        }, status=503)
 
-    def __init__(self):
-        self.connections: Dict[int, Dict] = {}  # port -> connection metrics
 
-    def register_connection(self, port: int) -> None:
-        """Register a new WebSocket connection"""
-        self.connections[port] = {
-            'connected_at': time.time(),
-            'last_ping': None,
-            'ping_latency_ms': 0,
-            'ping_latencies': [],  # Last 10 pings
-            'reconnection_count': 0,
-            'timeout_warnings': 0
+async def get_health_flags(request: web.Request) -> web.Response:
+    """
+    Get flag configuration health check.
+
+    Validates flag configuration and returns health status.
+
+    Args:
+        request: aiohttp request object
+
+    Returns:
+        JSON response with health status
+    """
+    try:
+        flag_manager = get_flag_manager()
+        flags = flag_manager.get_all()
+
+        # Validate flag combinations
+        issues = []
+
+        # Check: VALIDATION_STRICT requires ENABLE_VALIDATION
+        if flags.get('MONITORING_VALIDATION_STRICT') and not flags.get('MONITORING_ENABLE_VALIDATION'):
+            issues.append("VALIDATION_STRICT enabled but ENABLE_VALIDATION disabled")
+
+        # Check: DUAL_MODE requires USE_ADAPTER
+        if flags.get('MONITORING_DUAL_MODE') and not flags.get('MONITORING_USE_ADAPTER'):
+            issues.append("DUAL_MODE enabled but USE_ADAPTER disabled")
+
+        # Check: METRICS_PERSISTENCE requires METRICS_FLUSH_INTERVAL > 0
+        if flags.get('MONITORING_METRICS_PERSISTENCE') and flags.get('MONITORING_METRICS_FLUSH_INTERVAL', 0) <= 0:
+            issues.append("METRICS_PERSISTENCE enabled but METRICS_FLUSH_INTERVAL invalid")
+
+        health_status = "healthy" if not issues else "degraded"
+
+        return web.json_response({
+            "status": "ok",
+            "health": health_status,
+            "issues": issues,
+            "flags": flags,
+            "timestamp": log_timestamp(),
+        })
+    except Exception as e:
+        log_error(ErrorCode.INTERNAL_ERROR, f"Error checking flags health: {e}", exc_info=True)
+        return web.json_response({
+            "status": "error",
+            "error": str(e),
+            "timestamp": log_timestamp(),
+        }, status=500)
+
+
+async def status_handler(request: web.Request) -> web.Response:
+    """
+    Simple status endpoint.
+
+    Args:
+        request: aiohttp request object
+
+    Returns:
+        JSON status response
+    """
+    # Import here to avoid circular dependency
+    from .websocket_handler import get_dashboard_clients
+    
+    return web.json_response({
+        "status": "ok",
+        "service": "monitoring",
+        "clients_connected": len(get_dashboard_clients()),
+        "timestamp": log_timestamp(),
+    })
+
+
+def check_component_health() -> dict:
+    """
+    Check health of all monitoring components.
+
+    Returns:
+        Dictionary with component health status
+    """
+    health_status = {
+        "overall": "healthy",
+        "components": {},
+        "issues": []
+    }
+
+    try:
+        # Check WebSocket health
+        from .websocket_handler import get_dashboard_clients, get_websocket_health_tracker
+        ws_clients = len(get_dashboard_clients())
+        ws_health = get_websocket_health_tracker().get_metrics()
+        
+        health_status["components"]["websocket"] = {
+            "status": "healthy" if ws_clients >= 0 else "unhealthy",
+            "active_connections": ws_clients,
+            "connection_details": ws_health
         }
 
-    def record_ping(self, port: int, latency_ms: float) -> None:
-        """Record a ping/pong latency measurement"""
-        if port not in self.connections:
-            self.register_connection(port)
+        # Check session tracker health
+        from .session_monitor import get_session_tracker
+        session_tracker = get_session_tracker()
+        session_metrics = session_tracker.get_metrics()
+        
+        health_status["components"]["session"] = {
+            "status": "healthy",
+            "active_sessions": session_metrics.get("active_sessions", 0)
+        }
 
-        conn = self.connections[port]
-        conn['last_ping'] = time.time()
-        conn['ping_latency_ms'] = latency_ms
+    except Exception as e:
+        health_status["overall"] = "degraded"
+        health_status["issues"].append(f"Component check failed: {e}")
 
-        # Keep last 10 latencies for statistics
-        conn['ping_latencies'].append(latency_ms)
-        if len(conn['ping_latencies']) > 10:
-            conn['ping_latencies'].pop(0)
-
-    def record_reconnection(self, port: int) -> None:
-        """Record a reconnection event"""
-        if port not in self.connections:
-            self.register_connection(port)
-        self.connections[port]['reconnection_count'] += 1
-
-    def record_timeout_warning(self, port: int) -> None:
-        """Record a timeout warning"""
-        if port not in self.connections:
-            self.register_connection(port)
-        self.connections[port]['timeout_warnings'] += 1
-
-    def get_metrics(self) -> dict:
-        """
-        Get WebSocket health metrics for monitoring dashboard.
-
-        Returns:
-            Dictionary with WebSocket health metrics
-        """
-        metrics = {}
-
-        for port, conn in self.connections.items():
-            uptime_seconds = time.time() - conn['connected_at']
-            latencies = conn['ping_latencies']
-
-            # Calculate statistics
-            avg_latency = sum(latencies) / len(latencies) if latencies else 0
-            min_latency = min(latencies) if latencies else 0
-            max_latency = max(latencies) if latencies else 0
-
-            metrics[port] = {
-                'connected_at': conn['connected_at'],
-                'uptime_seconds': uptime_seconds,
-                'uptime_hours': round(uptime_seconds / 3600, 2),
-                'last_ping': conn['last_ping'],
-                'ping_latency_ms': conn['ping_latency_ms'],
-                'avg_latency_ms': round(avg_latency, 2),
-                'min_latency_ms': round(min_latency, 2),
-                'max_latency_ms': round(max_latency, 2),
-                'ping_count': len(latencies),
-                'reconnection_count': conn['reconnection_count'],
-                'timeout_warnings': conn['timeout_warnings']
-            }
-
-        return metrics
-
-
-# Global health tracker instance
-_health_tracker = WebSocketHealthTracker()
-
-
-def get_health_tracker() -> WebSocketHealthTracker:
-    """Get the global health tracker instance"""
-    return _health_tracker
+    return health_status

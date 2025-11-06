@@ -13,14 +13,26 @@ from __future__ import annotations
 
 import logging
 import os
+from abc import ABC, abstractmethod
 from typing import List, Sequence, Optional, Any, Dict
 
 logger = logging.getLogger(__name__)
 
 
-class EmbeddingsProvider:
+class EmbeddingsProvider(ABC):
+    """Abstract base class for embeddings providers."""
+
+    @abstractmethod
     def embed(self, texts: Sequence[str]) -> List[List[float]]:
-        raise NotImplementedError
+        """Generate embeddings for a list of texts.
+
+        Args:
+            texts: List of text strings to embed
+
+        Returns:
+            List of embedding vectors, one per input text
+        """
+        pass
 
 
 class KimiEmbeddingsProvider(EmbeddingsProvider):

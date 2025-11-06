@@ -92,7 +92,7 @@ class EventValidator:
                 ))
         
         validation_time_ms = (time.time() - start_time) * 1000
-        is_valid = len(errors) == 0
+        is_valid = not errors
         
         # Track metrics
         self.metrics.record_validation(

@@ -11,6 +11,9 @@ from . import glm_config
 from . import async_glm_chat
 from config import TimeoutConfig
 
+# Import error handling framework
+from src.daemon.error_handling import ProviderError, ErrorCode, log_error
+
 logger = logging.getLogger(__name__)
 
 
@@ -68,12 +71,11 @@ class AsyncGLMProvider(AsyncModelProvider):
             )
 
         except ImportError as e:
-            raise RuntimeError(
-                "zhipuai not available. "
-                "Install with: pip install zhipuai>=2.1.0"
-            ) from e
+            log_error(ErrorCode.PROVIDER_ERROR, "zhipuai not available", exc_info=True)
+            raise ProviderError("GLM", Exception("zhipuai not available. Install with: pip install zhipuai>=2.1.0")) from e
         except Exception as e:
-            raise RuntimeError(f"Failed to initialize async GLM provider: {e}") from e
+            log_error(ErrorCode.PROVIDER_ERROR, f"Failed to initialize async GLM provider: {e}", exc_info=True)
+            raise ProviderError("GLM", e) from e
     
     def get_provider_type(self) -> ProviderType:
         """Get the provider type."""

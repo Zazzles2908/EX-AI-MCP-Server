@@ -55,9 +55,11 @@ class AIAuditor:
 
         # Initialize appropriate client
         if self.is_glm:
-            # Use ZhipuAI SDK for GLM models
-            from zhipuai import ZhipuAI
-            self.client = ZhipuAI(api_key=os.getenv("GLM_API_KEY"))
+            # Use OpenAI SDK for GLM models (z.ai proxy for compatibility)
+            self.client = AsyncOpenAI(
+                api_key=os.getenv("GLM_API_KEY"),
+                base_url="https://api.z.ai/api/paas/v4"
+            )
             self.client_type = "glm"
         else:
             # Use OpenAI SDK for Kimi models
@@ -468,30 +470,16 @@ If nothing significant, return an empty array: []
 """
 
         try:
-            if self.is_glm:
-                # Use ZhipuAI SDK (synchronous) - run in thread pool
-                import asyncio
-                response = await asyncio.to_thread(
-                    self.client.chat.completions.create,
-                    model=self.model,
-                    messages=[
-                        {"role": "system", "content": "You are a system monitoring AI that provides concise, actionable observations."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.3,
-                    max_tokens=1000
-                )
-            else:
-                # Use OpenAI SDK (async)
-                response = await self.client.chat.completions.create(
-                    model=self.model,
-                    messages=[
-                        {"role": "system", "content": "You are a system monitoring AI that provides concise, actionable observations."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.3,
-                    max_tokens=1000
-                )
+            # Both GLM and Kimi now use AsyncOpenAI
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "You are a system monitoring AI that provides concise, actionable observations."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=1000
+            )
 
             content = response.choices[0].message.content.strip()
 

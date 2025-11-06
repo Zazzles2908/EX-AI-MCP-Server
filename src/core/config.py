@@ -167,61 +167,15 @@ def _load_from_env() -> Config:
         raise
 
 
-# Singleton pattern implementation
-_config_instance: Optional[Config] = None
-
-
-def get_config() -> Config:
-    """
-    Get the singleton configuration instance.
-
-    Loads configuration from environment variables on first call.
-    Subsequent calls return the cached instance.
-
-    Returns:
-        Config: The configuration instance.
-
-    Raises:
-        ValueError: If configuration is invalid.
-    """
-    global _config_instance
-    if _config_instance is None:
-        try:
-            _config_instance = _load_from_env()
-        except ValueError as e:
-            logger.error(f"Configuration validation failed: {e}")
-            logger.warning("Using safe defaults")
-            # Return safe defaults instead of crashing
-            _config_instance = Config()
-    return _config_instance
-
-
-def reload_config() -> Config:
-    """
-    Force reload the configuration from environment variables.
-
-    Useful for testing or when environment variables change at runtime.
-
-    Returns:
-        Config: The newly loaded configuration instance.
-
-    Raises:
-        ValueError: If configuration is invalid.
-    """
-    global _config_instance
-    _config_instance = None
-    return get_config()
-
-
-# NOTE: Module-level initialization commented out to prevent import crashes
-# Use get_config() function instead
-# config = get_config()
+# DEPRECATED: Singleton pattern removed
+# Use: config = Config() directly, or load_from_env() for fresh config
+# For testing: config = Config() to get defaults, or load_from_env() to load from env
 
 
 # Export public API
 __all__ = [
     "Config",
-    "get_config",
-    "reload_config",
+    "load_from_env",
+    # DEPRECATED: 'get_config' and 'reload_config' removed - use Config() directly
 ]
 

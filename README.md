@@ -69,6 +69,34 @@ A production-ready MCP (Model Context Protocol) server with intelligent routing 
 - **[docs/05_CURRENT_WORK/](docs/05_CURRENT_WORK/)** - Active implementation phases, strategic plans, completion reports
 - **[docs/guides/](docs/guides/)** - How-to guides and best practices
 
+### 🌐 Claude Web Application Connection
+
+**Status**: ✅ **FULLY CONFIGURED AND TESTED**
+
+The EX-AI MCP Server can be accessed through the **Claude web application** (claude.ai) with MiniMax-enhanced features:
+
+- **Configuration File**: `.mcp.json` in project root
+- **MCP Server**: `claude_web_app_mcp.py` (minimal, dependency-free)
+- **Web App Format**: Uses "enhancements" array for optimal compatibility
+- **Available Features**: MiniMax monitoring, semantic caching, batch processing
+
+**Quick Start**:
+1. Open https://claude.ai
+2. Navigate to your project folder
+3. Enhancements auto-load from `.mcp.json`
+4. Use MiniMax features in your conversations
+
+**Documentation**:
+- [SIMPLE_CLAUDE_CONNECTION.md](SIMPLE_CLAUDE_CONNECTION.md) - Quick start guide
+- [WEB_APP_CONNECTION_COMPLETE.md](WEB_APP_CONNECTION_COMPLETE.md) - Complete status & verification
+- [test_claude_connection.py](test_claude_connection.py) - Diagnostic tool
+
+**Verification**:
+```bash
+cd /c/Project/EX-AI-MCP-Server
+python test_claude_connection.py
+```
+
 ### 🚀 Phase 2.6-2.7: WebSocket → Supabase Realtime Migration
 
 **Status**: 📋 **STRATEGY APPROVED & READY FOR IMPLEMENTATION**

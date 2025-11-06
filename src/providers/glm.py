@@ -59,6 +59,31 @@ class GLMModelProvider(ModelProvider):
         capabilities = self.SUPPORTED_MODELS.get(resolved)
         return bool(capabilities and capabilities.supports_extended_thinking)
 
+    def supports_images(self, model_name: str) -> bool:
+        """Check if the model supports image inputs.
+
+        Args:
+            model_name: Name of the model to check
+
+        Returns:
+            True if the model supports images, False otherwise
+        """
+        resolved = self._resolve_model_name(model_name)
+        capabilities = self.SUPPORTED_MODELS.get(resolved)
+        return bool(capabilities and capabilities.supports_images)
+
+    def supports_streaming(self, model_name: str) -> bool:
+        """Check if the model/provider supports streaming callbacks (on_chunk).
+
+        Args:
+            model_name: Name of the model to check
+
+        Returns:
+            True if the model supports streaming, False otherwise
+        """
+        # GLM provider does not support streaming callbacks
+        return False
+
     def list_models(self, respect_restrictions: bool = True):
         return super().list_models(respect_restrictions=respect_restrictions)
 

@@ -107,8 +107,9 @@ class MultiUserSessionManager:
                 }
             }).execute()
             
-            if not result.data or len(result.data) == 0:
-                raise RuntimeError("Session creation returned no data")
+            if not result.data or not result.data:
+                log_error(ErrorCode.PROVIDER_ERROR, "Session creation returned no data")
+            raise ProviderError("Provider", Exception("Session creation returned no data"))
             
             session = result.data[0]
             
@@ -119,8 +120,9 @@ class MultiUserSessionManager:
             return session
             
         except Exception as e:
-            logger.error(f"Failed to create session for user {user_id}: {e}")
-            raise RuntimeError(f"Session creation failed: {e}")
+            log_error(ErrorCode.INTERNAL_ERROR, f"Failed to create session for user {user_id}: {e}", exc_info=True)
+            log_error(ErrorCode.PROVIDER_ERROR, f"Session creation failed: {e}")
+            raise ProviderError("Provider", Exception(f"Session creation failed: {e}"))
     
     async def validate_session(
         self, 
@@ -161,7 +163,7 @@ class MultiUserSessionManager:
                 'session_id', session_id
             ).eq('user_id', user_id).execute()
             
-            if not result.data or len(result.data) == 0:
+            if not result.data or not result.data:
                 logger.warning(f"Session {session_id[:8]}... not found")
                 return None
             
@@ -181,7 +183,7 @@ class MultiUserSessionManager:
                     'version': session['version'] + 1
                 }).eq('id', session['id']).eq('version', session['version']).execute()
                 
-                if not update_result.data or len(update_result.data) == 0:
+                if not update_result.data or not update_result.data:
                     # Version conflict - session was updated elsewhere
                     logger.warning(f"Session {session_id[:8]}... version conflict")
                     # Re-fetch to get latest version
@@ -195,7 +197,7 @@ class MultiUserSessionManager:
             return session
             
         except Exception as e:
-            logger.error(f"Session validation failed for {session_id[:8]}...: {e}")
+            log_error(ErrorCode.INTERNAL_ERROR, f"Session validation failed for {session_id[:8]}...: {e}", exc_info=True)
             return None
     
     async def update_session_status(
@@ -231,7 +233,7 @@ class MultiUserSessionManager:
             return False
             
         except Exception as e:
-            logger.error(f"Failed to update session status: {e}")
+            log_error(ErrorCode.INTERNAL_ERROR, f"Failed to update session status: {e}", exc_info=True)
             return False
     
     async def _cleanup_session(self, session_id: str):
@@ -246,7 +248,7 @@ class MultiUserSessionManager:
                     break
                     
         except Exception as e:
-            logger.error(f"Failed to cleanup session {session_id}: {e}")
+            log_error(ErrorCode.INTERNAL_ERROR, f"Failed to cleanup session {session_id}: {e}", exc_info=True)
     
     async def _cleanup_expired_sessions(self):
         """Background task to cleanup expired sessions"""
@@ -276,7 +278,7 @@ class MultiUserSessionManager:
                 logger.info("Multi-user session cleanup task cancelled")
                 break
             except Exception as e:
-                logger.error(f"Multi-user session cleanup failed: {e}")
+                log_error(ErrorCode.INTERNAL_ERROR, f"Multi-user session cleanup failed: {e}", exc_info=True)
                 await asyncio.sleep(60)  # Retry after 1 minute on error
     
     async def get_user_sessions(self, user_id: str) -> list:
@@ -297,7 +299,7 @@ class MultiUserSessionManager:
             return result.data if result.data else []
             
         except Exception as e:
-            logger.error(f"Failed to get user sessions: {e}")
+            log_error(ErrorCode.INTERNAL_ERROR, f"Failed to get user sessions: {e}", exc_info=True)
             return []
     
     async def disconnect_session(self, session_id: str):

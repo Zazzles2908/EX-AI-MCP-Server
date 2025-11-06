@@ -10,6 +10,8 @@ from . import kimi_cache
 # PHASE 2.2.3 (2025-10-21): Import async concurrent session manager
 from src.utils.async_concurrent_session_manager import get_async_session_manager
 
+from src.daemon.error_handling import ProviderError, ErrorCode, log_error
+
 logger = logging.getLogger(__name__)
 
 
@@ -123,7 +125,7 @@ async def chat_completions_create_async(
         # Parse response
         choice0 = response.choices[0] if response.choices else None
         if not choice0:
-            raise RuntimeError("Async Kimi returned empty choices")
+            raise ProviderError("Kimi", Exception("Async Kimi returned empty choices"))
 
         message = choice0.message
         content_text = message.content or ""
@@ -205,8 +207,8 @@ async def chat_completions_create_async(
         )
         
     except Exception as e:
-        logger.error(f"Async Kimi chat completion failed: {e}", exc_info=True)
-        raise RuntimeError(f"Async Kimi chat completion failed: {e}") from e
+        log_error(ErrorCode.PROVIDER_ERROR, f"Async Kimi chat completion failed: {e}", exc_info=True)
+        raise ProviderError("Kimi", e) from e
 
 
 async def chat_completions_create_async_with_continuation(

@@ -5,9 +5,8 @@ This file demonstrates how to integrate and use the Error Recovery Manager
 for robust file operations with comprehensive error handling and recovery.
 """
 
-import asyncio
-import os
 import tempfile
+import logging
 from pathlib import Path
 from src.file_management.recovery import (
     ErrorRecoveryManager,
@@ -19,7 +18,7 @@ from src.file_management.recovery import (
 async def example_basic_usage():
     """Basic usage example of Error Recovery Manager"""
     
-    print("=== Basic Error Recovery Manager Usage ===")
+    logger.info("=== Basic Error Recovery Manager Usage ===")
     
     # Initialize with optional Supabase integration
     async with ErrorRecoveryManager(
@@ -53,19 +52,19 @@ async def example_basic_usage():
         )
         
         if success:
-            print(f"✅ Operation succeeded: {result}")
+            logger.info(f"✅ Operation succeeded: {result}")
         else:
-            print(f"❌ Operation failed: {error}")
+            logger.info(f"❌ Operation failed: {error}")
         
         # Get recovery metrics
         metrics = await recovery_manager.get_recovery_metrics()
-        print(f"📊 Recovery metrics: {json.dumps(metrics, indent=2, default=str)}")
+        logger.info(f"📊 Recovery metrics: {json.dumps(metrics, indent=2, default=str)}")
 
 
 async def example_circuit_breaker():
     """Demonstrate circuit breaker pattern in action"""
     
-    print("\n=== Circuit Breaker Pattern Example ===")
+    logger.info("\n=== Circuit Breaker Pattern Example ===")
     
     from src.file_management.recovery import CircuitBreakerConfig, CircuitBreaker
     
@@ -88,9 +87,9 @@ async def example_circuit_breaker():
     for i in range(10):
         try:
             async with circuit_breaker.execute(failing_service):
-                print(f"✅ Attempt {i+1}: Service call succeeded")
+                logger.info(f"✅ Attempt {i+1}: Service call succeeded")
         except Exception as e:
-            print(f"❌ Attempt {i+1}: Service call failed - {e}")
+            logger.info(f"❌ Attempt {i+1}: Service call failed - {e}")
         
         await asyncio.sleep(0.5)  # Small delay between attempts
 
@@ -98,7 +97,7 @@ async def example_circuit_breaker():
 async def example_retry_mechanisms():
     """Demonstrate retry mechanisms with exponential backoff"""
     
-    print("\n=== Retry Mechanisms Example ===")
+    logger.info("\n=== Retry Mechanisms Example ===")
     
     async with ErrorRecoveryManager() as recovery_manager:
         
@@ -118,15 +117,15 @@ async def example_retry_mechanisms():
             "unreliable_network_operation"
         )
         
-        print(f"Retry result: {success}")
-        print(f"Result: {result}")
-        print(f"Error: {error}")
+        logger.info(f"Retry result: {success}")
+        logger.info(f"Result: {result}")
+        logger.info(f"Error: {error}")
 
 
 async def example_fallback_storage():
     """Demonstrate fallback storage mechanisms"""
     
-    print("\n=== Fallback Storage Example ===")
+    logger.info("\n=== Fallback Storage Example ===")
     
     async with ErrorRecoveryManager() as recovery_manager:
         
@@ -144,15 +143,15 @@ async def example_fallback_storage():
             storage_operation
         )
         
-        print(f"Fallback storage result: {success}")
-        print(f"Storage used: {recovery_manager.fallback_storage.current_storage}")
-        print(f"Result: {result}")
+        logger.info(f"Fallback storage result: {success}")
+        logger.info(f"Storage used: {recovery_manager.fallback_storage.current_storage}")
+        logger.info(f"Result: {result}")
 
 
 async def example_rollback_operations():
     """Demonstrate file operation rollback capabilities"""
     
-    print("\n=== File Operation Rollback Example ===")
+    logger.info("\n=== File Operation Rollback Example ===")
     
     async with ErrorRecoveryManager() as recovery_manager:
         
@@ -181,22 +180,22 @@ async def example_rollback_operations():
             "Updated content - this might fail"
         )
         
-        print(f"Update result: {success}")
-        print(f"Result: {result}")
+        logger.info(f"Update result: {success}")
+        logger.info(f"Result: {result}")
         
         # Check if file content was preserved through rollback
         try:
             async with aiofiles.open(test_file, 'r') as f:
                 content = await f.read()
-            print(f"Final file content: '{content}'")
+            logger.info(f"Final file content: '{content}'")
         except Exception as e:
-            print(f"Failed to read file: {e}")
+            logger.info(f"Failed to read file: {e}")
 
 
 async def example_workflow_automation():
     """Demonstrate automated recovery workflows"""
     
-    print("\n=== Workflow Automation Example ===")
+    logger.info("\n=== Workflow Automation Example ===")
     
     async with ErrorRecoveryManager() as recovery_manager:
         
@@ -232,18 +231,18 @@ async def example_workflow_automation():
         # Execute workflow
         success, errors = await recovery_manager.execute_recovery_workflow(workflow_id)
         
-        print(f"Workflow executed successfully: {success}")
+        logger.info(f"Workflow executed successfully: {success}")
         if errors:
-            print(f"Workflow errors: {errors}")
+            logger.info(f"Workflow errors: {errors}")
 
 
 async def example_error_tracking():
     """Demonstrate Supabase error tracking integration"""
     
-    print("\n=== Error Tracking Example ===")
+    logger.info("\n=== Error Tracking Example ===")
     
     # This would require actual Supabase credentials
-    print("Note: This example requires valid Supabase credentials")
+    logger.info("Note: This example requires valid Supabase credentials")
     
     async with ErrorRecoveryManager(
         supabase_url="https://your-project.supabase.co",
@@ -262,13 +261,13 @@ async def example_error_tracking():
         
         # Get error statistics
         metrics = await recovery_manager.get_recovery_metrics()
-        print(f"Error tracking metrics: {json.dumps(metrics.get('error_statistics', {}), indent=2, default=str)}")
+        logger.info(f"Error tracking metrics: {json.dumps(metrics.get('error_statistics', {}), indent=2, default=str)}")
 
 
 async def example_decorator_usage():
     """Demonstrate decorator-based error recovery"""
     
-    print("\n=== Decorator Usage Example ===")
+    logger.info("\n=== Decorator Usage Example ===")
     
     async with ErrorRecoveryManager() as recovery_manager:
         
@@ -283,14 +282,14 @@ async def example_decorator_usage():
         # Execute decorated function
         try:
             result = await decorated_operation("test data")
-            print(f"Decorated function result: {result}")
+            logger.info(f"Decorated function result: {result}")
         except Exception as e:
-            print(f"Decorated function failed: {e}")
+            logger.info(f"Decorated function failed: {e}")
 
 
 async def main():
     """Run all examples"""
-    print("🚀 Error Recovery Manager Examples\n")
+    logger.info("🚀 Error Recovery Manager Examples\n")
     
     try:
         await example_basic_usage()
@@ -302,10 +301,10 @@ async def main():
         await example_decorator_usage()
         await example_error_tracking()
         
-        print("\n✅ All examples completed successfully!")
+        logger.info("\n✅ All examples completed successfully!")
         
     except Exception as e:
-        print(f"\n❌ Example failed: {e}")
+        logger.info(f"\n❌ Example failed: {e}")
         import traceback
         traceback.print_exc()
 

@@ -8,18 +8,19 @@ Usage:
     python -m src.file_management.migrations.backfill_file_hashes [--dry-run] [--batch-size 100]
 """
 
-import asyncio
-import hashlib
 import argparse
+import logging
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 from src.storage.supabase_client import SupabaseStorageManager
-from src.logging import get_logger
+from src.logging_infrastructure import get_logger
 
 logger = get_logger(__name__)
 
+
+logger = logging.getLogger(__name__)
 
 class FileHashBackfill:
     """Backfill SHA256 hashes for existing files"""
@@ -288,34 +289,34 @@ async def main():
     # Validate scope first
     if args.validate_only:
         scope = await backfill.validate_backfill_scope()
-        print("\n" + "=" * 60)
-        print("BACKFILL SCOPE VALIDATION")
-        print("=" * 60)
-        print(f"Files to process: {scope['total_files']}")
-        print(f"Total size: {scope['total_size_mb']:.2f} MB")
+        logger.info("\n" + "=" * 60)
+        logger.info("BACKFILL SCOPE VALIDATION")
+        logger.info("=" * 60)
+        logger.info(f"Files to process: {scope['total_files']}")
+        logger.info(f"Total size: {scope['total_size_mb']:.2f} MB")
         if scope['warnings']:
-            print("\nWarnings:")
+            logger.info("\nWarnings:")
             for warning in scope['warnings']:
-                print(f"  {warning}")
-        print("=" * 60)
+                logger.info(f"  {warning}")
+        logger.info("=" * 60)
         return
 
     stats = await backfill.backfill_all(batch_size=args.batch_size, rate_limit=args.rate_limit)
     
     # Print summary
-    print("\n" + "=" * 60)
-    print("BACKFILL SUMMARY")
-    print("=" * 60)
-    print(f"Processed: {stats['processed']}")
-    print(f"Updated:   {stats['updated']}")
-    print(f"Errors:    {stats['errors']}")
-    print(f"Skipped:   {stats['skipped']}")
-    print("=" * 60)
+    logger.info("\n" + "=" * 60)
+    logger.info("BACKFILL SUMMARY")
+    logger.info("=" * 60)
+    logger.info(f"Processed: {stats['processed']}")
+    logger.info(f"Updated:   {stats['updated']}")
+    logger.info(f"Errors:    {stats['errors']}")
+    logger.info(f"Skipped:   {stats['skipped']}")
+    logger.info("=" * 60)
     
     if args.dry_run:
-        print("\n[DRY RUN] No changes were made to the database")
+        logger.info("\n[DRY RUN] No changes were made to the database")
     else:
-        print("\nBackfill complete!")
+        logger.info("\nBackfill complete!")
 
 
 if __name__ == "__main__":

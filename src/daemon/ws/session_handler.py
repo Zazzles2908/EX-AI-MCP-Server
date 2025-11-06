@@ -15,6 +15,8 @@ import logging
 import os
 from typing import Optional
 
+from src.daemon.error_handling import log_error, ErrorCode
+
 logger = logging.getLogger(__name__)
 
 
@@ -107,7 +109,7 @@ class SessionHandler:
                 if cleaned > 0:
                     logger.info(f"[SESSION_CLEANUP] Cleaned up {cleaned} stale sessions")
             except Exception as e:
-                logger.error(f"[SESSION_CLEANUP] Error during cleanup: {e}", exc_info=True)
+                log_error(ErrorCode.INTERNAL_ERROR, f"Error during cleanup: {e}", exc_info=True)
             
             try:
                 await asyncio.wait_for(stop_event.wait(), timeout=cleanup_interval)

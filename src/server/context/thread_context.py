@@ -134,7 +134,7 @@ async def reconstruct_thread_context(arguments: dict[str, Any]) -> dict[str, Any
 
         strict_scope = _env_true("EX_SESSION_SCOPE_STRICT", "false")
         allow_cross = _env_true("EX_SESSION_SCOPE_ALLOW_CROSS_SESSION", "false")
-        current_fp = get_current_session_fingerprint(arguments)
+        current_fp = get_current_session_fingerlogger.info(arguments)
         stored_fp = getattr(context, "session_fingerprint", None)
         if strict_scope and stored_fp and current_fp and stored_fp != current_fp and not allow_cross:
             # Log to activity for diagnostics

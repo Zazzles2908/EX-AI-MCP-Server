@@ -51,7 +51,11 @@ class SimpleToolExecutionMixin:
             # Store arguments for access by helper methods
             self._current_arguments = arguments
             
-            tool_logger.info(f"{self.get_name()} tool called with arguments: {list(arguments.keys())}")
+            # FIX: Handle both dict and ToolRequest object types
+            if hasattr(arguments, 'keys'):
+                tool_logger.info(f"{self.get_name()} tool called with arguments: {list(arguments.keys())}")
+            else:
+                tool_logger.info(f"{self.get_name()} tool called with request object: {type(arguments).__name__}")
             try:
                 from utils.progress import send_progress
                 send_progress(f"{self.get_name()}: Starting execution")

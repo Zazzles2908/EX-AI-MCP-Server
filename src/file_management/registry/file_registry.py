@@ -5,19 +5,15 @@ A comprehensive file registry system that provides cross-platform file managemen
 capabilities including registration, metadata tracking, search, and retrieval.
 """
 
-import os
-import json
-import uuid
-import hashlib
-import sqlite3
 import threading
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple, Union
 from dataclasses import dataclass, asdict
 from enum import Enum
-import platform
 import mimetypes
+import logging
 
 # Optional imports
 try:
@@ -26,6 +22,8 @@ try:
 except ImportError:
     HAS_MAGIC = False
 
+
+logger = logging.getLogger(__name__)
 
 class FileType(Enum):
     """File type enumeration"""
@@ -65,6 +63,8 @@ class FileMetadata:
     last_accessed: Optional[str] = None
 
 
+logger = logging.getLogger(__name__)
+
 class CrossPlatformPath:
     """Cross-platform path handling utility"""
     
@@ -101,6 +101,8 @@ class CrossPlatformPath:
         """Join path parts cross-platform"""
         return CrossPlatformPath.normalize_path(os.path.join(*parts))
 
+
+logger = logging.getLogger(__name__)
 
 class FileRegistry:
     """
@@ -557,7 +559,7 @@ class FileRegistry:
                         file_id = self.register_file(file_path)
                         registered_ids.append(file_id)
                     except Exception as e:
-                        print(f"Warning: Could not register {file_path}: {e}")
+                        logger.info(f"Warning: Could not register {file_path}: {e}")
         else:
             # Non-recursive search
             for item in os.listdir(directory):
@@ -568,7 +570,7 @@ class FileRegistry:
                             file_id = self.register_file(item_path)
                             registered_ids.append(file_id)
                         except Exception as e:
-                            print(f"Warning: Could not register {item_path}: {e}")
+                            logger.info(f"Warning: Could not register {item_path}: {e}")
         
         return registered_ids
     
@@ -847,7 +849,7 @@ class FileRegistry:
                     self._file_index[metadata.id] = metadata
                     imported_count += 1
                 except Exception as e:
-                    print(f"Warning: Could not import file {file_data.get('name', 'unknown')}: {e}")
+                    logger.info(f"Warning: Could not import file {file_data.get('name', 'unknown')}: {e}")
             
             return imported_count > 0
         except Exception:
