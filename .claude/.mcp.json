@@ -1,5 +1,12 @@
 {
   "mcpServers": {
+    "git-mcp": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-git"
+      ],
+      "env": {}
+    },
     "exai-mcp": {
       "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
       "args": [
