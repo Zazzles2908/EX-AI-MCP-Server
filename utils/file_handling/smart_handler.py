@@ -12,8 +12,11 @@ Phase 5 Implementation (2025-10-19): Seamless file handling
 """
 
 import os
+from src.providers.registry_core import get_registry_instance
 import logging
+from src.providers.registry_core import get_registry_instance
 import mimetypes
+from src.providers.registry_core import get_registry_instance
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
@@ -310,7 +313,7 @@ class SmartFileHandler:
         try:
             # Get Kimi provider
             default_model = os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview")
-            prov = ModelProviderRegistry.get_provider_for_model(default_model)
+            prov = get_registry_instance().get_provider_for_model(default_model)
 
             if not isinstance(prov, KimiModelProvider):
                 # Fallback: create provider directly

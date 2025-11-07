@@ -19,12 +19,14 @@ import time as _t
 from typing import Any, Optional, TYPE_CHECKING
 
 from src.providers.base import ModelProvider, ProviderType
+from src.providers.registry_core import get_registry_instance
 
 # Import error handling framework
 from src.daemon.error_handling import ProviderError, ErrorCode, log_error
 
 logger = logging.getLogger(__name__)
 from src.providers.registry_config import _apply_cost_aware, _apply_free_first
+from src.providers.registry_core import get_registry_instance
 from src.router.routing_cache import get_routing_cache
 
 if TYPE_CHECKING:
@@ -359,7 +361,7 @@ def call_with_fallback(
                 try:
                     from utils.observability import record_error
 
-                    prov = cls.get_provider_for_model(model)
+                    prov = get_registry_instance().get_provider_for_model(model)
                     ptype = prov.get_provider_type() if prov else None
                     provider = (
                         getattr(ptype, "value", getattr(ptype, "name", "unknown")) if ptype else "unknown"
@@ -391,7 +393,7 @@ def call_with_fallback(
             try:
                 from utils.observability import record_error
 
-                prov = cls.get_provider_for_model(model)
+                prov = get_registry_instance().get_provider_for_model(model)
                 ptype = prov.get_provider_type() if prov else None
                 provider = getattr(ptype, "value", getattr(ptype, "name", "unknown")) if ptype else "unknown"
                 record_error(str(provider), model, "call_failed", str(e))
@@ -470,7 +472,8 @@ class ProviderDiagnostics:
             "reason_unavailable": None,
             "suggestions": [],
         }
-        reg = ModelProviderRegistry()
+        from src.providers.registry_core import get_registry_instance
+        reg = get_registry_instance()
         info["registered"] = provider_type in getattr(reg, "_providers", {})
 
         # API key check
@@ -513,9 +516,9 @@ class ProviderDiagnostics:
     def diagnose_all(cls) -> list[dict[str, Any]]:
         """Diagnose all known provider types present in the registry or with env keys."""
         # Import registry class
-        from src.providers.registry_core import ModelProviderRegistry
+        from src.providers.registry_core import ModelProviderRegistry, get_registry_instance
 
-        reg = ModelProviderRegistry()
+        reg = get_registry_instance()
         ptypes = set(getattr(reg, "_providers", {}).keys()) | {
             ProviderType.KIMI,
             ProviderType.GLM,

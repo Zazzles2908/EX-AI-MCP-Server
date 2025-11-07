@@ -18,7 +18,7 @@
     <!-- PHASE 0.4 (2025-10-24): Testing Panel -->
     <script src="/static/js/testing-panel.js"></script>
     <!-- PHASE 3 FIX (2025-11-01): Cache Metrics Panel REMOVED (redundant, will use unified collector in Phase 4) -->
-    <!-- <script src="/static/js/cache-metrics-panel.js"></script> -->
+    <script src="/static/js/cache-metrics-panel.js"></script>
     <!-- PHASE 1 REFACTORING (2025-10-23): CSS extracted to /static/css/dashboard.css (290 lines removed) -->
 </head>
 <body>
@@ -53,7 +53,7 @@
         <div class="health-indicator">
             <div class="health-score" id="responseTimeScore">--</div>
             <div class="health-label">Response (p95)</div>
-            <parameter name="health-details">ms</div>
+            <div class="health-details">ms</div>
         </div>
         <!-- PHASE 3 FIX (2025-11-01): Cache Health Indicator REMOVED (will use unified metrics in Phase 4) -->
         <!-- <div class="health-indicator" id="cacheHealthIndicator">
@@ -65,6 +65,7 @@
 
     <!-- PHASE 3.4 (2025-10-23): Session & Conversation Metrics Panel -->
     <div class="session-metrics-panel" id="sessionMetricsPanel">
+        <div id="dataSourceIndicator" style="position: absolute; top: 10px; right: 10px; font-size: 0.8em; display: none;"></div>
         <div class="session-metric">
             <div class="session-metric-icon">👥</div>
             <div class="session-metric-content">
@@ -356,7 +357,10 @@
     <!-- TIER 2: Time-Series Charts -->
     <div class="chart-grid">
         <div class="chart-card">
-            <h3>📊 Events Over Time</h3>
+            <div style="position: relative;">
+                <h3>📊 Events Over Time</h3>
+                <div id="chartDataSourceIndicator" style="position: absolute; top: 0; right: 0; font-size: 0.8em; display: none;"></div>
+            </div>
             <div class="chart-container">
                 <canvas id="eventsChart"></canvas>
             </div>
@@ -393,6 +397,10 @@
     </div>
     
     <script>
+        // Production configuration
+        const PRODUCTION_MODE = true; // Set to true in production to disable debug logs
+        const DEBUG = !PRODUCTION_MODE;
+
         // PHASE 2 REFACTORING (2025-10-23): Use modular architecture
         let wsClient = null;
         let dashboard = null;
@@ -400,6 +408,94 @@
         // Legacy compatibility - expose events array for existing code
         let events = [];
         let statsData = {};
+
+        // DOM Element Cache
+        const domCache = {
+            healthScore: null,
+            healthDetails: null,
+            throughputScore: null,
+            connectionsScore: null,
+            connectionsDetails: null,
+            errorRateScore: null,
+            errorRateDetails: null,
+            responseTimeScore: null,
+            eventLog: null,
+            connectionStatus: null
+        };
+
+        // Initialize DOM cache
+        function initDomCache() {
+            domCache.healthScore = document.getElementById('healthScore');
+            domCache.healthDetails = document.getElementById('healthDetails');
+            domCache.throughputScore = document.getElementById('throughputScore');
+            domCache.connectionsScore = document.getElementById('connectionsScore');
+            domCache.connectionsDetails = document.getElementById('connectionsDetails');
+            domCache.errorRateScore = document.getElementById('errorRateScore');
+            domCache.errorRateDetails = document.getElementById('errorRateDetails');
+            domCache.responseTimeScore = document.getElementById('responseTimeScore');
+            domCache.eventLog = document.getElementById('eventLog');
+            domCache.connectionStatus = document.getElementById('connectionStatus');
+        }
+
+        // Cleanup intervals and timeouts on page unload
+        function cleanup() {
+            if (DEBUG) console.log('[DASHBOARD] Cleaning up resources...');
+
+            // Clean up WebSocket connection
+            if (wsClient) {
+                wsClient.close();
+            }
+
+            // Clean up chart manager intervals
+            if (chartManager && chartManager.updateLoop) {
+                clearInterval(chartManager.updateLoop);
+            }
+
+            // Clean up debounce timeouts
+            if (typeof debounceTimeouts !== 'undefined') {
+                Object.keys(debounceTimeouts).forEach(key => {
+                    clearTimeout(debounceTimeouts[key]);
+                });
+            }
+
+            // Clean up cache metrics panel
+            if (cacheMetricsPanel && cacheMetricsPanel.destroy) {
+                cacheMetricsPanel.destroy();
+            }
+
+            if (DEBUG) console.log('[DASHBOARD] Cleanup complete');
+        }
+
+        // Register cleanup on page unload
+        window.addEventListener('beforeunload', cleanup);
+        window.addEventListener('pagehide', cleanup);
+
+        // Show error messages to user
+        function showErrorToUser(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'user-error-notification';
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #ef4444;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 5px;
+                z-index: 10000;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                max-width: 400px;
+            `;
+            errorDiv.textContent = message;
+            document.body.appendChild(errorDiv);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.remove();
+                }
+            }, 5000);
+        }
 
         // Chart instances (PHASE 3.1: Make global for debugging)
         window.charts = {
@@ -447,21 +543,22 @@
 
             wsClient = new WebSocketClient(wsUrl, {
                 onopen: () => {
-                    console.log('Connected to monitoring server');
+                    if (DEBUG) console.log('Connected to monitoring server');
                     dashboard.setConnected(true);
                 },
                 onmessage: (data) => {
                     handleMessage(data);
                 },
                 onerror: (error) => {
-                    console.error('WebSocket error:', error);
+                    if (DEBUG) console.error('WebSocket error:', error);
+                    showErrorToUser('WebSocket connection error. Some real-time features may not work.');
                 },
                 onclose: (event) => {
-                    console.log('Disconnected from monitoring server');
+                    if (DEBUG) console.log('Disconnected from monitoring server');
                     dashboard.setConnected(false);
                 },
                 onreconnect: (attempt) => {
-                    console.log(`Reconnection attempt ${attempt}...`);
+                    if (DEBUG) console.log(`Reconnection attempt ${attempt}...`);
                 },
                 reconnectDelay: 5000,
                 maxReconnectDelay: 30000,
@@ -513,22 +610,29 @@
             const container = document.getElementById(containerId);
             if (!container || !stats) return;
 
+            // Helper to escape HTML
+            const escapeHtml = (text) => {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            };
+
             container.innerHTML = `
                 <div class="metric">
                     <span class="metric-label">Total Events</span>
-                    <span class="metric-value">${stats.total_events || 0}</span>
+                    <span class="metric-value">${escapeHtml((stats.total_events || 0).toString())}</span>
                 </div>
                 <div class="metric">
                     <span class="metric-label">Errors</span>
-                    <span class="metric-value ${stats.error_count > 0 ? 'error' : ''}">${stats.error_count || 0}</span>
+                    <span class="metric-value ${stats.error_count > 0 ? 'error' : ''}">${escapeHtml((stats.error_count || 0).toString())}</span>
                 </div>
                 <div class="metric">
                     <span class="metric-label">Avg Response Time</span>
-                    <span class="metric-value">${stats.avg_response_time_ms ? stats.avg_response_time_ms.toFixed(2) + ' ms' : 'N/A'}</span>
+                    <span class="metric-value">${escapeHtml(stats.avg_response_time_ms ? stats.avg_response_time_ms.toFixed(2) + ' ms' : 'N/A')}</span>
                 </div>
                 <div class="metric">
                     <span class="metric-label">Total Data</span>
-                    <span class="metric-value">${formatBytes(stats.total_bytes || 0)}</span>
+                    <span class="metric-value">${escapeHtml(formatBytes(stats.total_bytes || 0))}</span>
                 </div>
             `;
 
@@ -556,20 +660,26 @@
 
         function addEvent(event) {
             dashboard.addEvent(event);
+            // Also add to display list with buffer size limit
+            addEventToDisplay(event);
         }
 
         function renderEvents() {
-            const logEl = document.getElementById('eventLog');
-            logEl.innerHTML = events.map(e => {
+            const escapeHtml = (text) => {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            };
+            domCache.eventLog.innerHTML = events.map(e => {
                 const timestamp = getEventTimestamp(e);
                 const dateStr = new Date(timestamp).toLocaleString();
                 return `
                     <div class="event-item ${e.error ? 'error' : ''}">
-                        <div class="event-time">${dateStr}</div>
+                        <div class="event-time">${escapeHtml(dateStr)}</div>
                         <div class="event-details">
-                            <strong>${e.connection_type}</strong> - ${e.direction} - ${e.function_name}
-                            ${e.error ? `<br><span style="color: #ef4444;">Error: ${e.error}</span>` : ''}
-                            ${e.response_time_ms ? `<br>Response: ${e.response_time_ms.toFixed(2)} ms` : ''}
+                            <strong>${escapeHtml(e.connection_type)}</strong> - ${escapeHtml(e.direction)} - ${escapeHtml(e.function_name)}
+                            ${e.error ? `<br><span style="color: #ef4444;">Error: ${escapeHtml(e.error)}</span>` : ''}
+                            ${e.response_time_ms ? `<br>Response: ${escapeHtml(e.response_time_ms.toFixed(2) + ' ms')}` : ''}
                         </div>
                     </div>
                 `;
@@ -725,20 +835,18 @@
             const totalScore = services.reduce((sum, service) => sum + healthData[service].score, 0);
             const healthScore = Math.round(totalScore / services.length);
 
-            // Update System Health
-            const healthScoreEl = document.getElementById('healthScore');
-            const healthDetailsEl = document.getElementById('healthDetails');
-            healthScoreEl.textContent = `${healthScore}%`;
+            // Update System Health (using cached elements)
+            domCache.healthScore.textContent = `${healthScore}%`;
 
             if (healthScore >= 90) {
-                healthDetailsEl.textContent = 'Healthy';
-                healthDetailsEl.style.color = '#10b981';
+                domCache.healthDetails.textContent = 'Healthy';
+                domCache.healthDetails.style.color = '#10b981';
             } else if (healthScore >= 70) {
-                healthDetailsEl.textContent = 'Degraded';
-                healthDetailsEl.style.color = '#f59e0b';
+                domCache.healthDetails.textContent = 'Degraded';
+                domCache.healthDetails.style.color = '#f59e0b';
             } else {
-                healthDetailsEl.textContent = 'Critical';
-                healthDetailsEl.style.color = '#ef4444';
+                domCache.healthDetails.textContent = 'Critical';
+                domCache.healthDetails.style.color = '#ef4444';
             }
 
             // Calculate and update Throughput (events per second over last minute)
@@ -750,29 +858,28 @@
                 return eventTime >= oneMinuteAgo;
             });
             const throughput = (recentEvents.length / 60).toFixed(2);
-            document.getElementById('throughputScore').textContent = throughput;
+            domCache.throughputScore.textContent = throughput;
 
             // Update Connections (count active WebSocket connections)
             // PHASE 2 REFACTORING (2025-10-23): Use wsClient instead of ws
             const connected = wsClient && wsClient.isReady();
-            document.getElementById('connectionsScore').textContent = connected ? '1' : '0';
+            domCache.connectionsScore.textContent = connected ? '1' : '0';
 
             // Calculate and update Error Rate
             const totalEvents = Object.values(statsData).reduce((sum, s) => sum + (s.total_events || 0), 0);
             const totalErrors = Object.values(statsData).reduce((sum, s) => sum + (s.error_count || 0), 0);
             const errorRate = totalEvents > 0 ? ((totalErrors / totalEvents) * 100).toFixed(1) : 0;
-            document.getElementById('errorRateScore').textContent = `${errorRate}%`;
+            domCache.errorRateScore.textContent = `${errorRate}%`;
 
-            const errorDetailsEl = document.getElementById('errorRateDetails');
             if (errorRate > 5) {
-                errorDetailsEl.textContent = 'Critical';
-                errorDetailsEl.style.color = '#ef4444';
+                domCache.errorRateDetails.textContent = 'Critical';
+                domCache.errorRateDetails.style.color = '#ef4444';
             } else if (errorRate > 1) {
-                errorDetailsEl.textContent = 'Warning';
-                errorDetailsEl.style.color = '#f59e0b';
+                domCache.errorRateDetails.textContent = 'Warning';
+                domCache.errorRateDetails.style.color = '#f59e0b';
             } else {
-                errorDetailsEl.textContent = 'Normal';
-                errorDetailsEl.style.color = '#10b981';
+                domCache.errorRateDetails.textContent = 'Normal';
+                domCache.errorRateDetails.style.color = '#10b981';
             }
 
             // Calculate and update Response Time (p95)
@@ -787,7 +894,7 @@
                 allResponseTimes.sort((a, b) => a - b);
                 const p95Index = Math.floor(allResponseTimes.length * 0.95);
                 const p95 = allResponseTimes[p95Index] || allResponseTimes[allResponseTimes.length - 1];
-                document.getElementById('responseTimeScore').textContent = `${p95.toFixed(0)}`;
+                domCache.responseTimeScore.textContent = `${p95.toFixed(0)}`;
             }
         }
 
@@ -828,12 +935,29 @@
             }
         }
 
+        // Add event to display list with buffer size limit
+        function addEventToDisplay(event) {
+            // Maintain buffer size limit to prevent memory leaks
+            if (events.length >= MAX_EVENTS_DISPLAY) {
+                events.shift(); // Remove oldest event
+            }
+            events.push(event);
+        }
+
         // PHASE 2 REFACTORING (2025-10-23): Initialize with new modular architecture
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('[INIT] DOM loaded, starting initialization...');
+            if (DEBUG) console.log('[INIT] DOM loaded, starting initialization...');
+
+            // Initialize DOM cache first
+            initDomCache();
 
             // Verify Chart.js is loaded
-            console.log('[INIT] Chart.js loaded:', typeof Chart !== 'undefined');
+            if (typeof Chart === 'undefined') {
+                if (DEBUG) console.error('[INIT] Chart.js not loaded!');
+                showErrorToUser('Chart.js library failed to load. Charts will not work properly.');
+            } else if (DEBUG) {
+                console.log('[INIT] Chart.js loaded:', typeof Chart !== 'undefined');
+            }
 
             // Verify canvas elements exist
             const canvasCheck = {
@@ -843,7 +967,8 @@
                 error: !!document.getElementById('errorChart'),
                 timeoutAccuracy: !!document.getElementById('timeoutAccuracyChart')  // DAY 1 (2025-11-03)
             };
-            console.log('[INIT] Canvas elements exist:', canvasCheck);
+
+            if (DEBUG) console.log('[INIT] Canvas elements exist:', canvasCheck);
 
             // PHASE 2: Initialize dashboard core
             dashboard = new DashboardCore();
@@ -913,11 +1038,24 @@
             }
         }
 
-        function updateCacheTimeRange(hours) {
-            if (cacheMetricsPanel) {
-                cacheMetricsPanel.timeRange = parseInt(hours);
-                cacheMetricsPanel.fetchAndRender();
+        // Debounce cache time range updates
+        const debounceTimeouts = {};
+
+        function debounceCacheTimeRange(hours) {
+            if (debounceTimeouts.cacheTimeRange) {
+                clearTimeout(debounceTimeouts.cacheTimeRange);
             }
+
+            debounceTimeouts.cacheTimeRange = setTimeout(() => {
+                if (cacheMetricsPanel) {
+                    cacheMetricsPanel.timeRange = parseInt(hours);
+                    cacheMetricsPanel.fetchAndRender();
+                }
+            }, 200);
+        }
+
+        function updateCacheTimeRange(hours) {
+            debounceCacheTimeRange(hours);
         }
     </script>
 </body>

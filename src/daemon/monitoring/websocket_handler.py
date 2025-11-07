@@ -279,6 +279,10 @@ def remove_dashboard_client(ws: web.WebSocketResponse) -> None:
     _dashboard_clients.discard(ws)
 
 
+# Alias for backward compatibility
+websocket_handler = event_ingestion_handler
+
+
 def get_websocket_health_tracker() -> WebSocketHealthTracker:
     """Get the WebSocket health tracker instance"""
     return _ws_health_tracker

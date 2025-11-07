@@ -22,6 +22,19 @@
         "KIMI_TIMEOUT_SECS": "120",
         "KIMI_WEB_SEARCH_TIMEOUT_SECS": "150"
       }
+    },
+    "supabase-mcp-full": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--features=account,database,debugging,development,docs,functions,branching,storage"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
+      }
     }
   }
 }

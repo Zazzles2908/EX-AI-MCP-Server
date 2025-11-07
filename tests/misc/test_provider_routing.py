@@ -35,6 +35,7 @@ configure_providers()
 
 # Test provider routing
 from src.providers.registry import ModelProviderRegistry
+from src.providers.registry_core import get_registry_instance
 
 print("\n" + "="*80)
 print("TESTING PROVIDER ROUTING")
@@ -42,7 +43,7 @@ print("="*80)
 
 # Test 1: Get provider for Kimi model
 print("\n📍 Test 1: Get provider for 'kimi-k2-0905-preview'")
-provider = ModelProviderRegistry.get_provider_for_model("kimi-k2-0905-preview")
+provider = get_registry_instance().get_provider_for_model("kimi-k2-0905-preview")
 if provider:
     print(f"✅ Provider type: {provider.get_provider_type()}")
     print(f"✅ Provider class: {provider.__class__.__name__}")
@@ -59,7 +60,7 @@ else:
 
 # Test 2: Get provider for GLM model
 print("\n📍 Test 2: Get provider for 'glm-4.6'")
-provider = ModelProviderRegistry.get_provider_for_model("glm-4.6")
+provider = get_registry_instance().get_provider_for_model("glm-4.6")
 if provider:
     print(f"✅ Provider type: {provider.get_provider_type()}")
     print(f"✅ Provider class: {provider.__class__.__name__}")
@@ -86,6 +87,7 @@ print(f"Registered providers: {list(registry._providers.keys())}")
 # Test 5: Check Kimi provider validation
 print("\n📍 Test 5: Check Kimi provider model validation")
 from src.providers.base import ProviderType
+from src.providers.registry_core import get_registry_instance
 kimi_provider = ModelProviderRegistry.get_provider(ProviderType.KIMI)
 if kimi_provider:
     validates = kimi_provider.validate_model_name("kimi-k2-0905-preview")

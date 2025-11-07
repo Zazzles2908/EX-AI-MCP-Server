@@ -88,5 +88,5 @@ class RetryMixin:
         )
         log_error(ErrorCode.INTERNAL_ERROR, error_msg, exc_info=True)
         log_error(ErrorCode.PROVIDER_ERROR, error_msg)
-            raise ProviderError("Provider", Exception(error_msg)) from last_exception
+        raise ProviderError("Provider", Exception(error_msg)) from last_exception
 

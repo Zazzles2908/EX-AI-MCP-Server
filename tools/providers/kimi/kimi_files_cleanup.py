@@ -54,6 +54,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from src.providers.registry import ModelProviderRegistry  # type: ignore
+from src.providers.registry_core import get_registry_instance
 
 
 def _utc_midnight(date_str: str) -> int:
@@ -84,7 +85,7 @@ def _get_kimi_client():
     """
     # Try provider registry first
     try:
-        prov = ModelProviderRegistry.get_provider_for_model(os.getenv("KIMI_DEFAULT_MODEL", "kimi-latest"))
+        prov = get_registry_instance().get_provider_for_model(os.getenv("KIMI_DEFAULT_MODEL", "kimi-latest"))
         client = getattr(prov, "client", None)
         if client is not None and hasattr(client, "files"):
             return client

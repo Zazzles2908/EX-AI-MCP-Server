@@ -110,7 +110,7 @@ def run_web_search_backend(query: str) -> dict:
             f"Endpoint: {web_search_url}\n"
             f"This may indicate: API key invalid, rate limiting, or network restrictions in Docker."
         )
-        log_error(ErrorCode.INTERNAL_ERROR, error_msg, exc_info=True, exc_info=True)
+        log_error(ErrorCode.INTERNAL_ERROR, error_msg, exc_info=True)
         return {"engine": "glm_native", "query": query, "error": error_msg, "results": []}
 
     except urllib.error.URLError as e:
@@ -121,7 +121,7 @@ def run_web_search_backend(query: str) -> dict:
             f"This may indicate: Docker container lacks internet access, DNS resolution failure, "
             f"or firewall blocking outbound connections."
         )
-        log_error(ErrorCode.INTERNAL_ERROR, error_msg, exc_info=True, exc_info=True)
+        log_error(ErrorCode.INTERNAL_ERROR, error_msg, exc_info=True)
         return {"engine": "glm_native", "query": query, "error": error_msg, "results": []}
 
     except Exception as e:

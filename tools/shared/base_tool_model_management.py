@@ -31,7 +31,13 @@ class ModelManagementMixin:
     - Temperature validation
     - Model context resolution
     """
-    
+
+    def __init__(self):
+        """Initialize the mixin."""
+        # Use singleton to ensure we see the same registry the daemon initialized
+        from src.providers.registry_core import get_registry_instance
+        self._registry = get_registry_instance()
+
     # ================================================================================
     # Model Selection and Validation
     # ================================================================================
@@ -67,7 +73,7 @@ class ModelManagementMixin:
         
         # Case 2: Model not available (fallback to auto mode)
         if DEFAULT_MODEL.lower() != "auto":
-            provider = ModelProviderRegistry.get_provider_for_model(DEFAULT_MODEL)
+            provider = self._registry.get_provider_for_model(DEFAULT_MODEL)
             if not provider:
                 # If hidden router is enabled, do not require model selection in schema
                 if os.getenv("HIDDEN_MODEL_ROUTER_ENABLED", "true").strip().lower() == "true":
@@ -99,7 +105,7 @@ class ModelManagementMixin:
             return True
         
         # Case 2: Requested model is not available
-        provider = ModelProviderRegistry.get_provider_for_model(model_name)
+        provider = self._registry.get_provider_for_model(model_name)
         if not provider:
             logger.warning(f"Model '{model_name}' is not available with current API keys. Requiring model selection.")
             return True
@@ -118,7 +124,7 @@ class ModelManagementMixin:
             List of model names from enabled providers only
         """
         # Get models from enabled providers only (those with valid API keys)
-        all_models = ModelProviderRegistry.get_available_model_names()
+        all_models = self._registry.get_available_model_names()
         
         # Add OpenRouter models if OpenRouter is configured
         openrouter_key = os.getenv("OPENROUTER_API_KEY")
@@ -175,11 +181,11 @@ class ModelManagementMixin:
         """
         try:
             logger.info(f"TOOL_MODEL_DEBUG: get_model_provider called for model '{model_name}' in tool '{self.name}'")
-            provider = ModelProviderRegistry.get_provider_for_model(model_name)
+            provider = self._registry.get_provider_for_model(model_name)
             logger.info(f"TOOL_MODEL_DEBUG: get_provider_for_model returned: {provider}")
             if not provider:
                 logger.error(f"No provider found for model '{model_name}' in {self.name} tool")
-                available_models = ModelProviderRegistry.get_available_models()
+                available_models = self._registry.get_available_models()
                 logger.error(f"TOOL_MODEL_DEBUG: Available models from registry: {available_models}")
                 raise ValueError(f"Model '{model_name}' is not available. Available models: {available_models}")
 
@@ -342,9 +348,12 @@ class ModelManagementMixin:
 
             # Check available providers and add their model descriptions
             # Start with native providers
+            from src.providers.registry_core import get_registry_instance
+            registry = get_registry_instance()
+
             for provider_type in [ProviderType.GOOGLE, ProviderType.OPENAI, ProviderType.XAI, ProviderType.DIAL]:
                 # Only if this is registered / available
-                provider = ModelProviderRegistry.get_provider(provider_type)
+                provider = registry.get_provider(provider_type)
                 if provider:
                     provider_section_added = False
                     for model_name in provider.list_models(respect_restrictions=True):
@@ -448,7 +457,7 @@ class ModelManagementMixin:
                 for m in models:
                     cm = m
                     try:
-                        provider = ModelProviderRegistry.get_provider_for_model(m)
+                        provider = self._registry.get_provider_for_model(m)
                         if provider:
                             caps = provider.get_capabilities(m)
                             cm = caps.model_name or m
@@ -499,7 +508,7 @@ class ModelManagementMixin:
                     # Resolve alias to canonical base model when possible
                     cm = ml
                     try:
-                        provider = ModelProviderRegistry.get_provider_for_model(ml)
+                        provider = self._registry.get_provider_for_model(ml)
                         if provider:
                             caps = provider.get_capabilities(ml)
                             cm = caps.model_name or ml

@@ -13,7 +13,9 @@ Phase 6.4 (2025-11-01): Renamed from request_handler_model_resolution.py to mode
 """
 
 import logging
+from src.providers.registry_core import get_registry_instance
 import os
+from src.providers.registry_core import get_registry_instance
 from typing import Any, Dict, Optional
 
 from src.router.routing_cache import get_routing_cache
@@ -284,7 +286,7 @@ def validate_and_fallback_model(model_name: str, tool_name: str, tool_obj, req_i
     """
     from src.providers.registry import ModelProviderRegistry
     
-    provider = ModelProviderRegistry.get_provider_for_model(model_name)
+    provider = get_registry_instance().get_provider_for_model(model_name)
     if not provider:
         # Try to recover gracefully before failing
         available_models = list(ModelProviderRegistry.get_available_models(respect_restrictions=True).keys())
@@ -293,7 +295,7 @@ def validate_and_fallback_model(model_name: str, tool_name: str, tool_obj, req_i
             try:
                 configure_providers_func()
                 available_models = list(ModelProviderRegistry.get_available_models(respect_restrictions=True).keys())
-                provider = ModelProviderRegistry.get_provider_for_model(model_name)
+                provider = get_registry_instance().get_provider_for_model(model_name)
             except Exception as _e:
                 logger.debug(f"configure_providers() retry failed: {_e}")
         

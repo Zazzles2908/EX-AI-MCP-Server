@@ -32,6 +32,7 @@ from typing import Any, Optional, TYPE_CHECKING
 
 from config import DEFAULT_MODEL
 
+# REFACTORED: Removed get_registry_instance import - now using instance-based registry
 # Avoid circular import: src.providers imports utils, utils.model.context imports src.providers
 # Move imports inside methods where they're actually used
 if TYPE_CHECKING:
@@ -77,11 +78,12 @@ class ModelContext:
         if self._provider is None:
             import logging
             logging.info(f"MODEL_CONTEXT_DEBUG: Getting provider for model '{self.model_name}'")
-            from src.providers import ModelProviderRegistry  # Import here to avoid circular import
-            self._provider = ModelProviderRegistry.get_provider_for_model(self.model_name)
+            from src.providers.registry_core import get_registry_instance  # Import here to avoid circular import
+            registry = get_registry_instance()  # Use singleton to see initialized providers
+            self._provider = registry.get_provider_for_model(self.model_name)
             logging.info(f"MODEL_CONTEXT_DEBUG: get_provider_for_model returned: {self._provider}")
             if not self._provider:
-                available_models = ModelProviderRegistry.get_available_models()
+                available_models = registry.get_available_models()
                 logging.info(f"MODEL_CONTEXT_DEBUG: Available models: {available_models}")
                 raise ValueError(f"Model '{self.model_name}' is not available. Available models: {available_models}")
         return self._provider
@@ -124,6 +126,28 @@ class ModelContext:
         """
         total_tokens = self.capabilities.context_window
 
+        # SECURITY FIX: Add bounds checking for very large contexts
+        # Prevent memory exhaustion with extremely large contexts
+        import os
+        max_context = int(os.getenv("MAX_MODEL_CONTEXT_TOKENS", str(2_000_000)))  # Default: 2M tokens max
+
+        if total_tokens > max_context:
+            logger.warning(
+                f"Model context window ({total_tokens:,} tokens) exceeds maximum allowed "
+                f"({max_context:,} tokens). Clamping to prevent memory exhaustion. "
+                f"Set MAX_MODEL_CONTEXT_TOKENS env var to increase if needed."
+            )
+            total_tokens = max_context
+
+        # Also enforce minimum context size
+        min_context = int(os.getenv("MIN_MODEL_CONTEXT_TOKENS", "1000"))  # Default: 1K tokens minimum
+        if total_tokens < min_context:
+            logger.warning(
+                f"Model context window ({total_tokens:,} tokens) is below minimum "
+                f"({min_context:,} tokens). This may cause functionality issues."
+            )
+            total_tokens = min_context
+
         # Dynamic allocation based on model capacity
         if total_tokens < 300_000:
             # Smaller context models (O3): Conservative allocation
@@ -145,6 +169,20 @@ class ModelContext:
         # Sub-allocations within content budget
         file_tokens = int(content_tokens * file_ratio)
         history_tokens = int(content_tokens * history_ratio)
+
+        # Additional validation: ensure allocations don't exceed total
+        total_allocated = content_tokens + response_tokens
+        if total_allocated > total_tokens:
+            logger.warning(
+                f"Token allocations ({total_allocated:,}) exceed total context "
+                f"({total_tokens:,}). Scaling down proportionally."
+            )
+            # Scale down proportionally
+            scale_factor = total_tokens / total_allocated
+            content_tokens = int(content_tokens * scale_factor)
+            response_tokens = int(response_tokens * scale_factor)
+            file_tokens = int(file_tokens * scale_factor)
+            history_tokens = int(history_tokens * scale_factor)
 
         allocation = TokenAllocation(
             total_tokens=total_tokens,

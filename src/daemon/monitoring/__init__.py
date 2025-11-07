@@ -10,3 +10,10 @@ Components:
 - HTTPEndpoints: HTTP API endpoints
 - SessionMonitor: Session lifecycle management
 """
+
+from .memory_monitor import get_memory_monitor, AlertLevel
+
+__all__ = [
+    'get_memory_monitor',
+    'AlertLevel',
+]

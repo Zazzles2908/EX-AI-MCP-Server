@@ -26,6 +26,9 @@ from utils.client_info import get_current_session_fingerprint, get_cached_client
 from utils.progress import send_progress
 from utils.progress_utils.messages import ProgressMessages
 
+# Import the registry for model selection
+from src.providers.registry import ModelProviderRegistry as _Registry
+
 
 class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixin, BaseTool):
     """
@@ -380,11 +383,12 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
             else:
                 # Create model context if not provided
                 from utils.model.context import ModelContext
-                from src.providers.registry import ModelProviderRegistry as _Registry
+                from src.providers.registry import get_registry_instance
                 # Avoid constructing ModelContext('auto') which triggers provider lookup error.
                 if (model_name or "").strip().lower() == "auto":
                     try:
-                        seed = _Registry.get_preferred_fallback_model(self.get_model_category())
+                        registry_instance = get_registry_instance()
+                        seed = registry_instance.get_preferred_fallback_model(self.get_model_category())
                     except Exception:
                         seed = None
                     seed = seed or "glm-4.5-flash"
@@ -520,14 +524,15 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
 
             # Generate AI response with fallback (free-first → paid) when applicable
             import os as _os
-            from src.providers.registry import ModelProviderRegistry as _Registry
+            from src.providers.registry import get_registry_instance
             selected_model = self._current_model_name
             tool_call_metadata = []  # collected sanitized tool-call events for UI dropdown
 
             def _call_with_model(_model_name: str):
                 nonlocal selected_model, provider
                 selected_model = _model_name
-                prov = _Registry.get_provider_for_model(_model_name)
+                registry_instance = get_registry_instance()
+                prov = registry_instance.get_provider_for_model(_model_name)
                 if not prov:
                     raise RuntimeError(f"No provider available for model '{_model_name}'")
                 provider = prov  # update for downstream logging/usage

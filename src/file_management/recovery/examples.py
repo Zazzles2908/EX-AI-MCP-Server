@@ -47,8 +47,8 @@ async def example_basic_usage():
             risky_file_operation,
             "file_write_operation",
             "/tmp/example_file.txt",
-            create_backup=True,
-            "Hello, World! This is a test file."
+            "Hello, World! This is a test file.",
+            create_backup=True
         )
         
         if success:
@@ -176,8 +176,8 @@ async def example_rollback_operations():
             risky_file_update,
             "file_update_with_rollback",
             test_file,
-            create_backup=True,
-            "Updated content - this might fail"
+            "Updated content - this might fail",
+            create_backup=True
         )
         
         logger.info(f"Update result: {success}")

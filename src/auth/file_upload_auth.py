@@ -21,8 +21,8 @@ from datetime import datetime, timedelta
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from src.storage.supabase_manager import SupabaseManager
-from src.utils.config_loader import get_config
+from src.storage.supabase_client import SupabaseStorageManager
+from src.core.config import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -41,14 +41,14 @@ class FileUploadAuth:
     - Upload tracking
     """
     
-    def __init__(self, supabase_client: Optional[SupabaseManager] = None):
+    def __init__(self, supabase_client: Optional[SupabaseStorageManager] = None):
         """
         Initialize authentication module.
-        
+
         Args:
             supabase_client: Supabase client for database operations
         """
-        self.supabase = supabase_client or SupabaseManager()
+        self.supabase = supabase_client or SupabaseStorageManager()
         self.config = get_config()
         
         # Get JWT secret from environment

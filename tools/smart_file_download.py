@@ -27,6 +27,7 @@ from openai import OpenAI
 # Import existing utilities
 from utils.file.deduplication import FileDeduplicationManager
 from src.storage.hybrid_supabase_manager import HybridSupabaseManager
+from tools.shared.base_tool import BaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +125,7 @@ def _sanitize_filename(filename: str) -> str:
     return safe_name
 
 
-class SmartFileDownloadTool:
+class SmartFileDownloadTool(BaseTool):
     """
     Unified file download interface with automatic caching and integrity validation.
     
@@ -142,23 +143,45 @@ class SmartFileDownloadTool:
     
     def __init__(self):
         """Initialize the smart file download tool."""
+        super().__init__()  # Initialize BaseToolCore which sets self.name
         # Initialize storage manager
         self.storage_manager = HybridSupabaseManager()
-        
+
         # Initialize deduplication manager
         self.dedup_manager = FileDeduplicationManager(
             storage_manager=self.storage_manager
         )
-        
+
         # Provider API keys
         self.moonshot_api_key = os.getenv("MOONSHOT_API_KEY")
         self.glm_api_key = os.getenv("GLM_API_KEY")
-        
+
         # Ensure download directory exists
         self._ensure_download_dir()
-        
+
         logger.info("[SMART_FILE_DOWNLOAD] Tool initialized successfully")
-    
+
+    @staticmethod
+    def get_name() -> str:
+        return "smart_file_download"
+
+    @staticmethod
+    def get_description() -> str:
+        return """
+        Smart File Download Tool - Unified file download interface with caching and integrity validation.
+
+        This tool provides seamless file download capabilities with:
+        - Cache-first download strategy (Supabase → Provider)
+        - SHA256-based integrity verification
+        - Provider fallback (Kimi → Supabase)
+        - Download tracking and analytics
+        - Automatic error handling and retry logic
+
+        Usage:
+            tool = SmartFileDownloadTool()
+            local_path = await tool.execute(file_id="file_abc123")
+        """
+
     def _ensure_download_dir(self):
         """Ensure the default download directory exists."""
         Path(DEFAULT_DOWNLOAD_DIR).mkdir(parents=True, exist_ok=True)

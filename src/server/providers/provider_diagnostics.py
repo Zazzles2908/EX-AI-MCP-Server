@@ -59,8 +59,9 @@ def write_provider_snapshot():
     try:
         from src.providers.registry import ModelProviderRegistry
         from src.providers.base import ProviderType
+        from src.providers.registry_core import get_registry_instance
 
-        reg = ModelProviderRegistry()
+        reg = get_registry_instance()
 
         # Registered providers reflect classes known to the registry (post-registration)
         registered = [p.name for p in reg.get_available_providers()]

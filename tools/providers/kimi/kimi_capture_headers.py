@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+from src.providers.registry_core import get_registry_instance
 import os
+from src.providers.registry_core import get_registry_instance
 from typing import Any, Dict
 
 from tools.shared.base_tool import BaseTool
@@ -60,7 +62,7 @@ class KimiCaptureHeadersTool(BaseTool):
         call_key = arguments.get("call_key")
         tool_name = arguments.get("tool_name") or "kimi_capture_headers"
 
-        prov = ModelProviderRegistry.get_provider_for_model(model)
+        prov = get_registry_instance().get_provider_for_model(model)
         if not isinstance(prov, KimiModelProvider):
             api_key = os.getenv("KIMI_API_KEY") or os.getenv("MOONSHOT_API_KEY")
             prov = KimiModelProvider(api_key=api_key or "")

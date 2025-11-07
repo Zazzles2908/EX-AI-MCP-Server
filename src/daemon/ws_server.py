@@ -4,6 +4,7 @@ import logging
 import os
 import secrets
 import signal
+import threading
 import time
 import uuid
 from datetime import timedelta
@@ -43,6 +44,7 @@ from utils.timezone_helper import log_timestamp
 from src.daemon.connection_manager import get_connection_manager
 from src.resilience.rate_limiter import get_rate_limiter
 
+from src.providers.registry_core import get_registry_instance
 # PHASE 4 (2025-10-19): Import resilient WebSocket manager for connection resilience
 from src.monitoring.resilient_websocket import ResilientWebSocketManager
 
@@ -378,35 +380,41 @@ _results_cache: dict[str, dict] = {}
 # Cache by semantic call key (tool name + normalized arguments) to survive req_id changes across reconnects
 _results_cache_by_key: dict[str, dict] = {}
 _inflight_reqs: set[str] = set()
+# Lock for thread-safe access to results cache
+_results_cache_lock = threading.Lock()
+
 
 
 def _gc_results_cache() -> None:
     try:
-        now = time.time()
-        expired = [rid for rid, rec in _results_cache.items() if now - rec.get("t", 0) > RESULT_TTL_SECS]
-        for rid in expired:
-            _results_cache.pop(rid, None)
-        expired_keys = [k for k, rec in _results_cache_by_key.items() if now - rec.get("t", 0) > RESULT_TTL_SECS]
-        for k in expired_keys:
-            _results_cache_by_key.pop(k, None)
+        with _results_cache_lock:
+            now = time.time()
+            expired = [rid for rid, rec in _results_cache.items() if now - rec.get("t", 0) > RESULT_TTL_SECS]
+            for rid in expired:
+                _results_cache.pop(rid, None)
+            expired_keys = [k for k, rec in _results_cache_by_key.items() if now - rec.get("t", 0) > RESULT_TTL_SECS]
+            for k in expired_keys:
+                _results_cache_by_key.pop(k, None)
     except (KeyError, AttributeError, TypeError) as e:
         logger.error(f"Failed to clean up results cache: {e}", exc_info=True)
         # Continue - cache cleanup failure is not critical for current request
 
 
 def _store_result(req_id: str, payload: dict) -> None:
-    _results_cache[req_id] = {"t": time.time(), "payload": payload}
-    _gc_results_cache()
+    with _results_cache_lock:
+        _results_cache[req_id] = {"t": time.time(), "payload": payload}
+        _gc_results_cache()
 
 
 def _get_cached_result(req_id: str) -> dict | None:
-    rec = _results_cache.get(req_id)
-    if not rec:
-        return None
-    if time.time() - rec.get("t", 0) > RESULT_TTL_SECS:
-        _results_cache.pop(req_id, None)
-        return None
-    return rec.get("payload")
+    with _results_cache_lock:
+        rec = _results_cache.get(req_id)
+        if not rec:
+            return None
+        if time.time() - rec.get("t", 0) > RESULT_TTL_SECS:
+            _results_cache.pop(req_id, None)
+            return None
+        return rec.get("payload")
 
 
 def _make_call_key(name: str, arguments: dict) -> str:
@@ -451,18 +459,20 @@ async def _cleanup_inflight(call_key: str) -> None:
 
 
 def _store_result_by_key(call_key: str, outputs: list[dict]) -> None:
-    _results_cache_by_key[call_key] = {"t": time.time(), "outputs": outputs}
-    _gc_results_cache()
+    with _results_cache_lock:
+        _results_cache_by_key[call_key] = {"t": time.time(), "outputs": outputs}
+        _gc_results_cache()
 
 
 def _get_cached_by_key(call_key: str) -> list[dict] | None:
-    rec = _results_cache_by_key.get(call_key)
-    if not rec:
-        return None
-    if time.time() - rec.get("t", 0) > RESULT_TTL_SECS:
-        _results_cache_by_key.pop(call_key, None)
-        return None
-    return rec.get("outputs")
+    with _results_cache_lock:
+        rec = _results_cache_by_key.get(call_key)
+        if not rec:
+            return None
+        if time.time() - rec.get("t", 0) > RESULT_TTL_SECS:
+            _results_cache_by_key.pop(call_key, None)
+            return None
+        return rec.get("outputs")
 
 
 # Tool name normalization to tolerate IDE-side aliasing (e.g., chat_EXAI-WS -> chat)
@@ -551,6 +561,21 @@ async def main_async() -> None:
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
 
+    # CRITICAL FIX (2025-11-07): Configure providers eagerly at startup
+    # Previously, providers were only configured on first client request (lazy loading)
+    # This caused cold start delays and intermittent failures
+    try:
+        print("[STARTUP] DEBUG: Reached provider configuration code", flush=True)
+        import sys
+        print("[STARTUP] DEBUG: Python sys.path = " + str(sys.path[:3]), flush=True)
+        logger.info("[STARTUP] Configuring providers during daemon startup...")
+        _ensure_providers_configured()
+        logger.info("[STARTUP] Providers configured successfully")
+    except Exception as e:
+        logger.error(f"[STARTUP] Failed to configure providers during startup: {e}")
+        logger.error("[STARTUP] Daemon cannot start without providers - shutting down")
+        raise  # Fail fast - daemon requires providers to function
+
     def _signal(*_args):
         stop_event.set()
 
@@ -610,7 +635,7 @@ async def main_async() -> None:
             start_time = time.time()
 
             while time.time() - start_time < timeout:
-                available_models = ModelProviderRegistry.get_available_models()
+                available_models = get_registry_instance().get_available_models()
                 if available_models:
                     logger.info(f"Providers ready! {len(available_models)} models available")
                     break

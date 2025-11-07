@@ -63,8 +63,13 @@ class HealthTool(BaseTool):
     def run(self, **kwargs) -> Dict[str, Any]:
         tail_lines = int(kwargs.get("tail_lines") or 50)
 
-        providers_with_keys = ModelProviderRegistry.get_available_providers_with_keys()
-        model_names = ModelProviderRegistry.get_available_model_names()
+        # PHASE 5 FIX (2025-11-07): Use get_registry_instance() to get singleton
+        # This ensures we get the same registry instance that providers were registered to
+        from src.providers.registry_core import get_registry_instance
+        registry = get_registry_instance()
+
+        providers_with_keys = registry.get_available_providers_with_keys()
+        model_names = registry.get_available_model_names()
 
         # Observability log tails
         metrics_path = Path(os.getenv("EX_METRICS_LOG_PATH", ".logs/metrics.jsonl"))

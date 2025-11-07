@@ -106,8 +106,8 @@ class ModelProviderRegistry:
             provider_class: Class that implements ModelProvider interface
         """
                 # Instance already available as self
-        instance._providers[provider_type] = provider_class
-        logging.debug(f"Registered provider {provider_type.name} (total: {len(instance._providers)})")
+        self._providers[provider_type] = provider_class
+        logging.debug(f"Registered provider {provider_type.name} (total: {len(self._providers)})")
         # PHASE 2 FIX: Invalidate cache when provider registered
         self._invalidate_models_cache()
 
@@ -134,18 +134,18 @@ class ModelProviderRegistry:
                 return None
 
         # Return cached instance if available and not forcing new
-        if not force_new and provider_type in instance._initialized_providers:
-            return instance._initialized_providers[provider_type]
+        if not force_new and provider_type in self._initialized_providers:
+            return self._initialized_providers[provider_type]
 
         # Check if provider class is registered
-        if provider_type not in instance._providers:
+        if provider_type not in self._providers:
             return None
 
         # Get API key from environment
         api_key = self._get_api_key_for_provider(provider_type)
 
         # Get provider class or factory function
-        provider_class = instance._providers[provider_type]
+        provider_class = self._providers[provider_type]
 
         # Defensive: transient init protection
         try:
@@ -197,7 +197,7 @@ class ModelProviderRegistry:
             provider = HealthWrappedProvider(provider)
 
         # Cache the instance
-        instance._initialized_providers[provider_type] = provider
+        self._initialized_providers[provider_type] = provider
 
         return provider
 
@@ -220,13 +220,13 @@ class ModelProviderRegistry:
         logging.debug(f"REGISTRY_DEBUG: get_provider_for_model called with model_name='{model_name}'")
 
         # Check providers in priority order
-                # Instance already available as self
-        logging.debug(f"REGISTRY_DEBUG: Registry instance: {instance}, _providers={instance._providers}")
-        logging.debug(f"REGISTRY_DEBUG: PROVIDER_PRIORITY_ORDER: {cls.PROVIDER_PRIORITY_ORDER}")
+        # Instance already available as self
+        logging.debug(f"REGISTRY_DEBUG: Registry instance: {self}, _providers={self._providers}")
+        logging.debug(f"REGISTRY_DEBUG: PROVIDER_PRIORITY_ORDER: {self.PROVIDER_PRIORITY_ORDER}")
 
-        for provider_type in cls.PROVIDER_PRIORITY_ORDER:
+        for provider_type in self.PROVIDER_PRIORITY_ORDER:
             logging.debug(f"REGISTRY_DEBUG: Checking provider_type {provider_type}")
-            if provider_type in instance._providers:
+            if provider_type in self._providers:
                 logging.debug(f"REGISTRY_DEBUG: Found {provider_type} in registry")
 
                 # Health gating: skip if circuit is OPEN (only when enabled and not log-only)
@@ -237,7 +237,7 @@ class ModelProviderRegistry:
                         continue
 
                 # Get or create provider instance
-                provider = cls.get_provider(provider_type)
+                provider = self.get_provider(provider_type)
                 logging.debug(f"REGISTRY_DEBUG: Got provider instance: {provider}")
                 if provider:
                     validates = provider.validate_model_name(model_name)
@@ -291,7 +291,7 @@ class ModelProviderRegistry:
     def get_available_providers(self) -> list[ProviderType]:
         """Get list of registered provider types."""
                 # Use self for instance data
-        providers = list(instance._providers.keys())
+        providers = list(self._providers.keys())
         allowed = os.getenv("ALLOWED_PROVIDERS", "").strip()
         if allowed:
             allow = {p.strip().upper() for p in allowed.split(",") if p.strip()}
@@ -331,18 +331,17 @@ class ModelProviderRegistry:
 
         restriction_service = get_restriction_service() if respect_restrictions else None
         models: dict[str, ProviderType] = {}
-                # Use self for instance data
 
         # CRITICAL DEBUG (2025-10-24): Log registry state and caller info
         caller_frame = inspect.stack()[1]
         caller_info = f"{caller_frame.filename}:{caller_frame.lineno} in {caller_frame.function}"
         logging.debug(f"REGISTRY_DEBUG: get_available_models called from {caller_info}")
-        logging.debug(f"REGISTRY_DEBUG: instance id={id(instance)}, _providers={instance._providers}")
+        logging.debug(f"REGISTRY_DEBUG: registry id={id(self)}, _providers={self._providers}")
         logging.debug(f"REGISTRY_CACHE: Cache miss - fetching models from providers")
 
-        for provider_type in instance._providers:
+        for provider_type in self._providers:
             logging.debug(f"REGISTRY_DEBUG: Processing provider {provider_type.name}")
-            provider = cls.get_provider(provider_type)
+            provider = self.get_provider(provider_type)
             if not provider:
                 logging.debug(f"REGISTRY_DEBUG: get_provider returned None for {provider_type.name}")
                 continue
@@ -390,7 +389,23 @@ class ModelProviderRegistry:
         logging.debug(f"REGISTRY_DEBUG: Returning {len(models)} models: {list(models.keys())}")
         return models
 
-    
+    @classmethod
+    def get_available_models_static(cls, respect_restrictions: bool = True) -> dict[str, ProviderType]:
+        """
+        Get mapping of all available models to their providers.
+
+        DEPRECATED: Use instance method instead.
+        Use: registry = ModelProviderRegistry(); registry.get_available_models()
+
+        Args:
+            respect_restrictions: If True, filter out models not allowed by restrictions
+
+        Returns:
+            Dict mapping model names to provider types
+        """
+        registry = cls()
+        return registry.get_available_models(respect_restrictions=respect_restrictions)
+
     def get_available_model_names(self, provider_type: Optional[ProviderType] = None) -> list[str]:
         """
         Get list of available model names, optionally filtered by provider.
@@ -403,7 +418,7 @@ class ModelProviderRegistry:
         Returns:
             List of available model names
         """
-        available_models = cls.get_available_models(respect_restrictions=True)
+        available_models = self.get_available_models(respect_restrictions=True)
 
         if provider_type:
             # Filter by specific provider
@@ -418,9 +433,40 @@ class ModelProviderRegistry:
         Alias maintained for backward compatibility with server.py.
         Returns list of available model names, optionally filtered by provider.
         """
-        return cls.get_available_model_names(provider_type=provider_type)
+        return self.get_available_model_names(provider_type=provider_type)
 
-    
+    def is_provider_available(self, provider_type: ProviderType) -> bool:
+        """
+        Check if provider is available (registered and initialized).
+
+        Args:
+            provider_type: Provider to check
+
+        Returns:
+            True if provider is available and initialized
+        """
+        return (provider_type in self._providers and
+                provider_type in self._initialized_providers and
+                self._initialized_providers[provider_type] is not None)
+
+    def get_debug_info(self) -> dict[str, Any]:
+        """
+        Get debug information about the registry state.
+
+        Returns:
+            Dict with debug information
+        """
+        with self._models_cache_lock:
+            return {
+                "providers_registered": list(self._providers.keys()),
+                "providers_initialized": list(self._initialized_providers.keys()),
+                "cache_valid": self._models_cache is not None,
+                "singleton_id": id(self),
+                "_providers_count": len(self._providers),
+                "_initialized_count": len(self._initialized_providers),
+                "models_cache_size": len(self._models_cache) if self._models_cache else 0
+            }
+
     def get_available_providers_with_keys(self) -> list[ProviderType]:
         """
         Return providers that can be initialized with current env keys.
@@ -428,9 +474,9 @@ class ModelProviderRegistry:
         """
                 # Use self for instance data
         result: list[ProviderType] = []
-        for ptype in list(instance._providers.keys()):
+        for ptype in list(self._providers.keys()):
             try:
-                if cls.get_provider(ptype) is not None:
+                if self.get_provider(ptype) is not None:
                     result.append(ptype)
             except Exception:
                 # Be permissive for diagnostics
@@ -450,7 +496,7 @@ class ModelProviderRegistry:
         1) KIMI (if initialized)
         2) If Kimi unavailable, return None here; routing code should fallback to GLM/DEFAULT_MODEL
         """
-        kimi_provider = cls.get_provider(ProviderType.KIMI)
+        kimi_provider = self.get_provider(ProviderType.KIMI)
         if kimi_provider:
             return kimi_provider
         return None
@@ -458,13 +504,14 @@ class ModelProviderRegistry:
     
     def get_glm_provider(self) -> Optional[ModelProvider]:
         """Helper to get GLM provider."""
-        return cls.get_provider(ProviderType.GLM)
+        return self.get_provider(ProviderType.GLM)
 
     # ================================================================================
     # Telemetry
     # ================================================================================
 
-    
+
+    @classmethod
     def record_telemetry(
         cls,
         model_name: str,
@@ -474,8 +521,10 @@ class ModelProviderRegistry:
         latency_ms: float | None = None,
     ) -> None:
         """Record telemetry for a model call."""
-        with self._telemetry_lock:
-            rec = self._telemetry.setdefault(
+        # Get the singleton registry instance
+        instance = get_registry_instance()
+        with instance._telemetry_lock:
+            rec = instance._telemetry.setdefault(
                 model_name,
                 {"success": 0, "failure": 0, "latency_ms": [], "input_tokens": 0, "output_tokens": 0},
             )
@@ -493,7 +542,7 @@ class ModelProviderRegistry:
 
             provider = "unknown"
             try:
-                prov = cls.get_provider_for_model(model_name)
+                prov = instance.get_provider_for_model(model_name)
                 if prov:
                     ptype = prov.get_provider_type()
                     provider = getattr(ptype, "value", getattr(ptype, "name", "unknown"))
@@ -555,7 +604,8 @@ class ModelProviderRegistry:
 
         return _auggie_fallback_chain(self, category, hints)
 
-    
+
+    @classmethod
     def call_with_fallback(
         cls,
         category: Optional["ToolModelCategory"],
@@ -563,10 +613,146 @@ class ModelProviderRegistry:
         hints: Optional[list[str]] = None,
     ):
         """Execute call_fn(model_name) over a category-aware fallback chain."""
-        from src.providers.registry_selection import call_with_fallback
+        from src.providers.registry_selection import call_with_fallback as _call_with_fallback
 
-        return call_with_fallback(self, category, call_fn, hints)
+        # Get the singleton registry instance and delegate to the selection module
+        registry_instance = get_registry_instance()
+        return _call_with_fallback(registry_instance, category, call_fn, hints)
 
 
 # DEPRECATED: Singleton pattern removed
 # Use: registry = ModelProviderRegistry() instead of class methods
+
+
+# DEPRECATED: All backward compatibility functions removed
+# The singleton pattern has been completely removed from this module
+# 
+# MIGRATION GUIDE:
+# Old: ModelProviderRegistry.get_available_models()
+# New: registry = ModelProviderRegistry()
+#      models = registry.get_available_models()
+#
+# Old: get_registry_instance()
+# New: registry = ModelProviderRegistry()
+#
+# All registry operations now require creating an instance first
+
+# ================================================================================
+# SINGLETON REGISTRY INSTANCE
+# ================================================================================
+# PHASE 5 FIX (2025-11-07): Restore singleton pattern to fix provider registration
+# Registry instance that persists across all calls within the same process
+
+_registry_instance: Optional[ModelProviderRegistry] = None
+
+
+def get_registry_instance() -> ModelProviderRegistry:
+    """
+    Get the singleton ModelProviderRegistry instance.
+
+    FIXED: Now returns the same instance every time within a process.
+    This restores the singleton pattern that was removed in Phase 2 but is
+    needed for provider registration to work correctly.
+
+    Returns:
+        ModelProviderRegistry: The singleton registry instance
+    """
+    global _registry_instance
+    if _registry_instance is None:
+        _registry_instance = ModelProviderRegistry()
+    return _registry_instance
+
+
+# ================================================================================
+# BACKWARD COMPATIBILITY LAYER
+# ================================================================================
+# These wrapper functions maintain backward compatibility for code that was
+# calling static methods on ModelProviderRegistry before the singleton removal.
+
+def _get_available_models(respect_restrictions: bool = True) -> dict[str, ProviderType]:
+    """
+    Get mapping of all available models to their providers.
+
+    DEPRECATED: This creates a new instance each time.
+    Use ModelProviderRegistry().get_available_models() instead.
+
+    Args:
+        respect_restrictions: If True, filter out models not allowed by restrictions
+
+    Returns:
+        Dict mapping model names to provider types
+    """
+    registry = get_registry_instance()
+    return registry.get_available_models(respect_restrictions=respect_restrictions)
+
+
+# ================================================================================
+# MODULE-LEVEL WRAPPER FUNCTIONS FOR BACKWARD COMPATIBILITY
+# ================================================================================
+# These functions maintain backward compatibility by delegating to a new
+# ModelProviderRegistry instance. This avoids needing to modify all calling code.
+
+def get_provider(provider_type: ProviderType, force_new: bool = False):
+    """
+    Get an initialized provider instance.
+
+    DEPRECATED: Creates a new instance each time.
+    Use: registry = ModelProviderRegistry(); registry.get_provider(provider_type)
+
+    Args:
+        provider_type: Type of provider to get
+        force_new: Force creation of new instance instead of using cached
+
+    Returns:
+        Initialized ModelProvider instance or None if not available
+    """
+    registry = get_registry_instance()
+    return registry.get_provider(provider_type, force_new=force_new)
+
+
+def get_available_providers_with_keys() -> list[ProviderType]:
+    """
+    Get list of provider types that have API keys configured.
+
+    DEPRECATED: Creates a new instance each time.
+    Use: registry = ModelProviderRegistry(); registry.get_available_providers_with_keys()
+
+    Returns:
+        List of provider types with available API keys
+    """
+    registry = get_registry_instance()
+    return registry.get_available_providers_with_keys()
+
+
+def get_available_model_names(provider_type: Optional[ProviderType] = None) -> list[str]:
+    """
+    Get list of available model names, optionally filtered by provider.
+
+    DEPRECATED: Creates a new instance each time.
+    Use: registry = ModelProviderRegistry(); registry.get_available_model_names()
+
+    Args:
+        provider_type: Optional provider to filter by
+
+    Returns:
+        List of available model names
+    """
+    registry = get_registry_instance()
+    return registry.get_available_model_names(provider_type=provider_type)
+
+
+def get_preferred_fallback_model(tool_category: Optional["ToolModelCategory"] = None) -> str:
+    """
+    Select a reasonable fallback model across providers.
+
+    DEPRECATED: Creates a new instance each time.
+    Use: registry = ModelProviderRegistry(); registry.get_preferred_fallback_model()
+
+    Args:
+        tool_category: Optional tool category for model selection
+
+    Returns:
+        Name of the preferred fallback model
+    """
+    registry = get_registry_instance()
+    return registry.get_preferred_fallback_model(tool_category=tool_category)

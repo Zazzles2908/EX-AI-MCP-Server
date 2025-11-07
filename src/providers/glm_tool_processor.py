@@ -201,7 +201,15 @@ def _handle_non_streaming_response(
 
     # Extract response data
     content = result.choices[0].message.content if result.choices else ""
-    usage = dict(result.usage) if hasattr(result, 'usage') and result.usage else {}
+    # Fix: Access CompletionUsage object attributes instead of trying to convert to dict
+    if hasattr(result, 'usage') and result.usage:
+        usage = {
+            "prompt_tokens": result.usage.prompt_tokens,
+            "completion_tokens": result.usage.completion_tokens,
+            "total_tokens": result.usage.total_tokens
+        }
+    else:
+        usage = {}
     actual_model = result.model if hasattr(result, 'model') else model_name
     response_id = result.id if hasattr(result, 'id') else None
     created_ts = result.created if hasattr(result, 'created') else None

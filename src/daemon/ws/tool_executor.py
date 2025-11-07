@@ -349,7 +349,9 @@ class ToolExecutor:
         except Exception as e:
             error_msg = f"Tool execution failed: {str(e)}"
             log_error(ErrorCode.TOOL_EXECUTION_ERROR, error_msg, req_id, exc_info=True)
-            raise ToolExecutionError(name, e) from e
+            # Get tool name for error reporting
+            tool_name = tool.get_name() if hasattr(tool, 'get_name') else str(tool)
+            raise ToolExecutionError(tool_name, e) from e
 
         finally:
             # Cleanup progress task

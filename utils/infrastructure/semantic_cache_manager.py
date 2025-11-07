@@ -47,7 +47,7 @@ try:
     _DETAILED_METRICS_AVAILABLE = True
 except ImportError:
     _DETAILED_METRICS_AVAILABLE = False
-    logger.warning("[SEMANTIC_CACHE_MANAGER] Detailed metrics collector not available")
+    logger.debug("[SEMANTIC_CACHE_MANAGER] Detailed metrics collector not available (optional feature)")
     def record_detailed_hit(*args, **kwargs): pass
     def record_detailed_miss(*args, **kwargs): pass
     def record_detailed_set(*args, **kwargs): pass

@@ -14,10 +14,13 @@ PHASE 1 ENHANCEMENT: Added provider adapters for unified upload workflow
 """
 
 import os
+from src.providers.registry_core import get_registry_instance
 import hashlib
+from src.providers.registry_core import get_registry_instance
 from typing import Optional, Callable, Dict, Any, List
 from pathlib import Path
 import logging
+from src.providers.registry_core import get_registry_instance
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
@@ -544,7 +547,7 @@ def _generic_provider_upload_adapter(
         # Get provider instance
         model = os.getenv(default_model_env, default_model)
         logger.info(f"[{provider.upper()}_UPLOAD] Getting provider instance for model: {model}")
-        provider_instance = ModelProviderRegistry.get_provider_for_model(model)
+        provider_instance = get_registry_instance().get_provider_for_model(model)
 
         if not provider_instance:
             raise RuntimeError(f"Failed to get {provider} provider instance for model {model}")
@@ -845,8 +848,8 @@ def upload_file_with_app_context(
         Dict with upload results including success status, file_id, etc.
     """
     from tools.temp_file_handler import temp_handler
-    # Phase 1 Path Consolidation (2025-10-31): Import from validation subdirectory
-    from utils.path.validation import validate_file_path
+    # FIX (2025-11-07): Fixed broken import - now using proper validation
+    from src.core.validation.input_sanitizer import get_sanitizer
     from src.storage.supabase_client import get_storage_manager
 
     temp_path = None
@@ -857,7 +860,10 @@ def upload_file_with_app_context(
         supabase_client = storage.get_client()
 
         # Check if file is in accessible location
-        is_accessible, error_msg = validate_file_path(file_path, application_id)
+        sanitizer = get_sanitizer()
+        is_accessible, error_msg = sanitizer.sanitize_file_path(file_path)
+        if not is_accessible:
+            error_msg = f"File path validation failed: {error_msg}"
 
         if not is_accessible and application_id:
             # Copy to temp location for external applications

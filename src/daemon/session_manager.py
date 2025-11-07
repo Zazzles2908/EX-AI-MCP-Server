@@ -137,15 +137,16 @@ class SessionManager:
             if not sess:
                 # Check session limit
                 if len(self._sessions) >= self.max_concurrent_sessions:
-                    log_error(ErrorCode.INTERNAL_ERROR, 
-                        f"[SESSION_MANAGER] Maximum concurrent sessions ({self.max_concurrent_sessions}, exc_info=True) "
-                        f"exceeded. Cannot create session {session_id}"
+                    log_error(ErrorCode.INTERNAL_ERROR,
+                        f"[SESSION_MANAGER] Maximum concurrent sessions ({self.max_concurrent_sessions}) exceeded. Cannot create session {session_id}",
+                        exc_info=True
                     )
-                    log_error(ErrorCode.PROVIDER_ERROR, 
-                        f"Maximum concurrent sessions ({self.max_concurrent_sessions})
-            raise ProviderError("Provider", Exception(
-                        f"Maximum concurrent sessions ({self.max_concurrent_sessions})) exceeded"
+                    log_error(ErrorCode.PROVIDER_ERROR,
+                        f"Maximum concurrent sessions ({self.max_concurrent_sessions}) exceeded. Cannot create session {session_id}"
                     )
+                    raise ProviderError("Provider", Exception(
+                        f"Maximum concurrent sessions ({self.max_concurrent_sessions}) exceeded"
+                    ))
 
                 # Create new session
                 sess = Session(session_id=session_id, max_inflight=DEFAULT_MAX_INFLIGHT)

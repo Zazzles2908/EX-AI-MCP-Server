@@ -195,9 +195,25 @@ def setup_monitoring_broadcast() -> None:
                 loop = asyncio.get_running_loop()
                 loop.create_task(broadcast_monitoring_event(event_data, _dashboard_clients, get_session_tracker()))
             except RuntimeError:
-                # No running loop (sync context) - use thread pool
+                # No running loop (sync context) - use thread pool with proper event loop
                 from concurrent.futures import ThreadPoolExecutor
                 import threading
 
                 # Use a shared thread pool executor
-                if not hasattr(broadcast_wrapper, '_executor
+                if not hasattr(broadcast_wrapper, '_executor'):
+                    broadcast_wrapper._executor = ThreadPoolExecutor(max_workers=4)
+
+                # FIX (2025-11-07): Proper async/sync pattern - create event loop in thread
+                def run_async_in_thread():
+                    try:
+                        # Create new event loop for this thread
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        try:
+                            loop.run_until_complete(broadcast_monitoring_event(event_data, _dashboard_clients, get_session_tracker()))
+                        finally:
+                            loop.close()
+                    except Exception as e:
+                        logger.error(f"Error in async broadcast thread: {e}", exc_info=True)
+
+                broadcast_wrapper._executor.submit(run_async_in_thread)

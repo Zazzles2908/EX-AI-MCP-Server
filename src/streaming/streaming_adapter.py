@@ -12,6 +12,12 @@ import logging
 import os
 from typing import Any, Callable, List, Optional, Tuple
 
+# Import httpx for RemoteProtocolError handling
+try:
+    import httpx
+except ImportError:
+    httpx = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,6 +26,7 @@ def _safe_call_chunk_callback(callback: Callable[[str], None], chunk: str) -> No
     Safely call a chunk callback, handling both sync and async callbacks.
 
     NEW (2025-10-24): Helper function for progressive streaming support.
+    FIX (2025-11-07): Proper async/sync pattern - create event loop in thread if needed.
 
     Args:
         callback: Sync or async callback function
@@ -27,7 +34,7 @@ def _safe_call_chunk_callback(callback: Callable[[str], None], chunk: str) -> No
 
     Note:
         For async callbacks, creates a task in the running event loop.
-        Falls back to asyncio.run() if no loop is running.
+        Falls back to new event loop if no loop is running.
     """
     import asyncio
     import inspect
@@ -44,8 +51,13 @@ def _safe_call_chunk_callback(callback: Callable[[str], None], chunk: str) -> No
                     # Run in new loop
                     loop.run_until_complete(callback(chunk))
             except RuntimeError:
-                # No event loop - create one
-                asyncio.run(callback(chunk))
+                # No event loop - create one properly
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    loop.run_until_complete(callback(chunk))
+                finally:
+                    loop.close()
         else:
             # Sync callback
             callback(chunk)
@@ -99,6 +111,11 @@ def stream_openai_chat_events(
     if extract_reasoning is None:
         extract_reasoning = os.getenv("KIMI_EXTRACT_REASONING", "true").strip().lower() in ("1", "true", "yes")
 
+    # SECURITY FIX: Add buffer size limits to prevent memory exhaustion
+    # Max chunks to prevent unbounded list growth
+    MAX_CHUNKS = int(os.getenv("STREAM_MAX_CHUNKS", "10000"))
+    MAX_CONTENT_SIZE = int(os.getenv("STREAM_MAX_CONTENT_SIZE", str(10 * 1024 * 1024)))  # 10MB default
+
     content_parts: List[str] = []
     reasoning_parts: List[str] = []
     raw_items: List[Any] = []
@@ -122,6 +139,14 @@ def stream_openai_chat_events(
                     "This prevents indefinite hangs. Increase KIMI_STREAM_TIMEOUT if needed."
                 )
 
+            # SECURITY FIX: Check buffer size before appending to raw_items
+            if len(raw_items) >= MAX_CHUNKS:
+                logger.warning(f"Raw items buffer overflow: max {MAX_CHUNKS} items reached")
+                raise RuntimeError(
+                    f"Stream buffer overflow: raw items exceeded limit of {MAX_CHUNKS}. "
+                    f"Increase STREAM_MAX_CHUNKS if needed."
+                )
+
             raw_items.append(evt)
             try:
                 ch = getattr(evt, "choices", None) or []
@@ -136,12 +161,29 @@ def stream_openai_chat_events(
                                 if not in_thinking:
                                     in_thinking = True
                                     logger.debug("=============thinking start=============")
-                                reasoning_parts.append(str(reasoning_piece))
+
+                                # SECURITY FIX: Check buffer size before appending
+                                reasoning_str = str(reasoning_piece)
+                                total_size = sum(len(p) for p in reasoning_parts) + len(reasoning_str)
+                                if len(reasoning_parts) >= MAX_CHUNKS:
+                                    logger.warning(f"Reasoning buffer overflow: max {MAX_CHUNKS} chunks reached")
+                                    raise RuntimeError(
+                                        f"Stream buffer overflow: reasoning chunks exceeded limit of {MAX_CHUNKS}. "
+                                        f"Increase STREAM_MAX_CHUNKS if needed."
+                                    )
+                                if total_size > MAX_CONTENT_SIZE:
+                                    logger.warning(f"Reasoning buffer overflow: max {MAX_CONTENT_SIZE} bytes reached")
+                                    raise RuntimeError(
+                                        f"Stream buffer overflow: reasoning content exceeded {MAX_CONTENT_SIZE} bytes. "
+                                        f"Increase STREAM_MAX_CONTENT_SIZE if needed."
+                                    )
+
+                                reasoning_parts.append(reasoning_str)
                                 # Optionally call on_delta for reasoning too
                                 if on_delta:
-                                    on_delta(str(reasoning_piece))
+                                    on_delta(reasoning_str)
                                 if on_chunk:  # NEW (2025-10-24): Forward reasoning chunks too
-                                    _safe_call_chunk_callback(on_chunk, str(reasoning_piece))
+                                    _safe_call_chunk_callback(on_chunk, reasoning_str)
 
                         # Extract regular content
                         piece = getattr(delta, "content", None)
@@ -150,6 +192,22 @@ def stream_openai_chat_events(
                                 in_thinking = False
                                 logger.debug("=============thinking end=============")
                             s = str(piece)
+
+                            # SECURITY FIX: Check buffer size before appending
+                            total_size = sum(len(p) for p in content_parts) + len(s)
+                            if len(content_parts) >= MAX_CHUNKS:
+                                logger.warning(f"Content buffer overflow: max {MAX_CHUNKS} chunks reached")
+                                raise RuntimeError(
+                                    f"Stream buffer overflow: content chunks exceeded limit of {MAX_CHUNKS}. "
+                                    f"Increase STREAM_MAX_CHUNKS if needed."
+                                )
+                            if total_size > MAX_CONTENT_SIZE:
+                                logger.warning(f"Content buffer overflow: max {MAX_CONTENT_SIZE} bytes reached")
+                                raise RuntimeError(
+                                    f"Stream buffer overflow: content exceeded {MAX_CONTENT_SIZE} bytes. "
+                                    f"Increase STREAM_MAX_CONTENT_SIZE if needed."
+                                )
+
                             content_parts.append(s)
                             if on_delta:
                                 on_delta(s)
@@ -163,8 +221,23 @@ def stream_openai_chat_events(
         logger.error(f"Kimi streaming timeout: {timeout_err}")
         raise RuntimeError(f"Kimi streaming timeout: {timeout_err}") from timeout_err
     except Exception as e:
-        logger.error(f"Streaming error: {e}")
-        raise
+        # Check if this is a RemoteProtocolError (connection closed prematurely)
+        if httpx and isinstance(e, (httpx.RemoteProtocolError, getattr(httpx, '_exceptions', {}).get('RemoteProtocolError'))):
+            logger.warning(
+                f"Kimi API closed connection prematurely during streaming. "
+                f"Returning partial response (elapsed: {int(time.time() - stream_start)}s). "
+                f"Error: {e}"
+            )
+            # Return partial data - we've accumulated content_parts and reasoning_parts
+            final_text = ""
+            if reasoning_parts:
+                reasoning_text = "".join(reasoning_parts)
+                final_text = f"[Reasoning]\n{reasoning_text}\n\n[Response]\n"
+            final_text += "".join(content_parts)
+            return (final_text, raw_items)
+        else:
+            logger.error(f"Streaming error: {e}")
+            raise
     
     # Combine reasoning and content
     # Format: [Reasoning]\n{reasoning}\n\n[Response]\n{content}

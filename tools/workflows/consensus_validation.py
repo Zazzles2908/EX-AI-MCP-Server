@@ -6,6 +6,7 @@ specifically for validating models, steps, and files in step 1.
 """
 
 import os
+from src.providers.registry_core import get_registry_instance
 
 
 def validate_consensus_step_one(request) -> None:
@@ -60,7 +61,7 @@ def validate_consensus_step_one(request) -> None:
                         pass
         except Exception:
             pass
-        provider = ModelProviderRegistry.get_provider_for_model(resolved)
+        provider = get_registry_instance().get_provider_for_model(resolved)
         if not provider:
             unavailable.append(name)
         else:

@@ -22,7 +22,9 @@ from mcp.types import TextContent
 from tools.shared.base_tool import BaseTool
 from tools.shared.base_models import ToolRequest
 from src.providers.kimi import KimiModelProvider
+from src.providers.registry_core import get_registry_instance
 from src.providers.registry import ModelProviderRegistry
+from src.providers.registry_core import get_registry_instance
 from utils.file.cross_platform import get_path_handler
 from utils.file.cache import FileCache
 from utils.file.deduplication import FileDeduplicationManager
@@ -152,14 +154,13 @@ class KimiUploadFilesTool(BaseTool):
             raise ValueError("No files provided")
 
         # CRITICAL: Validate path format BEFORE normalization using centralized validation
-        from utils.path_validation import validate_upload_path
-        # FIX (2025-10-29): Removed local logger redefinition that caused UnboundLocalError
-        # Module-level logger is already defined at top of file
+        # FIX (2025-11-07): Fixed broken import - now using proper validation
+        from src.core.validation.input_sanitizer import validate_upload_path
 
         for fp in files:
             is_valid, error_message = validate_upload_path(fp)
             if not is_valid:
-                raise ValueError(error_message)
+                raise ValueError(f"Invalid file path '{fp}': {error_message}")
 
         # Normalize paths (should be no-op now since we validated format)
         path_handler = get_path_handler()
@@ -184,7 +185,7 @@ class KimiUploadFilesTool(BaseTool):
         files = normalized_files
 
         # Get provider
-        prov = ModelProviderRegistry.get_provider_for_model(os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview"))
+        prov = get_registry_instance().get_provider_for_model(os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview"))
         if not isinstance(prov, KimiModelProvider):
             api_key = os.getenv("KIMI_API_KEY", "")
             if not api_key:
@@ -401,7 +402,7 @@ class KimiChatWithFilesTool(BaseTool):
             raise ValueError("Both prompt and file_ids are required")
 
         # Get provider
-        prov = ModelProviderRegistry.get_provider_for_model(model)
+        prov = get_registry_instance().get_provider_for_model(model)
         if not isinstance(prov, KimiModelProvider):
             api_key = os.getenv("KIMI_API_KEY", "")
             if not api_key:
@@ -587,7 +588,7 @@ class KimiManageFilesTool(BaseTool):
         dry_run = kwargs.get("dry_run", False)
 
         # Get provider
-        prov = ModelProviderRegistry.get_provider_for_model(os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview"))
+        prov = get_registry_instance().get_provider_for_model(os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview"))
         if not isinstance(prov, KimiModelProvider):
             api_key = os.getenv("KIMI_API_KEY", "")
             if not api_key:

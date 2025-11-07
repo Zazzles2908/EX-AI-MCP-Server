@@ -111,7 +111,9 @@ class ListModelsTool(BaseTool):
         # Check each native provider type
         for provider_type, info in provider_info.items():
             # Check if provider is enabled
-            provider = ModelProviderRegistry.get_provider(provider_type)
+            from src.providers.registry_core import get_registry_instance
+            registry = get_registry_instance()
+            provider = registry.get_provider(provider_type)
             is_configured = provider is not None
 
             output_lines.append(f"## {info['name']} {'✅' if is_configured else '❌'}")
@@ -177,8 +179,10 @@ class ListModelsTool(BaseTool):
                 # Get OpenRouter provider from registry to properly apply restrictions
                 from src.providers.base import ProviderType
                 from src.providers.registry import ModelProviderRegistry
+                from src.providers.registry_core import get_registry_instance
 
-                provider = ModelProviderRegistry.get_provider(ProviderType.OPENROUTER)
+                registry = get_registry_instance()
+                provider = registry.get_provider(ProviderType.OPENROUTER)
                 if provider:
                     # Get models with restrictions applied
                     available_models = provider.list_models(respect_restrictions=True)
@@ -280,12 +284,16 @@ class ListModelsTool(BaseTool):
         # Add summary
         output_lines.append("## Summary")
 
+        # Get registry instance for provider checks
+        from src.providers.registry_core import get_registry_instance
+        registry = get_registry_instance()
+
         # Count configured providers
         configured_count = sum(
             [
                 1
                 for provider_type, info in provider_info.items()
-                if ModelProviderRegistry.get_provider(provider_type) is not None
+                if registry.get_provider(provider_type) is not None
             ]
         )
         if is_openrouter_configured:
@@ -297,10 +305,11 @@ class ListModelsTool(BaseTool):
 
         # Get total available models
         try:
-            from src.providers.registry import ModelProviderRegistry
+            from src.providers.registry import get_registry_instance
 
             # Get all available models respecting restrictions
-            available_models = ModelProviderRegistry.get_available_models(respect_restrictions=True)
+            registry = get_registry_instance()
+            available_models = registry.get_available_models(respect_restrictions=True)
             total_models = len(available_models)
             output_lines.append(f"**Total Available Models**: {total_models}")
         except Exception as e:

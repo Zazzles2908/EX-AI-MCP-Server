@@ -78,10 +78,11 @@ def register_providers(provider_config: dict) -> list[str]:
 
         logger.debug("Performing first-time provider registration")
 
-        from src.providers.registry import ModelProviderRegistry
+        from src.providers.registry_core import get_registry_instance
         from src.providers.base import ProviderType
 
         registered = []
+        registry = get_registry_instance()
         disabled_providers = provider_config['disabled_providers']
 
         # 1. Register native APIs first (most direct and efficient)
@@ -89,14 +90,14 @@ def register_providers(provider_config: dict) -> list[str]:
             # Register Kimi
             if provider_config['kimi']['available'] and "KIMI" not in disabled_providers:
                 kimi_class = provider_config['kimi']['class']
-                ModelProviderRegistry.register_provider(ProviderType.KIMI, kimi_class)
+                registry.register_provider(ProviderType.KIMI, kimi_class)
                 registered.append("Kimi")
                 logger.debug("Registered Kimi provider")
 
             # Register GLM
             if provider_config['glm']['available'] and "GLM" not in disabled_providers:
                 glm_class = provider_config['glm']['class']
-                ModelProviderRegistry.register_provider(ProviderType.GLM, glm_class)
+                registry.register_provider(ProviderType.GLM, glm_class)
                 registered.append("GLM")
                 logger.debug("Registered GLM provider")
 
@@ -104,7 +105,7 @@ def register_providers(provider_config: dict) -> list[str]:
         if provider_config['has_custom'] and "CUSTOM" not in disabled_providers:
             custom_class = provider_config['custom']['class']
             factory = create_custom_provider_factory(custom_class)
-            ModelProviderRegistry.register_provider(ProviderType.CUSTOM, factory)
+            registry.register_provider(ProviderType.CUSTOM, factory)
             registered.append("Custom")
             logger.debug("Registered Custom provider")
 
@@ -114,7 +115,7 @@ def register_providers(provider_config: dict) -> list[str]:
             # We need to import it here if needed
             try:
                 from src.providers.openrouter import OpenRouterProvider
-                ModelProviderRegistry.register_provider(ProviderType.OPENROUTER, OpenRouterProvider)
+                registry.register_provider(ProviderType.OPENROUTER, OpenRouterProvider)
                 registered.append("OpenRouter")
                 logger.debug("Registered OpenRouter provider")
             except ImportError as e:

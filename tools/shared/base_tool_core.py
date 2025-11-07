@@ -103,6 +103,9 @@ class BaseToolCore(ABC):
         This caches tool metadata (name, description, temperature) at initialization
         to avoid repeated calls to abstract methods during tool execution.
         """
+        # Initialize parent classes (ModelManagementMixin, etc.)
+        super().__init__()
+
         # Cache tool metadata at initialization to avoid repeated calls
         self.name: str = self.get_name()
         self.description: str = self.get_description()

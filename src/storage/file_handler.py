@@ -121,12 +121,18 @@ class FileHandler:
                     file_name = os.path.basename(file_path)  # Use original path for filename
                     storage_path = f"contexts/{context_id}/{file_name}"
 
+                    # Determine MIME type from file extension
+                    import mimetypes
+                    mime_type, _ = mimetypes.guess_type(normalized_path)
+                    if mime_type is None:
+                        mime_type = "application/octet-stream"  # Default fallback
+
                     # Upload file
                     file_id = self.storage.upload_file(
-                        file_path=storage_path,
                         file_data=file_data,
                         original_name=file_name,
-                        file_type="user_upload"
+                        file_path=storage_path,
+                        mime_type=mime_type
                     )
 
                     if file_id:

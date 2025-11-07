@@ -245,8 +245,11 @@ class VersionTool(BaseTool):
             ]
             provider_names = ["Moonshot Kimi", "ZhipuAI GLM", "Google Gemini", "OpenAI", "X.AI", "DIAL", "OpenRouter", "Custom/Local"]
 
+            from src.providers.registry_core import get_registry_instance
+            registry = get_registry_instance()
+
             for provider_type, provider_name in zip(provider_types, provider_names):
-                provider = ModelProviderRegistry.get_provider(provider_type)
+                provider = registry.get_provider(provider_type)
                 status = "✅ Configured" if provider is not None else "❌ Not configured"
                 provider_status.append(f"- **{provider_name}**: {status}")
 

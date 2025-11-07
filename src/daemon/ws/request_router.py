@@ -407,9 +407,14 @@ class RequestRouter:
                     # Convert to list format
                     tools_list = []
                     for tool in tools_dict.values():
+                        # Skip tools with empty or invalid names
+                        tool_name = getattr(tool, 'name', '')
+                        if not tool_name or not isinstance(tool_name, str) or not tool_name.strip():
+                            logger.warning(f"[LIST_TOOLS] Skipping tool with invalid/empty name from registry: {tool_name!r}")
+                            continue
                         tools_list.append({
-                            "name": tool.name,
-                            "description": tool.description,
+                            "name": tool_name,
+                            "description": getattr(tool, 'description', ''),
                             "inputSchema": tool.get_input_schema() if hasattr(tool, 'get_input_schema') else {}
                         })
                 except Exception:
@@ -433,6 +438,11 @@ class RequestRouter:
                 for tool in SERVER_TOOLS.values():
                     # Tool is an object with attributes, not a dict
                     name = getattr(tool, 'name', '')
+                    # Skip tools with empty or invalid names (prevents "String should have at least 1 character" errors)
+                    if not name or not isinstance(name, str) or not name.strip():
+                        logger.warning(f"[LIST_TOOLS] Skipping tool with invalid/empty name: {name!r}")
+                        continue
+
                     description = getattr(tool, 'description', '')
                     # Get input schema - might be an attribute or method
                     input_schema = getattr(tool, 'inputSchema', None)

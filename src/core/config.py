@@ -172,10 +172,31 @@ def _load_from_env() -> Config:
 # For testing: config = Config() to get defaults, or load_from_env() to load from env
 
 
+def load_from_env() -> Config:
+    """
+    Public API to load configuration from environment variables.
+
+    Returns:
+        Config: Loaded and validated configuration.
+    """
+    return _load_from_env()
+
+
+def get_config() -> Config:
+    """
+    DEPRECATED: Use load_from_env() instead.
+    Kept for backward compatibility.
+
+    Returns:
+        Config: Loaded and validated configuration.
+    """
+    return load_from_env()
+
+
 # Export public API
 __all__ = [
     "Config",
     "load_from_env",
-    # DEPRECATED: 'get_config' and 'reload_config' removed - use Config() directly
+    "get_config",  # DEPRECATED: kept for backward compatibility
 ]
 

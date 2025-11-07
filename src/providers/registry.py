@@ -40,7 +40,10 @@ from src.providers.registry_config import (
 # Core Registry
 # ================================================================================
 
-from src.providers.registry_core import ModelProviderRegistry
+from src.providers.registry_core import (
+    ModelProviderRegistry,
+    get_registry_instance
+)
 
 # ================================================================================
 # Selection and Diagnostics
@@ -55,6 +58,7 @@ from src.providers.registry_selection import ProviderDiagnostics
 __all__ = [
     # Core registry
     "ModelProviderRegistry",
+    "get_registry_instance",
     # Health monitoring
     "HealthWrappedProvider",
     # Diagnostics

@@ -15,7 +15,7 @@ import logging
 import os
 from typing import Optional, Dict, Any
 
-from src.providers.registry import ModelProviderRegistry as R
+from src.providers.registry_core import get_registry_instance
 from src.providers.base import ProviderType
 from src.router.routing_cache import get_routing_cache
 
@@ -79,7 +79,7 @@ class RouterService:
     def _probe_chat_safely(self) -> None:
         prompt = "ping"
         for candidate in [self._fast_default, self._long_default]:
-            prov = R.get_provider_for_model(candidate)
+            prov = get_registry_instance().get_provider_for_model(candidate)
             if not prov:
                 continue
             try:
@@ -158,7 +158,7 @@ class RouterService:
         """
         req = (requested or "auto").strip()
         if req.lower() != "auto":
-            prov = R.get_provider_for_model(req)
+            prov = get_registry_instance().get_provider_for_model(req)
             if prov is not None:
                 dec = RouteDecision(requested=req, chosen=req, reason="explicit", provider=prov.get_provider_type().name)
                 logger.info(dec.to_json())
@@ -170,7 +170,7 @@ class RouterService:
             cache_context = {"requested": req, "hint": hint or {}}
             cached_model = self._routing_cache.get_model_selection(cache_context)
             if cached_model:
-                prov = R.get_provider_for_model(cached_model)
+                prov = get_registry_instance().get_provider_for_model(cached_model)
                 if prov is not None:
                     dec = RouteDecision(
                         requested=req,
@@ -225,7 +225,7 @@ class RouterService:
             if is_blocked and is_blocked(candidate):
                 # skip blocked model
                 continue
-            prov = R.get_provider_for_model(candidate)
+            prov = get_registry_instance().get_provider_for_model(candidate)
             if prov is not None:
                 reason = "auto_hint_applied" if hint_candidates else "auto_preferred"
                 budget_val = None
@@ -331,7 +331,7 @@ class RouterService:
         req = (requested or "auto").strip()
         if req.lower() != "auto":
             # Honor explicit request if available
-            prov = R.get_provider_for_model(req)
+            prov = get_registry_instance().get_provider_for_model(req)
             if prov is not None:
                 dec = RouteDecision(requested=req, chosen=req, reason="explicit", provider=prov.get_provider_type().name)
                 logger.info(dec.to_json())
@@ -355,7 +355,7 @@ class RouterService:
             logger.info(json.dumps({"event": "route_explicit_unavailable", "requested": req}))
         # Auto selection policy: prefer fast GLM, else Kimi long-context, else any available
         for candidate in [self._fast_default, self._long_default]:
-            prov = R.get_provider_for_model(candidate)
+            prov = get_registry_instance().get_provider_for_model(candidate)
             if prov is not None:
                 dec = RouteDecision(requested=req, chosen=candidate, reason="auto_preferred", provider=prov.get_provider_type().name)
                 logger.info(dec.to_json())
@@ -380,7 +380,7 @@ class RouterService:
             avail = R.get_available_models(respect_restrictions=True)
             if avail:
                 first = sorted(avail.keys())[0]
-                prov = R.get_provider_for_model(first)
+                prov = get_registry_instance().get_provider_for_model(first)
                 dec = RouteDecision(requested=req, chosen=first, reason="auto_first_available", provider=(prov.get_provider_type().name if prov else None))
                 logger.info(dec.to_json())
                 return dec

@@ -12,11 +12,73 @@ Goal: provider-agnostic embeddings with an external adapter option.
 from __future__ import annotations
 
 import logging
+import time
+import threading
+from src.providers.registry_core import get_registry_instance
 import os
+from src.providers.registry_core import get_registry_instance
 from abc import ABC, abstractmethod
 from typing import List, Sequence, Optional, Any, Dict
 
 logger = logging.getLogger(__name__)
+
+# SECURITY FIX: Rate limiting for embedding requests
+# Token bucket rate limiter to prevent API quota exhaustion
+class RateLimiter:
+    """Simple token bucket rate limiter for API calls."""
+
+    def __init__(self, max_requests: int, time_window: int):
+        """
+        Initialize rate limiter.
+
+        Args:
+            max_requests: Maximum number of requests allowed
+            time_window: Time window in seconds
+        """
+        self.max_requests = max_requests
+        self.time_window = time_window
+        self.requests = []
+        self.lock = threading.Lock()
+
+    def allow_request(self) -> bool:
+        """Check if a request is allowed under the rate limit."""
+        with self.lock:
+            now = time.time()
+            # Remove old requests outside the time window
+            self.requests = [req_time for req_time in self.requests if now - req_time < self.time_window]
+
+            # Check if we can allow another request
+            if len(self.requests) < self.max_requests:
+                self.requests.append(now)
+                return True
+
+            return False
+
+    def time_until_next_request(self) -> float:
+        """Get seconds until next request will be allowed."""
+        with self.lock:
+            if not self.requests:
+                return 0.0
+            oldest_request = min(self.requests)
+            return max(0.0, self.time_window - (time.time() - oldest_request))
+
+
+# Global rate limiters for different providers
+# Configurable via environment variables
+_kimi_rate_limiter = RateLimiter(
+    max_requests=int(os.getenv("KIMI_EMBED_RATE_LIMIT", "10")),  # Default: 10 requests
+    time_window=int(os.getenv("KIMI_EMBED_RATE_WINDOW", "60"))  # Default: per minute
+)
+
+_glm_rate_limiter = RateLimiter(
+    max_requests=int(os.getenv("GLM_EMBED_RATE_LIMIT", "10")),  # Default: 10 requests
+    time_window=int(os.getenv("GLM_EMBED_RATE_WINDOW", "60"))  # Default: per minute
+)
+
+_external_rate_limiter = RateLimiter(
+    max_requests=int(os.getenv("EXTERNAL_EMBED_RATE_LIMIT", "20")),  # Default: 20 requests
+    time_window=int(os.getenv("EXTERNAL_EMBED_RATE_WINDOW", "60"))  # Default: per minute
+)
 
 
 class EmbeddingsProvider(ABC):
@@ -49,7 +111,7 @@ class KimiEmbeddingsProvider(EmbeddingsProvider):
             raise RuntimeError("Provider modules not available for Kimi embeddings") from e
 
         try:
-            prov = ModelProviderRegistry.get_provider_for_model(os.getenv("KIMI_DEFAULT_MODEL", "kimi-latest"))
+            prov = get_registry_instance().get_provider_for_model(os.getenv("KIMI_DEFAULT_MODEL", "kimi-latest"))
         except Exception as e:
             logger.warning(f"Failed to get provider from registry: {e}; falling back to direct client")
             prov = None
@@ -81,6 +143,20 @@ class KimiEmbeddingsProvider(EmbeddingsProvider):
     def embed(self, texts: Sequence[str]) -> List[List[float]]:
         if not texts:
             return []
+
+        # SECURITY FIX: Check rate limit before making API call
+        if not _kimi_rate_limiter.allow_request():
+            wait_time = _kimi_rate_limiter.time_until_next_request()
+            logger.warning(
+                f"Kimi embeddings rate limit exceeded. "
+                f"Wait {wait_time:.2f} seconds before next request. "
+                f"Config: {os.getenv('KIMI_EMBED_RATE_LIMIT', '10')}/{os.getenv('KIMI_EMBED_RATE_WINDOW', '60')}s"
+            )
+            raise RuntimeError(
+                f"Rate limit exceeded for Kimi embeddings. "
+                f"Try again in {wait_time:.2f} seconds or increase KIMI_EMBED_RATE_LIMIT."
+            )
+
         resp = self.client.embeddings.create(model=self.model, input=list(texts))
         data = getattr(resp, "data", None) or getattr(resp, "embeddings", None) or []
         out: List[List[float]] = []
@@ -163,6 +239,19 @@ class GLMEmbeddingsProvider(EmbeddingsProvider):
         if not texts:
             return []
 
+        # SECURITY FIX: Check rate limit before making API call
+        if not _glm_rate_limiter.allow_request():
+            wait_time = _glm_rate_limiter.time_until_next_request()
+            logger.warning(
+                f"GLM embeddings rate limit exceeded. "
+                f"Wait {wait_time:.2f} seconds before next request. "
+                f"Config: {os.getenv('GLM_EMBED_RATE_LIMIT', '10')}/{os.getenv('GLM_EMBED_RATE_WINDOW', '60')}s"
+            )
+            raise RuntimeError(
+                f"Rate limit exceeded for GLM embeddings. "
+                f"Try again in {wait_time:.2f} seconds or increase GLM_EMBED_RATE_LIMIT."
+            )
+
         try:
             # Call GLM embeddings API using ZhipuAI SDK
             response = self.client.embeddings.create(
@@ -211,6 +300,20 @@ class ExternalEmbeddingsProvider(EmbeddingsProvider):
     def embed(self, texts: Sequence[str]) -> List[List[float]]:
         if not texts:
             return []
+
+        # SECURITY FIX: Check rate limit before making API call
+        if not _external_rate_limiter.allow_request():
+            wait_time = _external_rate_limiter.time_until_next_request()
+            logger.warning(
+                f"External embeddings rate limit exceeded. "
+                f"Wait {wait_time:.2f} seconds before next request. "
+                f"Config: {os.getenv('EXTERNAL_EMBED_RATE_LIMIT', '20')}/{os.getenv('EXTERNAL_EMBED_RATE_WINDOW', '60')}s"
+            )
+            raise RuntimeError(
+                f"Rate limit exceeded for external embeddings. "
+                f"Try again in {wait_time:.2f} seconds or increase EXTERNAL_EMBED_RATE_LIMIT."
+            )
+
         import requests
         payload: Dict[str, Any] = {"texts": list(texts)}
         r = requests.post(self.url, json=payload, timeout=self.timeout)

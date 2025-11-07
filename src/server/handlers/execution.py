@@ -284,26 +284,42 @@ async def execute_tool_without_model(
         # Graceful error normalization for invalid arguments and runtime errors
         try:
             from pydantic import ValidationError as _ValidationError
-        except ImportError as e:
-            logger.debug(f"Pydantic not available for validation error handling: {e}")
+        except ImportError as import_err:
+            logger.debug(f"Pydantic not available for validation error handling: {import_err}")
             _ValidationError = None  # type: ignore
         import json as _json
         if _ValidationError and isinstance(e, _ValidationError):
+            # Enhanced error message with schema information
+            error_details = str(e)
+
+            # Try to get better error message from tool validator
+            try:
+                from src.server.utils.tool_validator import validate_tool_args
+                is_valid, validation_error = validate_tool_args(tool_name, arguments)
+
+                if not is_valid:
+                    # Use the detailed validation error
+                    error_details = validation_error
+            except Exception:
+                # If validator fails, use original error
+                pass
+
             err = {
                 "status": "invalid_request",
                 "error": "Invalid arguments for tool",
-                "details": str(e),
+                "details": error_details,
                 "tool": tool_name,
+                "help": "See docs/development/AGENT_TOOL_USAGE_GUIDE.md for correct usage",
             }
             logger.warning("Tool %s argument validation failed: %s", tool_name, e)
-            return [TextContent(type="text", text=_json.dumps(err))]
+            return [TextContent(type="text", text=_json.dumps(err, ensure_ascii=False))]
         logger.error("Tool %s execution failed: %s", tool_name, e, exc_info=True)
         err = {
             "status": "execution_error",
             "error": str(e),
             "tool": tool_name,
         }
-        return [TextContent(type="text", text=_json.dumps(err))]
+        return [TextContent(type="text", text=_json.dumps(err, ensure_ascii=False))]
 
 
 # Export public API

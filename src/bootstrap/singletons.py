@@ -69,9 +69,11 @@ def ensure_providers_configured() -> None:
         ValueError: If no valid API keys are found
     """
     global _providers_configured
+    print(f"[TRACE] ensure_providers_configured() called, _providers_configured={_providers_configured}", flush=True)
 
     # Fast path: no lock needed if already configured
     if _providers_configured:
+        print(f"[TRACE] Fast path - skipping", flush=True)
         logger.debug("Providers already configured, skipping")
         return
 
@@ -88,12 +90,18 @@ def ensure_providers_configured() -> None:
             from src.server.providers import configure_providers
 
             logger.info("Configuring providers (first-time initialization)")
+            print("[DEBUG] About to call configure_providers()", flush=True)
             configure_providers()
+            print("[DEBUG] configure_providers() returned, about to set flag", flush=True)
             _providers_configured = True
+            print(f"[DEBUG] Flag set to True! _providers_configured = {_providers_configured}", flush=True)
             logger.info("Providers configured successfully")
 
         except Exception as e:
+            import traceback
             logger.error(f"Failed to configure providers: {e}")
+            logger.error(f"Exception type: {type(e)}")
+            logger.error(f"Traceback: {''.join(traceback.format_exception(type(e), e, e.__traceback__))}")
             raise
 
 

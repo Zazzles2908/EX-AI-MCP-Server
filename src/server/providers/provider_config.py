@@ -1,4 +1,4 @@
-﻿"""
+"""
 Provider Configuration Module
 
 Thin orchestrator that delegates to specialized helper modules.
@@ -69,7 +69,8 @@ def configure_providers() -> None:
         """Clean up all registered providers on shutdown."""
         try:
             from src.providers.registry import ModelProviderRegistry
-            registry = ModelProviderRegistry()
+            from src.providers.registry_core import get_registry_instance
+            registry = get_registry_instance()
             if hasattr(registry, "_initialized_providers"):
                 for provider in list(registry._initialized_providers.items()):
                     try:

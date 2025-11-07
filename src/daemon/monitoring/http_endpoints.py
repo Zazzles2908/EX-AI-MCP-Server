@@ -295,6 +295,9 @@ async def acknowledge_observation(request: web.Request) -> web.Response:
         return web.json_response({
             "error": str(e),
             "success": False
+        })
+
+
 async def get_cache_metrics(request: web.Request) -> web.Response:
     """
     Get cache metrics from Supabase monitoring schema.
@@ -461,14 +464,50 @@ async def handle_timeout_estimate(request: web.Request) -> web.Response:
                 "details": str(e)
             }, status=400)
 
+        # SECURITY FIX: Comprehensive JSON structure validation
+        # Validate body is a dictionary
+        if not isinstance(body, dict):
+            return web.json_response({
+                "error": "Invalid request body: expected JSON object"
+            }, status=400)
+
         model = body.get("model")
         messages = body.get("messages", [])
         request_type = body.get("request_type", "text")
 
+        # Validate required field
         if not model:
             return web.json_response({
                 "error": "Missing required field: model"
             }, status=400)
+
+        # Validate field types
+        if not isinstance(model, str):
+            return web.json_response({
+                "error": "Invalid field type: model must be a string"
+            }, status=400)
+
+        if not isinstance(messages, list):
+            return web.json_response({
+                "error": "Invalid field type: messages must be a list"
+            }, status=400)
+
+        if not isinstance(request_type, str):
+            return web.json_response({
+                "error": "Invalid field type: request_type must be a string"
+            }, status=400)
+
+        # Validate messages structure if provided
+        if messages:
+            for i, msg in enumerate(messages):
+                if not isinstance(msg, dict):
+                    return web.json_response({
+                        "error": f"Invalid message at index {i}: must be an object"
+                    }, status=400)
+                if "role" not in msg or "content" not in msg:
+                    return web.json_response({
+                        "error": f"Invalid message at index {i}: missing required fields 'role' and 'content'"
+                    }, status=400)
 
         # Import adaptive timeout engine
         from src.core.adaptive_timeout import get_engine, is_adaptive_timeout_enabled

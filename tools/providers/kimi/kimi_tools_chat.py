@@ -7,6 +7,7 @@ from tools.shared.base_tool import BaseTool
 from tools.shared.base_models import ToolRequest
 from src.providers.kimi import KimiModelProvider
 from src.providers.registry import ModelProviderRegistry
+from src.providers.registry_core import get_registry_instance
 from src.providers.base import ProviderType
 
 class KimiChatWithToolsTool(BaseTool):
@@ -86,7 +87,8 @@ class KimiChatWithToolsTool(BaseTool):
         if requested_model not in {"kimi-k2-0711-preview","kimi-k2-0905-preview","kimi-k2-turbo-preview","kimi-latest","kimi-thinking-preview","moonshot-v1-8k","moonshot-v1-32k","moonshot-v1-128k","moonshot-v1-8k-vision-preview","moonshot-v1-32k-vision-preview","moonshot-v1-128k-vision-preview"}:
             requested_model = os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0711-preview")
 
-        prov = ModelProviderRegistry.get_provider(ProviderType.KIMI)
+        registry = get_registry_instance()
+        prov = registry.get_provider(ProviderType.KIMI)
         if not isinstance(prov, KimiModelProvider):
             api_key = os.getenv("KIMI_API_KEY", "")
             if not api_key:
