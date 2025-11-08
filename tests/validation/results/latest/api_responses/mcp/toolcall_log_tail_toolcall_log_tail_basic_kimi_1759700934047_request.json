@@ -1,8 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "toolcall_log_tail_basic_kimi_1759700934047",
-  "name": "toolcall_log_tail",
-  "arguments": {
-    "lines": 10
-  }
-}

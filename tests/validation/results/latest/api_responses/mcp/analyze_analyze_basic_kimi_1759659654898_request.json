@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "analyze_basic_kimi_1759659654898",
-  "name": "analyze",
-  "arguments": {
-    "content": "This is test content for analysis.",
-    "model": "kimi-k2-0905-preview"
-  }
-}

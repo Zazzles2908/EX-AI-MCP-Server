@@ -1,8 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "kimi_upload_and_extract_basic_glm_1759844526559",
-  "name": "kimi_upload_and_extract",
-  "arguments": {
-    "file_path": "test.txt"
-  }
-}

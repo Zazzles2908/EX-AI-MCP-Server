@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "secaudit_basic_kimi_1759663602628",
-  "name": "secaudit",
-  "arguments": {
-    "code": "password = 'hardcoded123'",
-    "model": "kimi-k2-0905-preview"
-  }
-}

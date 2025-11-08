@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "codereview_basic_glm_1759660053307",
-  "name": "codereview",
-  "arguments": {
-    "code": "def hello(): print('world')",
-    "model": "glm-4.5-flash"
-  }
-}

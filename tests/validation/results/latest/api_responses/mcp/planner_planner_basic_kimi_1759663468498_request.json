@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "planner_basic_kimi_1759663468498",
-  "name": "planner",
-  "arguments": {
-    "task": "Build a simple web app",
-    "model": "kimi-k2-0905-preview"
-  }
-}

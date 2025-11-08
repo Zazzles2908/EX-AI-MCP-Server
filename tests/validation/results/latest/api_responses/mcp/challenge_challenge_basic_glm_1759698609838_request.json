@@ -1,8 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "challenge_basic_glm_1759698609838",
-  "name": "challenge",
-  "arguments": {
-    "prompt": "Python is the best language for all use cases"
-  }
-}

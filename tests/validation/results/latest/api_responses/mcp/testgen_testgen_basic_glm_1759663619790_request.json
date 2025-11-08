@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "testgen_basic_glm_1759663619790",
-  "name": "testgen",
-  "arguments": {
-    "code": "def add(a, b): return a + b",
-    "model": "glm-4.5-flash"
-  }
-}

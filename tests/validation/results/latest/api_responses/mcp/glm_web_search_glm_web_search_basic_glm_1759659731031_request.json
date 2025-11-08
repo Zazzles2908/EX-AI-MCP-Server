@@ -1,8 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "glm_web_search_basic_glm_1759659731031",
-  "name": "glm_web_search",
-  "arguments": {
-    "search_query": "Python programming"
-  }
-}

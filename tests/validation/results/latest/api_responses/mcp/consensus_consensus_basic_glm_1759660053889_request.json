@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "consensus_basic_glm_1759660053889",
-  "name": "consensus",
-  "arguments": {
-    "question": "What is 2+2?",
-    "model": "glm-4.5-flash"
-  }
-}

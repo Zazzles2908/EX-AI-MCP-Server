@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "debug_basic_kimi_1759663398273",
-  "name": "debug",
-  "arguments": {
-    "code": "def test(): return 42",
-    "model": "kimi-k2-0905-preview"
-  }
-}

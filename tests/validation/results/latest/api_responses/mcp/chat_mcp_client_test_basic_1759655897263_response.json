@@ -1,5 +1,0 @@
-{
-  "op": "hello_ack",
-  "ok": false,
-  "error": "missing_hello"
-}

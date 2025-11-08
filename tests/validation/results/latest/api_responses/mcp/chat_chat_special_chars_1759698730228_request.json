@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "chat_special_chars_1759698730228",
-  "name": "chat",
-  "arguments": {
-    "prompt": "Echo this: Hello! 你好 🚀 @#$%",
-    "model": "glm-4.5-flash"
-  }
-}

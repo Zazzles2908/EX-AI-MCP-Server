@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "planner_basic_glm_1759660055624",
-  "name": "planner",
-  "arguments": {
-    "task": "Build a simple web app",
-    "model": "glm-4.5-flash"
-  }
-}
