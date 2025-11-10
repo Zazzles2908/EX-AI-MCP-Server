@@ -99,7 +99,8 @@ class AsyncGLMProvider(AsyncModelProvider):
         prompt: str,
         model_name: str,
         system_prompt: Optional[str] = None,
-        temperature: float = 0.3,
+        temperature: float = 1.0,
+        top_p: float = 0.95,
         max_output_tokens: Optional[int] = None,
         **kwargs,
     ) -> ModelResponse:
@@ -109,7 +110,8 @@ class AsyncGLMProvider(AsyncModelProvider):
             prompt: User prompt to send to the model
             model_name: Name of the model to use
             system_prompt: Optional system prompt for model behavior
-            temperature: Sampling temperature (0-2)
+            temperature: Sampling temperature (0-2), default 1.0 for GLM 4.6
+            top_p: Nucleus sampling parameter, default 0.95 for GLM 4.6
             max_output_tokens: Maximum tokens to generate
             **kwargs: Provider-specific parameters
             
@@ -157,7 +159,8 @@ class AsyncGLMProvider(AsyncModelProvider):
         self,
         model: str,
         messages: list[dict],
-        temperature: float = 0.3,
+        temperature: float = 1.0,
+        top_p: float = 0.95,
         thinking_mode: Optional[str] = None,
         **kwargs,
     ) -> dict:
@@ -166,7 +169,8 @@ class AsyncGLMProvider(AsyncModelProvider):
         Args:
             model: Model name to use
             messages: List of message dictionaries with 'role' and 'content'
-            temperature: Sampling temperature (0-2)
+            temperature: Sampling temperature (0-2), default 1.0 for GLM 4.6
+            top_p: Nucleus sampling parameter, default 0.95 for GLM 4.6
             thinking_mode: Optional thinking mode for supported models
             **kwargs: Additional provider-specific parameters
 

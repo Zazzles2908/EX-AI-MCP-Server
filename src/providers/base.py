@@ -380,6 +380,15 @@ class ModelProvider(ABC):
                     f"(e.g., kimi-k2-0905-preview, glm-4.6, moonshot-v1-8k-vision-preview)."
                 )
 
+        # Validate response_format parameter (structured output)
+        if "response_format" in kwargs and kwargs["response_format"]:
+            if not capabilities.supports_json_mode:
+                raise ValueError(
+                    f"Model {model_name} does not support structured output (response_format). "
+                    f"Cannot use response_format parameter. Use a model that supports JSON mode "
+                    f"(e.g., kimi-k2-0905-preview, glm-4.6, glm-4.5-flash)."
+                )
+
     @abstractmethod
     def supports_thinking_mode(self, model_name: str) -> bool:
         """Check if the model supports extended thinking mode."""

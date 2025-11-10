@@ -11,11 +11,14 @@ from typing import Any, Dict
 
 # Minimal seed metadata (extend via env JSON)
 MODEL_METADATA: Dict[str, Dict[str, Any]] = {
-    # GLM
-    "glm-4.6": {"category_hint": "EXTENDED_REASONING", "tier": "flagship", "modalities": ["text"], "notes": "Flagship model with 200K context window"},
-    "glm-4.5": {"category_hint": "EXTENDED_REASONING", "tier": "quality", "modalities": ["text"], "notes": "Higher-quality reasoning"},
-    "glm-4.5-flash": {"category_hint": "FAST_RESPONSE", "tier": "speed", "modalities": ["text"], "notes": "Fast/cost-effective"},
-    "glm-4.5-air": {"category_hint": "FAST_RESPONSE", "tier": "speed", "modalities": ["text"], "notes": "Fast variant"},
+    # GLM (updated 2025-11-08 - using actual z.ai API model names)
+    "glm-4.6": {"category_hint": "EXTENDED_REASONING", "tier": "flagship", "modalities": ["text"], "notes": "Flagship model with 200K context, 128K max output"},
+    "glm-4.5": {"category_hint": "EXTENDED_REASONING", "tier": "quality", "modalities": ["text"], "notes": "Hybrid reasoning with thinking mode"},
+    "glm-4.5v": {"category_hint": "VISION", "tier": "specialized", "modalities": ["text", "image"], "notes": "Vision-language multimodal with thinking mode"},
+    "glm-4.5-air": {"category_hint": "EXTENDED_REASONING", "tier": "quality", "modalities": ["text"], "notes": "Efficient reasoning with thinking mode"},
+    "glm-4.5-airx": {"category_hint": "EXTENDED_REASONING", "tier": "quality", "modalities": ["text"], "notes": "Enhanced efficiency with thinking mode"},
+    "glm-4.5-flash": {"category_hint": "FAST_RESPONSE", "tier": "speed", "modalities": ["text"], "notes": "Fast/cost-effective (FREE)"},
+    "glm-4-32b": {"category_hint": "GENERAL", "tier": "balanced", "modalities": ["text"], "notes": "128K context with competitive pricing"},
     # Kimi (normalize to canonical names; keep previews as internal only if truly supported)
     "kimi-k2": {"category_hint": "EXTENDED_REASONING", "tier": "quality", "modalities": ["text"], "notes": "Strong reasoning; good for CJK"},
     "kimi-k2-turbo": {"category_hint": "FAST_RESPONSE", "tier": "speed", "modalities": ["text"], "notes": "Fast/cost-effective"},

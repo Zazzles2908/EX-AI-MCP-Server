@@ -28,6 +28,7 @@ from utils.progress_utils.messages import ProgressMessages
 
 # Import the registry for model selection
 from src.providers.registry import ModelProviderRegistry as _Registry
+from src.prompts.prompt_registry import ProviderType
 
 
 class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixin, BaseTool):
@@ -541,9 +542,22 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 web_event = None
                 try:
                     from src.providers.orchestration.websearch_adapter import build_websearch_provider_kwargs
+                    from src.providers.capability_router import get_router
                     use_web = self.get_request_use_websearch(request)
+
+                    # BUG FIX (2025-11-09): Use smart routing when web search is needed
+                    effective_provider_type = provider.get_provider_type()
+                    if use_web:
+                        # Route to GLM for web_search - Kimi doesn't support it
+                        router = get_router()
+                        tool_name = getattr(self, 'tool_name', 'unknown')
+                        optimal_provider = router.get_optimal_provider(tool_name)
+                        if optimal_provider != ProviderType.AUTO:
+                            effective_provider_type = optimal_provider
+                            self.logger.info(f"[SMART_ROUTING] Tool '{tool_name}' requires web_search, routing to {optimal_provider.value}")
+
                     provider_kwargs, web_event = build_websearch_provider_kwargs(
-                        provider_type=prov.get_provider_type(),
+                        provider_type=effective_provider_type,
                         use_websearch=use_web,
                         model_name=_model_name,  # CRITICAL: Pass model name to check websearch support
                         include_event=True,
@@ -569,18 +583,18 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 # Streaming enablement centralized
                 try:
                     from src.providers.orchestration.streaming_flags import is_streaming_enabled
-                    if is_streaming_enabled(getattr(prov.get_provider_type(), "value", ""), getattr(self, "get_name", lambda: "")()):
+                    if is_streaming_enabled(getattr(provider.get_provider_type(), "value", ""), getattr(self, "get_name", lambda: "")()):
                         provider_kwargs["stream"] = True
                 except Exception:
                     pass
                 # NEW (2025-10-24): Pass streaming callback to provider
-                if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and prov.supports_streaming(_model_name):
+                if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and provider.supports_streaming(_model_name):
                     provider_kwargs["on_chunk"] = self._on_chunk_callback
 
                 # CRITICAL FIX (2025-10-26): Add logging to verify actual API calls
                 # This helps identify when semantic cache or mock mode is being used
                 import time as _time
-                logger.info(f"[{self.get_name()}] CALLING PROVIDER: {prov.__class__.__name__} with prompt length {len(prompt)}")
+                logger.info(f"[{self.get_name()}] CALLING PROVIDER: {provider.__class__.__name__} with prompt length {len(prompt)}")
                 call_start = _time.time()
 
                 # Build kwargs dict, excluding images if not supported
@@ -593,19 +607,19 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 }
 
                 # Only add thinking_mode if supported
-                thinking_mode_value = thinking_mode if prov.supports_thinking_mode(_model_name) else None
+                thinking_mode_value = thinking_mode if provider.supports_thinking_mode(_model_name) else None
                 if thinking_mode_value:
                     generate_kwargs["thinking_mode"] = thinking_mode_value
 
                 # Only add images if provider supports it
-                if images and prov.supports_images(_model_name):
+                if images and provider.supports_images(_model_name):
                     generate_kwargs["images"] = images
 
                 # Only add on_chunk if provider supports streaming
-                if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and prov.supports_streaming(_model_name):
+                if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and provider.supports_streaming(_model_name):
                     generate_kwargs["on_chunk"] = self._on_chunk_callback
 
-                result = prov.generate_content(**generate_kwargs)
+                result = provider.generate_content(**generate_kwargs)
 
                 # Log response time to verify real API calls (should be >100ms for real AI)
                 call_duration_ms = (_time.time() - call_start) * 1000
@@ -629,9 +643,22 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     provider_kwargs = {}
                     try:
                         from src.providers.orchestration.websearch_adapter import build_websearch_provider_kwargs
+                        from src.providers.capability_router import get_router
                         use_web = self.get_request_use_websearch(request)
+
+                        # BUG FIX (2025-11-09): Use smart routing when web search is needed
+                        effective_provider_type = provider.get_provider_type()
+                        if use_web:
+                            # Route to GLM for web_search - Kimi doesn't support it
+                            router = get_router()
+                            tool_name = getattr(self, 'tool_name', 'unknown')
+                            optimal_provider = router.get_optimal_provider(tool_name)
+                            if optimal_provider != ProviderType.AUTO:
+                                effective_provider_type = optimal_provider
+                                self.logger.info(f"[SMART_ROUTING] Tool '{tool_name}' requires web_search, routing to {optimal_provider.value}")
+
                         provider_kwargs, _ = build_websearch_provider_kwargs(
-                            provider_type=provider.get_provider_type(),
+                            provider_type=effective_provider_type,
                             use_websearch=use_web,
                             model_name=self._model_context.model_name,  # CRITICAL: Pass model name to check websearch support
                             include_event=False,
@@ -653,7 +680,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                         provider_kwargs["continuation_id"] = continuation_id
 
                     # NEW (2025-10-24): Pass streaming callback to provider (direct call path)
-                    if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and prov.supports_streaming(_model_name):
+                    if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and provider.supports_streaming(self._current_model_name):
                         provider_kwargs["on_chunk"] = self._on_chunk_callback
 
                     # Try semantic cache first
@@ -713,8 +740,22 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                                 system_prompt_hash=system_prompt_hash,  # Use hash instead of truncated text
                             )
                 except Exception as _explicit_err:
-                    if _fb_on_failure:
+                    # CRITICAL FIX (2025-11-10): Special handling for NameError (_model_name not defined)
+                    # This error can occur with Kimi K2 thinking model due to third-party library issues
+                    if isinstance(_explicit_err, NameError) and "_model_name" in str(_explicit_err):
+                        logger.error(
+                            f"NameError in model call for {self.get_name()} with model '{self._current_model_name}': {_explicit_err}. "
+                            f"This may be a third-party library issue (zai-sdk/kimi-api). "
+                            f"Retrying with fallback chain to bypass the issue."
+                        )
+                        # Force fallback to bypass the NameError
+                        _fb_on_failure = True
+                    elif _fb_on_failure:
                         logger.warning(f"Explicit model call failed; entering fallback chain: {str(_explicit_err)}")
+                    else:
+                        raise
+
+                    if _fb_on_failure:
                         tool_category = self.get_model_category()
                         logger.info(f"Using fallback chain for category {tool_category.name}")
                         # Derive simple hints for context-aware routing
@@ -745,8 +786,6 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                         # Sync the model context and current name to the selected model
                         self._current_model_name = selected_model
                         self._model_context.model_name = selected_model
-                    else:
-                        raise
             else:
                 # Auto mode: use category-aware fallback chain
                 tool_category = self.get_model_category()
@@ -1153,6 +1192,12 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
 
             # Only add the assistant's response to the conversation
             # The user's turn is handled elsewhere (when thread is created/continued)
+            # CRITICAL FIX (2025-11-08): Use metadata from format_response if available
+            final_model_metadata = model_metadata
+            if hasattr(request, '_assistant_metadata_to_save') and request._assistant_metadata_to_save:
+                # Use the detailed metadata prepared by format_response
+                final_model_metadata = request._assistant_metadata_to_save
+
             add_turn(
                 continuation_id,  # thread_id as positional argument
                 "assistant",  # role as positional argument
@@ -1162,7 +1207,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 tool_name=self.get_name(),
                 model_provider=model_provider,
                 model_name=model_name,
-                model_metadata=model_metadata,
+                model_metadata=final_model_metadata,
             )
 
         # Create continuation offer like old base.py
@@ -1170,9 +1215,14 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
         if continuation_data:
             return self._create_continuation_offer_response(formatted_response, continuation_data, request, model_info)
         else:
-            # Build metadata with model and provider info for success response
+            # CRITICAL FIX (2025-11-08): Use metadata from format_response if available
+            # Tools like chat.py prepare detailed metadata in format_response
+            # and pass it via request._assistant_metadata_to_save
             metadata = {}
-            if model_info:
+            if hasattr(request, '_assistant_metadata_to_save') and request._assistant_metadata_to_save:
+                metadata = request._assistant_metadata_to_save
+            elif model_info:
+                # Fallback: build metadata from model_info
                 model_name = model_info.get("model_name")
                 if model_name:
                     metadata["model_used"] = model_name

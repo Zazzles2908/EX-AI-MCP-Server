@@ -51,7 +51,7 @@ COPY configurations/ ./configurations/
 COPY scripts/ws/ ./scripts/ws/
 COPY scripts/runtime/ ./scripts/runtime/
 COPY static/ ./static/
-COPY server.py ./
+COPY src/server.py ./
 # config.py is deprecated - configuration moved to config/ package
 COPY config/ ./config/
 COPY .env.docker .env

@@ -594,15 +594,15 @@ class ModelProviderRegistry:
         return _get_allowed_models_for_provider(provider, provider_type)
 
     
-    def _auggie_fallback_chain(
+    def _fallback_chain(
         cls,
         category: Optional["ToolModelCategory"],
         hints: Optional[list[str]] = None,
     ) -> list[str]:
         """Return a prioritized list of candidate models for a category."""
-        from src.providers.registry_selection import _auggie_fallback_chain
+        from src.providers.registry_selection import _fallback_chain
 
-        return _auggie_fallback_chain(self, category, hints)
+        return _fallback_chain(self, category, hints)
 
 
     @classmethod

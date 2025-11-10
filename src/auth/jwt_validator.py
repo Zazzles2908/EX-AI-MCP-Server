@@ -246,7 +246,15 @@ def create_jwt_validator_from_env() -> Optional[JWTValidator]:
     
     secret_key = os.getenv("JWT_SECRET_KEY", "").strip()
     if not secret_key:
-        logger.info("[JWT_VALIDATOR] JWT_SECRET_KEY not set - JWT authentication disabled")
+        # UX FIX: Make JWT warning more prominent for production deployments
+        logger.warning("=" * 80)
+        logger.warning("SECURITY WARNING: JWT authentication is DISABLED")
+        logger.warning("=" * 80)
+        logger.warning("To enable secure authentication:")
+        logger.warning("  1. Set JWT_SECRET_KEY in your .env file")
+        logger.warning("  2. Generate a secure secret: python -c 'import secrets; print(secrets.token_hex(32))'")
+        logger.warning("  3. Restart the server")
+        logger.warning("=" * 80)
         return None
     
     algorithm = os.getenv("JWT_ALGORITHM", "HS256").strip()

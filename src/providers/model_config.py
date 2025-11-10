@@ -49,8 +49,8 @@ MODEL_TOKEN_LIMITS = {
         'provider': 'kimi'
     },
     'kimi-k2-0711-preview': {
-        'max_context_tokens': 262144,  # 256K
-        'max_output_tokens': 229376,
+        'max_context_tokens': 131072,  # 128K (verified 2025-10-09 from platform.moonshot.ai)
+        'max_output_tokens': 114688,
         'default_output_tokens': 16384,
         'provider': 'kimi'
     },
@@ -64,6 +64,19 @@ MODEL_TOKEN_LIMITS = {
     'kimi-thinking-preview': {
         'max_context_tokens': 131072,  # 128K
         'max_output_tokens': 114688,
+        'default_output_tokens': 16384,
+        'provider': 'kimi'
+    },
+    # K2 Thinking models - Official models from https://platform.moonshot.ai/docs/pricing/chat
+    'kimi-k2-thinking': {
+        'max_context_tokens': 262144,  # 256K (from official pricing page)
+        'max_output_tokens': 229376,  # 256K - safety margin
+        'default_output_tokens': 16384,
+        'provider': 'kimi'
+    },
+    'kimi-k2-thinking-turbo': {
+        'max_context_tokens': 262144,  # 256K (from official pricing page)
+        'max_output_tokens': 229376,  # 256K - safety margin
         'default_output_tokens': 16384,
         'provider': 'kimi'
     },
@@ -94,44 +107,50 @@ MODEL_TOKEN_LIMITS = {
     },
 
     # ============================================================================
-    # GLM Models (ZhipuAI)
+    # GLM Models (ZhipuAI) - Using actual z.ai API model names
     # ============================================================================
-    # GLM-4.6 - 200K context (per user correction and GitHub README)
+    # GLM-4.6 - 200K context, 128K max output (verified 2025-11-08 from z.ai docs)
     'glm-4.6': {
-        'max_context_tokens': 204800,  # 200K
-        'max_output_tokens': 180224,  # 200K - safety margin
+        'max_context_tokens': 200000,  # 200K
+        'max_output_tokens': 128000,  # 128K (verified from z.ai docs)
         'default_output_tokens': 16384,
         'provider': 'glm'
     },
-    # GLM-4.5 series - 128K context (per official docs)
+    # GLM-4.5 series - 128K context (verified 2025-11-08)
     'glm-4.5': {
-        'max_context_tokens': 131072,  # 128K
-        'max_output_tokens': 114688,
+        'max_context_tokens': 128000,  # 128K
+        'max_output_tokens': 8192,
         'default_output_tokens': 16384,
         'provider': 'glm'
     },
-    'glm-4.5-flash': {
-        'max_context_tokens': 131072,
-        'max_output_tokens': 114688,
-        'default_output_tokens': 8192,  # Lower default for faster model
+    'glm-4.5v': {
+        'max_context_tokens': 65536,  # 64K
+        'max_output_tokens': 8192,
+        'default_output_tokens': 8192,  # Vision model
         'provider': 'glm'
     },
     'glm-4.5-air': {
-        'max_context_tokens': 131072,
-        'max_output_tokens': 114688,
+        'max_context_tokens': 128000,  # 128K
+        'max_output_tokens': 8192,
         'default_output_tokens': 4096,  # Lower default for lightweight model
         'provider': 'glm'
     },
     'glm-4.5-airx': {
-        'max_context_tokens': 131072,
-        'max_output_tokens': 114688,
+        'max_context_tokens': 128000,  # 128K
+        'max_output_tokens': 8192,
         'default_output_tokens': 4096,
         'provider': 'glm'
     },
-    'glm-4.5v': {
-        'max_context_tokens': 131072,
-        'max_output_tokens': 114688,
-        'default_output_tokens': 8192,  # Vision model
+    'glm-4.5-flash': {
+        'max_context_tokens': 128000,  # 128K
+        'max_output_tokens': 98304,   # 96K (verified 2025-11-08 from z.ai docs)
+        'default_output_tokens': 65536,  # 64K (verified 2025-11-08 from z.ai docs)
+        'provider': 'glm'
+    },
+    'glm-4-32b': {
+        'max_context_tokens': 131072,  # 128K
+        'max_output_tokens': 8192,
+        'default_output_tokens': 4096,
         'provider': 'glm'
     },
 }

@@ -62,7 +62,12 @@ class HybridSupabaseManager:
         result = manager.execute_sql("SELECT * FROM files LIMIT 10")
 
         # File operation (uses Python Supabase client)
-        result = manager.upload_file("bucket", "path/file.txt", file_data)
+        result = manager.upload_file(
+            file_path="path/file.txt",
+            file_data=file_data,
+            original_name="file.txt",
+            file_type="user_upload"
+        )
     """
     
     def __init__(self):

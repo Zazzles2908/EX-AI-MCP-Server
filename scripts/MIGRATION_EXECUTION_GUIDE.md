@@ -62,7 +62,7 @@
 
 1. **Open Supabase Dashboard**
    - URL: https://supabase.com/dashboard
-   - Project: mxaazuhlqewmkweewyaz
+   - Project: your-project-id
 
 2. **Navigate to SQL Editor**
    - Go to "SQL Editor" in the left sidebar
@@ -85,7 +85,7 @@
 supabase init
 
 # Link to project
-supabase link --project-ref mxaazuhlqewmkweewyaz
+supabase link --project-ref your-project-id
 
 # Apply migration
 supabase db push
@@ -100,7 +100,7 @@ supabase migration up
 # Get connection string from Supabase dashboard
 # Settings > Database > Connection string > psql
 
-psql "postgresql://postgres:[PASSWORD]@db.mxaazuhlqewmkweewyaz.supabase.co:5432/postgres"
+psql "postgresql://postgres:[PASSWORD]@db.your-project-id.supabase.co:5432/postgres"
 
 # Then execute:
 \i /path/to/supabase/migrations/20251108_unified_schema.sql

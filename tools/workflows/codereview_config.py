@@ -79,7 +79,10 @@ CODEREVIEW_WORKFLOW_FIELD_DESCRIPTIONS = {
     ),
     "backtrack_from_step": (
         "If an earlier finding or assessment needs to be revised or discarded, specify the step number from which to "
-        "start over. Use this to acknowledge investigative dead ends and correct the course."
+        "start over. Use this to acknowledge investigative dead ends and correct the course.\n\n"
+        "IMPORTANT: This parameter is only valid when step_number > 1. You cannot backtrack from step 1. "
+        "Example: If you are on step 3 and need to restart from step 1, set backtrack_from_step=1. "
+        "The value must be less than the current step_number."
     ),
     "images": (
         "Optional list of absolute paths to architecture diagrams, UI mockups, design documents, or visual references "

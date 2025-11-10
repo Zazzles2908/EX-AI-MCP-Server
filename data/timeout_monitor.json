@@ -1,0 +1,109 @@
+{
+  "events": [
+    {
+      "timestamp": "2025-11-08T23:58:35.457275",
+      "tool_name": "chat",
+      "model_name": "kimi-k2-turbo-preview",
+      "provider": "kimi",
+      "timeout_value": 30.0,
+      "actual_duration": 5.2,
+      "task_type": "simple",
+      "context_size": "medium",
+      "complexity": "moderate",
+      "success": true,
+      "error_message": null
+    },
+    {
+      "timestamp": "2025-11-08T23:58:35.457722",
+      "tool_name": "analyze",
+      "model_name": "kimi-k2-thinking-preview",
+      "provider": "kimi",
+      "timeout_value": 60.0,
+      "actual_duration": 60.0,
+      "task_type": "complex",
+      "context_size": "medium",
+      "complexity": "moderate",
+      "success": false,
+      "error_message": "Request timeout"
+    },
+    {
+      "timestamp": "2025-11-08T23:59:09.888913",
+      "tool_name": "chat",
+      "model_name": "kimi-k2-turbo-preview",
+      "provider": "kimi",
+      "timeout_value": 30.0,
+      "actual_duration": 5.2,
+      "task_type": "simple",
+      "context_size": "medium",
+      "complexity": "moderate",
+      "success": true,
+      "error_message": null
+    },
+    {
+      "timestamp": "2025-11-08T23:59:09.893138",
+      "tool_name": "analyze",
+      "model_name": "kimi-k2-thinking-preview",
+      "provider": "kimi",
+      "timeout_value": 60.0,
+      "actual_duration": 60.0,
+      "task_type": "complex",
+      "context_size": "medium",
+      "complexity": "moderate",
+      "success": false,
+      "error_message": "Request timeout"
+    },
+    {
+      "timestamp": "2025-11-08T23:59:09.893515",
+      "tool_name": "debug",
+      "model_name": "glm-4.6",
+      "provider": "glm",
+      "timeout_value": 45.0,
+      "actual_duration": 45.0,
+      "task_type": "moderate",
+      "context_size": "medium",
+      "complexity": "moderate",
+      "success": false,
+      "error_message": "Request timeout"
+    },
+    {
+      "timestamp": "2025-11-08T23:59:32.664733",
+      "tool_name": "chat",
+      "model_name": "kimi-k2-turbo-preview",
+      "provider": "kimi",
+      "timeout_value": 30.0,
+      "actual_duration": 5.2,
+      "task_type": "simple",
+      "context_size": "medium",
+      "complexity": "moderate",
+      "success": true,
+      "error_message": null
+    },
+    {
+      "timestamp": "2025-11-08T23:59:32.665246",
+      "tool_name": "analyze",
+      "model_name": "kimi-k2-thinking-preview",
+      "provider": "kimi",
+      "timeout_value": 60.0,
+      "actual_duration": 60.0,
+      "task_type": "complex",
+      "context_size": "medium",
+      "complexity": "moderate",
+      "success": false,
+      "error_message": "Request timeout"
+    },
+    {
+      "timestamp": "2025-11-08T23:59:32.665612",
+      "tool_name": "debug",
+      "model_name": "glm-4.6",
+      "provider": "glm",
+      "timeout_value": 45.0,
+      "actual_duration": 45.0,
+      "task_type": "moderate",
+      "context_size": "medium",
+      "complexity": "moderate",
+      "success": false,
+      "error_message": "Request timeout"
+    }
+  ],
+  "last_updated": "2025-11-08T23:59:32.665656"
+}

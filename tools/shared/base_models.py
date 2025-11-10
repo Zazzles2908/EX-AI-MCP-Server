@@ -131,7 +131,11 @@ WORKFLOW_FIELD_DESCRIPTIONS = {
         "Don't be overly cautious - if you're confident, say so!"
     ),
     "hypothesis": "Current theory about the issue/goal based on work",
-    "backtrack_from_step": "Step number to backtrack from if work needs revision",
+    "backtrack_from_step": (
+        "Step number to backtrack from if work needs revision. This parameter is only valid when step_number > 1. "
+        "You cannot backtrack from step 1. Example: If you are on step 3 and need to restart from step 1, set backtrack_from_step=1. "
+        "The value must be less than the current step_number."
+    ),
     "use_assistant_model": (
         "Whether to use assistant model for expert analysis after completing the workflow steps. "
         "Set to False to skip expert analysis and rely solely on the tool's own investigation. "
@@ -234,9 +238,13 @@ class WorkflowRequest(BaseWorkflowRequest):
     @field_validator("backtrack_from_step")
     @classmethod
     def validate_backtrack(cls, v, info):
-        """Validate that backtrack_from_step is less than current step_number."""
-        if v is not None and info.data.get("step_number") and v >= info.data["step_number"]:
-            raise ValueError(f"backtrack_from_step ({v}) must be less than current step_number ({info.data['step_number']})")
+        """Validate that backtrack_from_step is less than current step_number and not used in step 1."""
+        step_number = info.data.get("step_number")
+        if v is not None:
+            if step_number == 1:
+                raise ValueError("backtrack_from_step cannot be used in step 1 - there is no earlier step to backtrack to. This parameter is only valid when step_number > 1.")
+            if step_number and v >= step_number:
+                raise ValueError(f"backtrack_from_step ({v}) must be less than current step_number ({step_number}). Example: if you are on step 3 and need to restart from step 1, set backtrack_from_step=1.")
         return v
 
     @field_validator("step", "findings", "hypothesis")

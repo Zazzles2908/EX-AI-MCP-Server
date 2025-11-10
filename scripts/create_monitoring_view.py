@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+from src.config.settings import Config
+config = Config()
+SUPABASE_URL = config.supabase_url
+SUPABASE_KEY = config.supabase_service_key
 """
 Create monitoring events view in Supabase
 This view provides access to monitoring.monitoring_events via public schema
@@ -7,8 +11,8 @@ This view provides access to monitoring.monitoring_events via public schema
 import os
 from supabase import create_client
 
-SUPABASE_URL = 'https://mxaazuhlqewmkweewyaz.supabase.co'
-SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14YWF6dWhscWV3bWt3ZWV3eWF6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODE5MDUyNSwiZXhwIjoyMDczNzY2NTI1fQ.HpPi30g4NjpDRGYtc406X_TjIj70OoOYCzQYUltxfgw'
+
+
 
 def create_view():
     """Create the monitoring events view"""

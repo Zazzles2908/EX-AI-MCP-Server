@@ -201,7 +201,7 @@ contentDiv.innerHTML = DOMPurify.sanitize(html);
 **Cause:** Edge Function not deployed or CORS issue
 
 **Solution:**
-1. Check Edge Function is deployed: https://supabase.com/dashboard/project/mxaazuhlqewmkweewyaz/functions
+1. Check Edge Function is deployed: https://supabase.com/dashboard/project/your-project-id/functions
 2. Verify CORS headers in Edge Function (already configured)
 
 ### **Issue: "Connection timeout"**
@@ -296,7 +296,7 @@ You now have a **fully functional Supabase-powered Web UI** that:
 ## 🆘 **Need Help?**
 
 1. Check Docker daemon is running: `docker-compose ps`
-2. Check Edge Function logs: https://supabase.com/dashboard/project/mxaazuhlqewmkweewyaz/logs/edge-functions
+2. Check Edge Function logs: https://supabase.com/dashboard/project/your-project-id/logs/edge-functions
 3. Check browser console for errors (F12)
 4. Verify environment variables are set correctly
 

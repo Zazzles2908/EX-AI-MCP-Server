@@ -1,0 +1,11 @@
+{
+  "title": "Local Production Redis",
+  "defaultACE": {
+    "username": "default",
+    "password": ""
+  },
+  "hostname": "redis",
+  "port": 6379,
+  "database": 0,
+  "useAuthentication": true
+}

@@ -1,7 +1,7 @@
-# Claude Code + MiniMax M2 + EXAI Integration
+# Claude Code + EXAI Integration
 
-> **Agent-Based Configuration for EX-AI MCP Server v2.3**  
-> Last Updated: 2025-11-04 | Version: 4.0.0
+> **Agent-Based Configuration for EX-AI MCP Server v2.3**
+> Last Updated: 2025-11-09 | Version: 4.1.0
 
 ---
 
@@ -10,7 +10,7 @@
 This project uses **custom agents** for optimal Claude Code performance with minimal token usage:
 
 ### ✅ What's Already Set Up:
-- **MiniMax M2 Model** - Enhanced code understanding and reasoning
+- **GLM-4.6 & Kimi K2 Models** - Enhanced code understanding and reasoning
 - **EXAI-WS MCP Server** - 29 AI-powered tools (GLM-4.6, Kimi K2)
 - **Intelligent Routing** - Automatic model selection based on task
 - **GitHub CLI MCP** - Full git operations
@@ -19,20 +19,20 @@ This project uses **custom agents** for optimal Claude Code performance with min
 
 ### 🎯 Quick Start Steps:
 
-1. **Set Environment Variables** (Required for MiniMax M2):
+1. **Set Environment Variables** (Required for providers):
    ```bash
    # Windows PowerShell
-   $env:MINIMAX_API_KEY="your_api_key_here"
-   $env:MINIMAX_BASE_URL="https://api.minimax.io/anthropic"
+   $env:GLM_API_KEY="your_glm_api_key_here"
+   $env:KIMI_API_KEY="your_kimi_api_key_here"
 
    # Linux/Mac
-   export MINIMAX_API_KEY="your_api_key_here"
-   export MINIMAX_BASE_URL="https://api.minimax.io/anthropic"
+   export GLM_API_KEY="your_glm_api_key_here"
+   export KIMI_API_KEY="your_kimi_api_key_here"
    ```
 
 2. **Open this folder in VSCode**
 
-3. **Start chatting with Claude Code** - MiniMax M2 is now your primary model!
+3. **Start chatting with Claude Code** - GLM-4.6 and Kimi K2 are configured!
 
 4. **Use MCP servers with @-mentions:**
    - `@exai-mcp chat "Analyze my code with GLM-4.6"`
@@ -45,14 +45,14 @@ This project uses **custom agents** for optimal Claude Code performance with min
 
 Use specialized agents for different tasks:
 
-- **@minimax-coder** - Primary coding (MiniMax M2)
+- **@glm-coder** - Primary coding (GLM-4.6)
 - **@exai-validator** - Code review & validation (GLM-4.6)
 - **@kimi-analyzer** - Large file analysis (Kimi K2)
 - **@glm-architect** - Architecture decisions (GLM-4.6)
 
 **Example:**
 ```
-@minimax-coder Create a user authentication service
+@glm-coder Create a user authentication service
 @exai-validator Review the authentication code for security issues
 @kimi-analyzer Analyze auth_service.py for performance optimization
 @glm-architect Evaluate the authentication architecture
@@ -70,7 +70,7 @@ Use specialized agents for different tasks:
 
 **Configuration Status:** ✅ **COMPLETE AND READY TO USE!**
 
-**Version:** 4.0.0  
-**Last Updated:** 2025-11-04  
+**Version:** 4.1.0
+**Last Updated:** 2025-11-09
 **Maintained By:** EX-AI MCP Server Team
 

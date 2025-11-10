@@ -69,6 +69,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_user_quotas_updated_at ON user_quotas;
 CREATE TRIGGER update_user_quotas_updated_at
     BEFORE UPDATE ON user_quotas
     FOR EACH ROW
@@ -78,6 +79,10 @@ CREATE TRIGGER update_user_quotas_updated_at
 ALTER TABLE user_quotas ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view own quota" ON user_quotas;
+DROP POLICY IF EXISTS "Service role can manage quotas" ON user_quotas;
+
 -- Users can only view their own quota
 CREATE POLICY "Users can view own quota"
     ON user_quotas

@@ -12,7 +12,7 @@
         "PYTHONIOENCODING": "utf-8",
         "LOG_LEVEL": "INFO",
         "EXAI_WS_HOST": "127.0.0.1",
-        "EXAI_WS_PORT": "8079",
+        "EXAI_WS_PORT": "3000",
         "EX_SESSION_SCOPE_STRICT": "true",
         "EX_SESSION_SCOPE_ALLOW_CROSS_SESSION": "false",
         "SIMPLE_TOOL_TIMEOUT_SECS": "60",
@@ -24,13 +24,12 @@
       }
     },
     "supabase-mcp-full": {
-      "command": "cmd",
+      "command": "npx",
       "args": [
-        "/c",
-        "npx",
         "-y",
         "@supabase/mcp-server-supabase@latest",
-        "--features=account,database,debugging,development,docs,functions,branching,storage"
+        "--features=account,analytics,auth,database,debugging,development,docs,edge-runtime,functions,logs,migrations,monitoring,projects,realtime,security,storage,branching",
+        "--access-token=${SUPABASE_ACCESS_TOKEN}"
       ],
       "env": {
         "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"

@@ -2,7 +2,7 @@
 
 **Date:** 2025-10-22  
 **Branch:** phase-d-testing (yhcyohwsqqmnfyijbxpk)  
-**Parent:** main (mxaazuhlqewmkweewyaz)  
+**Parent:** main (your-project-id)  
 **Test Suite:** `tests/branch_testing_suite.sql` (22 tests)
 
 ---
@@ -12,7 +12,7 @@
 ### Branch Status Verification
 - [ ] Branch status: `ACTIVE_HEALTHY` or `FUNCTIONS_DEPLOYED`
 - [ ] Branch project_ref accessible: `yhcyohwsqqmnfyijbxpk`
-- [ ] Parent database accessible: `mxaazuhlqewmkweewyaz`
+- [ ] Parent database accessible: `your-project-id`
 
 ### Environment Setup
 - [ ] Supabase MCP tools available

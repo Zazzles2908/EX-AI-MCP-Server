@@ -41,7 +41,7 @@ class PerformanceBenchmark:
     """Performance benchmarking client."""
     
     def __init__(self):
-        self.ws_url = os.getenv("EXAI_WS_URL", "ws://127.0.0.1:8079")
+        self.ws_url = os.getenv("EXAI_WS_URL", "ws://127.0.0.1:3000")  # Updated to match docker-compose port mapping
         self.ws_token = os.getenv("EXAI_WS_TOKEN", "")
         self.ws = None
         self.results = []

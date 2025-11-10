@@ -10,6 +10,9 @@ from . import kimi_cache
 # PHASE 2.2.3 (2025-10-21): Import async concurrent session manager
 from src.utils.async_concurrent_session_manager import get_async_session_manager
 
+# ARCHITECTURE FAILURE FIX (2025-11-08): Import TimeoutConfig for model-specific timeouts
+from config.timeouts import TimeoutConfig
+
 from src.daemon.error_handling import ProviderError, ErrorCode, log_error
 
 logger = logging.getLogger(__name__)
@@ -404,7 +407,28 @@ async def chat_completions_create_async_with_session(
         Dictionary with provider, model, content, tool_calls, usage, raw, metadata,
         and session context (session_id, request_id, duration_seconds)
     """
-    session_manager = await get_async_session_manager(default_timeout=timeout_seconds or 30.0)
+    # ARCHITECTURE FAILURE FIX (2025-11-08): Use model-specific timeout instead of hardcoded 30s
+    # Align with sync version for consistency
+
+    # First check for explicit timeout_seconds parameter (highest priority)
+    if timeout_seconds:
+        session_timeout = timeout_seconds
+        logger.info(f"Async Kimi chat using explicit timeout_seconds: {session_timeout}s")
+    else:
+        # Use model-specific timeout calculation
+        # Base timeout: 60s to handle complex reasoning
+        # Model multipliers from TimeoutConfig:
+        # - kimi-k2-0905-preview: 1.2x = 72s
+        # - kimi-k2-thinking-preview: 1.5x = 90s
+        # - kimi-k2-turbo-preview: 0.8x = 48s
+        base_timeout = 60.0
+        session_timeout = TimeoutConfig.get_model_timeout(model, base_timeout)
+        logger.info(
+            f"Async Kimi chat using model-specific timeout for {model}: {session_timeout}s "
+            f"(base={base_timeout}s, multiplier={session_timeout/base_timeout:.1f}x)"
+        )
+
+    session_manager = await get_async_session_manager(default_timeout=session_timeout)
 
     async def _execute_async_kimi_chat():
         """Internal async function to execute Kimi chat within session."""

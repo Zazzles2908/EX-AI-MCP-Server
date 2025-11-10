@@ -48,6 +48,14 @@ class PromptRegistry:
         from .analyze_prompt import ANALYZE_PROMPT
         from .codereview_prompt import CODEREVIEW_PROMPT
         from .thinkdeep_prompt import THINKDEEP_PROMPT
+        from .refactor_prompt import REFACTOR_PROMPT
+        from .testgen_prompt import TESTGEN_PROMPT
+        from .docgen_prompt import DOCGEN_PROMPT
+        from .planner_prompt import PLANNER_PROMPT
+        from .tracer_prompt import TRACER_PROMPT
+        from .consensus_prompt import CONSENSUS_PROMPT
+        from .secaudit_prompt import SECAUDIT_PROMPT
+        from .precommit_prompt import PRECOMMIT_PROMPT
 
         # Import provider-specific variants
         from .provider_variants import (
@@ -56,6 +64,14 @@ class PromptRegistry:
             CODEREVIEW_KIMI_VARIANT, CODEREVIEW_GLM_VARIANT,
             CHAT_KIMI_VARIANT, CHAT_GLM_VARIANT,
             THINKDEEP_KIMI_VARIANT, THINKDEEP_GLM_VARIANT,
+            REFACTOR_KIMI_VARIANT,
+            TESTGEN_KIMI_VARIANT,
+            DOCGEN_KIMI_VARIANT,
+            PLANNER_KIMI_VARIANT,
+            TRACER_KIMI_VARIANT,
+            CONSENSUS_KIMI_VARIANT,
+            SECAUDIT_KIMI_VARIANT,
+            PRECOMMIT_KIMI_VARIANT,
         )
 
         # Register base prompts and provider-specific variants
@@ -84,6 +100,38 @@ class PromptRegistry:
                 "base": THINKDEEP_PROMPT,
                 "kimi_variant": THINKDEEP_KIMI_VARIANT,
                 "glm_variant": THINKDEEP_GLM_VARIANT,
+            },
+            "refactor": {
+                "base": REFACTOR_PROMPT,
+                "kimi_variant": REFACTOR_KIMI_VARIANT,
+            },
+            "testgen": {
+                "base": TESTGEN_PROMPT,
+                "kimi_variant": TESTGEN_KIMI_VARIANT,
+            },
+            "docgen": {
+                "base": DOCGEN_PROMPT,
+                "kimi_variant": DOCGEN_KIMI_VARIANT,
+            },
+            "planner": {
+                "base": PLANNER_PROMPT,
+                "kimi_variant": PLANNER_KIMI_VARIANT,
+            },
+            "tracer": {
+                "base": TRACER_PROMPT,
+                "kimi_variant": TRACER_KIMI_VARIANT,
+            },
+            "consensus": {
+                "base": CONSENSUS_PROMPT,
+                "kimi_variant": CONSENSUS_KIMI_VARIANT,
+            },
+            "secaudit": {
+                "base": SECAUDIT_PROMPT,
+                "kimi_variant": SECAUDIT_KIMI_VARIANT,
+            },
+            "precommit": {
+                "base": PRECOMMIT_PROMPT,
+                "kimi_variant": PRECOMMIT_KIMI_VARIANT,
             },
         }
     

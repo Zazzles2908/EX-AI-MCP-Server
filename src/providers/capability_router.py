@@ -42,7 +42,7 @@ class CapabilityMatrix:
         "file_uploads": True,  # Moonshot file API
         "vision": True,  # moonshot-v1-*-vision-preview models
         "tool_calling": True,  # OpenAI-compatible function calling
-        "web_search": True,  # Native web search support
+        "web_search": False,  # BUG FIX (2025-11-09): Kimi does NOT support web_search tool type
         "max_tokens": 128000,  # Context window
         "max_output_tokens": 4096,
         "supports_chinese": True,
@@ -346,29 +346,35 @@ class CapabilityRouter:
     ) -> ProviderType:
         """
         Suggest optimal provider for a tool based on requirements.
-        
+
         Args:
             tool_name: Name of the tool
             required_features: List of required features
-        
+
         Returns:
             Recommended provider type
         """
         requirements = TOOL_REQUIREMENTS.get(tool_name)
         if not requirements:
             return ProviderType.AUTO
-        
+
+        # BUG FIX (2025-11-09): Smart routing for web_search
+        # Kimi does not support web_search tool type - must route to GLM
+        if requirements.needs_web_search:
+            logger.info("[SMART_ROUTING] Tool requires web_search, routing to GLM")
+            return ProviderType.GLM
+
         # If no specific features required, default to KIMI
         if not required_features:
             return ProviderType.KIMI
-        
+
         # Check which providers support all required features
         for provider in [ProviderType.KIMI, ProviderType.GLM]:
             capabilities = self.capability_matrix.get_capabilities(provider)
             if all(capabilities.get(feature, False) for feature in required_features):
                 logger.info(f"Provider {provider.value} supports all required features")
                 return provider
-        
+
         # Fallback to AUTO if no provider supports all features
         logger.warning("No provider supports all required features, using AUTO")
         return ProviderType.AUTO

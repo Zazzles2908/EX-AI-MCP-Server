@@ -13,11 +13,11 @@ This project uses **custom agents** to optimize Claude Code performance and mini
 
 ## 🤖 Available Agents
 
-### 1. @minimax-coder (Primary Coding Agent)
+### 1. @glm-coder (Primary Coding Agent)
 
-**Model:** MiniMax M2  
+**Model:** GLM-4.6  
 **Purpose:** Code generation, understanding, and multi-turn dialogue  
-**Configuration:** `.claude/agents/minimax-coder.json`
+**Configuration:** `.claude/agents/glm-coder.json`
 
 **When to Use:**
 - Writing new code
@@ -40,9 +40,9 @@ This project uses **custom agents** to optimize Claude Code performance and mini
 
 **Example Usage:**
 ```
-@minimax-coder Create a REST API endpoint for user authentication
-@minimax-coder Refactor the payment processing module
-@minimax-coder Fix the bug in auth_service.py line 42
+@glm-coder Create a REST API endpoint for user authentication
+@glm-coder Refactor the payment processing module
+@glm-coder Fix the bug in auth_service.py line 42
 ```
 
 ---

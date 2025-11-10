@@ -1,0 +1,41 @@
+{
+  "metrics": [
+    {
+      "timestamp": "2025-11-09T00:02:44.726010",
+      "tool_name": "chat",
+      "model_name": "kimi-k2-turbo-preview",
+      "provider": "kimi",
+      "duration": 3.5,
+      "token_count": 500,
+      "cost": 0.05,
+      "success": true,
+      "quality_score": 0.9,
+      "user_satisfaction": null
+    },
+    {
+      "timestamp": "2025-11-09T00:02:44.726513",
+      "tool_name": "chat",
+      "model_name": "kimi-k2-turbo-preview",
+      "provider": "kimi",
+      "duration": 4.2,
+      "token_count": 600,
+      "cost": 0.06,
+      "success": true,
+      "quality_score": 0.85,
+      "user_satisfaction": null
+    },
+    {
+      "timestamp": "2025-11-09T00:02:44.726925",
+      "tool_name": "analyze",
+      "model_name": "kimi-k2-0905-preview",
+      "provider": "kimi",
+      "duration": 15.3,
+      "token_count": 2000,
+      "cost": 0.25,
+      "success": true,
+      "quality_score": 0.95,
+      "user_satisfaction": null
+    }
+  ],
+  "last_updated": "2025-11-09T00:02:44.726957"
+}

@@ -11,7 +11,7 @@
 // Supabase configuration from environment or defaults
 const SUPABASE_CONFIG = {
     url: window.SUPABASE_URL || 'http://localhost:54321',
-    anonKey: window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvY2FsaG9zdCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjI1MDAwMDAwLCJleHAiOjE5MzUwMDAwMDB9.test_key',
+    anonKey: window.SUPABASE_ANON_KEY || 'your_supabase_anon_key_here',
 };
 
 // Global Supabase client instance

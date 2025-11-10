@@ -25,10 +25,10 @@ from typing import Optional, Dict, Any, List, Tuple
 from supabase import create_client, Client
 
 # Import local modules
-from storage.storage_exceptions import RetryableError, NonRetryableError
-from storage.storage_progress import ProgressTracker
-from storage.storage_circuit_breaker import with_circuit_breaker, with_retry
-from storage.storage_telemetry import track_storage_performance
+from .storage_exceptions import RetryableError, NonRetryableError
+from .storage_progress import ProgressTracker
+from .storage_circuit_breaker import with_circuit_breaker, with_retry
+from .storage_telemetry import track_storage_performance
 
 # Import other utilities
 from datetime import datetime
@@ -94,7 +94,7 @@ class SupabaseStorageManager:
             raise RuntimeError("Supabase storage not configured")
 
         # Use centralized singleton instead of creating new client
-        from storage.supabase_singleton import get_supabase_client
+        from .supabase_singleton import get_supabase_client
         return get_supabase_client(use_admin=True)
 
     def close(self):

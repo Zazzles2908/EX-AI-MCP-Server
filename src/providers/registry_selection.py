@@ -5,7 +5,7 @@ This module provides model selection, fallback chains, and diagnostics for the p
 
 Key Components:
 - Model selection methods (get_preferred_fallback_model, get_best_provider_for_category)
-- Fallback chain logic (_auggie_fallback_chain, call_with_fallback)
+- Fallback chain logic (_fallback_chain, call_with_fallback)
 - Helper methods for model filtering (_get_allowed_models_for_provider)
 - ProviderDiagnostics class for troubleshooting provider availability
 
@@ -208,7 +208,7 @@ def _get_allowed_models_for_provider(provider: ModelProvider, provider_type: Pro
 # ================================================================================
 
 
-def _auggie_fallback_chain(
+def _fallback_chain(
     registry_instance,
     category: Optional["ToolModelCategory"],
     hints: Optional[list[str]] = None,
@@ -235,46 +235,9 @@ def _auggie_fallback_chain(
             EXTENDED_REASONING = object()
             BALANCED = object()
 
-    # 1) Try explicit chains from auggie settings
-    try:
-        from auggie.config import get_auggie_settings  # type: ignore[import-not-found]
-
-        settings = get_auggie_settings() or {}
-        fb = settings.get("fallback") or {}
-        key = None
-        if category is not None:
-            try:
-                # Map commonly used aliases
-                key = {
-                    "FAST_RESPONSE": "chat",
-                    "EXTENDED_REASONING": "reasoning",
-                }.get(category.name, category.name.lower())
-            except Exception:
-                key = None
-        chain = fb.get(key or "", [])
-        if chain:
-            # If hints provided, lightly bias order
-            if hints:
-                low_map = {m.lower(): m for m in chain}
-                priorities: list[str] = []
-                for h in [s.lower() for s in hints if isinstance(s, str)]:
-                    if any(k in h for k in ("vision", "image", "diagram")):
-                        for cand in ("glm-4.5v",):
-                            m = low_map.get(cand)
-                            if m and m not in priorities:
-                                priorities.append(m)
-                    if any(k in h for k in ("think", "reason", "chain of thought", "cot", "deep")):
-                        for cand in ("kimi-k2-thinking", "kimi-k2-0711-preview", "glm-4.5-airx"):
-                            m = low_map.get(cand)
-                            if m and m not in priorities:
-                                priorities.append(m)
-                rest = [m for m in chain if m not in priorities]
-                return priorities + rest
-            return chain
-    except Exception:
-        pass
-
-    # 2) SIMPLIFIED: Category-specific fallback chains (NO cross-provider fallback)
+        # Auggie settings removed (2025-11-08)
+    
+    # 2) SIMPLIFIED: Category-specific fallback chains# 2) SIMPLIFIED: Category-specific fallback chains (NO cross-provider fallback)
     order: list[str] = []
 
     if category is not None:
@@ -342,7 +305,7 @@ def call_with_fallback(
     # Import registry class to access class methods
     from src.providers.registry_core import ModelProviderRegistry as cls
 
-    chain = _auggie_fallback_chain(registry_instance, category, hints)
+    chain = _fallback_chain(registry_instance, category, hints)
 
     # LIMIT ATTEMPTS: Prevent cascading timeouts through multiple providers
     chain = chain[:max_attempts]

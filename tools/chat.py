@@ -67,9 +67,13 @@ class ChatRequest(ToolRequest):
     use_websearch: Optional[bool] = Field(default=True, description="Enable provider-native web browsing when available")
     stream: Optional[bool] = Field(default=None, description="Request streaming when supported; env-gated per provider")
     # CRITICAL FIX (2025-11-02): Kimi thinking mode support for kimi-thinking-preview
+    # CRITICAL FIX (2025-11-10): Known issue with _model_name NameError when using kimi_thinking
+    # If you encounter "name '_model_name' is not defined" error, retry without kimi_thinking parameter
     kimi_thinking: Optional[str] = Field(default=None, description=(
         "Enable extended thinking mode for reasoning models (kimi-thinking-preview). "
-        "Options: 'enabled' to activate, None/omit for normal mode."
+        "Options: 'enabled' to activate, None/omit for normal mode. "
+        "NOTE: Known issue with third-party library may cause '_model_name' NameError. "
+        "If this occurs, the system will automatically retry with fallback models."
     ))
 
 
@@ -161,7 +165,7 @@ class ChatTool(SimpleTool):
                 "model": self.get_model_field_schema(),
                 "temperature": {"type": "number", "description": "Response creativity (0-1, default 0.5)", "minimum": 0, "maximum": 1},
                 "thinking_mode": {"type": "string", "enum": ["minimal", "low", "medium", "high", "max"], "description": "Thinking depth selector"},
-                "kimi_thinking": {"type": "string", "enum": ["enabled"], "description": "Enable extended thinking mode for kimi-thinking-preview model (CRITICAL FIX 2025-11-02)"},
+                "kimi_thinking": {"type": "string", "enum": ["enabled"], "description": "Enable extended thinking mode for kimi-thinking-preview model. NOTE: Known issue may cause '_model_name' NameError - system will retry with fallback."},
                 "use_websearch": {"type": "boolean", "description": "Enable provider-native web browsing", "default": True},
                 "stream": {"type": "boolean", "description": "Request streaming when supported; env-gated per provider", "default": False},
                 "continuation_id": {"type": "string", "description": "Thread continuation ID for multi-turn conversations."},
@@ -327,12 +331,20 @@ class ChatTool(SimpleTool):
                             metadata['model_used'] = model_name
                         provider = model_info.get("provider")
                         if provider:
-                            # Extract provider name from class name (e.g., "GLMModelProvider" -> "glm")
-                            provider_class_name = provider.__class__.__name__
-                            if provider_class_name.endswith("ModelProvider"):
-                                provider_name = provider_class_name[:-len("ModelProvider")].lower()
+                            # Get provider type from provider instance
+                            # Providers have get_provider_type() method that returns ProviderType enum
+                            if hasattr(provider, 'get_provider_type'):
+                                provider_name = provider.get_provider_type().value
+                            elif hasattr(provider, 'value'):
+                                # Provider is already a ProviderType enum
+                                provider_name = provider.value
                             else:
-                                provider_name = provider_class_name.lower()
+                                # Fallback: extract from class name
+                                provider_class_name = provider.__class__.__name__
+                                if provider_class_name.endswith("ModelProvider"):
+                                    provider_name = provider_class_name[:-len("ModelProvider")].lower()
+                                else:
+                                    provider_name = provider_class_name.lower()
                             metadata['provider_used'] = provider_name
 
                         # FIX (2025-10-24): Extract usage from model_info (not model_metadata)

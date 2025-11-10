@@ -140,9 +140,9 @@ class CrossPlatformPathHandler:
         # UPDATED: Handle both forward slashes (/app/c:/) and backslashes (/app/c:\)
         if file_path.startswith('/app/c:/') or file_path.startswith('/app/C:/') or \
            file_path.startswith('/app/c:\\') or file_path.startswith('/app/C:\\'):
-            logger.warning(f"[PATH_FIX] Detected double-prefixed path, stripping /app/ prefix: {file_path}")
+            logger.debug(f"[PATH_FIX] Detected double-prefixed path, stripping /app/ prefix: {file_path}")
             file_path = file_path[5:]  # Remove '/app/' prefix (5 characters)
-            logger.info(f"[PATH_FIX] Corrected path: {file_path}")
+            logger.debug(f"[PATH_FIX] Corrected path: {file_path}")
 
         # CRITICAL: Check Windows paths FIRST before os.path.isabs()
         # because os.path.isabs() returns True for Windows paths on Windows,

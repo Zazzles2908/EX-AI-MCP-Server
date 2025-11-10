@@ -174,11 +174,34 @@ class ConversationIntegrationMixin:
                 # Don't re-validate the request as arguments may have been modified during execution
                 model_name = arguments.get("model", "unknown")
 
-                # Basic metadata without provider info
+                # Try to get provider from model context if available
+                provider_name = "unknown"
+                if model_context:
+                    provider = model_context.provider
+                    if provider:
+                        try:
+                            provider_name = provider.get_provider_type().value
+                        except AttributeError:
+                            provider_name = str(provider)
+                else:
+                    # Try to infer provider from model name
+                    if isinstance(model_name, str):
+                        model_lower = model_name.lower()
+                        if "glm" in model_lower:
+                            provider_name = "GLM"
+                        elif "kimi" in model_lower:
+                            provider_name = "Kimi"
+                        elif "zhipu" in model_lower:
+                            provider_name = "Zhipu"
+                        elif "moonshot" in model_lower:
+                            provider_name = "Moonshot"
+                        # else keep "unknown"
+
+                # Create metadata with model and provider info
                 metadata = {
                     "tool_name": self.get_name(),
                     "model_used": model_name,
-                    "provider_used": "unknown",
+                    "provider_used": provider_name,
                 }
 
                 # Preserve existing metadata and add workflow metadata
@@ -188,7 +211,7 @@ class ConversationIntegrationMixin:
 
                 logger.debug(
                     f"[WORKFLOW_METADATA] {self.get_name()}: Added fallback metadata - "
-                    f"model: {model_name}, provider: unknown"
+                    f"model: {model_name}, provider: {provider_name}"
                 )
         
         except Exception as e:

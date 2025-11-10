@@ -239,11 +239,89 @@ def validate_tool_args(tool_name: str, args: Dict[str, Any]) -> Tuple[bool, Opti
     # Check for missing required fields
     missing_fields = [field for field in required_fields if field not in args or args[field] is None]
     if missing_fields:
+        # Enhanced error messages for specific tools
+        enhanced_guidance = ""
+        if tool_name == "thinkdeep" and "findings" in missing_fields:
+            enhanced_guidance = """
+WHAT IS 'findings'?
+The 'findings' field should contain:
+- Summarize everything discovered in this step about the problem/goal
+- Include new insights, connections made, implications considered
+- Document what you now know and how it affects your understanding
+- Be specific and avoid vague language
+
+EXAMPLE:
+"Found that the issue occurs when the database connection pool is exhausted. "
+"Memory analysis shows 500MB of cache data that should be TTL-based. "
+"Logs indicate the error happens during high-load periods (200+ req/s)."
+
+CORRECT CALL:
+mcp__exai-mcp__thinkdeep(
+    step="Investigate memory leak",
+    step_number=1,
+    total_steps=1,
+    next_step_required=False,
+    findings="Your findings here (REQUIRED - cannot be empty or None)"
+)"""
+
+        # Special handling for other workflow tools
+        elif tool_name in ["analyze", "debug", "codereview", "refactor", "testgen", "tracer", "docgen", "secaudit"] and "findings" in missing_fields:
+            enhanced_guidance = f"""
+WHAT IS 'findings'?
+The 'findings' field should contain a summary of your analysis/discovery in this step.
+This is a REQUIRED field for all {tool_name} tool calls.
+
+Please provide your findings as a string describing what you discovered."""
+        elif tool_name == "chat" and "prompt" in missing_fields:
+            enhanced_guidance = """
+WHAT IS 'prompt'?
+The 'prompt' field should contain your question or message to the AI.
+This is a REQUIRED field for the chat tool.
+
+EXAMPLE:
+mcp__exai-mcp__chat(prompt="How do I fix this error?")"""
+
         error_msg = (
-            f"Missing required fields for '{tool_name}' tool:\n"
+            f"❌ Missing required fields for '{tool_name}' tool:\n"
             f"  {', '.join(missing_fields)}\n"
             f"\nRequired fields: {', '.join(required_fields)}\n"
             f"All valid fields: {', '.join(sorted(all_valid_fields))}"
+            f"\n{enlightened_guidance if 'enlightened_guidance' in locals() else enhanced_guidance}"
+        )
+        return False, error_msg
+
+    # Additional validation: Check for empty required string fields
+    empty_fields = []
+    for field in required_fields:
+        if field in args:
+            value = args[field]
+            if isinstance(value, str) and not value.strip():
+                empty_fields.append(field)
+
+    if empty_fields:
+        enhanced_guidance = ""
+        if tool_name == "thinkdeep" and "findings" in empty_fields:
+            enhanced_guidance = """
+The 'findings' field cannot be empty or contain only whitespace.
+Please provide a detailed summary of your analysis, discoveries, and insights.
+
+EXAMPLE:
+mcp__exai-mcp__thinkdeep(
+    step="Investigate performance issue",
+    step_number=1,
+    total_steps=1,
+    next_step_required=False,
+    findings="Found that database queries lack indexes on frequently queried columns. "
+             "Query analysis shows 10+ second response times on tables with 1M+ rows. "
+             "Propose adding composite indexes on (user_id, created_at) and (status, priority)."
+)"""
+        else:
+            enhanced_guidance = f"\nThe {', '.join(empty_fields)} field(s) cannot be empty. Please provide valid values."
+
+        error_msg = (
+            f"❌ Empty required fields for '{tool_name}' tool:\n"
+            f"  {', '.join(empty_fields)}\n"
+            f"{enhanced_guidance}"
         )
         return False, error_msg
 

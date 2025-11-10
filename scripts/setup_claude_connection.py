@@ -23,8 +23,10 @@ EXAI_VENV_PYTHON = EXAI_PROJECT_ROOT / ".venv" / "Scripts" / "python.exe"
 WS_SHIM_SCRIPT = EXAI_PROJECT_ROOT / "scripts" / "runtime" / "run_ws_shim.py"
 ENV_FILE = EXAI_PROJECT_ROOT / ".env"
 
-# JWT Token for Claude
-EXAI_JWT_TOKEN_CLAUDE = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbGF1ZGVAZXhhaS1tY3AubG9jYWwiLCJpc3MiOiJleGFpLW1jcC1zZXJ2ZXIiLCJhdWQiOiJleGFpLW1jcC1jbGllbnQiLCJpYXQiOjE3NjIxMjUwNzMsImV4cCI6MTc5MzY2MTA3M30.hVzyioI0JRDgGnbVIq7NYZOsPiiOYjjuRXwAPBVtFn0"
+# Get JWT Token for Claude from config
+from src.config.settings import Config
+config = Config()
+EXAI_JWT_TOKEN_CLAUDE = config.claude_jwt_token
 
 def generate_mcp_config():
     """Generate the complete MCP configuration for EXAI."""

@@ -28,7 +28,7 @@ import websockets
 import statistics
 
 # Test configuration
-WS_URL = "ws://127.0.0.1:8079"  # Use 127.0.0.1 instead of localhost for Windows compatibility
+WS_URL = "ws://127.0.0.1:3000"  # Updated to match docker-compose port mapping (3000→8079)
 AUTH_TOKEN = "test-token-12345"
 
 

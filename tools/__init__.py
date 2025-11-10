@@ -19,6 +19,9 @@ from .workflows.thinkdeep import ThinkDeepTool
 from .workflows.tracer import TracerTool
 from .capabilities.version import VersionTool
 from .selfcheck import SelfCheckTool
+# File Management Tools (2025-11-09): Critical missing feature now exposed
+from .smart_file_query import SmartFileQueryTool
+from .smart_file_download import SmartFileDownloadTool
 
 __all__ = [
     "ThinkDeepTool",
@@ -38,4 +41,7 @@ __all__ = [
     "TracerTool",
     "VersionTool",
     "SelfCheckTool",
+    # File Management Tools - CRITICAL FEATURE (2025-11-09)
+    "SmartFileQueryTool",
+    "SmartFileDownloadTool",
 ]

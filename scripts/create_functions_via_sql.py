@@ -6,9 +6,11 @@ Uses HTTP requests to Supabase SQL endpoint
 
 import requests
 import json
+from src.config.settings import Config
 
-SUPABASE_URL = 'https://mxaazuhlqewmkweewyaz.supabase.co'
-SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14YWF6dWhscWV3bWt3ZWV3eWF6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODE5MDUyNSwiZXhwIjoyMDczNzY2NTI1fQ.HpPi30g4NjpDRGYtc406X_TjIj70OoOYCzQYUltxfgw'
+config = Config()
+SUPABASE_URL = config.supabase_url
+SUPABASE_KEY = config.supabase_service_key
 
 # SQL statements to create the functions
 SQL_STATEMENTS = [
