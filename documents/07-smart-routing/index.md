@@ -72,6 +72,48 @@ This document provides:
 
 **Read this to understand the full scope and build a comprehensive refactoring plan.**
 
+### 🔧 [Corrected Analysis with EXAI MCP](CORRECTED_ANALYSIS.md)
+**Updated analysis with EXAI-MCP integration and corrected provider capabilities**
+
+This document provides:
+- **Corrected Context Windows** - GLM-4.6: 200K, Kimi K2: 256K (not 128K)
+- **EXAI MCP Integration** - 29 tools via WebSocket, orchestrator approach
+- **Updated Architecture** - MCP Client → EXAI Orchestrator → Smart Router → Providers
+- **Implementation Plan** - 3-phase approach with specific timelines
+- **Z.AI SDK** - Confirmed usage of zai-sdk>=0.0.4
+- **Key Insight** - Smarten existing EXAI MCP interface instead of dismantling
+
+**Read this to understand the corrected vision with EXAI-MCP integration.**
+
+### 🧠 [True Intelligence Vision](TRUE_INTELLIGENCE_VISION.md)
+**Vision for truly intelligent system: users describe goals, system handles execution**
+
+This document provides:
+- **True Intelligence Definition** - Users say WHAT, system handles HOW
+- **EXAI-MCP Opportunity** - 29 tools with intelligent orchestrator
+- **Architecture Components** - Intent recognition, tool orchestration, natural language interface
+- **Implementation Phases** - 5 phases from basic orchestrator to true intelligence
+- **User Experience Flow** - Before (12+ interactions) vs After (2 interactions)
+- **Success Metrics** - Task completion, time to solution, user satisfaction
+
+**Key Insight:** True intelligence means users never choose tools!
+
+**Read this to understand the future vision of intelligent AI assistance.**
+
+### ✅ [Implementation Checklist](IMPLEMENTATION_CHECKLIST.md)
+**Complete step-by-step implementation guide with timelines and success criteria**
+
+This document provides:
+- **Phase 1** - Fix provider capabilities (context windows, web search)
+- **Phase 2** - Build EXAI-MCP orchestrator (intent recognition, tool chaining)
+- **Phase 3** - MiniMax M2 smart router (2,500 lines → 150 lines)
+- **Phase 4** - Testing & deployment (gradual rollout, monitoring)
+- **Detailed File Changes** - Create, modify, remove operations
+- **Risk Mitigation** - 5 major risks with mitigation strategies
+- **Success Metrics** - User experience, system performance, business impact
+
+**Read this to execute the implementation plan.**
+
 ---
 
 ## 🎓 Quick Reference
