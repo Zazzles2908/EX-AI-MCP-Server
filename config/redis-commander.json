@@ -1,0 +1,11 @@
+{
+  "connections": [
+    {
+      "name": "exai-redis",
+      "host": "exai-redis",
+      "port": "6379",
+      "password": "ExAi2025RedisSecurePass123",
+      "database": "0"
+    }
+  ]
+}

@@ -169,7 +169,7 @@ class ConnectionMonitor:
                 )
             else:
                 # Fall back to individual settings
-                redis_host = os.getenv('REDIS_HOST', 'redis')
+                redis_host = os.getenv('REDIS_HOST', 'localhost')
                 redis_port = int(os.getenv('REDIS_PORT', '6379'))
                 redis_password = os.getenv('REDIS_PASSWORD', '')
                 redis_db = int(os.getenv('REDIS_DB', '0'))

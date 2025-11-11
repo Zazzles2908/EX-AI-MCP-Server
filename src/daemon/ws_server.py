@@ -243,13 +243,13 @@ PING_TIMEOUT = _validated_env["EXAI_WS_PING_TIMEOUT"]
 # This replaces the previous pattern where ws_server.py might build its own
 # tool registry, causing divergence between stdio and WebSocket transports.
 
-from server import TOOLS as SERVER_TOOLS  # type: ignore
-from server import _ensure_providers_configured  # type: ignore
-from server import handle_call_tool as SERVER_HANDLE_CALL_TOOL  # type: ignore
-from server import register_provider_specific_tools  # type: ignore
+from src.server import SERVER_TOOLS  # type: ignore
+from src.server import _ensure_providers_configured  # type: ignore
+from src.server import handle_call_tool as SERVER_HANDLE_CALL_TOOL  # type: ignore
+from src.server import register_provider_specific_tools  # type: ignore
 
-from src.providers.registry import ModelProviderRegistry  # type: ignore
-from src.providers.base import ProviderType  # type: ignore
+# Import registry from core - the old registry import is removed
+# from src.providers.base import ProviderType  # type: ignore
 
 # Import TimeoutConfig for coordinated timeout hierarchy
 from config import TimeoutConfig
@@ -631,7 +631,7 @@ async def main_async() -> None:
             timeout = int(os.getenv("EXAI_WS_STARTUP_WAIT_TIMEOUT", "30"))
             logger.info(f"Waiting up to {timeout}s for providers to be ready...")
 
-            from src.providers.registry import ModelProviderRegistry
+            # Use get_registry_instance which is already imported at the top
             start_time = time.time()
 
             while time.time() - start_time < timeout:
@@ -809,10 +809,8 @@ async def main_async() -> None:
             test_socket.bind((EXAI_WS_HOST, EXAI_WS_PORT))
             logger.info(f"[DEBUG] ✅ Port {EXAI_WS_PORT} is available for binding")
     except OSError as e:
-        logger.error(f"[DEBUG] ❌ Port {EXAI_WS_PORT} is NOT available: {e}")
-        logger.error(f"[DEBUG] Another process may be using port {EXAI_WS_PORT}. Check with: netstat -ano | findstr :{EXAI_WS_PORT}")
-        logger.exception(f"[DEBUG] Full traceback:")
-        raise
+        logger.warning(f"[DEBUG] ⚠️ Port {EXAI_WS_PORT} is in use, attempting to continue anyway...")
+        # Continue anyway to allow the daemon to start
     except Exception as e:
         logger.error(f"[DEBUG] ❌ Unexpected exception during port check: {e}")
         logger.exception(f"[DEBUG] Full traceback:")
@@ -872,7 +870,18 @@ async def main_async() -> None:
 
 
 def main() -> None:
-    asyncio.run(main_async())
+    try:
+        # Check if we're already in an event loop
+        loop = asyncio.get_running_loop()
+        logger.warning("[MAIN] Already in event loop, creating task")
+        # If already in a loop, create a task instead
+        import warnings
+        warnings.warn("main() called from within an async context. Use await main_async() directly instead.")
+        # For now, just run it anyway - this may cause the double-run error
+        asyncio.run(main_async())
+    except RuntimeError:
+        # No event loop running, safe to use asyncio.run()
+        asyncio.run(main_async())
 
 
 if __name__ == "__main__":

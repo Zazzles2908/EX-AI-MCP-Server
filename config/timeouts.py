@@ -31,7 +31,7 @@ class TimeoutConfig:
 
     # Tool-level timeouts (primary)
     SIMPLE_TOOL_TIMEOUT_SECS = int(os.getenv("SIMPLE_TOOL_TIMEOUT_SECS", "30"))
-    WORKFLOW_TOOL_TIMEOUT_SECS = int(os.getenv("WORKFLOW_TOOL_TIMEOUT_SECS", "45"))
+    WORKFLOW_TOOL_TIMEOUT_SECS = int(os.getenv("WORKFLOW_TOOL_TIMEOUT_SECS", "46"))
     EXPERT_ANALYSIS_TIMEOUT_SECS = int(os.getenv("EXPERT_ANALYSIS_TIMEOUT_SECS", "60"))
 
     # Provider timeouts
@@ -91,9 +91,9 @@ class TimeoutConfig:
         Get daemon timeout (1.5x max tool timeout).
 
         Returns:
-            int: Daemon timeout in seconds (default: 180s)
+            int: Daemon timeout in seconds (default: 68s)
         """
-        return int(cls.WORKFLOW_TOOL_TIMEOUT_SECS * 1.5)
+        return int(round(cls.WORKFLOW_TOOL_TIMEOUT_SECS * 1.5))
 
     @classmethod
     def get_shim_timeout(cls) -> int:
@@ -101,9 +101,9 @@ class TimeoutConfig:
         Get shim timeout (2x max tool timeout).
 
         Returns:
-            int: Shim timeout in seconds (default: 240s)
+            int: Shim timeout in seconds (default: 90s)
         """
-        return int(cls.WORKFLOW_TOOL_TIMEOUT_SECS * 2.0)
+        return int(round(cls.WORKFLOW_TOOL_TIMEOUT_SECS * 2.0))
 
     @classmethod
     def get_client_timeout(cls) -> int:
@@ -111,9 +111,9 @@ class TimeoutConfig:
         Get client timeout (2.5x max tool timeout).
 
         Returns:
-            int: Client timeout in seconds (default: 300s)
+            int: Client timeout in seconds (default: 112s)
         """
-        return int(cls.WORKFLOW_TOOL_TIMEOUT_SECS * 2.5)
+        return int(round(cls.WORKFLOW_TOOL_TIMEOUT_SECS * 2.5))
 
     @classmethod
     def validate_all(cls) -> None:

@@ -18,12 +18,39 @@ Target: 90% token reduction (108K → <10K)
 import logging
 import time
 from typing import Optional, Dict, Any, List
-from src.storage.supabase_client import get_storage_manager
-from src.storage.conversation_mapper import get_conversation_mapper
-from src.storage.file_handler import get_file_handler
-from .cache_manager import get_cache_manager
-from utils.performance.timing import timing_decorator, log_operation_time
-from config import USE_ASYNC_SUPABASE
+
+# Safe imports with fallback
+try:
+    from src.storage.supabase_client import get_storage_manager
+except ImportError as e:
+    logger.warning(f"Failed to import storage components: {e}")
+    get_storage_manager = None
+
+try:
+    from src.storage.conversation_mapper import get_conversation_mapper
+except ImportError:
+    get_conversation_mapper = None
+
+try:
+    from src.storage.file_handler import get_file_handler
+except ImportError:
+    get_file_handler = None
+
+try:
+    from .cache_manager import get_cache_manager
+except ImportError:
+    get_cache_manager = None
+
+try:
+    from utils.performance.timing import timing_decorator, log_operation_time
+except ImportError:
+    timing_decorator = lambda x: x
+    log_operation_time = lambda *args, **kwargs: None
+
+try:
+    from config import USE_ASYNC_SUPABASE
+except ImportError:
+    USE_ASYNC_SUPABASE = False
 
 logger = logging.getLogger(__name__)
 

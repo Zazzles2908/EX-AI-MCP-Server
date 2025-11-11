@@ -7,7 +7,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from src.providers.capability_router import get_router
+from src.router.minimax_m2_router import get_router
 from src.prompts.prompt_registry import ProviderType
 
 print("\n" + "="*80)

@@ -305,7 +305,7 @@ class ListModelsTool(BaseTool):
 
         # Get total available models
         try:
-            from src.providers.registry import get_registry_instance
+            from src.providers.registry_core import get_registry_instance
 
             # Get all available models respecting restrictions
             registry = get_registry_instance()

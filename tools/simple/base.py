@@ -27,7 +27,16 @@ from utils.progress import send_progress
 from utils.progress_utils.messages import ProgressMessages
 
 # Import the registry for model selection
-from src.providers.registry import ModelProviderRegistry as _Registry
+from src.providers.registry_core import get_registry_instance
+
+# Create a backward-compatible wrapper class
+class _Registry:
+    @staticmethod
+    def call_with_fallback(category, call_fn, hints=None):
+        """Execute call_fn with fallback logic."""
+        registry_instance = get_registry_instance()
+        from src.providers.registry_selection import call_with_fallback as _call_with_fallback
+        return _call_with_fallback(registry_instance, category, call_fn, hints)
 
 
 class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixin, BaseTool):
@@ -383,7 +392,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
             else:
                 # Create model context if not provided
                 from utils.model.context import ModelContext
-                from src.providers.registry import get_registry_instance
+                from src.providers.registry_core import get_registry_instance
                 # Avoid constructing ModelContext('auto') which triggers provider lookup error.
                 if (model_name or "").strip().lower() == "auto":
                     try:
@@ -524,14 +533,19 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
 
             # Generate AI response with fallback (free-first → paid) when applicable
             import os as _os
-            from src.providers.registry import get_registry_instance
+            from src.providers.registry import get_registry
             selected_model = self._current_model_name
             tool_call_metadata = []  # collected sanitized tool-call events for UI dropdown
 
-            def _call_with_model(_model_name: str):
+            # Create async bridge helper
+            import asyncio
+            import inspect
+
+            async def _call_with_model_async(_model_name: str):
+                """Async version of the model call logic."""
                 nonlocal selected_model, provider
                 selected_model = _model_name
-                registry_instance = get_registry_instance()
+                registry_instance = get_registry()
                 prov = registry_instance.get_provider_for_model(_model_name)
                 if not prov:
                     raise RuntimeError(f"No provider available for model '{_model_name}'")
@@ -605,7 +619,8 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and prov.supports_streaming(_model_name):
                     generate_kwargs["on_chunk"] = self._on_chunk_callback
 
-                result = prov.generate_content(**generate_kwargs)
+                # Handle async provider calls - we're in an async function, so use await
+                result = await prov.generate_content(**generate_kwargs)
 
                 # Log response time to verify real API calls (should be >100ms for real AI)
                 call_duration_ms = (_time.time() - call_start) * 1000
@@ -613,6 +628,47 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 logger.info(f"[{self.get_name()}] PROVIDER RESPONSE: {response_length} chars in {call_duration_ms:.1f}ms")
 
                 return result
+
+            # Sync wrapper for _call_with_model_async to bridge with call_with_fallback
+            def _call_with_model(_model_name: str):
+                import asyncio
+                import threading
+                import concurrent.futures
+
+                # Try to get the running loop
+                try:
+                    loop = asyncio.get_running_loop()
+                    # We're in an async context - use a new thread with its own event loop
+                    logger.warning(f"[DEBUG] Using thread-based execution for model '{_model_name}' (async context detected)")
+                    result_container = []
+                    exception_container = []
+
+                    def run_in_thread():
+                        new_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(new_loop)
+                        try:
+                            result = new_loop.run_until_complete(_call_with_model_async(_model_name))
+                            result_container.append(result)
+                        except Exception as e:
+                            import traceback
+                            exception_container.append(e)
+                        finally:
+                            new_loop.close()
+
+                    thread = threading.Thread(target=run_in_thread, daemon=True)
+                    thread.start()
+                    thread.join(timeout=120)  # 2 minute timeout
+
+                    if exception_container:
+                        raise exception_container[0]
+                    if not result_container:
+                        raise TimeoutError(f"Model call timed out for model '{_model_name}'")
+                    return result_container[0]
+
+                except RuntimeError as e:
+                    # No running loop, safe to use asyncio.run()
+                    logger.warning(f"[DEBUG] Using asyncio.run() for model '{_model_name}' (sync context detected)")
+                    return asyncio.run(_call_with_model_async(_model_name))
 
             # Honor explicit model first; only use fallback chain when model=='auto' or on failure if enabled
             _fb_on_failure = _os.getenv("FALLBACK_ON_FAILURE", "true").strip().lower() == "true"
@@ -653,7 +709,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                         provider_kwargs["continuation_id"] = continuation_id
 
                     # NEW (2025-10-24): Pass streaming callback to provider (direct call path)
-                    if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and prov.supports_streaming(_model_name):
+                    if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and provider.supports_streaming(self._current_model_name):
                         provider_kwargs["on_chunk"] = self._on_chunk_callback
 
                     # Try semantic cache first
@@ -699,7 +755,8 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                         if images and provider.supports_images(self._current_model_name):
                             generate_kwargs["images"] = images
 
-                        model_response = provider.generate_content(**generate_kwargs)
+                        # Handle async provider calls - already in async context
+                        model_response = await provider.generate_content(**generate_kwargs)
 
                         # Cache the response
                         if model_response is not None:

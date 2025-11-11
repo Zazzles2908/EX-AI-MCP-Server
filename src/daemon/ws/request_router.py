@@ -153,6 +153,35 @@ class RequestRouter:
         # Configuration
         self.retry_after_secs = int(validated_env.get("RETRY_AFTER_SECS", 5))
 
+    def _find_tool_by_name(self, name: str):
+        """
+        Find a tool by name, handling both dict and list formats.
+
+        Args:
+            name: Tool name to find
+
+        Returns:
+            Tool dict/object if found, None otherwise
+        """
+        if not self.server_tools:
+            return None
+
+        # Handle dict format
+        if isinstance(self.server_tools, dict):
+            return self.server_tools.get(name)
+
+        # Handle list format
+        if isinstance(self.server_tools, list):
+            for tool in self.server_tools:
+                if isinstance(tool, dict):
+                    if tool.get('name') == name:
+                        return tool
+                else:
+                    if getattr(tool, 'name', None) == name:
+                        return tool
+
+        return None
+
     # Wrap handle_message with error capture
     @capture_errors(
         connection_type="websocket",
@@ -185,7 +214,7 @@ class RequestRouter:
         req_id = msg.get("request_id", "unknown")
 
         # Route based on operation
-        if op == "tool_call":
+        if op in ("tool_call", "call_tool"):
             await self._handle_tool_call(ws, session_id, msg, req_id, resilient_ws_manager)
         elif op == "cancel":
             await self._handle_cancel(ws, session_id, msg, req_id, resilient_ws_manager)
@@ -197,9 +226,9 @@ class RequestRouter:
             await _safe_send(
                 ws,
                 create_error_response(
-                    req_id,
                     ErrorCode.INVALID_REQUEST,
-                    f"Unknown operation: {op}"
+                    f"Unknown operation: {op}",
+                    request_id=req_id
                 ),
                 resilient_ws_manager=resilient_ws_manager
             )
@@ -214,23 +243,28 @@ class RequestRouter:
     ) -> None:
         """Handle a tool call request."""
         try:
-            # Validate message structure
-            if "tool" not in msg:
+            # Handle both "tool" and "name" formats (for backward compatibility)
+            tool_name = None
+            if "tool" in msg:
+                # Standard format: {"op": "tool_call", "tool": {"name": "..."}, "arguments": {...}}
+                tool_name = msg["tool"].get("name") if isinstance(msg["tool"], dict) else msg.get("tool")
+            elif "name" in msg:
+                # Alternative format: {"op": "call_tool", "name": "...", "arguments": {...}}
+                tool_name = msg.get("name")
+            else:
                 await _safe_send(
                     ws,
-                    create_error_response(req_id, ErrorCode.INVALID_REQUEST, "Missing 'tool' field"),
+                    create_error_response(ErrorCode.INVALID_REQUEST, "Missing 'tool' or 'name' field", request_id=req_id),
                     resilient_ws_manager=resilient_ws_manager
                 )
                 return
 
-            # Extract tool information
-            tool_name = msg["tool"].get("name") if isinstance(msg["tool"], dict) else msg.get("tool")
             arguments = msg.get("arguments", {})
 
             if not tool_name:
                 await _safe_send(
                     ws,
-                    create_error_response(req_id, ErrorCode.INVALID_REQUEST, "Missing tool name"),
+                    create_error_response(ErrorCode.INVALID_REQUEST, "Missing tool name", request_id=req_id),
                     resilient_ws_manager=resilient_ws_manager
                 )
                 return
@@ -238,11 +272,12 @@ class RequestRouter:
             # Normalize tool name
             normalized_name = normalize_tool_name(tool_name)
 
-            # Check if tool exists
-            if normalized_name not in self.server_tools:
+            # Check if tool exists (handle both dict and list formats)
+            tool = self._find_tool_by_name(normalized_name)
+            if tool is None:
                 await _safe_send(
                     ws,
-                    create_error_response(req_id, ErrorCode.TOOL_NOT_FOUND, f"Tool not found: {normalized_name}"),
+                    create_error_response(ErrorCode.TOOL_NOT_FOUND, f"Tool not found: {normalized_name}", request_id=req_id),
                     resilient_ws_manager=resilient_ws_manager
                 )
                 return
@@ -253,7 +288,7 @@ class RequestRouter:
             except InputValidationError as e:
                 await _safe_send(
                     ws,
-                    create_error_response(req_id, ErrorCode.INVALID_ARGUMENTS, str(e)),
+                    create_error_response(ErrorCode.INVALID_ARGUMENTS, str(e), request_id=req_id),
                     resilient_ws_manager=resilient_ws_manager
                 )
                 return
@@ -330,7 +365,7 @@ class RequestRouter:
                 # Send error response to client
                 await _safe_send(
                     ws,
-                    create_error_response(req_id, ErrorCode.INTERNAL_ERROR, error_msg or "Unknown error"),
+                    create_error_response(ErrorCode.INTERNAL_ERROR, error_msg or "Unknown error", request_id=req_id),
                     resilient_ws_manager=resilient_ws_manager
                 )
 
@@ -338,7 +373,7 @@ class RequestRouter:
             logger.error(f"Error handling tool call: {e}", exc_info=True)
             await _safe_send(
                 ws,
-                create_error_response(req_id, ErrorCode.INTERNAL_ERROR, str(e)),
+                create_error_response(ErrorCode.INTERNAL_ERROR, str(e), request_id=req_id),
                 resilient_ws_manager=resilient_ws_manager
             )
 
@@ -394,8 +429,8 @@ class RequestRouter:
             # Import the server tools registry
             # This needs to be imported dynamically to avoid circular imports
             try:
-                logger.info(f"[LIST_TOOLS] Attempting to import SERVER_TOOLS from server.py...")
-                from server import SERVER_TOOLS  # type: ignore
+                logger.info(f"[LIST_TOOLS] Attempting to import SERVER_TOOLS from src.server...")
+                from src.server import SERVER_TOOLS  # type: ignore
                 logger.info(f"[LIST_TOOLS] Successfully imported SERVER_TOOLS, type={type(SERVER_TOOLS)}, len={len(SERVER_TOOLS) if SERVER_TOOLS else 'N/A'}")
             except ImportError:
                 # Fallback - try to get from the registry
@@ -434,21 +469,34 @@ class RequestRouter:
 
             # Convert SERVER_TOOLS to list format
             tools_list = []
-            if SERVER_TOOLS:
-                for tool in SERVER_TOOLS.values():
-                    # Tool is an object with attributes, not a dict
-                    name = getattr(tool, 'name', '')
+            if self.server_tools:
+                # Handle both dict and list formats
+                tools_iterable = self.server_tools.values() if isinstance(self.server_tools, dict) else self.server_tools
+
+                for tool in tools_iterable:
+                    # Tool can be a dict or an object with attributes
+                    if isinstance(tool, dict):
+                        name = tool.get('name', '')
+                    else:
+                        name = getattr(tool, 'name', '')
+
                     # Skip tools with empty or invalid names (prevents "String should have at least 1 character" errors)
                     if not name or not isinstance(name, str) or not name.strip():
                         logger.warning(f"[LIST_TOOLS] Skipping tool with invalid/empty name: {name!r}")
                         continue
 
-                    description = getattr(tool, 'description', '')
-                    # Get input schema - might be an attribute or method
-                    input_schema = getattr(tool, 'inputSchema', None)
-                    if input_schema is None:
-                        # Try to get via method
-                        input_schema = getattr(tool, 'get_input_schema', lambda: {"type": "object"})()
+                    # Get description
+                    if isinstance(tool, dict):
+                        description = tool.get('description', '')
+                        input_schema = tool.get('inputSchema', {})
+                    else:
+                        description = getattr(tool, 'description', '')
+                        # Get input schema - might be an attribute or method
+                        input_schema = getattr(tool, 'inputSchema', None)
+                        if input_schema is None:
+                            # Try to get via method
+                            input_schema = getattr(tool, 'get_input_schema', lambda: {"type": "object"})()
+
                     tools_list.append({
                         "name": name,
                         "description": description,
@@ -470,9 +518,9 @@ class RequestRouter:
             await _safe_send(
                 ws,
                 create_error_response(
-                    req_id,
                     ErrorCode.TOOL_EXECUTION_ERROR,
-                    f"Failed to list tools: {str(e)}"
+                    f"Failed to list tools: {str(e)}",
+                    request_id=req_id
                 ),
                 resilient_ws_manager=resilient_ws_manager
             )

@@ -78,8 +78,8 @@ class ModelContext:
         if self._provider is None:
             import logging
             logging.info(f"MODEL_CONTEXT_DEBUG: Getting provider for model '{self.model_name}'")
-            from src.providers.registry_core import get_registry_instance  # Import here to avoid circular import
-            registry = get_registry_instance()  # Use singleton to see initialized providers
+            from src.providers.registry import get_registry  # Import here to avoid circular import
+            registry = get_registry()  # Use the same registry instance
             self._provider = registry.get_provider_for_model(self.model_name)
             logging.info(f"MODEL_CONTEXT_DEBUG: get_provider_for_model returned: {self._provider}")
             if not self._provider:

@@ -17,7 +17,7 @@ print("\n" + "="*80)
 print("TEST 1: Web Search Smart Routing")
 print("="*80)
 
-from src.providers.capability_router import get_router
+from src.router.minimax_m2_router import get_router
 from src.prompts.prompt_registry import ProviderType
 
 router = get_router()

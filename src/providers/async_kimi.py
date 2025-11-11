@@ -121,7 +121,19 @@ class AsyncKimiProvider(AsyncModelProvider):
             self.SUPPORTED_MODELS,
             lambda name: self._resolve_model_name(name, self.SUPPORTED_MODELS)
         )
-    
+
+    def supports_streaming(self, model_name: str) -> bool:
+        """Check if model supports streaming."""
+        return True
+
+    def supports_thinking_mode(self, model_name: str) -> bool:
+        """Check if model supports thinking mode."""
+        return False
+
+    def supports_images(self, model_name: str) -> bool:
+        """Check if model supports image input."""
+        return "vision" in model_name.lower()
+
     async def generate_content(
         self,
         prompt: str,

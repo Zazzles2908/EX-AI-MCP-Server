@@ -44,10 +44,21 @@ def validate_message(msg: Dict[str, Any]) -> tuple[bool, Optional[str]]:
 
     # Validate operation-specific required fields
     if op == "call_tool":
+        # Alternative format: {"op": "call_tool", "name": "...", "arguments": {...}}
         name = msg.get("name")
         if not isinstance(name, str) or not name:
             return (False, "call_tool requires 'name' (non-empty string)")
 
+        req_id = msg.get("request_id")
+        if req_id is not None and not isinstance(req_id, str):
+            return (False, "request_id must be a string")
+
+        arguments = msg.get("arguments")
+        if arguments is not None and not isinstance(arguments, dict):
+            return (False, "arguments must be a JSON object")
+
+    elif op == "tool_call":
+        # Standard format: {"op": "tool_call", "tool": {"name": "..."}, "arguments": {...}}
         req_id = msg.get("request_id")
         if req_id is not None and not isinstance(req_id, str):
             return (False, "request_id must be a string")

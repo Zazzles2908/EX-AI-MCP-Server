@@ -287,3 +287,8 @@ logs/exai_native_mcp.log
 # Conversation History (contains sensitive data)
 Fixed_monitoring_errors*.json
 *conversation_history*.json
+
+# MCP Configuration Files (contain access tokens - HIGH SECURITY RISK)
+.mcp.json
+.claude/.mcp.json
+project-template/.mcp.json

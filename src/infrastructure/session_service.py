@@ -59,7 +59,7 @@ class SupabaseSessionService:
         # Validate configuration
         if not self._client:
             try:
-                from storage.storage_manager import get_storage_manager
+                from src.storage.storage_manager import get_storage_manager
                 storage = get_storage_manager()
                 if storage.enabled:
                     self._client = storage.get_client()

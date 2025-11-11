@@ -1,158 +1,134 @@
-"""Kimi (Moonshot) provider implementation."""
+"""Kimi provider - Minimal implementation."""
 
-import logging
 import os
-from typing import Any, Optional
-
-from .base import ModelProvider, ModelCapabilities, ModelResponse, ProviderType
-from .openai_compatible import OpenAICompatibleProvider
-from config import TimeoutConfig
-
-# Import from new modules
-from . import kimi_config
-from . import kimi_cache
-from . import kimi_chat
-from . import kimi_files
+import logging
+from typing import Any, List, Dict, Optional
+from src.providers.base import ProviderType, ModelCapabilities, ModelResponse
 
 logger = logging.getLogger(__name__)
 
 
-class KimiModelProvider(OpenAICompatibleProvider):
-    """Provider implementation for Kimi (Moonshot) models."""
+class KimiProvider:
+    """Minimal Kimi provider implementation."""
 
-    # API configuration
-    DEFAULT_BASE_URL = os.getenv("KIMI_API_URL", "https://api.moonshot.ai/v1")
+    # List of supported models
+    SUPPORTED_MODELS = {
+        "moonshot-v1-8k": ModelCapabilities(),
+        "moonshot-v1-32k": ModelCapabilities(),
+        "moonshot-v1-128k": ModelCapabilities(),
+        "moonshot-v1-8k-vision": ModelCapabilities(),
+    }
 
-    # Use model configurations from kimi_config module
-    SUPPORTED_MODELS: dict[str, ModelCapabilities] = kimi_config.SUPPORTED_MODELS
+    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
+        # Use provided api_key or fall back to environment
+        self.api_key = api_key or os.getenv("KIMI_API_KEY")
+        # Use provided base_url or fall back to environment or default
+        self.base_url = base_url or os.getenv("KIMI_API_URL") or os.getenv("MOONSHOT_API_URL") or "https://api.moonshot.cn/v1/"
+        self.client = None
 
-
-    def __init__(self, api_key: str, base_url: Optional[str] = None, **kwargs):
-        self.base_url = base_url or self.DEFAULT_BASE_URL
-        # Provider-specific timeout overrides via env
-        try:
-            rt = os.getenv("KIMI_READ_TIMEOUT_SECS", "").strip()
-            ct = os.getenv("KIMI_CONNECT_TIMEOUT_SECS", "").strip()
-            wt = os.getenv("KIMI_WRITE_TIMEOUT_SECS", "").strip()
-            pt = os.getenv("KIMI_POOL_TIMEOUT_SECS", "").strip()
-            if rt:
-                kwargs["read_timeout"] = float(rt)
-            if ct:
-                kwargs["connect_timeout"] = float(ct)
-            if wt:
-                kwargs["write_timeout"] = float(wt)
-            if pt:
-                kwargs["pool_timeout"] = float(pt)
-            # TRACK 2 FIX: Use centralized TimeoutConfig instead of hardcoded 300s default
-            if "read_timeout" not in kwargs and not rt:
-                kwargs["read_timeout"] = TimeoutConfig.KIMI_TIMEOUT_SECS
-                logger.info(f"Kimi provider using centralized timeout: {TimeoutConfig.KIMI_TIMEOUT_SECS}s")
-        except Exception as e:
-            logger.warning(f"Failed to parse Kimi timeout configuration from environment: {e}", exc_info=True)
-        super().__init__(api_key, base_url=self.base_url, **kwargs)
+        if self.api_key:
+            from openai import AsyncOpenAI
+            self.client = AsyncOpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url
+            )
 
     def get_provider_type(self) -> ProviderType:
+        """Get the provider type."""
         return ProviderType.KIMI
 
     def validate_model_name(self, model_name: str) -> bool:
-        # Allow aliases to pass validation
-        resolved = self._resolve_model_name(model_name)
-        return resolved in self.SUPPORTED_MODELS
+        """Check if the model is supported by this provider."""
+        return model_name in self.SUPPORTED_MODELS
 
-    def supports_thinking_mode(self, model_name: str) -> bool:
-        resolved = self._resolve_model_name(model_name)
-        capabilities = self.SUPPORTED_MODELS.get(resolved)
-        return bool(capabilities and capabilities.supports_extended_thinking)
-
-    def list_models(self, respect_restrictions: bool = True):
-        # Use base implementation with restriction awareness
-        return super().list_models(respect_restrictions=respect_restrictions)
-
-    def get_model_configurations(self) -> dict[str, ModelCapabilities]:
-        # Use our static SUPPORTED_MODELS
-        return self.SUPPORTED_MODELS
-
-    def get_all_model_aliases(self) -> dict[str, list[str]]:
-        return kimi_config.get_all_model_aliases(self.SUPPORTED_MODELS)
+    def list_models(self, respect_restrictions: bool = True) -> List[str]:
+        """List all supported models."""
+        return list(self.SUPPORTED_MODELS.keys())
 
     def get_capabilities(self, model_name: str) -> ModelCapabilities:
-        return kimi_config.get_capabilities(model_name, self.SUPPORTED_MODELS, self._resolve_model_name)
+        """Get capabilities for a model."""
+        return self.SUPPORTED_MODELS.get(model_name, ModelCapabilities())
 
-    def count_tokens(self, text: str, model_name: str) -> int:
-        return kimi_config.count_tokens(text, model_name)
+    def supports_streaming(self, model_name: str) -> bool:
+        """Check if model supports streaming."""
+        return True
 
-    def _lru_key(self, session_id: str, tool_name: str, prefix_hash: str) -> str:
-        return kimi_cache.lru_key(session_id, tool_name, prefix_hash)
+    def supports_thinking_mode(self, model_name: str) -> bool:
+        """Check if model supports thinking mode."""
+        return False
 
-    def save_cache_token(self, session_id: str, tool_name: str, prefix_hash: str, token: str) -> None:
-        kimi_cache.save_cache_token(session_id, tool_name, prefix_hash, token)
+    def supports_images(self, model_name: str) -> bool:
+        """Check if model supports image input."""
+        return "vision" in model_name.lower()
 
-    def get_cache_token(self, session_id: str, tool_name: str, prefix_hash: str) -> Optional[str]:
-        return kimi_cache.get_cache_token(session_id, tool_name, prefix_hash)
-
-    def _purge_cache_tokens(self) -> None:
-        kimi_cache.purge_cache_tokens()
-
-
-    def upload_file(self, file_path: str, purpose: str = "file-extract") -> str:
-        """Upload a local file to Moonshot (Kimi) and return file_id.
-
-        Args:
-            file_path: Path to a local file
-            purpose: Moonshot purpose tag (e.g., 'file-extract', 'assistants')
-        Returns:
-            The provider-assigned file id string
-        """
-        return kimi_files.upload_file(self.client, file_path, purpose)
-
-    def _prefix_hash(self, messages: list[dict[str, Any]]) -> str:
-        return kimi_chat.prefix_hash(messages)
-
-    # ❌ REMOVED (2025-11-03): get_thinking_config() method
-    # External AI fact-check: thinking_mode_config dict was fiction
-    # No special configuration needed - thinking mode works automatically
-
-    def chat_completions_create(self, *, model: str, messages: list[dict[str, Any]], tools: Optional[list[Any]] = None, tool_choice: Optional[Any] = None, temperature: float = 0.6, thinking_enabled: bool = False, **kwargs) -> dict:
-        """
-        Wrapper that injects idempotency and Kimi context-cache headers, captures cache token, and returns normalized dict.
-
-        PHASE 2.2.4 (2025-10-21): Updated to use session-managed wrapper for concurrent request handling.
-        CRITICAL FIX (2025-11-02): Added thinking_enabled parameter for kimi-thinking-preview support.
-
-        Args:
-            thinking_enabled: Enable thinking mode for models that support it
-        """
-        return kimi_chat.chat_completions_create_with_session(
-            self.client,
-            model=model,
+    async def generate_content(
+        self,
+        prompt: str,
+        model_name: str = "moonshot-v1-8k",
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.3,
+        max_tokens: Optional[int] = None,
+        **kwargs
+    ) -> ModelResponse:
+        """Generate content using chat completions."""
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        return await self.chat_completions_create(
             messages=messages,
-            tools=tools,
-            tool_choice=tool_choice,
+            model=model_name,
             temperature=temperature,
-            thinking_enabled=thinking_enabled,  # CRITICAL FIX: Pass through thinking mode
+            max_tokens=max_tokens,
             **kwargs
         )
 
-
-    def generate_content(
+    async def chat_completions_create(
         self,
-        prompt: str,
-        model_name: str,
-        system_prompt: Optional[str] = None,
+        messages: List[Dict[str, str]],
+        model: str = "moonshot-v1-8k",
         temperature: float = 0.3,
-        max_output_tokens: Optional[int] = None,
-        images: Optional[list[str]] = None,
-        **kwargs,
+        max_tokens: Optional[int] = None,
+        **kwargs
     ) -> ModelResponse:
-        # Delegate to OpenAI-compatible base using Moonshot base_url
-        # Ensure non-streaming by default for MCP tools
-        kwargs.setdefault("stream", False)
-        return super().generate_content(
-            prompt=prompt,
-            model_name=self._resolve_model_name(model_name),
-            system_prompt=system_prompt,
-            temperature=temperature,
-            max_output_tokens=max_output_tokens,
-            images=images,
-            **kwargs,
-        )
+        """Create chat completion.
+
+        Args:
+            messages: List of messages
+            model: Model name
+            temperature: Temperature
+            max_tokens: Max tokens
+            **kwargs: Additional parameters
+
+        Returns:
+            Generated ModelResponse
+        """
+        if not self.client:
+            return ModelResponse(
+                content="Error: KIMI API key not configured",
+                model_name=model,
+                provider=self.get_provider_type()
+            )
+
+        try:
+            response = await self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                **kwargs
+            )
+            return ModelResponse(
+                content=response.choices[0].message.content,
+                usage=response.usage.dict() if hasattr(response.usage, 'dict') else {},
+                model_name=model,
+                provider=self.get_provider_type()
+            )
+
+        except Exception as e:
+            logger.error(f"KIMI API error: {e}")
+            return ModelResponse(
+                content=f"Error: {str(e)}",
+                model_name=model,
+                provider=self.get_provider_type()
+            )

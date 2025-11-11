@@ -8,7 +8,7 @@ import os
 # Test the capability router
 sys.path.insert(0, os.path.dirname(__file__))
 
-from src.providers.capability_router import get_router
+from src.router.minimax_m2_router import get_router
 from src.providers.capabilities import get_capabilities_for_provider
 from src.providers.base import ProviderType
 

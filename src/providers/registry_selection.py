@@ -424,15 +424,11 @@ class ProviderDiagnostics:
     _API_KEY_VARS = {
         ProviderType.KIMI: ["KIMI_API_KEY", "MOONSHOT_API_KEY"],
         ProviderType.GLM: ["GLM_API_KEY", "ZHIPUAI_API_KEY"],
-        ProviderType.CUSTOM: ["CUSTOM_API_KEY"],
-        ProviderType.OPENROUTER: ["OPENROUTER_API_KEY"],
     }
 
     _BASE_URL_VARS = {
         ProviderType.KIMI: ["KIMI_API_URL", "MOONSHOT_API_URL"],
         ProviderType.GLM: ["GLM_API_URL", "ZHIPUAI_API_URL"],
-        ProviderType.CUSTOM: ["CUSTOM_API_URL"],
-        # OPENROUTER typically does not require a base URL override
     }
 
     @classmethod
@@ -496,16 +492,13 @@ class ProviderDiagnostics:
         if not info["registered"]:
             info["reason_unavailable"] = "Provider class not registered in registry"
             info["suggestions"].append("Ensure provider_config.configure_providers() ran in the daemon")
-        elif not info["api_key_present"] and provider_type != ProviderType.CUSTOM:
+        elif not info["api_key_present"]:
             info["reason_unavailable"] = "Missing API key"
             if key_vars:
                 info["suggestions"].append(f"Set one of: {', '.join(key_vars)} in .env")
         elif info["api_key_is_placeholder"]:
             info["reason_unavailable"] = "API key appears to be a placeholder"
             info["suggestions"].append(f"Replace {key_var} with a valid key in .env")
-        elif provider_type == ProviderType.CUSTOM and not info["base_url_present"]:
-            info["reason_unavailable"] = "CUSTOM_API_URL is required for Custom provider"
-            info["suggestions"].append("Set CUSTOM_API_URL (and optionally CUSTOM_API_KEY) in .env")
         elif not info["initialized"]:
             info["reason_unavailable"] = "Provider not initialized yet"
             info["suggestions"].append("Restart or ping the daemon so providers initialize")
@@ -522,8 +515,6 @@ class ProviderDiagnostics:
         ptypes = set(getattr(reg, "_providers", {}).keys()) | {
             ProviderType.KIMI,
             ProviderType.GLM,
-            ProviderType.CUSTOM,
-            ProviderType.OPENROUTER,
         }
         return [cls.diagnose_provider(pt) for pt in ptypes]
 
@@ -545,7 +536,7 @@ class ProviderDiagnostics:
                 registered = set(data.get("registered_providers") or [])
                 initialized = set(data.get("initialized_providers") or [])
                 results: list[dict[str, Any]] = []
-                for pt in [ProviderType.KIMI, ProviderType.GLM, ProviderType.CUSTOM, ProviderType.OPENROUTER]:
+                for pt in [ProviderType.KIMI, ProviderType.GLM]:
                     base = cls.diagnose_provider(pt)
                     name = getattr(pt, "name", str(pt))
                     base["registered"] = name in registered
