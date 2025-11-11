@@ -19,9 +19,6 @@ import pybreaker
 # PHASE 2.2.3 (2025-10-21): Import concurrent session manager
 from src.utils.concurrent_session_manager import get_session_manager
 
-# ARCHITECTURE FAILURE FIX (2025-11-08): Import TimeoutConfig for model-specific timeouts
-from config.timeouts import TimeoutConfig
-
 from src.daemon.error_handling import ProviderError, ErrorCode, log_error
 
 logger = logging.getLogger(__name__)
@@ -695,30 +692,7 @@ def chat_completions_create_with_session(
         and session context (session_id, request_id, duration_seconds)
     """
     # PHASE 0.3 (2025-10-24): Use KIMI_SESSION_TIMEOUT from environment
-    # ARCHITECTURE FAILURE FIX (2025-11-08): Use model-specific timeout instead of hardcoded 25s
-    # kimi-k2-0905-preview with function calls requires 30-60s, not 25s
-    # Issue: Timeout at 25s while API succeeded at 31s (HTTP 200)
-    # Solution: Use TimeoutConfig.get_model_timeout() for adaptive timeouts
-
-    # First check for explicit environment variable override (backward compatibility)
-    env_timeout = os.getenv("KIMI_SESSION_TIMEOUT")
-    if env_timeout:
-        default_timeout = float(env_timeout)
-        logger.info(f"Kimi chat using KIMI_SESSION_TIMEOUT from env: {default_timeout}s")
-    else:
-        # Use model-specific timeout calculation
-        # Base timeout: 60s (increased from 25s to handle complex reasoning)
-        # Model multipliers from TimeoutConfig:
-        # - kimi-k2-0905-preview: 1.2x = 72s (enough for 31s API calls)
-        # - kimi-k2-thinking-preview: 1.5x = 90s
-        # - kimi-k2-turbo-preview: 0.8x = 48s
-        base_timeout = 60.0
-        default_timeout = TimeoutConfig.get_model_timeout(model, base_timeout)
-        logger.info(
-            f"Kimi chat using model-specific timeout for {model}: {default_timeout}s "
-            f"(base={base_timeout}s, multiplier={default_timeout/base_timeout:.1f}x)"
-        )
-
+    default_timeout = float(os.getenv("KIMI_SESSION_TIMEOUT", "25"))
     enforce_timeout = os.getenv("ENFORCE_SESSION_TIMEOUT", "true").lower() == "true"
 
     session_manager = get_session_manager(default_timeout=timeout_seconds or default_timeout)

@@ -69,7 +69,7 @@ class SecauditRequest(WorkflowRequest):
         """Validate security audit request parameters"""
         # Ensure security scope is provided for comprehensive audits
         if self.step_number == 1 and not self.security_scope:
-            logger.info("Security scope not provided for security audit - defaulting to general application")
+            logger.warning("Security scope not provided for security audit - defaulting to general application")
 
         # Validate compliance requirements format
         if self.compliance_requirements:

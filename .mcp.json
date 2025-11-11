@@ -1,5 +1,12 @@
 {
   "mcpServers": {
+    "git-mcp": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-git"
+      ],
+      "env": {}
+    },
     "exai-mcp": {
       "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
       "args": [
@@ -12,7 +19,8 @@
         "PYTHONIOENCODING": "utf-8",
         "LOG_LEVEL": "INFO",
         "EXAI_WS_HOST": "127.0.0.1",
-        "EXAI_WS_PORT": "3000",
+        "SHIM_LISTEN_PORT": "3005",
+        "EXAI_WS_PORT": "3004",
         "EX_SESSION_SCOPE_STRICT": "true",
         "EX_SESSION_SCOPE_ALLOW_CROSS_SESSION": "false",
         "SIMPLE_TOOL_TIMEOUT_SECS": "60",
@@ -24,11 +32,13 @@
       }
     },
     "supabase-mcp-full": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "@supabase/mcp-server-supabase@latest",
-        "--features=account,analytics,auth,database,debugging,development,docs,edge-runtime,functions,logs,migrations,monitoring,projects,realtime,security,storage,branching",
+        "--features=docs,account,database,debugging,development,functions,branching,storage",
         "--access-token=${SUPABASE_ACCESS_TOKEN}"
       ],
       "env": {

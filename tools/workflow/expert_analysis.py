@@ -656,22 +656,6 @@ class ExpertAnalysisMixin:
                     self._model_context = ModelContext(model_name)
                     self._current_model_name = model_name
                     logger.info(f"[EXPERT_ANALYSIS] Successfully switched to SYNC Kimi provider with {model_name}")
-
-                    # CRITICAL FIX (2025-11-09): Rebuild provider_kwargs for the NEW provider
-                    # The web_search tools were built for GLM at line 587, but we just switched to Kimi
-                    # We must rebuild the kwargs for Kimi since it doesn't support web_search tools
-                    try:
-                        logger.info(f"[EXPERT_DEBUG] Rebuilding websearch kwargs for new provider after provider switch")
-                        provider_kwargs, _ = build_websearch_provider_kwargs(
-                            provider_type=provider.get_provider_type(),  # Now KIMI
-                            use_websearch=self.get_request_use_websearch(request),
-                            model_name=model_name,
-                            include_event=False,
-                        )
-                        logger.info(f"[EXPERT_DEBUG] Rebuilt websearch kwargs for {provider.get_provider_type().value}: {provider_kwargs}")
-                    except Exception as e:
-                        logger.error(f"[EXPERT_DEBUG] Failed to rebuild websearch kwargs after provider switch: {e}")
-                        provider_kwargs = {}
                 else:
                     logger.error(
                         f"[EXPERT_ANALYSIS] Cannot fallback to Kimi: KIMI_API_KEY or MOONSHOT_API_KEY not configured. "

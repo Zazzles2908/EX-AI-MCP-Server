@@ -40,16 +40,21 @@ class KimiCapabilities(ProviderCapabilitiesBase):
         super().__init__(ProviderType.KIMI)
 
     def supports_websearch(self) -> bool:
-        # BUG FIX (2025-11-09): Kimi does NOT support web_search tool type
-        # Kimi only supports 'function' and 'plugin' types, not 'web_search'
-        # Users get error: "Invalid request: unknown tool type: web_search"
-        # Web search must be routed to GLM instead
-        return False
+        return os.getenv("KIMI_ENABLE_INTERNET_SEARCH", "true").strip().lower() == "true"
 
     def get_websearch_tool_schema(self, config: Dict[str, Any]) -> WebSearchSchema:
-        # Return no tools - web_search is not supported by Kimi
-        # Users should use GLM for web search functionality
-        return WebSearchSchema(None, None)
+        if not self.supports_websearch() or not config.get("use_websearch"):
+            return WebSearchSchema(None, None)
+
+        # Kimi supports builtin_function for SERVER-SIDE web search
+        # This means Kimi's API performs the search and returns results directly
+        # No client-side execution needed!
+        tools: list[dict] = [{
+            "type": "builtin_function",
+            "function": {"name": "$web_search"}
+        }]
+
+        return WebSearchSchema(tools=tools, tool_choice="auto")
 
 
 class GLMCapabilities(ProviderCapabilitiesBase):

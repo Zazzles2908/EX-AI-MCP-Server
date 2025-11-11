@@ -93,8 +93,7 @@ class FileHandler:
             # CRITICAL FIX (2025-10-17): Filter out directories to prevent upload errors
             # Only process actual files, not directories
             if not os.path.isfile(normalized_path):
-                # UX FIX: Changed to DEBUG level to reduce log noise for expected directory skips
-                logger.debug(f"Skipping non-file path: {normalized_path} (original: {file_path})")
+                logger.warning(f"Skipping non-file path: {normalized_path} (original: {file_path})")
                 processed_files.append({
                     'original_path': file_path,
                     'normalized_path': normalized_path,
@@ -128,15 +127,12 @@ class FileHandler:
                     if mime_type is None:
                         mime_type = "application/octet-stream"  # Default fallback
 
-                    # UX FIX: Add file_type parameter (was missing, causing TypeError)
-                    # Determine file_type based on context - these are user-uploaded context files
-                    file_type = "user_upload"
+                    # Upload file
                     file_id = self.storage.upload_file(
                         file_data=file_data,
                         original_name=file_name,
                         file_path=storage_path,
-                        mime_type=mime_type,
-                        file_type=file_type
+                        mime_type=mime_type
                     )
 
                     if file_id:

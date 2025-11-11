@@ -19,7 +19,8 @@
         "PYTHONIOENCODING": "utf-8",
         "LOG_LEVEL": "INFO",
         "EXAI_WS_HOST": "127.0.0.1",
-        "EXAI_WS_PORT": "8079",
+        "SHIM_LISTEN_PORT": "3005",
+        "EXAI_WS_PORT": "3004",
         "EX_SESSION_SCOPE_STRICT": "true",
         "EX_SESSION_SCOPE_ALLOW_CROSS_SESSION": "false",
         "SIMPLE_TOOL_TIMEOUT_SECS": "60",
@@ -28,6 +29,20 @@
         "GLM_TIMEOUT_SECS": "90",
         "KIMI_TIMEOUT_SECS": "120",
         "KIMI_WEB_SEARCH_TIMEOUT_SECS": "150"
+      }
+    },
+    "supabase-mcp-full": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--features=account,analytics,auth,database,debugging,development,docs,edge-runtime,functions,logs,migrations,monitoring,projects,realtime,security,storage,branching",
+        "--access-token=${SUPABASE_ACCESS_TOKEN}"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
       }
     }
   }

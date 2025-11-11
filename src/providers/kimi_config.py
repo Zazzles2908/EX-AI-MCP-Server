@@ -1,8 +1,7 @@
 """Kimi model configuration and validation.
 
-Last Updated: 2025-11-10
-Last Verified: 2025-11-10 (against platform.moonshot.ai/docs/pricing/chat)
-Added: kimi-k2-thinking, kimi-k2-thinking-turbo (official K2 thinking models)
+Last Updated: 2025-10-09
+Last Verified: 2025-10-09 (against platform.moonshot.ai documentation)
 """
 
 import logging
@@ -30,8 +29,7 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        supports_json_mode=True,
-        description="Kimi K2 2024-09 preview with 256K context, vision, and structured output",
+        description="Kimi K2 2024-09 preview with 256K context and vision",
         aliases=["kimi-k2-0905", "kimi-k2"],
     ),
     "kimi-k2-0711-preview": ModelCapabilities(
@@ -46,42 +44,8 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        supports_json_mode=True,
-        description="Kimi K2 2024-07 preview with 128K context (no vision) and structured output",
+        description="Kimi K2 2024-07 preview with 128K context (no vision)",
         aliases=["kimi-k2-0711"],
-    ),
-    # K2 Thinking models - Official models from https://platform.moonshot.ai/docs/pricing/chat
-    "kimi-k2-thinking": ModelCapabilities(
-        provider=ProviderType.KIMI,
-        model_name="kimi-k2-thinking",
-        friendly_name="Kimi",
-        context_window=262144,  # 256K = 262144 tokens (from official pricing page)
-        max_output_tokens=8192,
-        supports_images=True,  # Supports vision
-        max_image_size_mb=20.0,
-        supports_function_calling=True,  # Supports ToolCalls
-        supports_streaming=True,
-        supports_system_prompts=True,
-        supports_extended_thinking=True,  # ✅ Extended thinking support
-        supports_json_mode=True,
-        description="Kimi K2 model with extended thinking mode - 256K context with reasoning capabilities",
-        aliases=["kimi-k2-thinking", "kimi-thinking-k2"],
-    ),
-    "kimi-k2-thinking-turbo": ModelCapabilities(
-        provider=ProviderType.KIMI,
-        model_name="kimi-k2-thinking-turbo",
-        friendly_name="Kimi",
-        context_window=262144,  # 256K = 262144 tokens (from official pricing page)
-        max_output_tokens=8192,
-        supports_images=True,  # Supports vision
-        max_image_size_mb=20.0,
-        supports_function_calling=True,  # Supports ToolCalls
-        supports_streaming=True,  # High-speed (60-100 tokens/sec)
-        supports_system_prompts=True,
-        supports_extended_thinking=True,  # ✅ Extended thinking support
-        supports_json_mode=True,
-        description="Kimi K2 Turbo model with extended thinking mode - 256K high-speed context with reasoning",
-        aliases=["kimi-k2-thinking-turbo", "kimi-thinking-k2-turbo"],
     ),
     # Canonical moonshot v1 series
     "moonshot-v1-8k": ModelCapabilities(
@@ -123,8 +87,7 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_streaming=True,  # 60-100 tokens/sec
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        supports_json_mode=True,
-        description="Kimi K2 Turbo high-speed 256K (60-100 tokens/sec) with structured output",
+        description="Kimi K2 Turbo high-speed 256K (60-100 tokens/sec)",
         aliases=["kimi-k2-turbo"],
     ),
     "moonshot-v1-128k": ModelCapabilities(
@@ -250,8 +213,7 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=True,  # ✅ KEEP: Model DOES support extended thinking
-        supports_json_mode=True,
-        description="Kimi multimodal reasoning 128k with extended thinking (reasoning_content field) and structured output",
+        description="Kimi multimodal reasoning 128k with extended thinking (reasoning_content field)",
         # ❌ REMOVED (2025-11-03): thinking_mode_config dict was fiction
         # External AI fact-check: X-Moonshot-Thinking header does NOT exist
         # Thinking mode works automatically - no special headers needed
@@ -307,7 +269,6 @@ def get_capabilities(
             supports_streaming=True,
             supports_system_prompts=True,
             supports_extended_thinking=False,
-            supports_json_mode=True,
         )
     return caps
 

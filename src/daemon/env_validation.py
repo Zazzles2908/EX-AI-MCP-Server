@@ -69,66 +69,37 @@ class Validator(ABC):
     def validate_env_var(self) -> ValidationResult:
         """Validate the environment variable."""
         env_value = self.get_env_value()
-
+        
         # If the environment variable is not set and we have a default, use the default
         if not env_value and self.default is not None:
-            # UX FIX: Only log important environment variables, suppress noise
-            # Skip logging for internal/advanced configuration variables
-            if self._is_important_variable():
-                logger.info(f"[CONFIG] {self.name}: {self.description or 'Optional setting'} (default: {self.default})")
+            logger.info(f"Environment variable {self.name} not set, using default: {self.default}")
             return ValidationResult(is_valid=True, value=self.default)
-
+        
         # If the environment variable is not set and we don't have a default, it's an error
         if not env_value:
             error_msg = f"Environment variable {self.name} is not set"
             suggestion = f"Set {self.name} in your environment or configuration"
             if self.severity == ValidationSeverity.CRITICAL:
-                return ValidationResult(is_valid=False, value=None, error_message=error_msg,
+                return ValidationResult(is_valid=False, value=None, error_message=error_msg, 
                                       severity=self.severity, suggestion=suggestion)
             else:
                 logger.warning(f"{error_msg}, using default: {self.default}")
-                return ValidationResult(is_valid=True, value=self.default, error_message=error_msg,
+                return ValidationResult(is_valid=True, value=self.default, error_message=error_msg, 
                                       severity=self.severity, suggestion=suggestion)
-
+        
         # Validate the provided value
         result = self.validate(env_value)
-
+        
         if not result.is_valid:
             if self.severity == ValidationSeverity.CRITICAL:
                 logger.error(f"Critical validation error for {self.name}: {result.error_message}")
                 return result
             else:
                 logger.warning(f"Validation error for {self.name}: {result.error_message}, using default: {self.default}")
-                return ValidationResult(is_valid=True, value=self.default, error_message=result.error_message,
+                return ValidationResult(is_valid=True, value=self.default, error_message=result.error_message, 
                                       severity=self.severity, suggestion=result.suggestion)
-
+        
         return result
-
-    def _is_important_variable(self) -> bool:
-        """
-        Determine if this environment variable is important enough to log.
-
-        Returns:
-            True if the variable should be logged, False if it should be suppressed
-        """
-        # List of important variables that users should know about
-        important_vars = {
-            'SUPABASE_URL',
-            'SUPABASE_ANON_KEY',
-            'SUPABASE_SERVICE_ROLE_KEY',
-            'GLM_API_KEY',
-            'KIMI_API_KEY',
-            'JWT_SECRET_KEY',
-            'EXAI_WS_TOKEN',
-            'DEFAULT_MODEL',
-            'LOG_LEVEL'
-        }
-
-        # Also include variables with descriptions
-        if self.description:
-            return True
-
-        return self.name in important_vars
 
 
 class PortValidator(Validator):

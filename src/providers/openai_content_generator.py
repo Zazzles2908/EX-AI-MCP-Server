@@ -274,9 +274,6 @@ class OpenAIContentGenerator:
             completion_params["tool_choice"] = kwargs["tool_choice"]
         if "stream" in kwargs:
             completion_params["stream"] = kwargs["stream"]
-        if "response_format" in kwargs and kwargs["response_format"]:
-            # Support for structured output (JSON schema)
-            completion_params["response_format"] = kwargs["response_format"]
         if isinstance(kwargs.get("extra_headers"), dict):
             completion_params["extra_headers"] = kwargs["extra_headers"]
         if isinstance(kwargs.get("extra_body"), dict):

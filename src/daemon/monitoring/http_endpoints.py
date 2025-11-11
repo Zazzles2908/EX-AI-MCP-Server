@@ -341,9 +341,7 @@ async def get_cache_metrics(request: web.Request) -> web.Response:
         table_name = table_map.get(aggregation, 'cache_metrics_1min')
 
         # Build query for monitoring schema
-        # Note: Supabase Python client doesn't support .schema() method
-        # The 'monitoring' tables should be in the public schema
-        query = client.table(table_name).select("*")
+        query = client.schema('monitoring').table(table_name).select("*")
 
         # Apply time filter
         if aggregation == 'raw':

@@ -78,16 +78,6 @@ def build_payload(
     if kwargs.get("tool_choice"):
         payload["tool_choice"] = kwargs["tool_choice"]
 
-    # CRITICAL FIX (2025-11-09): Handle response_format for structured output
-    # GLM supports response_format parameter for JSON schema validation
-    if "response_format" in kwargs:
-        response_format = kwargs["response_format"]
-        if response_format:
-            # Support both dict and object formats
-            payload["response_format"] = response_format
-            logger.debug(f"[GLM_PROVIDER] build_payload: Added response_format to payload")
-        kwargs = {k: v for k, v in kwargs.items() if k != "response_format"}
-
     # CRITICAL FIX (2025-11-05): Filter out thinking_mode parameter from kwargs
     # This prevents thinking_mode from being passed to Completions.create()
     if "thinking_mode" in kwargs:
@@ -98,13 +88,6 @@ def build_payload(
             logger.debug(f"[GLM_PROVIDER] build_payload: thinking_mode disabled or empty")
         # Remove thinking_mode from kwargs to prevent it from being added to payload
         kwargs = {k: v for k, v in kwargs.items() if k != "thinking_mode"}
-
-    # CRITICAL FIX (2025-11-08): Filter out continuation_id parameter from kwargs
-    # GLM SDK doesn't support continuation_id, so we need to remove it
-    if "continuation_id" in kwargs:
-        logger.debug(f"[GLM_PROVIDER] build_payload: continuation_id parameter removed (not supported by GLM SDK)")
-        # Remove continuation_id from kwargs to prevent it from being added to payload
-        kwargs = {k: v for k, v in kwargs.items() if k != "continuation_id"}
 
     # Add any remaining kwargs to payload
     for key, value in kwargs.items():
@@ -390,16 +373,6 @@ def chat_completions_create(
     if tool_choice:
         payload["tool_choice"] = tool_choice
 
-    # CRITICAL FIX (2025-11-09): Handle response_format for structured output
-    # GLM supports response_format parameter for JSON schema validation
-    if "response_format" in kwargs:
-        response_format = kwargs["response_format"]
-        if response_format:
-            # Support both dict and object formats
-            payload["response_format"] = response_format
-            logger.info(f"[GLM_PROVIDER] chat_completions: Added response_format to payload")
-        kwargs = {k: v for k, v in kwargs.items() if k != "response_format"}
-
     # Add any additional kwargs
     # CRITICAL FIX (2025-11-05): Transform thinking_mode parameter for GLM provider
     # GLM expects thinking mode as {"thinking": {"type": "enabled"}} format, not thinking_mode parameter
@@ -424,12 +397,6 @@ def chat_completions_create(
         # GLM SDK doesn't support streaming callbacks (on_chunk)
         if key == "on_chunk":
             logger.warning(f"[GLM_PROVIDER] Skipping on_chunk parameter (streaming not supported) - value type: {type(value)}")
-            continue
-
-        # CRITICAL FIX (2025-11-08): Filter out continuation_id parameter
-        # GLM SDK doesn't support continuation_id
-        if key == "continuation_id":
-            logger.debug(f"[GLM_PROVIDER] Skipping continuation_id parameter (not supported by GLM SDK)")
             continue
 
         # Filter out other thinking-related parameters that GLM doesn't understand

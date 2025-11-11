@@ -373,7 +373,7 @@ class SupabaseUploadManager:
         sha256_hash: str,
         tags: list
     ) -> str:
-        """Create metadata record in database (optional - table may not exist)."""
+        """Create metadata record in database."""
         data = {
             'file_id': file_id,
             'user_id': user_id,
@@ -386,14 +386,9 @@ class SupabaseUploadManager:
             'tags': tags,
             'access_count': 0
         }
-
-        try:
-            result = self.client.table('file_metadata').insert(data).execute()
-            return result.data[0]['id']
-        except Exception as e:
-            # Table may not exist - silently continue without logging
-            logger.warning(f"Could not create file metadata record in 'file_metadata' table (table may not exist): {e}")
-            return "metadata_logging_disabled"
+        
+        result = self.client.table('file_metadata').insert(data).execute()
+        return result.data[0]['id']
     
     def create_metadata_reference(
         self,
@@ -402,7 +397,7 @@ class SupabaseUploadManager:
         filename: str,
         tags: Optional[list]
     ) -> str:
-        """Create new metadata record referencing existing file (optional - table may not exist)."""
+        """Create new metadata record referencing existing file."""
         data = {
             'file_id': existing_file['file_id'],
             'user_id': user_id,
@@ -415,14 +410,9 @@ class SupabaseUploadManager:
             'tags': tags or [],
             'access_count': 0
         }
-
-        try:
-            result = self.client.table('file_metadata').insert(data).execute()
-            return result.data[0]['id']
-        except Exception as e:
-            # Table may not exist - silently continue without logging
-            logger.warning(f"Could not create file metadata reference in 'file_metadata' table (table may not exist): {e}")
-            return "metadata_logging_disabled"
+        
+        result = self.client.table('file_metadata').insert(data).execute()
+        return result.data[0]['id']
     
     def track_operation(
         self,
@@ -432,7 +422,7 @@ class SupabaseUploadManager:
         metadata: Optional[Dict] = None,
         error_message: Optional[str] = None
     ) -> str:
-        """Track file operation in database (optional - table may not exist)."""
+        """Track file operation in database."""
         data = {
             'user_id': user_id,
             'operation_type': operation_type,
@@ -440,14 +430,9 @@ class SupabaseUploadManager:
             'metadata': metadata or {},
             'error_message': error_message
         }
-
-        try:
-            result = self.client.table('file_operations').insert(data).execute()
-            return result.data[0]['id']
-        except Exception as e:
-            # Table may not exist - silently continue without logging
-            logger.warning(f"Could not log file operation to 'file_operations' table (table may not exist): {e}")
-            return "operation_logging_disabled"
+        
+        result = self.client.table('file_operations').insert(data).execute()
+        return result.data[0]['id']
     
     def update_operation(
         self,
@@ -456,7 +441,7 @@ class SupabaseUploadManager:
         metadata: Optional[Dict] = None,
         error_message: Optional[str] = None
     ):
-        """Update operation status (optional - table may not exist)."""
+        """Update operation status."""
         data = {'status': status}
         if metadata:
             data['metadata'] = metadata
@@ -464,12 +449,8 @@ class SupabaseUploadManager:
             data['error_message'] = error_message
         if status in ['completed', 'failed']:
             data['completed_at'] = datetime.utcnow().isoformat()
-
-        try:
-            self.client.table('file_operations').update(data).eq('id', operation_id).execute()
-        except Exception as e:
-            # Table may not exist - silently continue without logging
-            logger.warning(f"Could not update file operation in 'file_operations' table (table may not exist): {e}")
+        
+        self.client.table('file_operations').update(data).eq('id', operation_id).execute()
     
     def cleanup_on_failure(self, bucket: str, storage_path: Optional[str]):
         """Clean up partial uploads on failure."""
