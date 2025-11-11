@@ -461,6 +461,9 @@ async def serve_connection(
             # Continue with custom protocol handling (hello_ack, etc.)
             # Original code after this point handles custom protocol
 
+        # Assign first_msg to hello for compatibility with existing code
+        hello = first_msg
+
         # Authenticate token (legacy EXAI_WS_TOKEN)
         token = hello.get("token", "") or ""  # PHASE 2.3 FIX (2025-10-25): Handle None token
         current_auth_token = await auth_token_manager.get()

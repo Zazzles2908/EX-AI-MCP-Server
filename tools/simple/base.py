@@ -29,15 +29,6 @@ from utils.progress_utils.messages import ProgressMessages
 # Import the registry for model selection
 from src.providers.registry_core import get_registry_instance
 
-# Create a backward-compatible wrapper class
-class _Registry:
-    @staticmethod
-    def call_with_fallback(category, call_fn, hints=None):
-        """Execute call_fn with fallback logic."""
-        registry_instance = get_registry_instance()
-        from src.providers.registry_selection import call_with_fallback as _call_with_fallback
-        return _call_with_fallback(registry_instance, category, call_fn, hints)
-
 
 class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixin, BaseTool):
     """
@@ -670,7 +661,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     logger.warning(f"[DEBUG] Using asyncio.run() for model '{_model_name}' (sync context detected)")
                     return asyncio.run(_call_with_model_async(_model_name))
 
-            # Honor explicit model first; only use fallback chain when model=='auto' or on failure if enabled
+            # Honor explicit model first; only use hybrid router when model=='auto' or on failure if enabled
             _fb_on_failure = _os.getenv("FALLBACK_ON_FAILURE", "true").strip().lower() == "true"
             _is_auto = (self._current_model_name or "").strip().lower() == "auto"
 
@@ -771,69 +762,14 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                             )
                 except Exception as _explicit_err:
                     if _fb_on_failure:
-                        logger.warning(f"Explicit model call failed; entering fallback chain: {str(_explicit_err)}")
-                        tool_category = self.get_model_category()
-                        logger.info(f"Using fallback chain for category {tool_category.name}")
-                        # Derive simple hints for context-aware routing
-                        hints = []
-                        try:
-                            u = (self.get_request_prompt(request) or "").lower()
-                            if any(k in u for k in ("image", "diagram", "vision")):
-                                hints.append("vision")
-                            if any(k in u for k in ("think", "reason", "chain of thought", "deep")):
-                                hints.append("deep_reasoning")
-                        except Exception:
-                            pass
-                        try:
-                            if estimated_tokens and int(estimated_tokens) > 48000:
-                                hints.append("long_context")
-                                hints.append(f"estimated_tokens:{int(estimated_tokens)}")
-                        except Exception:
-                            pass
-                        try:
-                            user_prompt_raw = self.get_request_prompt(request) or ""
-                            raw_tokens = estimate_tokens(user_prompt_raw)
-                            if int(raw_tokens) > 48000:
-                                hints.append("long_context")
-                                hints.append(f"estimated_tokens:{int(raw_tokens)}")
-                        except Exception:
-                            pass
-                        model_response = _Registry.call_with_fallback(tool_category, _call_with_model, hints=hints)
-                        # Sync the model context and current name to the selected model
-                        self._current_model_name = selected_model
-                        self._model_context.model_name = selected_model
+                        logger.warning(f"Explicit model call failed; entering hybrid router fallback: {str(_explicit_err)}")
+                        model_response = await self._route_and_execute(request, _call_with_model, is_retry=True)
                     else:
                         raise
             else:
-                # Auto mode: use category-aware fallback chain
-                tool_category = self.get_model_category()
-                logger.info(f"Using fallback chain for category {tool_category.name}")
-                hints = []
-                try:
-                    u = (self.get_request_prompt(request) or "").lower()
-                    if any(k in u for k in ("image", "diagram", "vision")):
-                        hints.append("vision")
-                    if any(k in u for k in ("think", "reason", "chain of thought", "deep")):
-                        hints.append("deep_reasoning")
-                except Exception:
-                    pass
-                try:
-                    if estimated_tokens and int(estimated_tokens) > 48000:
-                        hints.append("long_context")
-                        hints.append(f"estimated_tokens:{int(estimated_tokens)}")
-                except Exception:
-                    pass
-                try:
-                    user_prompt_raw = self.get_request_prompt(request) or ""
-                    raw_tokens = estimate_tokens(user_prompt_raw)
-                    if int(raw_tokens) > 48000:
-                        hints.append("long_context")
-                        hints.append(f"estimated_tokens:{int(raw_tokens)}")
-                except Exception:
-                    pass
-                model_response = _Registry.call_with_fallback(tool_category, _call_with_model, hints=hints)
-                self._current_model_name = selected_model
-                self._model_context.model_name = selected_model
+                # Auto mode: use hybrid router for intelligent routing
+                logger.info("Using hybrid router for auto model selection")
+                model_response = await self._route_and_execute(request, _call_with_model, is_retry=False)
 
             logger.info(f"Received response from {provider.get_provider_type().value} API for {self.get_name()}")
             send_progress(ProgressMessages.processing_response())
@@ -1550,3 +1486,111 @@ Please provide a thoughtful, comprehensive response:"""
             self.get_websearch_guidance = original_guidance
 
         return full_prompt
+
+    async def _route_and_execute(
+        self,
+        request,
+        call_fn,
+        is_retry: bool = False
+    ):
+        """
+        Route request using hybrid router and execute with selected model.
+
+        This method replaces the old call_with_fallback logic with the new
+        hybrid router that combines MiniMax M2 intelligence with RouterService
+        fallback for production reliability.
+
+        Args:
+            request: The validated request object
+            call_fn: Function to call with selected model (e.g., _call_with_model)
+            is_retry: True if this is a retry after explicit model failure
+
+        Returns:
+            Model response from the selected provider
+        """
+        from src.router.hybrid_router import get_hybrid_router
+
+        # Get hybrid router instance
+        hybrid_router = get_hybrid_router()
+
+        # Build request context for routing
+        # Include relevant details from the request for intelligent routing
+        request_context = {
+            "tool_name": self.get_name(),
+            "requested_model": self._current_model_name,
+            "images": self.get_request_images(request),
+            "files": self.get_request_files(request),
+            "use_websearch": self.get_request_use_websearch(request),
+            "thinking_mode": self.get_request_thinking_mode(request),
+            "temperature": self.get_request_temperature(request),
+            "continuation_id": self.get_request_continuation_id(request),
+            "is_retry": is_retry,
+        }
+
+        # Log routing attempt
+        logger.info(
+            f"[HYBRID_ROUTER] Routing request for tool '{self.get_name()}' "
+            f"(auto mode, is_retry={is_retry})"
+        )
+
+        try:
+            # Use hybrid router to get routing decision
+            route_decision = await hybrid_router.route_request(
+                tool_name=self.get_name(),
+                request_context=request_context,
+            )
+
+            # Extract selected model from routing decision
+            selected_model = route_decision.chosen
+            routing_method = route_decision.meta.get("routing_method", "unknown") if route_decision.meta else "unknown"
+
+            logger.info(
+                f"[HYBRID_ROUTER] Selected model: {selected_model} via {routing_method} "
+                f"(requested: {route_decision.requested})"
+            )
+
+            # Update instance variables to match selected model
+            self._current_model_name = selected_model
+            self._model_context.model_name = selected_model
+
+            # Get provider for selected model
+            registry_instance = get_registry_instance()
+            provider = registry_instance.get_provider_for_model(selected_model)
+
+            if not provider:
+                raise RuntimeError(f"No provider available for selected model '{selected_model}'")
+
+            # Update provider reference
+            # Note: The call_fn closure will update the provider variable
+
+            # Execute with selected model
+            model_response = call_fn(selected_model)
+
+            # Log successful execution
+            logger.info(
+                f"[HYBRID_ROUTER] Successfully executed with {selected_model} "
+                f"via {routing_method}"
+            )
+
+            return model_response
+
+        except Exception as e:
+            logger.error(f"[HYBRID_ROUTER] Routing execution failed: {e}")
+
+            # If hybrid routing fails, fall back to basic auto selection
+            logger.warning("[HYBRID_ROUTER] Falling back to basic auto model selection")
+            try:
+                # Import and use router service for basic fallback
+                from src.router.service import RouterService
+                router_service = RouterService()
+                basic_decision = router_service.choose_model("auto")
+                fallback_model = basic_decision.chosen
+
+                logger.info(f"[HYBRID_ROUTER] Fallback model: {fallback_model}")
+                self._current_model_name = fallback_model
+                self._model_context.model_name = fallback_model
+
+                return call_fn(fallback_model)
+            except Exception as fallback_error:
+                logger.error(f"[HYBRID_ROUTER] Fallback also failed: {fallback_error}")
+                raise e

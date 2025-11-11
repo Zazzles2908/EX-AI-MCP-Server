@@ -11,7 +11,7 @@ Key Components:
 - Telemetry recording and retrieval
 - Helper methods for specific providers (Kimi, GLM)
 
-For model selection and fallback logic, see registry_selection.py
+For model selection and fallback logic, see src/router/hybrid_router.py
 For configuration and health monitoring, see registry_config.py
 """
 
@@ -567,57 +567,12 @@ class ModelProviderRegistry:
             self._telemetry.clear()
 
     # ================================================================================
-    # Model Selection and Fallback (Delegated to registry_selection.py)
+    # Model Selection and Fallback
     # ================================================================================
-
-    
-    def get_preferred_fallback_model(self, tool_category: Optional["ToolModelCategory"] = None) -> str:
-        """Select a reasonable fallback model across providers."""
-        from src.providers.registry_selection import get_preferred_fallback_model
-
-        return get_preferred_fallback_model(self, tool_category)
-
-    
-    def get_best_provider_for_category(
-        cls, category: "ToolModelCategory", allowed_models: list[str]
-    ) -> Optional[tuple[ModelProvider, str]]:
-        """Select best provider and model for a functional category."""
-        from src.providers.registry_selection import get_best_provider_for_category
-
-        return get_best_provider_for_category(self, category, allowed_models)
-
-    
-    def _get_allowed_models_for_provider(self, provider: ModelProvider, provider_type: ProviderType) -> list[str]:
-        """Return canonical model names supported by a provider after restriction filtering."""
-        from src.providers.registry_selection import _get_allowed_models_for_provider
-
-        return _get_allowed_models_for_provider(provider, provider_type)
-
-    
-    def _auggie_fallback_chain(
-        cls,
-        category: Optional["ToolModelCategory"],
-        hints: Optional[list[str]] = None,
-    ) -> list[str]:
-        """Return a prioritized list of candidate models for a category."""
-        from src.providers.registry_selection import _auggie_fallback_chain
-
-        return _auggie_fallback_chain(self, category, hints)
-
-
-    @classmethod
-    def call_with_fallback(
-        cls,
-        category: Optional["ToolModelCategory"],
-        call_fn,
-        hints: Optional[list[str]] = None,
-    ):
-        """Execute call_fn(model_name) over a category-aware fallback chain."""
-        from src.providers.registry_selection import call_with_fallback as _call_with_fallback
-
-        # Get the singleton registry instance and delegate to the selection module
-        registry_instance = get_registry_instance()
-        return _call_with_fallback(registry_instance, category, call_fn, hints)
+    # DELEGATED TO HYBRID ROUTER (see src/router/hybrid_router.py)
+    # - Uses MiniMax M2 for intelligent routing when available
+    # - Falls back to RouterService for reliability
+    # This replaces the old registry_selection.py module
 
 
 # DEPRECATED: Singleton pattern removed
@@ -741,18 +696,3 @@ def get_available_model_names(provider_type: Optional[ProviderType] = None) -> l
     return registry.get_available_model_names(provider_type=provider_type)
 
 
-def get_preferred_fallback_model(tool_category: Optional["ToolModelCategory"] = None) -> str:
-    """
-    Select a reasonable fallback model across providers.
-
-    DEPRECATED: Creates a new instance each time.
-    Use: registry = ModelProviderRegistry(); registry.get_preferred_fallback_model()
-
-    Args:
-        tool_category: Optional tool category for model selection
-
-    Returns:
-        Name of the preferred fallback model
-    """
-    registry = get_registry_instance()
-    return registry.get_preferred_fallback_model(tool_category=tool_category)

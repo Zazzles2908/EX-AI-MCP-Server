@@ -57,8 +57,9 @@ A production-ready MCP (Model Context Protocol) server with intelligent routing 
 | **Configure features** | [docs/01_Core_Architecture/02_SDK_Integration.md](docs/01_Core_Architecture/02_SDK_Integration.md) |
 | **Deploy to production** | [docs/02_Service_Components/02_Docker.md](docs/02_Service_Components/02_Docker.md) |
 | **Troubleshoot issues** | [docs/guides/](docs/guides/) |
+| **See current status** | [docs/reports/EXAI_MCP_STATUS_REPORT.md](docs/reports/EXAI_MCP_STATUS_REPORT.md) |
 | **Track current work** | [docs/fix_implementation/WEEKLY_FIX_ROADMAP_2025-10-20.md](docs/fix_implementation/WEEKLY_FIX_ROADMAP_2025-10-20.md) |
-| **See what's been fixed** | [docs/fix_implementation/](docs/fix_implementation/) |
+| **See what's been fixed** | [docs/reports/](docs/reports/) |
 
 ### 📖 Documentation Structure
 
@@ -68,6 +69,14 @@ A production-ready MCP (Model Context Protocol) server with intelligent routing 
 - **[docs/03_Data_Management/](docs/03_Data_Management/)** - User auth, tools/functions, file storage
 - **[docs/05_CURRENT_WORK/](docs/05_CURRENT_WORK/)** - Active implementation phases, strategic plans, completion reports
 - **[docs/guides/](docs/guides/)** - How-to guides and best practices
+  - [MCP Configuration Guide](docs/guides/MCP_CONFIGURATION_GUIDE.md)
+  - [Native ClaudeCode Setup](docs/guides/NATIVE_CLAUDECODE_SETUP.md)
+  - [Supabase Setup Guide](docs/guides/SUPABASE_MCP_SETUP_GUIDE.md)
+  - [Supabase Testing Guide](docs/guides/SUPABASE_MCP_TESTING_GUIDE.md)
+- **[docs/reports/](docs/reports/)** - Operational reports and status updates
+  - [EXAI MCP Status Report](docs/reports/EXAI_MCP_STATUS_REPORT.md)
+  - [Completeness Verification](docs/reports/FINAL_COMPLETENESS_VERIFICATION.md)
+  - [Docker Operational Report](docs/reports/DOCKER_OPERATIONAL_REPORT.md)
 
 ### 📋 Comprehensive Documentation System (NEW!)
 

@@ -1,233 +1,612 @@
-# EXAI MCP Server - Claude Code Configuration
+# EX-AI-MCP-Server - Claude Code Configuration
+**Last Updated**: 2025-11-12
+**Status**: WebSocket MCP Server Development Platform 🚀
 
-> **Agent-Based MCP Configuration for EXAI System**  
-> Version: 6.0.0 | Last Updated: 2025-11-11
+## Project Overview
 
-## Overview
+**EX-AI-MCP-Server** is a **WebSocket-based Model Context Protocol (MCP) server** that bridges standard MCP protocol with EX-AI's custom WebSocket protocol. This project serves as the foundation for intelligent AI agent coordination and tool orchestration.
 
-This project integrates Claude Code with EXAI MCP Server for AI-powered development workflows.
+### Core Purpose
 
-### What's Configured
-- **Models**: GLM-4.6 & Kimi K2 for enhanced code understanding
-- **MCP Server**: 29 AI-powered tools
-- **Routing**: Intelligent model selection
-- **GitHub MCP**: Full git operations
-- **Supabase MCP**: Data persistence
-- **No Prompts**: Auto-approved operations
+This project implements:
+- **WebSocket Protocol Translation**: Converts MCP standard to custom EX-AI protocol
+- **AI Provider Integration**: GLM, KIMI, and MiniMax API orchestration
+- **Session Management**: Multi-user, multi-session coordination
+- **Tool Execution Framework**: Distributed tool execution across AI providers
+- **Real-time Monitoring**: Performance metrics, health checks, and observability
 
-## Quick Start
-
-### 1. Set Environment Variables
-```bash
-# Windows
-$env:GLM_API_KEY="your_key"
-$env:KIMI_API_KEY="your_key"
-
-# Linux/Mac
-export GLM_API_KEY="your_key"
-export KIMI_API_KEY="your_key"
-```
-
-### 2. Start Development
-```bash
-# Open in VSCode
-code .
-
-# Start using MCP tools via @-mentions:
-# @exai-mcp chat "Analyze this code"
-# @gh-mcp gh_repo_list
-# @supabase-mcp-full list_projects
-```
-
-### 3. Available Agents
-- **@glm-coder** - Primary coding (GLM-4.6)
-- **@exai-validator** - Code review & validation
-- **@kimi-analyzer** - Large file analysis (Kimi K2)
-- **@glm-architect** - Architecture decisions
-
-## Development Workflow
-
-### Core Principles
-1. **Use EXAI throughout** - Every task uses EXAI for analysis, fixing, and verification
-2. **Fix issues immediately** - Don't just identify, fix right away
-3. **Security first** - No hardcoded credentials
-4. **Professional standards** - A+ quality, industry best practices
-
-### Code Quality Standards
-- ✅ 80%+ test coverage
-- ✅ Type hints on all public APIs
-- ✅ Comprehensive error handling
-- ✅ Clean imports and minimal dependencies
-- ✅ No TODO/FIXME comments
-
-### Root Directory Organization
-- **Maximum 5 files** at root:
-  1. `README.md` - Project overview
-  2. `CONTRIBUTING.md` - Contribution guidelines
-  3. `LICENSE` - Project license
-  4. `CHANGELOG.md` - Version history
-  5. `CLAUDE.md` - This file
-
-- **All other files** in appropriate subdirectories:
-  - `src/` - Source code
-  - `tests/` - Test files
-  - `docs/` - Documentation
-  - `scripts/` - Scripts
-  - `config/` - Configuration
-
-## File Structure
+### System Architecture
 
 ```
-c:\Project\EX-AI-MCP-Server\
-├── src/                      # Source code
-│   ├── daemon/              # WebSocket daemon
-│   ├── providers/           # AI providers (GLM, Kimi)
-│   ├── storage/             # Storage layer
-│   └── server.py            # MCP server entry point
-├── tools/                   # Tool implementations
-├── scripts/                 # Scripts
-├── tests/                   # Test files
-├── utils/                   # Utilities
-├── docs/                    # Documentation
-└── logs/                    # Log files
+┌─────────────────────────────────────────────────────────────┐
+│  Claude Code (MCP Client)                                    │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  WebSocket Shim (Port 3005) - run_ws_shim.py                │
+│  • Protocol Translation                                     │
+│  • Message Routing                                          │
+│  • Session Management                                       │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  EX-AI Daemon (Docker) - Port 3010                           │
+│  • Provider Integration (GLM, KIMI, MiniMax)                │
+│  • Tool Execution                                           │
+│  • Route Management                                         │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+         ┌───────────┴───────────┐
+         ▼                       ▼
+    AI Providers            Tool Ecosystem
+    • GLM                   • Analysis Tools
+    • KIMI                  • Planning Tools
+    • MiniMax               • Routing Intelligence
 ```
 
-## Testing
+### Port Configuration
 
-### Run Tests
-```bash
-# Quick unit tests
-python run_tests.py --quick
-
-# Full test suite with coverage
-python run_tests.py --coverage
-
-# Single module
-python run_tests.py --module <module_name>
-
-# Detailed coverage analysis
-python run_tests.py --coverage-analysis
-```
-
-### System Management
-```bash
-# Check system health
-python system_manager.py --status
-
-# Validate configuration
-python system_manager.py --validate
-
-# Generate dashboard
-python system_manager.py --dashboard
-```
-
-## System Status
-
-### Components
-- **WebSocket Daemon**: Running on port 3000
-- **Tools Available**: 2 (chat, analyze)
-- **GLM Provider**: ✅ Active
-- **Kimi Provider**: ⚠️ Requires auth check
-
-### Health Check
-```bash
-cat logs/ws_daemon.health.json
-```
-
-## Configuration
-
-### Centralized Config
-All configuration in `src/config/settings.py` - single source of truth:
-- No hardcoded values
-- Use `config.ws_port`, `config.ws_host`, etc.
-- Prevents configuration drift
-
-### Secrets Management
-- Use `secrets.get_jwt_token("claude")` - not hardcoded
-- All tokens in environment variables
-- No secrets in source code
-
-## Best Practices
-
-### Error Handling
-- Use specific exception types
-- Log errors with context
-- Provide actionable error messages
-- Never swallow exceptions silently
-- Always handle file I/O errors
-
-### Import Management
-- One class/module per file (when reasonable)
-- Clear separation of concerns
-- Single responsibility principle
-- Proper type hints
-
-### Security
-- Zero tolerance for hardcoded credentials
-- No JWT tokens in source code
-- No secrets in console output
-- Use Supabase for secure storage
-
-## Troubleshooting
-
-### Daemon Issues
-```bash
-# Check daemon status
-cat logs/ws_daemon.health.json
-
-# Check daemon logs
-tail -f logs/ws_daemon.log
-
-# Restart daemon
-python scripts/ws/run_ws_daemon.py
-```
-
-### Import Errors
-```bash
-# Clear Python cache
-find . -type d -name __pycache__ -exec rm -rf {} +
-find . -name "*.pyc" -delete
-```
-
-### Provider Issues
-```bash
-# Test GLM provider
-python -c "from src.providers.glm_provider import GLMProvider; ..."
-
-# Test Kimi provider
-python -c "from src.providers.kimi import KimiProvider; ..."
-```
-
-## Documentation
-
-### Main Documentation
-- **[documents/01-architecture-overview/](documents/01-architecture-overview/)** - System architecture
-- **[documents/02-database-integration/](documents/02-database-integration/)** - Supabase integration
-- **[documents/03-security-authentication/](documents/03-security-authentication/)** - Security & auth
-- **[documents/04-api-tools-reference/](documents/04-api-tools-reference/)** - API & tools
-- **[documents/05-operations-management/](documents/05-operations-management/)** - Operations
-- **[documents/06-development-guides/](documents/06-development-guides/)** - Development
-
-## Quality Gates
-
-Before marking any task complete:
-- [ ] Used EXAI for analysis
-- [ ] Used EXAI for fixes
-- [ ] Verified with EXAI
-- [ ] No hardcoded values
-- [ ] Proper error handling
-- [ ] Security review passed
-- [ ] Documentation updated
-- [ ] Tests passing
-- [ ] 80%+ code coverage
-
-## Support
-
-For issues and questions:
-- Check daemon logs in `logs/`
-- Review system health: `logs/ws_daemon.health.json`
-- Consult documentation in `docs/`
+| Port | Service | Purpose |
+|------|---------|---------|
+| 3005 | WebSocket Shim | MCP client connections |
+| 3010 | EX-AI Daemon | Internal WebSocket daemon |
+| 3001 | Monitoring Dashboard | Web UI for system status |
+| 3002 | Health Check | HTTP health endpoint |
+| 3003 | Prometheus Metrics | Metrics collection |
 
 ---
 
-**Status**: ✅ Operational | **Version**: 6.0.0
+## 🛠️ Available MCP Tools
+
+### Current Status ⚠️
+- ✅ **git-mcp** - Connected (uvx version)
+- ✅ **sequential-thinking** - Connected
+- ✅ **memory-mcp** - Connected
+- ❌ **exai-mcp** - Failed (check if daemon is running)
+- ❌ **filesystem-mcp** - Failed (check npx dependencies)
+- ❌ **mermaid-mcp** - Failed (check package installation)
+
+### Tool Details
+
+#### 1. exai-mcp (⚠️ Requires Daemon)
+**Purpose**: The core WebSocket MCP server
+**Command**: Python WebSocket shim
+**Configuration**:
+- Port: 3010 (daemon) / 3005 (shim)
+- Environment: Full GLM, KIMI, MiniMax config
+- Token: Configured for authentication
+
+**Troubleshooting**:
+- Check if Docker daemon is running: `docker ps | grep exai-mcp-server`
+- Verify port 3010 is open: `curl http://127.0.0.1:3002/health`
+- Check .venv activation: Ensure `C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe` exists
+
+#### 2. git-mcp (✅ Working)
+**Purpose**: Version control operations
+**Command**: uvx mcp-server-git
+**Usage**: Standard git operations through MCP protocol
+
+#### 3. sequential-thinking (✅ Working)
+**Purpose**: Deep analysis and problem-solving
+**Command**: npx @modelcontextprotocol/server-sequential-thinking
+**Usage**: Complex reasoning, multi-step analysis
+
+#### 4. memory-mcp (✅ Working)
+**Purpose**: Knowledge graph and persistent memory
+**Command**: npx @modelcontextprotocol/server-memory
+**Usage**: Store and retrieve contextual information
+
+#### 5. filesystem-mcp (❌ Check Required)
+**Purpose**: File system access
+**Command**: npx @modelcontextprotocol/server-filesystem
+**Paths**: /c, /c/Users, /c/Project, /c/Project/EX-AI-MCP-Server, etc.
+
+**Troubleshooting**:
+- Install package: `npx -y @modelcontextprotocol/server-filesystem`
+- Check npm: `npm --version`
+- Verify npx: `npx --version`
+
+#### 6. mermaid-mcp (❌ Check Required)
+**Purpose**: Generate architecture diagrams
+**Command**: npx @narasimhaponnada/mermaid-mcp-server
+**Usage**: Visualize flows, architecture, system diagrams
+
+**Troubleshooting**:
+- Package detected: mermaid-mcp 1.0.2 ✅
+- Test directly: `npx -y @narasimhaponnada/mermaid-mcp-server`
+
+---
+
+## 🎯 Agent Responsibilities in EX-AI-MCP-Server
+
+### Primary Tasks
+
+#### 1. **WebSocket Protocol Development**
+- Debug protocol translation issues
+- Optimize message routing performance
+- Implement new MCP features
+- Fix connection stability issues
+
+#### 2. **AI Provider Integration**
+- Integrate new AI providers (GLM, KIMI, MiniMax)
+- Optimize routing algorithms
+- Implement load balancing
+- Manage API key rotation
+
+#### 3. **Tool Execution Framework**
+- Develop new tool execution engines
+- Implement timeout and retry logic
+- Create monitoring and alerting
+- Optimize execution performance
+
+#### 4. **Session & State Management**
+- Multi-user session coordination
+- State persistence and recovery
+- Memory leak detection
+- Resource cleanup
+
+#### 5. **Monitoring & Observability**
+- Real-time performance metrics
+- Health check endpoints
+- Prometheus integration
+- Dashboard development
+
+### Development Workflow
+
+#### Daily Tasks
+1. **Check System Health**
+   ```bash
+   curl http://127.0.0.1:3002/health
+   docker ps | grep exai-mcp-server
+   ```
+
+2. **Monitor Metrics**
+   ```bash
+   curl http://127.0.0.1:3003/metrics
+   ```
+
+3. **Review Logs**
+   ```bash
+   tail -f C:/Project/EX-AI-MCP-Server/logs/
+   ```
+
+4. **Test MCP Connections**
+   - Verify all MCP tools are connected
+   - Test protocol translation
+   - Check message routing
+
+#### When Debugging Issues
+
+1. **MCP Connection Failures**
+   - Check if daemon is running: `docker ps`
+   - Verify port availability: `netstat -tlnp | grep 3010`
+   - Check Python venv: `C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe --version`
+   - Review logs: `tail -f logs/exai-mcp.log`
+
+2. **WebSocket Errors**
+   - Monitor Shim logs: `tail -f logs/ws-shim.log`
+   - Check protocol translation
+   - Verify client connections
+   - Test message routing
+
+3. **Provider Integration Issues**
+   - Check API keys: `grep API_KEY .env`
+   - Test provider connectivity
+   - Monitor rate limits
+   - Review routing decisions
+
+#### Code Development
+
+1. **Core Changes**
+   - `src/core/` - Protocol implementation
+   - `src/daemon/` - WebSocket daemon
+   - `src/providers/` - AI provider integrations
+   - `src/orchestrator/` - Route management
+
+2. **Testing**
+   - Unit tests: `pytest tests/`
+   - Integration: `python scripts/test_*.py`
+   - MCP validation: `python scripts/validate_mcp_connection.py`
+
+3. **Deployment**
+   - Docker build: `docker-compose build`
+   - Service restart: `docker-compose restart exai-mcp-daemon`
+   - Health verification: `curl http://127.0.0.1:3002/health`
+
+---
+
+## 🔧 Common Operations
+
+### Starting the System
+```bash
+# Start EX-AI-MCP-Server
+cd C:/Project/EX-AI-MCP-Server
+docker-compose up -d exai-mcp-daemon
+
+# Verify startup
+docker-compose ps
+curl http://127.0.0.1:3002/health
+```
+
+### Checking MCP Status
+```bash
+# All services
+docker-compose ps
+
+# Logs
+docker-compose logs -f exai-mcp-daemon
+docker-compose logs -f ws-shim
+
+# Health
+curl http://127.0.0.1:3002/health
+```
+
+### Testing Protocol
+```bash
+# Test WebSocket connection
+python scripts/ws/ws_chat_once.py
+
+# Test MCP protocol
+python scripts/validate_mcp_connection.py
+
+# Full test suite
+python scripts/run_all_tests.py
+```
+
+### Debugging Tools
+```bash
+# MCP validation
+python scripts/validation/validate_mcp_configs.py
+
+# Port availability
+python scripts/check_port.py --port 3010
+
+# Environment validation
+python scripts/validate_environment.py
+```
+
+---
+
+## 📊 Monitoring & Metrics
+
+### Health Endpoints
+- **Port 3002**: HTTP health check - `GET /health`
+- **Port 3003**: Prometheus metrics - `GET /metrics`
+- **Port 3001**: Monitoring dashboard - Web UI
+
+### Key Metrics
+- Active WebSocket connections
+- Message throughput
+- Provider response times
+- Error rates by provider
+- Session count
+- Tool execution latency
+
+### Log Locations
+```
+logs/
+├── exai-mcp-daemon.log     # Main daemon logs
+├── ws-shim.log            # WebSocket shim logs
+├── provider-routing.log   # Provider routing decisions
+├── tool-execution.log     # Tool execution results
+├── session-management.log # Session lifecycle
+└── monitoring/            # Monitoring system logs
+```
+
+---
+
+## 🚨 Troubleshooting Guide
+
+### Issue: exai-mcp Failed to Connect
+
+**Diagnosis**:
+1. Check daemon: `docker ps | grep exai-mcp-server`
+2. Check port: `netstat -tlnp | grep 3010`
+3. Check health: `curl http://127.0.0.1:3002/health`
+
+**Solutions**:
+1. Start daemon: `docker-compose up -d exai-mcp-daemon`
+2. Restart if stuck: `docker-compose restart`
+3. Check logs: `docker-compose logs exai-mcp-daemon`
+
+### Issue: npx MCP Servers Failing
+
+**Diagnosis**:
+1. Check npm: `npm --version`
+2. Check npx: `npx --version`
+3. Test package: `npx -y @modelcontextprotocol/server-filesystem --help`
+
+**Solutions**:
+1. Install npm: Install Node.js from nodejs.org
+2. Clear cache: `npm cache clean --force`
+3. Reinstall packages: `npm install -g @modelcontextprotocol/server-filesystem @narasimhaponnada/mermaid-mcp-server`
+
+### Issue: Protocol Translation Errors
+
+**Diagnosis**:
+1. Check shim logs: `tail -f logs/ws-shim.log`
+2. Monitor messages: Enable debug logging
+3. Test routing: Use test scripts
+
+**Solutions**:
+1. Restart shim: Restart Claude Code session
+2. Clear state: Delete session files
+3. Debug mode: Set `LOG_LEVEL=DEBUG` in .env
+
+---
+
+## 📁 Project Structure
+
+```
+EX-AI-MCP-Server/
+├── src/                    # Source code
+│   ├── core/              # Protocol core
+│   ├── daemon/            # WebSocket daemon
+│   ├── providers/         # AI provider integrations
+│   ├── orchestrator/      # Route management
+│   ├── auth/              # Authentication
+│   ├── monitoring/        # Metrics & health
+│   └── prompts/           # System prompts
+├── scripts/               # Operational scripts
+│   ├── runtime/           # Runtime management
+│   ├── validation/        # MCP validation
+│   ├── testing/           # Test suite
+│   └── monitoring/        # Monitoring tools
+├── logs/                  # Application logs
+├── docs/                  # Documentation
+├── docker-compose.yml     # Service orchestration
+├── .env                   # Environment config
+├── .mcp.json             # MCP server config (6 servers)
+└── CLAUDE.md             # This file
+```
+
+---
+
+## 🔑 Key Configuration
+
+### Environment Variables (.env)
+```bash
+# Core
+EXAI_WS_HOST=127.0.0.1
+EXAI_WS_PORT=3010
+SHIM_LISTEN_PORT=3005
+
+# AI Providers
+GLM_API_KEY=...
+GLM_API_URL=https://api.z.ai/api/paas/v4
+KIMI_API_KEY=...
+KIMI_API_URL=https://api.moonshot.ai/v1
+MINIMAX_API_KEY=...
+MINIMAX_API_URL=https://api.minimax.io/anthropic
+
+# Timeouts
+SIMPLE_TOOL_TIMEOUT_SECS=30
+WORKFLOW_TOOL_TIMEOUT_SECS=46
+EXPERT_ANALYSIS_TIMEOUT_SECS=60
+```
+
+### MCP Configuration (.mcp.json)
+```json
+{
+  "mcpServers": {
+    "exai-mcp": {
+      "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
+      "args": ["-u", "scripts/runtime/run_ws_shim.py"],
+      "env": {
+        "EXAI_WS_PORT": "3010",
+        "SHIM_LISTEN_PORT": "3005",
+        "EXAI_WS_TOKEN": "pYf69sHNkOYlYLRTJfMrxCQghO5OJOUFbUxqaxp9Zxo",
+        ...
+      }
+    },
+    "filesystem-mcp": { ... },
+    "git-mcp": { ... },
+    "sequential-thinking": { ... },
+    "memory-mcp": { ... },
+    "mermaid-mcp": { ... }
+  }
+}
+```
+
+**Note**: Currently 3 MCPs connected, 3 MCPs failing. See "Current Issues" below.
+
+---
+
+## 🎓 Learning Resources
+
+### Understanding WebSocket Protocol
+1. Review `src/core/websocket_protocol.py`
+2. Study message format in `docs/protocol/`
+3. Test with `scripts/ws/ws_chat_once.py`
+
+### MCP Protocol Deep Dive
+1. Read MCP specification: `docs/mcp/`
+2. Study protocol translation: `src/core/mcp_translator.py`
+3. Practice with test scripts: `scripts/test_mcp_*.py`
+
+### Provider Integration
+1. Review GLM integration: `src/providers/glm.py`
+2. Study routing logic: `src/orchestrator/route_manager.py`
+3. Analyze routing decisions: `logs/provider-routing.log`
+
+---
+
+## 💡 Best Practices
+
+### Code Development
+- **Use sequential-thinking** for complex debugging
+- **Log all routing decisions** for provider integration
+- **Test with memory-mcp** to track system evolution
+- **Document with mermaid-mcp** for architecture changes
+
+### MCP Server Development
+- **Always validate MCP connections** before deployment
+- **Test protocol translation** with sample messages
+- **Monitor WebSocket shim** for connection issues
+- **Check provider timeouts** regularly
+
+### System Operations
+- **Start with health check**: `curl http://127.0.0.1:3002/health`
+- **Monitor metrics**: Prometheus at port 3003
+- **Review logs daily**: Check for warnings/errors
+- **Track session count**: Monitor resource usage
+
+---
+
+## 🚀 Quick Start for New Agents
+
+1. **Check System Status**
+   ```bash
+   curl http://127.0.0.1:3002/health
+   docker-compose ps
+   ```
+
+2. **Verify MCP Connections**
+   - Use Claude Code tools list
+   - Check connection status
+   - Test failed MCPs individually
+
+3. **Review Recent Logs**
+   ```bash
+   tail -50 logs/exai-mcp-daemon.log
+   tail -50 logs/ws-shim.log
+   ```
+
+4. **Understand Current Tasks**
+   - Read active issues in `docs/`
+   - Check development roadmap
+   - Review open PRs
+
+5. **Start Development**
+   - Use working MCPs (git, sequential-thinking, memory)
+   - Debug failed MCPs (exai-mcp, filesystem, mermaid)
+   - Follow troubleshooting guide
+
+---
+
+## 🔍 Current Issues to Address
+
+### High Priority - MCP Connection Failures
+1. **exai-mcp Connection Failure**
+   - Daemon not responding on port 3010
+   - Check Docker container status
+   - Verify environment variables
+   - Review: `docker-compose logs exai-mcp-daemon`
+
+2. **filesystem-mcp Installation**
+   - npx package not found or misconfigured
+   - May need global installation
+   - Check: `npx -y @modelcontextprotocol/server-filesystem`
+   - Verify: `npm --version && npx --version`
+
+3. **mermaid-mcp Server**
+   - Package detected (1.0.2) but server fails
+   - Check for missing dependencies
+   - Test: `npx -y @narasimhaponnada/mermaid-mcp-server`
+
+### Medium Priority
+- Review port configuration conflicts
+- Optimize timeout settings
+- Improve error messages
+- Add retry logic for failed connections
+
+### Working MCPs (Use These!)
+- ✅ **git-mcp** - Version control (uvx mcp-server-git)
+- ✅ **sequential-thinking** - Deep analysis (npx)
+- ✅ **memory-mcp** - Knowledge graph (npx)
+
+### Failed MCPs (Debug These!)
+- ❌ **exai-mcp** - WebSocket MCP server (Python)
+- ❌ **filesystem-mcp** - File system access (npx)
+- ❌ **mermaid-mcp** - Diagrams (npx)
+
+---
+
+## 🛠️ Testing & Validation Scripts
+
+### Available Scripts
+```bash
+# MCP Connection Validation
+python scripts/validate_mcp_connection.py
+
+# Port Availability Check
+python scripts/check_port.py --port 3010
+
+# Environment Validation
+python scripts/validate_environment.py
+
+# WebSocket Testing
+python scripts/ws/ws_chat_once.py
+
+# Full Test Suite
+python scripts/run_all_tests.py
+```
+
+### Quick Diagnostics
+```bash
+# Check all required ports
+for port in 3002 3003 3005 3010; do
+  echo "Checking port $port..."
+  timeout 1 bash -c "</dev/tcp/127.0.0.1/$port" && echo "✓ Port $port open" || echo "✗ Port $port closed"
+done
+
+# Check Docker containers
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Check npm/npx
+npm --version && npx --version
+```
+
+---
+
+**Remember**: This is a **WebSocket MCP server** - you're working with protocol translation, not just a regular project. Focus on understanding the bridge between standard MCP and EX-AI's custom protocol! 🚀
+
+**Current Status**: 3/6 MCPs connected
+- Working: git-mcp, sequential-thinking, memory-mcp
+- Failing: exai-mcp, filesystem-mcp, mermaid-mcp
+
+---
+
+## 🧹 Process Cleanup System
+
+### Overview
+The system includes an **automated process cleanup system** to prevent bloat from Claude Code shell snapshots and orphaned processes.
+
+### Location
+**Scripts**: `C:\Project\EX-AI-MCP-Server\scripts\windows-cleanup\`
+
+### Quick Cleanup
+```powershell
+cd C:\Project\EX-AI-MCP-Server\scripts\windows-cleanup
+.\cleanup_all_fixed.ps1
+```
+
+### Automated Cleanup
+1. **Docker Service**: Runs every 30 minutes (kills processes >2h old)
+   ```bash
+   docker-compose up -d cleanup-service
+   ```
+
+2. **Task Scheduler**: Daily at 2:00 AM
+   - Run: `auto_cleanup.bat`
+   - Configuration in `scripts/windows-cleanup/`
+
+### What Gets Cleaned
+- **Processes**: bash.exe, cmd.exe, node.exe, python.exe (>2 hours old)
+- **Shell Snapshots**: Claude Code snapshots in `~/.claude/shell-snapshots/` (>7 days old)
+
+### Documentation
+- `scripts/windows-cleanup/README.md` - Quick start
+- `scripts/windows-cleanup/CLEANUP_DOCUMENTATION.md` - Technical details
+- `PROCESS_CLEANUP_SUMMARY.md` - Complete summary
+
+**Status**: ✅ **System Optimized**
+- Stale processes: 0
+- Active processes: 80 (healthy)
+- Automated cleanup: Enabled
+
+**Last Updated**: 2025-11-12
+**Version**: 7.1.0 (Process Cleanup System Added)

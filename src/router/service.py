@@ -326,6 +326,67 @@ class RouterService:
             return {}
 
 
+    def fallback_routing(self, tool_name: str, context: Dict[str, Any]) -> RouteDecision:
+        """
+        Fallback routing using simple hardcoded rules.
+        Used when MiniMax M2 is unavailable or fails.
+
+        This provides basic intelligence without AI.
+        """
+        # Simple hardcoded routing rules
+        routing_rules = {
+            "web_search": "glm",
+            "search": "glm",
+            "chat": "glm",
+            "analyze": "glm",
+            "debug": "kimi",
+            "code_analysis": "kimi",
+            "file_processing": "kimi",
+            "document": "kimi",
+            "long_context": "kimi",
+            "thinking": "kimi",
+        }
+
+        # Determine provider from tool name or context
+        provider = "glm"  # Default to GLM
+        for key, prov in routing_rules.items():
+            if key in tool_name.lower():
+                provider = prov
+                break
+
+        # Context-based routing
+        if context.get("use_websearch"):
+            provider = "glm"
+        elif context.get("thinking_mode"):
+            provider = "kimi"
+        elif context.get("long_context"):
+            provider = "kimi"
+
+        # Choose model based on provider
+        if provider == "glm":
+            model = self._fast_default
+            reason = "fallback_glm"
+        else:
+            model = self._long_default
+            reason = "fallback_kimi"
+
+        # Check if model is available
+        prov = get_registry_instance().get_provider_for_model(model)
+        if prov is None:
+            # Fall back to any available model
+            return self.choose_model("auto")
+
+        dec = RouteDecision(
+            requested="auto",
+            chosen=model,
+            reason=reason,
+            provider=prov.get_provider_type().name,
+            meta={"fallback": True, "tool": tool_name}
+        )
+
+        logger.info(f"FALLBACK ROUTING: {tool_name} → {model} ({reason})")
+        return dec
+
     def choose_model(self, requested: Optional[str]) -> RouteDecision:
         """Resolve a model name. If 'auto' or empty, choose a sensible default based on availability."""
         req = (requested or "auto").strip()

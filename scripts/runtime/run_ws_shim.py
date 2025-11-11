@@ -6,12 +6,15 @@ Bridges standard MCP protocol <-> EXAI custom WebSocket protocol.
 This shim connects to the EXAI daemon (running in Docker) and translates:
 - MCP initialize/hello -> Custom "op" protocol
 - Custom responses -> MCP responses
+
+PROCESS MANAGEMENT FIX: Added proper signal handling to prevent orphaned child processes.
 """
 
 import asyncio
 import json
 import logging
 import os
+import signal
 import sys
 from pathlib import Path
 from typing import Optional
@@ -321,6 +324,41 @@ if __name__ == "__main__":
         format="%(asctime)s [%(levelname)-8s] %(name)s: %(message)s",
         datefmt="%H:%M:%S"
     )
+
+    # Set process group for proper cleanup
+    # This ensures child processes are terminated when parent exits
+    try:
+        os.setpgrp()
+    except Exception as e:
+        logger.warning(f"Could not set process group: {e}")
+
+    # Global flag for shutdown
+    shutting_down = False
+
+    def signal_handler(signum, frame):
+        """Handle shutdown signals gracefully."""
+        global shutting_down
+        if shutting_down:
+            # Force kill if already shutting down
+            logger.warning("Forced shutdown initiated")
+            os.killpg(0, signal.SIGKILL)
+            return
+
+        logger.info(f"Received signal {signum}, shutting down gracefully...")
+        shutting_down = True
+
+        # Kill entire process group
+        try:
+            os.killpg(0, signal.SIGTERM)
+        except Exception as e:
+            logger.warning(f"Error sending SIGTERM to process group: {e}")
+
+        # Exit
+        sys.exit(0)
+
+    # Register signal handlers
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
 
     try:
         asyncio.run(main())

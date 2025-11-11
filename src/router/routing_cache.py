@@ -94,6 +94,15 @@ class RoutingCache:
             cache_prefix="routing:fallback"
         )
 
+        # MiniMax M2 routing cache (L1+L2, 5 minutes)
+        self._minimax_cache = BaseCacheManager(
+            l1_maxsize=100,
+            l1_ttl=300,  # 5 minutes
+            l2_ttl=300,
+            enable_redis=enable_redis,
+            cache_prefix="routing:minimax"
+        )
+
         # Statistics (aggregated from all caches)
         self._stats = {
             "provider_hits": 0,
@@ -104,6 +113,8 @@ class RoutingCache:
             "tool_misses": 0,
             "fallback_hits": 0,
             "fallback_misses": 0,
+            "minimax_hits": 0,
+            "minimax_misses": 0,
         }
 
         logger.info(
@@ -203,6 +214,29 @@ class RoutingCache:
         self._fallback_cache.set(key, chain)
         logger.debug(f"[ROUTING_CACHE] Cached fallback chain: {chain}")
 
+    # MiniMax M2 routing cache (5-minute TTL)
+    def get_minimax_decision(self, cache_key: str) -> Optional[Dict[str, Any]]:
+        """Get cached MiniMax M2 routing decision."""
+        try:
+            decision = self._minimax_cache.get(cache_key)
+            if decision:
+                self._stats["minimax_hits"] += 1
+                logger.debug(f"[ROUTING_CACHE] MiniMax decision cache HIT")
+                return decision
+            self._stats["minimax_misses"] += 1
+            return None
+        except Exception as e:
+            logger.warning(f"[ROUTING_CACHE] MiniMax get error: {e}")
+            return None
+
+    def set_minimax_decision(self, cache_key: str, decision: Dict[str, Any]) -> None:
+        """Cache MiniMax M2 routing decision (5-minute TTL)."""
+        try:
+            self._minimax_cache.set(cache_key, decision)
+            logger.debug(f"[ROUTING_CACHE] Cached MiniMax decision")
+        except Exception as e:
+            logger.warning(f"[ROUTING_CACHE] MiniMax set error: {e}")
+
     # Utilities
 
     def _hash_context(self, context: Dict[str, Any]) -> str:
@@ -231,18 +265,21 @@ class RoutingCache:
         total_model = self._stats["model_hits"] + self._stats["model_misses"]
         total_tool = self._stats["tool_hits"] + self._stats["tool_misses"]
         total_fallback = self._stats["fallback_hits"] + self._stats["fallback_misses"]
-        
+        total_minimax = self._stats["minimax_hits"] + self._stats["minimax_misses"]
+
         return {
             **self._stats,
             "provider_hit_ratio": self._stats["provider_hits"] / total_provider if total_provider > 0 else 0.0,
             "model_hit_ratio": self._stats["model_hits"] / total_model if total_model > 0 else 0.0,
             "tool_hit_ratio": self._stats["tool_hits"] / total_tool if total_tool > 0 else 0.0,
             "fallback_hit_ratio": self._stats["fallback_hits"] / total_fallback if total_fallback > 0 else 0.0,
+            "minimax_hit_ratio": self._stats["minimax_hits"] / total_minimax if total_minimax > 0 else 0.0,
             "cache_sizes": {
                 "provider": len(self._provider_cache),
                 "model": len(self._model_cache),
                 "tool": len(self._tool_cache),
                 "fallback": len(self._fallback_cache),
+                "minimax": len(self._minimax_cache),
             }
         }
     

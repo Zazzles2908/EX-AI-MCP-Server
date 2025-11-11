@@ -10,7 +10,7 @@ services:
     # PHASE 3 (2025-10-18): Added monitoring, health check, and metrics ports
     # PORT STRATEGY FIX (2025-11-08): Using 3000-3003 range to avoid Orchestrator conflicts
     ports:
-      - "3004:8079"  # WebSocket Daemon (MCP protocol) - Host 3000 → Container 8079
+      - "3010:8079"  # WebSocket Daemon (MCP protocol) - Host 3010 → Container 8079
       - "3001:8080"  # Monitoring Dashboard (WebSocket + HTTP) - Host 3001 → Container 8080
       - "3002:8082"  # Health Check Endpoint (HTTP) - Host 3002 → Container 8082
       - "3003:8000"  # Prometheus Metrics (HTTP) - Host 3003 → Container 8000
@@ -185,6 +185,30 @@ services:
       options:
         max-size: "5m"
         max-file: "2"
+
+  # Automated cleanup service - prevents process bloat
+  cleanup-service:
+    image: mcr.microsoft.com/windows/servercore:ltsc2022
+    container_name: exai-cleanup
+    restart: unless-stopped
+
+    # Run every 30 minutes to clean up stale processes
+    command: >
+      sh -c "echo 'Cleanup service started' &&
+             while true; do
+               echo 'Running cleanup...' &&
+               # Kill processes older than 2 hours
+               taskkill /f /fi 'USAGE gt 120' /im bash.exe 2>nul || true &&
+               taskkill /f /fi 'USAGE gt 120' /im cmd.exe 2>nul || true &&
+               taskkill /f /fi 'USAGE gt 120' /im node.exe 2>nul || true &&
+               taskkill /f /fi 'USAGE gt 120' /im python.exe 2>nul || true &&
+               taskkill /f /fi 'USAGE gt 120' /im pythonw.exe 2>nul || true &&
+               echo 'Cleanup cycle complete, sleeping for 30 minutes...' &&
+               sleep 1800
+             done"
+
+    # Don't expose any ports - this is a background service
+    # No volume mounts needed - it's a simple cleanup task
 
 # Named volumes for persistence
 volumes:

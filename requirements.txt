@@ -11,6 +11,9 @@ python-dotenv>=1.0.0
 # zai-sdk is the official Z.ai SDK with better features (higher file limits, longer retention)
 zai-sdk>=0.0.4  # Official Z.ai SDK - compatible with MCP 1.20.0
 
+# Hybrid Router: MiniMax M2 for intelligent routing decisions
+anthropic>=0.40.0  # Anthropic SDK for MiniMax M2 API calls
+
 # File management system dependencies (2025-11-04)
 asyncpg>=0.29.0  # PostgreSQL async driver for file management audit system
 importlib-resources>=5.0.0; python_version<"3.9"

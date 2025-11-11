@@ -6,10 +6,8 @@ Prevents configuration drift with environment validation and smart defaults.
 
 import os
 from .settings import Config, get_config
-from .drift_detector import check_config_drift
-from .secrets_manager import SecretsManager
 
-__all__ = ['Config', 'get_config', 'check_config_drift', 'SecretsManager', 'DEFAULT_MODEL']
+__all__ = ['Config', 'get_config', 'DEFAULT_MODEL']
 
 # Global config instance
 config = get_config()
