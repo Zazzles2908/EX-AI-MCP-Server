@@ -51,12 +51,12 @@
 **What's Configured:**
 - ✅ GLM API key: `95c42879e5c247beb7d9d30f3ba7b28f.uA2184L5axjigykH`
 - ✅ KIMI API key: `sk-AbCh3IrxmB5Bsx4JV0pnoqb0LajNdkwFvxfwR8KpDXB66qyB`
-- ✅ MiniMax key exists: `MiniMax-M2_Key=...` (but UNREADABLE)
+- ✅ MiniMax key exists: `MINIMAX_M2_KEY=...` (configured with new key)
 
 **What's Broken:**
-- Environment variable name mismatch: code expects `MINIMAX_M2_KEY`, .env has `MiniMax-M2_Key`
-- MiniMax M2 intelligent routing disabled
-- System falls back to basic routing only
+- ✅ Environment variable fixed: .env now has `MINIMAX_M2_KEY` (correct name)
+- ⚠️ MiniMax M2-Stable intelligent routing needs model name update
+- System may fall back to basic routing if not updated
 
 **Files:**
 - `.env` - Has keys but wrong MiniMax variable name
@@ -163,9 +163,9 @@
 
 ### **Gap 1: MiniMax Configuration**
 ```bash
-.env has: MiniMax-M2_Key=...
-Code expects: MINIMAX_M2_KEY=...
-Result: MiniMax routing disabled, falls back to basic routing
+.env has: MINIMAX_M2_KEY=... (✅ Fixed)
+Code expects: MINIMAX_M2_KEY=... (✅ Matches)
+Status: MiniMax M2-Stable routing ready for model name update
 ```
 
 ### **Gap 2: Port Binding**
@@ -227,10 +227,11 @@ Result: Both old and new systems running
 4. Test basic MCP connectivity
 
 ### **Priority 2: Fix MiniMax (Day 1)**
-1. Rename `MiniMax-M2_Key` → `MINIMAX_M2_KEY` in .env
-2. Test MiniMax API connectivity
-3. Enable intelligent routing
-4. Verify routing decisions
+1. ✅ Rename `MiniMax-M2_Key` → `MINIMAX_M2_KEY` in .env (Done)
+2. Update model name from `MiniMax-M2` → `MiniMax-M2-Stable` (In Progress)
+3. Test MiniMax API connectivity
+4. Enable intelligent routing
+5. Verify routing decisions
 
 ### **Priority 3: Activate Tools (Day 2-3)**
 1. Register remaining 27 tools with daemon

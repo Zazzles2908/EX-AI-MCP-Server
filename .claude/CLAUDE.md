@@ -1,22 +1,22 @@
-# Claude Code + EX-AI with MiniMax M2
+# Claude Code + EX-AI with MiniMax M2-Stable
 
-> **Full Power Configuration for MiniMax M2 Model**  >
+> **Full Power Configuration for MiniMax M2-Stable Model**  >
 > Optimized for coding and agentic workflows  >
-> Last Updated: 2025-11-11
+> Last Updated: 2025-11-12
 
 ---
 
 ## 🚀 What's Configured
 
-### **MiniMax M2 Integration**
-- **Model**: MiniMax M2 (10B active / 230B total parameters)
+### **MiniMax M2-Stable Integration**
+- **Model**: MiniMax M2-Stable (10B active / 230B total parameters)
 - **Optimized for**: Multi-file edits, coding-run-fix loops, long-horizon toolchains
 - **Performance**: #1 ranked open-source model for coding tasks
 - **Thinking**: Interleaved thinking with `<think>...</think>` tags
 - **Tool Calling**: Full support for complex workflows
 
 ### **MCP Servers Available**
-- **exai-mcp**: 29 AI-powered tools with intelligent routing (GLM-4.6, Kimi K2, MiniMax M2)
+- **exai-mcp**: 29 AI-powered tools with intelligent routing (GLM-4.6, Kimi K2, MiniMax M2-Stable)
 - **git-mcp**: Full git operations
 - **supabase-mcp-full**: Database management and Supabase tools
 
@@ -50,7 +50,7 @@ Just open VSCode in this directory - everything auto-connects!
 
 ---
 
-## 🎯 MiniMax M2 Capabilities
+## 🎯 MiniMax M2-Stable Capabilities
 
 ### **Advanced Coding Features**
 - **Multi-file edits**: Understands and modifies entire codebases
@@ -59,7 +59,7 @@ Just open VSCode in this directory - everything auto-connects!
 - **Long-horizon toolchains**: Plans and executes complex workflows
 
 ### **Thinking Mode** 🧠
-- MiniMax M2 uses interleaved thinking: `<think>...</think>`
+- MiniMax M2-Stable uses interleaved thinking: `<think>...</think>`
 - **CRITICAL**: These thinking tags MUST be preserved in conversation history
 - Removing them degrades performance significantly
 - Model provides transparent reasoning process
@@ -91,7 +91,7 @@ Just open VSCode in this directory - everything auto-connects!
 
 ### **Direct Tool Calls**
 ```
-/exai_chat - Chat with AI models (GLM, Kimi, MiniMax M2)
+/exai_chat - Chat with AI models (GLM, Kimi, MiniMax M2-Stable)
 /exai_analyze - Deep code analysis
 /exai_web_search - Web search integration
 /exai_vision - Image analysis
@@ -108,14 +108,14 @@ Just open VSCode in this directory - everything auto-connects!
 - **@glm-architect** - Architecture decisions
 
 ### **Routing Intelligence**
-- **Smart routing** using MiniMax M2 for optimal model selection
+- **Smart routing** using MiniMax M2-Stable for optimal model selection
 - **Cache**: 5-minute TTL for routing decisions
-- **Fallback**: Automatic fallback if MiniMax M2 unavailable
+- **Fallback**: Automatic fallback if MiniMax M2-Stable unavailable
 - **Cost optimization**: Balance performance and cost
 
 ---
 
-## 📋 MiniMax M2 Configuration
+## 📋 MiniMax M2-Stable Configuration
 
 ### **Environment Variables** (from .env)
 ```bash
@@ -167,13 +167,13 @@ cat logs/ws_daemon.health.json
 python scripts/ws/run_ws_daemon.py
 ```
 
-### **MiniMax M2 Not Working**
+### **MiniMax M2-Stable Not Working**
 1. Check `MINIMAX_M2_KEY` in `.env`
 2. Verify network connectivity to MiniMax API
 3. Check logs for routing errors
 
 ### **Performance Issues**
-- MiniMax M2 is optimized for complex tasks
+- MiniMax M2-Stable is optimized for complex tasks
 - For simple tasks, GLM/Kimi may be faster
 - Routing cache helps with repeated decisions
 
@@ -197,7 +197,7 @@ python scripts/ws/run_ws_daemon.py
 
 ## 🎓 Best Practices
 
-### **Working with MiniMax M2**
+### **Working with MiniMax M2-Stable**
 
 1. **Respect the thinking** - Don't truncate `<think>...</think>` tags
 2. **Use for complexity** - Best for multi-file, long-horizon tasks
@@ -243,9 +243,9 @@ c:\Project\EX-AI-MCP-Server\
 ## 🎉 Ready to Go!
 
 **Status**: ✅ Fully Configured  >
-**Models**: GLM-4.6, Kimi K2, MiniMax M2  >
+**Models**: GLM-4.6, Kimi K2, MiniMax M2-Stable  >
 **Tools**: 29 AI-powered tools  >
-**Routing**: Intelligent MiniMax M2-based selection  >
+**Routing**: Intelligent MiniMax M2-Stable-based selection  >
 **Performance**: #1 ranked open-source coding model
 
 **Just start coding with @-mentions - everything auto-connects!** 🚀
@@ -253,5 +253,5 @@ c:\Project\EX-AI-MCP-Server\
 ---
 
 **Configuration Version**: 6.0.0  >
-**Last Updated**: 2025-11-11  >
-**MiniMax M2**: Enabled & Optimized
+**Last Updated**: 2025-11-12  >
+**MiniMax M2-Stable**: Enabled & Optimized

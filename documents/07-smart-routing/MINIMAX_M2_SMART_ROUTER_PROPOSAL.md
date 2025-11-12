@@ -1,10 +1,10 @@
-# MiniMax M2 Smart Router Proposal
+# MiniMax M2-Stable Smart Router Proposal
 
 > **Version:** 1.0.0
 > **Date:** 2025-11-10
 > **Status:** PROPOSAL
 >
-> **Concept:** Reduce bloat and complexity by using MiniMax M2 as an intelligent router via SDK
+> **Concept:** Reduce bloat and complexity by using MiniMax M2-Stable as an intelligent router via SDK
 
 ---
 
@@ -25,9 +25,9 @@
 - Over-engineered for what should be simple decisions
 - Hard to maintain and extend
 
-### The Solution: MiniMax M2 as Smart Router
+### The Solution: MiniMax M2-Stable as Smart Router
 
-**MiniMax M2 is perfect for this because:**
+**MiniMax M2-Stable is perfect for this because:**
 1. ✅ **Agent-Focused** - Built for Agent workflow optimization
 2. ✅ **Anthropic SDK Compatible** - Easy integration
 3. ✅ **Efficient** - Optimized for routing decisions
@@ -35,16 +35,16 @@
 
 **Instead of 2,500 lines of routing logic, we can have:**
 - 1 simple router module (~100 lines)
-- 1 MiniMax M2 API call
+- 1 MiniMax M2-Stable API call
 - 1 configuration file (~50 lines)
 
 **Total: ~150 lines instead of 2,500 lines**
 
 ---
 
-## 🧠 MiniMax M2 Capabilities for Routing
+## 🧠 MiniMax M2-Stable Capabilities for Routing
 
-### What is MiniMax M2?
+### What is MiniMax M2-Stable?
 - **Purpose-built** for Agent workflows and intelligent decision-making
 - **Anthropic SDK compatible** - Uses familiar API patterns
 - **Efficient** - Optimized for quick routing decisions
@@ -62,7 +62,7 @@ elif cat_name == "EXTENDED_REASONING":
     order = ["kimi-k2-0905-preview", "kimi-k2-0711-preview", "kimi-thinking-preview"]
 ```
 
-We use MiniMax M2:
+We use MiniMax M2-Stable:
 
 ```python
 # NEW: Intelligent routing (~50 lines total)
@@ -110,7 +110,7 @@ provider.generate_content() → Response
 ```
 Tool Request
     ↓
-MiniMax M2 Smart Router (1 API call)
+MiniMax M2-Stable Smart Router (1 API call)
     ↓
 routing_decision = {
     "provider": "GLM",
@@ -134,9 +134,9 @@ provider.generate_content() → Response
 
 ```python
 """
-MiniMax M2 Smart Router
+MiniMax M2-Stable Smart Router
 
-A simplified, intelligent routing system using MiniMax M2 for decisions.
+A simplified, intelligent routing system using MiniMax M2-Stable for decisions.
 Replaces 2,500 lines of complex routing logic with 100 lines of clean code.
 """
 
@@ -153,20 +153,20 @@ logger = logging.getLogger(__name__)
 
 class MiniMaxM2Router:
     """
-    Smart router using MiniMax M2 for intelligent routing decisions.
+    Smart router using MiniMax M2-Stable for intelligent routing decisions.
 
-    Instead of hardcoded logic, we use MiniMax M2 to make routing decisions
+    Instead of hardcoded logic, we use MiniMax M2-Stable to make routing decisions
     based on tool requirements, provider capabilities, and current context.
     """
 
     def __init__(self):
-        """Initialize the smart router with MiniMax M2."""
+        """Initialize the smart router with MiniMax M2-Stable-Stable."""
         self.client = Anthropic(
-            api_key=config.MINIMAX_API_KEY,
+            api_key=config.MINIMAX_M2_KEY,
             base_url="https://api.minimaxi.com/v1"
         )
         self.routing_cache = {}  # Simple in-memory cache
-        logger.info("MiniMax M2 Smart Router initialized")
+        logger.info("MiniMax M2-Stable Smart Router initialized")
 
     async def route_request(
         self,
@@ -175,7 +175,7 @@ class MiniMaxM2Router:
         available_providers: Dict[str, Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
-        Route request using MiniMax M2 intelligence.
+        Route request using MiniMax M2-Stable intelligence.
 
         Args:
             tool_name: Name of the tool being called
@@ -200,7 +200,7 @@ class MiniMaxM2Router:
             available_providers
         )
 
-        # Call MiniMax M2 for routing decision
+        # Call MiniMax M2-Stable for routing decision
         try:
             response = await self.client.messages.create(
                 model="minimax-m2",
@@ -253,7 +253,7 @@ Respond with ONLY a JSON object, no other text."""
         context: Dict[str, Any],
         providers: Dict[str, Dict[str, Any]]
     ) -> str:
-        """Build routing prompt for MiniMax M2."""
+        """Build routing prompt for MiniMax M2-Stable."""
         return f"""
 Tool: {tool_name}
 Request Context: {json.dumps(context, indent=2)}
@@ -301,7 +301,7 @@ Respond with JSON:
         tool_name: str,
         providers: Dict[str, Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Fallback routing when MiniMax M2 fails."""
+        """Fallback routing when MiniMax M2-Stable fails."""
         # Simple fallback: GLM for web search, Kimi for others
         return {
             'provider': 'GLM',
@@ -341,7 +341,7 @@ def get_router() -> MiniMaxM2Router:
 **File:** `src/config/routing_config.yaml`
 
 ```yaml
-# MiniMax M2 Smart Router Configuration
+# MiniMax M2-Stable Smart Router Configuration
 
 routing:
   cache_ttl: 300  # 5 minutes
@@ -406,7 +406,7 @@ routing_rules:
 **File:** `tools/simple/base.py` (simplified)
 
 ```python
-# Replace complex routing logic with simple call to MiniMax M2 router
+# Replace complex routing logic with simple call to MiniMax M2-Stable router
 
 from src.router.minimax_router import get_router
 
@@ -416,7 +416,7 @@ class SimpleTool(BaseTool):
 
         # Get model from request or use router
         if not model_name or model_name.lower() == "auto":
-            # Use MiniMax M2 for intelligent routing
+            # Use MiniMax M2-Stable for intelligent routing
             router = get_router()
             routing_decision = await router.route_request(
                 tool_name=self.get_name(),
@@ -456,7 +456,7 @@ class SimpleTool(BaseTool):
 - **Easier to understand, maintain, and extend**
 
 ### 2. **Intelligent and Adaptive**
-- MiniMax M2 makes routing decisions based on context
+- MiniMax M2-Stable makes routing decisions based on context
 - No hardcoded logic to update when providers change
 - Automatically adapts to new capabilities
 
@@ -467,12 +467,12 @@ class SimpleTool(BaseTool):
 
 ### 4. **Easier to Debug**
 - Clear logging of routing decisions
-- JSON responses from MiniMax M2
+- JSON responses from MiniMax M2-Stable
 - Reason and confidence for each decision
 
 ### 5. **Future-Proof**
 - Add new providers without changing code
-- MiniMax M2 learns routing patterns
+- MiniMax M2-Stable learns routing patterns
 - Easy to adjust routing strategies
 
 ---
@@ -490,7 +490,7 @@ class SimpleTool(BaseTool):
 }
 ```
 
-**MiniMax M2 Decision:**
+**MiniMax M2-Stable Decision:**
 ```json
 {
     "provider": "GLM",
@@ -501,7 +501,7 @@ class SimpleTool(BaseTool):
 }
 ```
 
-**Why:** MiniMax M2 knows Kimi doesn't support web search, so it routes to GLM.
+**Why:** MiniMax M2-Stable knows Kimi doesn't support web search, so it routes to GLM.
 
 ---
 
@@ -516,7 +516,7 @@ class SimpleTool(BaseTool):
 }
 ```
 
-**MiniMax M2 Decision:**
+**MiniMax M2-Stable Decision:**
 ```json
 {
     "provider": "KIMI",
@@ -527,7 +527,7 @@ class SimpleTool(BaseTool):
 }
 ```
 
-**Why:** MiniMax M2 knows Kimi K2 models are optimized for thinking.
+**Why:** MiniMax M2-Stable knows Kimi K2 models are optimized for thinking.
 
 ---
 
@@ -542,7 +542,7 @@ class SimpleTool(BaseTool):
 }
 ```
 
-**MiniMax M2 Decision:**
+**MiniMax M2-Stable Decision:**
 ```json
 {
     "provider": "GLM",
@@ -553,7 +553,7 @@ class SimpleTool(BaseTool):
 }
 ```
 
-**Why:** MiniMax M2 can choose based on cost, performance, or availability.
+**Why:** MiniMax M2-Stable can choose based on cost, performance, or availability.
 
 ---
 
@@ -565,14 +565,14 @@ class SimpleTool(BaseTool):
 - **Maintenance:** Ongoing effort
 - **Bug risk:** High (complex code)
 
-### MiniMax M2 System
+### MiniMax M2-Stable System
 - **API cost:** ~$0.01 per routing decision (estimated)
 - **Development time:** 2-3 days to implement
 - **Maintenance:** Minimal (configuration-based)
 - **Bug risk:** Low (simple code)
 
 **Break-even:** 800-1,000 routing decisions per day
-**Recommendation:** If routing >1,000 times/day, MiniMax M2 pays for itself in simplification alone.
+**Recommendation:** If routing >1,000 times/day, MiniMax M2-Stable pays for itself in simplification alone.
 
 ---
 
@@ -602,9 +602,9 @@ class SimpleTool(BaseTool):
 
 ---
 
-## 🔍 Comparison: Current vs. MiniMax M2
+## 🔍 Comparison: Current vs. MiniMax M2-Stable
 
-| Aspect | Current System | MiniMax M2 System |
+| Aspect | Current System | MiniMax M2-Stable System |
 |--------|----------------|-------------------|
 | **Lines of Code** | 2,500 | 150 |
 | **Complexity** | High (multiple classes) | Low (single class) |
@@ -621,7 +621,7 @@ class SimpleTool(BaseTool):
 
 ## 🎯 Decision Points
 
-### When to Use MiniMax M2 Routing
+### When to Use MiniMax M2-Stable Routing
 ✅ **Good for:**
 - Complex routing requirements
 - Multiple providers with different capabilities
@@ -637,7 +637,7 @@ class SimpleTool(BaseTool):
 ### Hybrid Approach (Best of Both)
 We can also use a **hybrid approach**:
 - Simple cases (80%): Fast hardcoded routing
-- Complex cases (20%): MiniMax M2 routing
+- Complex cases (20%): MiniMax M2-Stable routing
 
 This gives us:
 - 80% performance of hardcoded
@@ -650,11 +650,11 @@ This gives us:
 
 ### 1. Learning Mode
 - Track routing decisions and outcomes
-- MiniMax M2 learns from successes/failures
+- MiniMax M2-Stable learns from successes/failures
 - Improves over time
 
 ### 2. Cost-Aware Routing
-- MiniMax M2 optimizes for cost
+- MiniMax M2-Stable optimizes for cost
 - Balances quality vs. price
 - Adapts to budget constraints
 
@@ -665,14 +665,14 @@ This gives us:
 
 ### 4. A/B Testing
 - Test different routing strategies
-- MiniMax M2 experiments with alternatives
+- MiniMax M2-Stable experiments with alternatives
 - Data-driven optimization
 
 ---
 
 ## 📝 Conclusion
 
-Using MiniMax M2 as a smart router offers a **paradigm shift**:
+Using MiniMax M2-Stable as a smart router offers a **paradigm shift**:
 
 **From:** Complex, hardcoded, difficult to maintain
 **To:** Simple, intelligent, adaptive, easy to extend
@@ -687,23 +687,23 @@ Using MiniMax M2 as a smart router offers a **paradigm shift**:
 **The trade-offs:**
 - Slight increase in cost (~$0.01 per decision)
 - Requires API call (minimal latency)
-- Depends on MiniMax M2 availability
+- Depends on MiniMax M2-Stable availability
 
-**Verdict:** For a production system with multiple providers and complex routing needs, MiniMax M2 smart routing is a **no-brainer**. The simplification and intelligence gains far outweigh the minimal cost.
+**Verdict:** For a production system with multiple providers and complex routing needs, MiniMax M2-Stable smart routing is a **no-brainer**. The simplification and intelligence gains far outweigh the minimal cost.
 
 ---
 
 ## 🔗 Next Steps
 
 1. **Review this proposal** with the team
-2. **Get MiniMax M2 API key** and test
+2. **Get MiniMax M2-Stable API key** and test
 3. **Prototype the router** (1 day)
 4. **Measure routing complexity** vs. API cost
 5. **Make go/no-go decision**
 
 ---
 
-**Ready to simplify and smarten the routing system with MiniMax M2? Let's discuss!**
+**Ready to simplify and smarten the routing system with MiniMax M2-Stable? Let's discuss!**
 
 ---
 

@@ -1,0 +1,90 @@
+================================================================================
+EX-AI-MCP-SERVER - WEBSOCKET INVESTIGATION COMPLETE
+================================================================================
+
+Date: 2025-11-12 19:57:00
+Status: CRITICAL BUGS FIXED AND VERIFIED
+
+================================================================================
+FINDINGS SUMMARY
+================================================================================
+
+1. WEBSOCKET CONNECTION: ✅ WORKING
+   - Port 3005 (WebSocket Shim): OPEN and functional
+   - Port 3010 (Docker Daemon): OPEN and functional
+   - MCP Protocol: Fully supported
+
+2. CRITICAL BUGS FOUND AND FIXED:
+   ✅ Bug #1: Logger used before definition (line 34)
+   ✅ Bug #2: Wrong default port (3004 should be 3010)
+   
+   Both bugs FIXED and PUSHED to repository
+
+3. PROJECT BLOAT: ⚠️ SEVERE
+   - 95 Python scripts in /scripts/
+   - 180 total files in /scripts/
+   - 35 subdirectories
+   
+   Recommendation: Archive 80% of scripts
+
+4. CONFIGURATION ISSUES:
+   - Unused port mappings (3001, 3002, 3003)
+   - Health check not responding (port 3002)
+   - API keys exposed in config files
+
+================================================================================
+VERIFICATION
+================================================================================
+
+Test Command:
+  python -c "import websockets; import asyncio; ..."
+
+Result: [OK] WebSocket shim is accessible
+        [OK] MCP initialization successful
+        Test result: PASS
+
+================================================================================
+FILES MODIFIED
+================================================================================
+
+1. scripts/runtime/run_ws_shim.py
+   - Moved logger definition before use
+   - Changed default port from 3004 to 3010
+   - Fixed Pylance diagnostic errors
+
+2. CRITICAL_CONFIGURATION_ISSUES.md (NEW)
+   - Detailed analysis of all issues
+
+3. WEBSOCKET_FIX_SUMMARY.md (NEW)
+   - Complete investigation summary
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+Priority 1 (Done): ✅
+  - Fix logger bug
+  - Fix port default
+  - Test and verify
+
+Priority 2 (Recommended):
+  - Remove unused port mappings
+  - Clean up health check
+  - Test MCP tool calls
+
+Priority 3 (Project Health):
+  - Archive old scripts
+  - Review API key exposure
+  - Document essential scripts
+
+================================================================================
+CONCLUSION
+================================================================================
+
+The WebSocket system WAS WORKING but had critical bugs that could cause
+crashes. Both bugs are now fixed and verified. The connection works perfectly
+when using proper MCP protocol.
+
+The real issue is project bloat - 95 scripts is excessive for this project.
+
+================================================================================

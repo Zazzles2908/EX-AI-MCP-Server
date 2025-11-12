@@ -34,9 +34,39 @@ class ProviderType(Enum):
 class ModelCapabilities:
     """Model capabilities with default temperature constraint."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        provider: Optional[ProviderType] = None,
+        model_name: str = "",
+        friendly_name: str = "",
+        context_window: int = 0,
+        max_output_tokens: int = 0,
+        supports_images: bool = False,
+        max_image_size_mb: float = 0.0,
+        supports_function_calling: bool = False,
+        supports_streaming: bool = False,
+        supports_system_prompts: bool = False,
+        supports_extended_thinking: bool = False,
+        description: str = "",
+        aliases: Optional[list] = None,
+    ):
         # Default: GLM and similar models support temperature 0.0-1.0
         self.temperature_constraint = RangeTemperatureConstraint(min_value=0.0, max_value=1.0)
+
+        # Store model metadata
+        self.provider = provider
+        self.model_name = model_name
+        self.friendly_name = friendly_name
+        self.context_window = context_window
+        self.max_output_tokens = max_output_tokens
+        self.supports_images = supports_images
+        self.max_image_size_mb = max_image_size_mb
+        self.supports_function_calling = supports_function_calling
+        self.supports_streaming = supports_streaming
+        self.supports_system_prompts = supports_system_prompts
+        self.supports_extended_thinking = supports_extended_thinking
+        self.description = description
+        self.aliases = aliases or []
 
 
 class ModelResponse:

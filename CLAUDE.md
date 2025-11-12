@@ -1,6 +1,56 @@
 # EX-AI-MCP-Server - Claude Code Configuration
-**Last Updated**: 2025-11-12
+**Last Updated**: 2025-11-13
 **Status**: WebSocket MCP Server Development Platform 🚀
+**Version**: 2.3 (Post-Cleanup & Fixes)
+
+---
+
+## ⚠️ CRITICAL: Recent Fixes (2025-11-13)
+
+### **Issues Fixed:**
+1. **Stdout Redirection Bug** - Wrapper was logging MCP protocol messages (FIXED)
+2. **Timeout Configuration** - Increased from 10s to 30s (FIXED)
+3. **Docker Layer Caching** - Rebuild without cache required (FIXED)
+4. **ModelCapabilities Class** - Missing parameters added (FIXED)
+5. **Environment Path Resolution** - Corrected .env loading (FIXED)
+6. **Logging Pollution** - MCP loggers set to ERROR only (FIXED)
+
+### **Rebuild Command (CRITICAL):**
+```bash
+# From root directory
+docker-compose build --no-cache
+
+# Start services
+docker-compose up -d
+
+# Verify health
+curl http://127.0.0.1:3002/health
+```
+
+### **Directory Structure (Cleaned 2025-11-13):**
+```
+c:\Project\EX-AI-MCP-Server\
+├── Dockerfile               ← Docker build file (ROOT)
+├── docker-compose.yml       ← Container orchestration (ROOT)
+├── config/
+│   ├── pyproject.toml       ← Python dependencies
+│   ├── pytest.ini          ← Test config
+│   └── redis.conf          ← Redis config
+├── scripts/                ← All operational scripts
+└── docs/                   ← Documentation
+    ├── integration/        ← Integration guides
+    └── reports/           ← Temporary fix files (moved here)
+```
+
+### **Critical Files (DO NOT MODIFY WITHOUT CARE):**
+- `scripts/runtime/run_ws_shim.py` - MCP stdio bridge
+- `scripts/runtime/start_ws_shim_safe.py` - Wrapper script (FIXED for stdout)
+- `src/providers/base.py` - ModelCapabilities class (FIXED)
+- `.mcp.json` - MCP client configuration
+- `.env` - Local environment variables
+- `.env.docker` - Container environment variables
+
+---
 
 ## Project Overview
 
@@ -379,7 +429,7 @@ GLM_API_KEY=...
 GLM_API_URL=https://api.z.ai/api/paas/v4
 KIMI_API_KEY=...
 KIMI_API_URL=https://api.moonshot.ai/v1
-MINIMAX_API_KEY=...
+MINIMAX_M2_KEY=...
 MINIMAX_API_URL=https://api.minimax.io/anthropic
 
 # Timeouts
@@ -610,3 +660,145 @@ cd C:\Project\EX-AI-MCP-Server\scripts\windows-cleanup
 
 **Last Updated**: 2025-11-12
 **Version**: 7.1.0 (Process Cleanup System Added)
+
+---
+
+## 🚀 Quick Start for New Agents (2025-11-13 Update)
+
+### **First Steps:**
+1. **Read this entire file** - Understand the project architecture
+2. **Check daemon health:** `curl http://127.0.0.1:3002/health`
+3. **Review integration guide:** `docs/integration/EXAI_MCP_INTEGRATION_GUIDE.md`
+4. **Check for recent fixes:** `docs/integration/` (Lessons Learned section)
+
+### **Development Workflow:**
+
+#### **Daily Checks:**
+```bash
+# 1. Verify all services are running
+docker-compose ps
+
+# 2. Check daemon health
+curl http://127.0.0.1:3002/health
+
+# 3. Review recent logs
+tail -50 logs/ws_daemon.log
+tail -50 logs/ws-shim.log
+
+# 4. Test MCP connection
+python scripts/test_mcp_connection.py
+```
+
+#### **After Code Changes:**
+```bash
+# CRITICAL: Rebuild without cache (Docker caches old code!)
+docker-compose build --no-cache
+
+# Restart services
+docker-compose restart
+
+# Verify everything works
+curl http://127.0.0.1:3002/health
+```
+
+#### **Common Issues & Solutions:**
+
+**Issue:** "exai-mcp failed to connect"
+**Solution:**
+- Daemon not running: `docker-compose up -d`
+- Port conflict: `docker-compose restart`
+- Old code in container: `docker-compose build --no-cache`
+
+**Issue:** Docker build fails
+**Solution:**
+- Check Dockerfile uses correct path (should be `COPY config/pyproject.toml .`)
+- Verify dependencies in `config/pyproject.toml`
+- Clean build: `docker system prune -f && docker-compose build --no-cache`
+
+**Issue:** MCP protocol messages not received
+**Solution:**
+- Check `scripts/runtime/start_ws_shim_safe.py` for stdout redirection bug
+- Verify stderr logging, stdout pass-through
+- No logging in MCP protocol messages!
+
+### **Key Files to Know:**
+
+#### **Core Components:**
+- `src/daemon/ws_server.py` - WebSocket server implementation
+- `scripts/runtime/run_ws_shim.py` - MCP stdio bridge (DO NOT LOG STDOUT!)
+- `scripts/runtime/start_ws_shim_safe.py` - Safe startup wrapper
+- `src/providers/base.py` - Model capabilities (FIXED 2025-11-13)
+
+#### **Configuration:**
+- `docker-compose.yml` - Container orchestration (ROOT level)
+- `Dockerfile` - Container build (ROOT level)
+- `config/pyproject.toml` - Dependencies
+- `.mcp.json` - MCP client config
+- `.env` - Local environment
+- `.env.docker` - Container environment
+
+#### **Monitoring:**
+- Health: `http://127.0.0.1:3002/health`
+- Metrics: `http://127.0.0.1:3003/metrics`
+- Logs: `logs/ws_daemon.log`, `logs/ws-shim.log`
+
+### **Testing:**
+```bash
+# MCP protocol test
+python scripts/test_mcp_connection.py
+
+# Port availability
+python scripts/check_port.py --port 3010
+
+# Environment validation
+python scripts/validate_environment.py
+
+# WebSocket chat test
+python scripts/ws/ws_chat_once.py
+```
+
+### **Best Practices:**
+
+1. **Always rebuild Docker without cache** after code changes
+2. **Never log to stdout** - MCP clients expect clean JSON
+3. **All logs go to stderr** - Keep protocol streams clean
+4. **Test with real MCP clients** - Don't rely on unit tests
+5. **Document any changes** in docs/integration/EXAI_MCP_INTEGRATION_GUIDE.md
+6. **Update this file** when adding new workflows or fixing issues
+
+### **For Debugging:**
+```bash
+# Watch daemon logs in real-time
+docker-compose logs -f exai-daemon
+
+# Watch shim logs
+tail -f logs/ws-shim.log
+
+# Watch all logs
+tail -f logs/ws_daemon.log
+
+# Check MCP connection in detail
+python scripts/test_mcp_connection.py 2>&1 | tee debug.log
+```
+
+### **File Locations:**
+
+#### **Root (Essential files only):**
+- `README.md` - Project overview
+- `CLAUDE.md` - This file
+- `CHANGELOG.md` - Version history
+- `CONTRIBUTING.md` - Contribution guidelines
+- `Dockerfile` - Container build
+- `docker-compose.yml` - Container orchestration
+
+#### **Documentation:**
+- `docs/integration/EXAI_MCP_INTEGRATION_GUIDE.md` - Integration guide
+- `docs/reports/` - Temporary fix documentation (moved 2025-11-13)
+
+#### **Source:**
+- `src/` - Core source code
+- `tools/` - Tool implementations
+- `scripts/` - Operational scripts
+- `config/` - Dependencies and configs
+
+**Remember:** This is a production MCP server. Changes affect live integrations. Always test thoroughly and rebuild containers when code changes!

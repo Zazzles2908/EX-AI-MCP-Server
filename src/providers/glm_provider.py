@@ -13,6 +13,135 @@ from src.providers.base import ProviderType, ModelCapabilities, ModelResponse
 logger = logging.getLogger(__name__)
 
 
+def build_payload(
+    prompt: str,
+    system_prompt: Optional[str],
+    model_name: str,
+    temperature: float,
+    max_output_tokens: Optional[int],
+    tools: Optional[list] = None,
+    tool_choice: Optional[Any] = None,
+    **kwargs
+) -> dict:
+    """
+    Build a payload for GLM chat completions API.
+
+    Args:
+        prompt: User prompt
+        system_prompt: System prompt (optional)
+        model_name: Model name
+        temperature: Temperature setting
+        max_output_tokens: Maximum output tokens (optional)
+        tools: Optional tools list
+        tool_choice: Optional tool choice
+        **kwargs: Additional parameters (e.g., response_format)
+
+    Returns:
+        Dict payload for API call
+    """
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+
+    payload = {
+        "model": model_name,
+        "messages": messages,
+    }
+
+    if temperature is not None:
+        payload["temperature"] = temperature
+
+    if max_output_tokens is not None:
+        payload["max_tokens"] = max_output_tokens
+
+    if tools:
+        payload["tools"] = tools
+
+    if tool_choice is not None:
+        payload["tool_choice"] = tool_choice
+
+    # Handle additional kwargs (e.g., response_format for structured output)
+    for key, value in kwargs.items():
+        if key not in payload:
+            payload[key] = value
+
+    return payload
+
+
+def chat_completions_create(
+    messages: List[Dict[str, str]],
+    model: str = "glm-4.5-flash",
+    temperature: float = 0.3,
+    max_tokens: Optional[int] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    **kwargs
+) -> ModelResponse:
+    """
+    Standalone chat completions function for backward compatibility.
+
+    Args:
+        messages: List of messages
+        model: Model name
+        temperature: Temperature
+        max_tokens: Max tokens
+        api_key: API key (optional, uses env var if not provided)
+        base_url: Base URL (optional, uses env var if not provided)
+        **kwargs: Additional parameters
+
+    Returns:
+        ModelResponse
+    """
+    provider = GLMProvider(api_key=api_key, base_url=base_url)
+    import asyncio
+    return asyncio.run(provider.chat_completions_create(
+        messages=messages,
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        **kwargs
+    ))
+
+
+def generate_content(
+    prompt: str,
+    model_name: str = "glm-4.5-flash",
+    system_prompt: Optional[str] = None,
+    temperature: float = 0.3,
+    max_tokens: Optional[int] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    **kwargs
+) -> ModelResponse:
+    """
+    Standalone generate content function for backward compatibility.
+
+    Args:
+        prompt: User prompt
+        model_name: Model name
+        system_prompt: System prompt (optional)
+        temperature: Temperature
+        max_tokens: Max tokens
+        api_key: API key (optional, uses env var if not provided)
+        base_url: Base URL (optional, uses env var if not provided)
+        **kwargs: Additional parameters
+
+    Returns:
+        ModelResponse
+    """
+    provider = GLMProvider(api_key=api_key, base_url=base_url)
+    import asyncio
+    return asyncio.run(provider.generate_content(
+        prompt=prompt,
+        model_name=model_name,
+        system_prompt=system_prompt,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        **kwargs
+    ))
+
+
 class GLMProvider:
     """Minimal GLM provider implementation."""
 

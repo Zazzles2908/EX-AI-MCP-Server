@@ -13,13 +13,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy pyproject.toml
-COPY config/pyproject.toml .
+# Copy requirements
+COPY requirements.txt .
 
 # Install Python dependencies (optimized for layer caching)
 # Upgrade pip first for better dependency resolution
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --user -e .
+    pip install --no-cache-dir --user -r requirements.txt
 
 # Stage 2: Runtime
 FROM python:3.13-slim
@@ -45,8 +45,9 @@ ENV PATH=/root/.local/bin:$PATH
 COPY src/ ./src/
 COPY tools/ ./tools/
 COPY utils/ ./utils/
-COPY systemprompts/ ./systemprompts/
-COPY streaming/ ./streaming/
+# COPY systemprompts/ ./systemprompts/  # REMOVED - directory doesn't exist (prompts are in src/prompts)
+COPY configurations/ ./configurations/
+# COPY streaming/ ./streaming/  # REMOVED - directory doesn't exist (2025-11-02)
 COPY scripts/ws/ ./scripts/ws/
 COPY scripts/runtime/ ./scripts/runtime/
 COPY static/ ./static/

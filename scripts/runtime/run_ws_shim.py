@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """
-EXAI MCP WebSocket Shim - Protocol Translator
+EXAI MCP Shim - Protocol Translator
 Bridges standard MCP protocol <-> EXAI custom WebSocket protocol.
 
 This shim connects to the EXAI daemon (running in Docker) and translates:
-- MCP initialize/hello -> Custom "op" protocol
-- Custom responses -> MCP responses
+- MCP stdio messages -> Custom WebSocket protocol
+- Custom WebSocket responses -> MCP stdio responses
 
 PROCESS MANAGEMENT FIX: Added proper signal handling to prevent orphaned child processes.
 """
@@ -17,9 +17,12 @@ import os
 import signal
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, List
 
 import websockets
+from mcp.server import Server
+from mcp.server.stdio import stdio_server
+from mcp.types import TextContent, Tool
 
 # Setup paths
 _repo_root = Path(__file__).resolve().parents[2]
@@ -42,374 +45,195 @@ except Exception as e:
 
 # Configuration
 DAEMON_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
-# Use the external port (what Docker maps 8079 to) - FIX: Default should be 3010 not 3004
 DAEMON_PORT = int(os.getenv("EXAI_WS_PORT", "3010"))
-SHIM_PORT = int(os.getenv("SHIM_LISTEN_PORT", "3005"))  # Listen on different port
+
+# Initialize MCP server
+app = Server("exai-mcp")
+
+# Global daemon connection
+_daemon_ws = None
+_daemon_lock = asyncio.Lock()
 
 
-class MCPShimProtocol:
-    """Protocol handler for MCP <-> Custom translation."""
+async def get_daemon_connection():
+    """Get or create WebSocket connection to daemon."""
+    global _daemon_ws
+    async with _daemon_lock:
+        if _daemon_ws is None or _daemon_ws.closed:
+            # DEBUG: Log environment variables
+            token = os.getenv("EXAI_WS_TOKEN", "NOT SET")
+            logger.info(f"[DAEMON_CONNECT] Token: {token[:20]}...")
+            logger.info(f"[DAEMON_CONNECT] Host: {DAEMON_HOST}, Port: {DAEMON_PORT}")
 
-    def __init__(self, client_ws):
-        self.client_ws = client_ws
-        self.daemon_ws = None
-        self.running = True
+            daemon_uri = f"ws://{DAEMON_HOST}:{DAEMON_PORT}"
+            logger.info(f"[DAEMON_CONNECT] Connecting to {daemon_uri}...")
 
-    async def connect_to_daemon(self):
-        """Establish connection to EXAI daemon."""
-        daemon_uri = f"ws://{DAEMON_HOST}:{DAEMON_PORT}"
-        logger.info(f"Connecting to EXAI daemon at {daemon_uri}...")
-
-        try:
-            self.daemon_ws = await websockets.connect(daemon_uri, timeout=10)
-            logger.info("✓ Connected to EXAI daemon")
-            return True
-        except Exception as e:
-            logger.error(f"✗ Failed to connect to daemon: {e}")
-            return False
-
-    async def handle_client_messages(self):
-        """Handle messages from MCP client and translate to daemon protocol."""
-        try:
-            async for message in self.client_ws:
-                data = json.loads(message)
-
-                # Log MCP message
-                if "method" in data:
-                    logger.debug(f"Received MCP: {data['method']}")
-
-                # Skip initialize - already handled in run() before this handler started
-                if data.get("method") == "initialize":
-                    logger.debug("Skipping initialize (already handled)")
-                    continue
-
-                # Handle MCP tools/list
-                if data.get("method") == "tools/list":
-                    await self._handle_tools_list(data)
-                    continue
-
-                # Handle MCP tools/call
-                if data.get("method") == "tools/call":
-                    await self._handle_tools_call(data)
-                    continue
-
-                # Forward other messages
-                await self._forward_to_daemon(data)
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON from client: {e}")
-        except websockets.exceptions.ConnectionClosed:
-            logger.info("Client disconnected")
-        except Exception as e:
-            logger.error(f"Error handling client messages: {e}", exc_info=True)
-        finally:
-            self.running = False
-
-    async def _handle_initialize(self, data):
-        """Translate MCP initialize to custom hello protocol."""
-        client_info = data.get("params", {}).get("clientInfo", {})
-        protocol_version = data.get("params", {}).get("protocolVersion", "2024-11-05")
-
-        # Get auth token for daemon
-        auth_token = os.getenv("EXAI_WS_TOKEN", "")
-
-        # Send custom hello to daemon
-        hello_msg = {
-            "op": "hello",
-            "protocolVersion": protocol_version,
-            "capabilities": data.get("params", {}).get("capabilities", {}),
-            "clientInfo": client_info,
-            "token": auth_token
-        }
-
-        logger.debug(f"Sending hello to daemon: {hello_msg}")
-        await self.daemon_ws.send(json.dumps(hello_msg))
-
-        # Wait for hello_ack
-        try:
-            response = await asyncio.wait_for(self.daemon_ws.recv(), timeout=5)
-            hello_ack = json.loads(response)
-
-            logger.debug(f"Received hello_ack: {hello_ack}")
-
-            if hello_ack.get("ok"):
-                # Send MCP initialize response
-                init_response = {
-                    "jsonrpc": "2.0",
-                    "id": data.get("id"),
-                    "result": {
-                        "protocolVersion": "2024-11-05",
-                        "capabilities": {
-                            "tools": {}
-                        },
-                        "serverInfo": {
-                            "name": "exai-mcp-shim",
-                            "version": "1.0.0"
-                        }
-                    }
-                }
-                await self.client_ws.send(json.dumps(init_response))
-                logger.info("✓ MCP initialization complete")
-            else:
-                error_msg = hello_ack.get("error", "unknown error")
-                error_response = {
-                    "jsonrpc": "2.0",
-                    "id": data.get("id"),
-                    "error": {"code": -32000, "message": f"Daemon error: {error_msg}"}
-                }
-                await self.client_ws.send(json.dumps(error_response))
-
-        except asyncio.TimeoutError:
-            logger.error("✗ Timeout waiting for daemon hello_ack")
-            error_response = {
-                "jsonrpc": "2.0",
-                "id": data.get("id"),
-                "error": {"code": -32000, "message": "Daemon timeout"}
-            }
-            await self.client_ws.send(json.dumps(error_response))
-
-    async def _handle_initialize_with_hello(self, init_data):
-        """Handle initialize with hello handshake - used before concurrent handlers start."""
-        client_info = init_data.get("params", {}).get("clientInfo", {})
-        protocol_version = init_data.get("params", {}).get("protocolVersion", "2024-11-05")
-
-        # Get auth token for daemon
-        auth_token = os.getenv("EXAI_WS_TOKEN", "")
-
-        # Send custom hello to daemon with token
-        hello_msg = {
-            "op": "hello",
-            "protocolVersion": protocol_version,
-            "capabilities": init_data.get("params", {}).get("capabilities", {}),
-            "clientInfo": client_info,
-            "token": auth_token
-        }
-
-        logger.info(f"Sending hello to daemon with token")
-        await self.daemon_ws.send(json.dumps(hello_msg))
-
-        # Wait for hello_ack
-        try:
-            response = await asyncio.wait_for(self.daemon_ws.recv(), timeout=10)
-            hello_ack = json.loads(response)
-
-            logger.info(f"Received hello_ack from daemon: ok={hello_ack.get('ok')}")
-
-            if hello_ack.get("ok"):
-                # Send MCP initialize response back to client
-                init_response = {
-                    "jsonrpc": "2.0",
-                    "id": init_data.get("id"),
-                    "result": {
-                        "protocolVersion": "2024-11-05",
-                        "capabilities": {
-                            "tools": {}
-                        },
-                        "serverInfo": {
-                            "name": "exai-mcp-shim",
-                            "version": "1.0.0"
-                        }
-                    }
-                }
-                await self.client_ws.send(json.dumps(init_response))
-                logger.info("✓✓✓ MCP initialization complete with daemon auth ✓✓✓")
-            else:
-                error_msg = hello_ack.get("error", "unknown error")
-                logger.error(f"Daemon hello failed: {error_msg}")
-                raise Exception(f"Daemon authentication failed: {error_msg}")
-
-        except asyncio.TimeoutError:
-            logger.error("✗ Timeout waiting for daemon hello_ack")
-            raise Exception("Daemon hello timeout - connection may have been closed")
-
-
-    async def _handle_tools_list(self, data):
-        """Handle tools/list - just forward to daemon."""
-        # Convert MCP request to daemon format
-        await self.daemon_ws.send(json.dumps({
-            "op": "list_tools",
-            "id": data.get("id")
-        }))
-
-    async def _handle_tools_call(self, data):
-        """Handle tools/call - forward to daemon."""
-        tool_call = data.get("params", {})
-        await self.daemon_ws.send(json.dumps({
-            "op": "call_tool",
-            "id": data.get("id"),
-            "name": tool_call.get("name"),
-            "arguments": tool_call.get("arguments", {})
-        }))
-
-    async def _forward_to_daemon(self, data):
-        """Forward MCP messages to daemon."""
-        if self.daemon_ws:
-            await self.daemon_ws.send(json.dumps(data))
-
-    async def handle_daemon_messages(self):
-        """Handle messages from EXAI daemon and translate to MCP."""
-        try:
-            async for message in self.daemon_ws:
-                try:
-                    data = json.loads(message)
-
-                    # Handle daemon responses and forward appropriately
-                    if "op" in data:
-                        # This is a custom daemon message
-                        await self._translate_daemon_response(data)
-                    else:
-                        # Forward JSON-RPC messages directly
-                        await self.client_ws.send(message)
-
-                except json.JSONDecodeError:
-                    # Forward raw messages
-                    await self.client_ws.send(message)
-
-        except websockets.exceptions.ConnectionClosed:
-            logger.info("Daemon disconnected")
-        except Exception as e:
-            logger.error(f"Error handling daemon messages: {e}", exc_info=True)
-        finally:
-            self.running = False
-
-    async def _translate_daemon_response(self, data):
-        """Translate daemon custom responses to MCP format."""
-        op = data.get("op")
-
-        if op == "hello_ack":
-            # Already handled in _handle_initialize
-            pass
-
-        elif op == "list_tools_result" or op == "list_tools_res":
-            # Convert to MCP tools/list response
-            tools = data.get("tools", [])
-            mcp_response = {
-                "jsonrpc": "2.0",
-                "id": data.get("id"),
-                "result": {"tools": tools}
-            }
-            await self.client_ws.send(json.dumps(mcp_response))
-
-        elif op == "call_result" or op == "call_res":
-            # Convert to MCP tools/call response
-            result = data.get("result", [])
-            mcp_response = {
-                "jsonrpc": "2.0",
-                "id": data.get("id"),
-                "result": {"content": result}
-            }
-            await self.client_ws.send(json.dumps(mcp_response))
-
-        elif op == "error":
-            # Forward error
-            error = data.get("error", {})
-            mcp_response = {
-                "jsonrpc": "2.0",
-                "id": data.get("id"),
-                "error": {
-                    "code": error.get("code", -32000),
-                    "message": error.get("message", "Unknown error")
-                }
-            }
-            await self.client_ws.send(json.dumps(mcp_response))
-
-        else:
-            # Unknown op, forward as-is
-            logger.warning(f"Unknown daemon op: {op}")
-            await self.client_ws.send(json.dumps(data))
-
-    async def run(self):
-        """Run the protocol bridge."""
-        logger.info("Starting MCP shim protocol bridge...")
-
-        # Connect to daemon
-        if not await self.connect_to_daemon():
-            raise Exception("Failed to connect to daemon")
-
-        # Perform hello handshake before starting concurrent handlers
-        # This prevents the "cannot call recv while another coroutine is already waiting" error
-        try:
-            # Wait for the first message from client (should be initialize)
-            init_message = await asyncio.wait_for(self.client_ws.recv(), timeout=30)
-            init_data = json.loads(init_message)
-
-            if init_data.get("method") == "initialize":
-                # Handle the initialize and hello handshake
-                await self._handle_initialize_with_hello(init_data)
-            else:
-                # Unexpected message, close connection
-                logger.error(f"Expected initialize, got {init_data.get('method')}")
-                return
-        except asyncio.TimeoutError:
-            logger.error("Timeout waiting for initialize message")
-            return
-        except Exception as e:
-            logger.error(f"Error during hello handshake: {e}", exc_info=True)
-            return
-
-        # Now run both handlers concurrently (they won't try to recv during hello)
-        try:
-            await asyncio.gather(
-                self.handle_client_messages(),
-                self.handle_daemon_messages(),
-                return_exceptions=True
-            )
-        except Exception as e:
-            logger.error(f"Error in protocol bridge: {e}", exc_info=True)
-        finally:
-            if self.daemon_ws:
-                await self.daemon_ws.close()
-
-
-async def handle_client(ws: websockets.WebSocketServerProtocol):
-    """Handle new MCP client connection."""
-    client_id = id(ws)
-    peer = ws.remote_address
-    logger.info(f"[{client_id}] New MCP client from {peer}")
-
-    protocol = None
-    try:
-        protocol = MCPShimProtocol(ws)
-        await protocol.run()
-    except Exception as e:
-        logger.error(f"[{client_id}] Error: {e}", exc_info=True)
-    finally:
-        logger.info(f"[{client_id}] Client disconnected")
-        if protocol and protocol.daemon_ws:
             try:
-                await protocol.daemon_ws.close()
-            except:
-                pass
+                _daemon_ws = await websockets.connect(daemon_uri)
+                logger.info("[DAEMON_CONNECT] ✓ Connected to daemon")
+
+                # Send hello with token
+                auth_token = os.getenv("EXAI_WS_TOKEN", "")
+                logger.info(f"[HELLO] Token from env: {auth_token[:20] if auth_token else 'EMPTY'}...")
+
+                hello_msg = {
+                    "op": "hello",
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "clientInfo": {"name": "exai-mcp-shim", "version": "1.0.0"},
+                    "token": auth_token
+                }
+                await _daemon_ws.send(json.dumps(hello_msg))
+                logger.info("[HELLO] ✓ Hello sent to daemon")
+
+                # Wait for hello_ack (increased timeout to 30s for stability under load)
+                response = await asyncio.wait_for(_daemon_ws.recv(), timeout=30)
+                hello_ack = json.loads(response)
+                logger.info(f"[HELLO] ✓ Received hello_ack: ok={hello_ack.get('ok')}")
+
+                if not hello_ack.get("ok"):
+                    error_msg = hello_ack.get('error', 'Unknown error')
+                    logger.error(f"[HELLO] ✗ Daemon rejected connection: {error_msg}")
+                    await _daemon_ws.close()
+                    _daemon_ws = None
+                    raise Exception(f"Daemon authentication failed: {error_msg}")
+
+            except asyncio.TimeoutError as e:
+                logger.error(f"[DAEMON_CONNECT] ✗ Timeout waiting for daemon response: {e}")
+                if _daemon_ws and not _daemon_ws.closed:
+                    await _daemon_ws.close()
+                _daemon_ws = None
+                raise
+            except Exception as e:
+                logger.error(f"[DAEMON_CONNECT] ✗ Failed to connect: {e}", exc_info=True)
+                if _daemon_ws and not _daemon_ws.closed:
+                    await _daemon_ws.close()
+                _daemon_ws = None
+                raise
+
+        return _daemon_ws
+
+
+@app.list_tools()
+async def handle_list_tools() -> list[Tool]:
+    """Handle tools/list - get list from daemon."""
+    logger.info("[TOOLS] List tools requested")
+    try:
+        daemon_ws = await get_daemon_connection()
+        request_id = f"list_{id(daemon_ws)}"
+
+        # Send list_tools request to daemon
+        await daemon_ws.send(json.dumps({
+            "op": "list_tools",
+            "id": request_id
+        }))
+
+        # Wait for response
+        response = await asyncio.wait_for(daemon_ws.recv(), timeout=30)
+        data = json.loads(response)
+
+        daemon_tools = data.get("tools", [])
+        logger.info(f"[TOOLS] ✓ Received {len(daemon_tools)} tools from daemon")
+
+        # Convert daemon tool format to MCP Tool format
+        mcp_tools = []
+        for tool in daemon_tools:
+            mcp_tool = Tool(
+                name=tool["name"],
+                description=tool.get("description", ""),
+                inputSchema=tool.get("inputSchema", {}),
+                title=tool.get("title", None),
+                outputSchema=tool.get("outputSchema", None)
+            )
+            mcp_tools.append(mcp_tool)
+
+        return mcp_tools
+
+    except Exception as e:
+        logger.error(f"[TOOLS] ✗ Failed to list tools: {e}", exc_info=True)
+        return []
+
+
+@app.call_tool()
+async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
+    """Handle tools/call - execute tool via daemon."""
+    logger.info(f"[TOOL_CALL] Tool: {name}")
+    try:
+        daemon_ws = await get_daemon_connection()
+        request_id = f"call_{id(daemon_ws)}"
+
+        # Send call_tool request to daemon
+        await daemon_ws.send(json.dumps({
+            "op": "call_tool",
+            "id": request_id,
+            "name": name,
+            "arguments": arguments
+        }))
+
+        # Wait for response
+        response = await asyncio.wait_for(daemon_ws.recv(), timeout=60)
+        data = json.loads(response)
+
+        result = data.get("result", [])
+        logger.info(f"[TOOL_CALL] ✓ Tool '{name}' executed successfully")
+
+        # Convert result to TextContent
+        content = []
+        for item in result:
+            if isinstance(item, dict) and "text" in item:
+                content.append(TextContent(type="text", text=item["text"]))
+            elif isinstance(item, str):
+                content.append(TextContent(type="text", text=item))
+            else:
+                content.append(TextContent(type="text", text=str(item)))
+
+        return content
+
+    except Exception as e:
+        logger.error(f"[TOOL_CALL] ✗ Tool '{name}' failed: {e}", exc_info=True)
+        return [TextContent(type="text", text=f"Error executing tool {name}: {str(e)}")]
 
 
 async def main():
-    """Main shim server."""
+    """Main shim server using stdio."""
     logger.info(f"=" * 60)
-    logger.info(f"EXAI MCP Shim Starting")
-    logger.info(f"  Listening: {SHIM_PORT}")
+    logger.info(f"EXAI MCP Shim Starting (stdio mode)")
     logger.info(f"  Daemon: {DAEMON_HOST}:{DAEMON_PORT}")
     logger.info(f"=" * 60)
 
-    # Start WebSocket server
-    async with websockets.serve(handle_client, "127.0.0.1", SHIM_PORT):
-        logger.info("✓ MCP Shim ready - waiting for connections...")
-        # Keep running
-        await asyncio.Future()  # Run forever
+    # Run server using stdio
+    async with stdio_server() as (read_stream, write_stream):
+        await app.run(
+            read_stream,
+            write_stream,
+            app.create_initialization_options()
+        )
 
 
 if __name__ == "__main__":
-    # Setup logging
-    log_level = os.getenv("LOG_LEVEL", "INFO")
+    # Setup logging - CRITICAL: Send to stderr for MCP protocol compliance
+    # Temporarily disable logging to test if MCP responses go to stdout
+    log_level = os.getenv("LOG_LEVEL", "WARNING")
     logging.basicConfig(
         level=getattr(logging, log_level),
         format="%(asctime)s [%(levelname)-8s] %(name)s: %(message)s",
-        datefmt="%H:%M:%S"
+        datefmt="%H:%M:%S",
+        stream=sys.stderr,  # FIX: Send all logs to stderr, not stdout
+        force=True  # Override any existing configuration
     )
+    # Reduce noise from MCP library logging
+    logging.getLogger("mcp.server.lowlevel.server").setLevel(logging.ERROR)
+    logging.getLogger("mcp").setLevel(logging.ERROR)
 
     # Set process group for proper cleanup
     # This ensures child processes are terminated when parent exits
+    # FIX: Windows compatibility - only call on Unix systems
     try:
-        os.setpgrp()
+        if hasattr(os, 'setpgrp'):
+            os.setpgrp()
+            logger.info("Process group set for Unix/Linux")
+        else:
+            logger.info("Windows detected - skipping process group set")
     except Exception as e:
         logger.warning(f"Could not set process group: {e}")
 
@@ -422,24 +246,37 @@ if __name__ == "__main__":
         if shutting_down:
             # Force kill if already shutting down
             logger.warning("Forced shutdown initiated")
-            os.killpg(0, signal.SIGKILL)
+            try:
+                if hasattr(os, 'killpg'):
+                    os.killpg(0, signal.SIGKILL)
+            except Exception:
+                pass
             return
 
         logger.info(f"Received signal {signum}, shutting down gracefully...")
         shutting_down = True
 
-        # Kill entire process group
+        # Kill entire process group (Unix only)
         try:
-            os.killpg(0, signal.SIGTERM)
+            if hasattr(os, 'killpg'):
+                os.killpg(0, signal.SIGTERM)
         except Exception as e:
             logger.warning(f"Error sending SIGTERM to process group: {e}")
 
         # Exit
         sys.exit(0)
 
-    # Register signal handlers
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
+    # Register signal handlers (Windows-compatible)
+    # On Windows, signal only works for SIGINT, not SIGTERM
+    try:
+        if hasattr(signal, 'SIGTERM'):
+            signal.signal(signal.SIGTERM, signal_handler)
+    except Exception:
+        pass
+    try:
+        signal.signal(signal.SIGINT, signal_handler)
+    except Exception:
+        logger.warning("Could not register SIGINT handler")
 
     try:
         asyncio.run(main())

@@ -1,7 +1,7 @@
 """
-MiniMax M2 Smart Router - Full Implementation
+MiniMax M2-Stable Smart Router - Full Implementation
 
-A simplified, intelligent routing system using MiniMax M2 for decisions.
+A simplified, intelligent routing system using MiniMax M2-Stable for decisions.
 Replaces 2,500 lines of complex routing logic with 150 lines of clean code.
 """
 
@@ -22,24 +22,24 @@ except ImportError:
     Anthropic = None
     ANTHROPIC_AVAILABLE = False
     logger = logging.getLogger(__name__)
-    logger.warning("anthropic package not available - MiniMax M2 routing will use fallback only")
+    logger.warning("anthropic package not available - MiniMax M2-Stable routing will use fallback only")
 
 logger = logging.getLogger(__name__)
 
 
 class MiniMaxM2Router:
     """
-    Smart router using MiniMax M2 for intelligent routing decisions.
+    Smart router using MiniMax M2-Stable for intelligent routing decisions.
 
-    Instead of hardcoded logic, we use MiniMax M2 to make routing decisions
+    Instead of hardcoded logic, we use MiniMax M2-Stable to make routing decisions
     based on tool requirements, provider capabilities, and current context.
     """
 
     def __init__(self):
-        """Initialize the smart router with MiniMax M2."""
+        """Initialize the smart router with MiniMax M2-Stable."""
         # Check if anthropic package is available
         if not ANTHROPIC_AVAILABLE:
-            logger.warning("anthropic package not installed - MiniMax M2 routing disabled")
+            logger.warning("anthropic package not installed - MiniMax M2-Stable routing disabled")
             self.client = None
             self.api_key = None
         else:
@@ -59,7 +59,7 @@ class MiniMaxM2Router:
         self.timeout = float(os.getenv("MINIMAX_TIMEOUT", "5"))
         self.max_retries = int(os.getenv("MINIMAX_RETRY", "2"))
 
-        logger.info(f"MiniMax M2 Smart Router initialized (enabled={self.enabled}, anthropic={ANTHROPIC_AVAILABLE})")
+        logger.info(f"MiniMax M2-Stable Smart Router initialized (enabled={self.enabled}, anthropic={ANTHROPIC_AVAILABLE})")
 
     async def route_request(
         self,
@@ -68,7 +68,7 @@ class MiniMaxM2Router:
         available_providers: Dict[str, Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
-        Route request using MiniMax M2 intelligence.
+        Route request using MiniMax M2-Stable intelligence.
 
         Args:
             tool_name: Name of the tool being called
@@ -96,12 +96,12 @@ class MiniMaxM2Router:
             available_providers
         )
 
-        # Call MiniMax M2 for routing decision with retry
+        # Call MiniMax M2-Stable for routing decision with retry
         for attempt in range(self.max_retries + 1):
             try:
                 response = await asyncio.wait_for(
                     self.client.messages.create(
-                        model="MiniMax-M2",
+                        model="MiniMax-M2-Stable",
                         max_tokens=500,
                         messages=[
                             {
@@ -123,7 +123,7 @@ Respond with ONLY a JSON object, no other text."""
                 try:
                     routing_decision = json.loads(response.content[0].text)
                 except (json.JSONDecodeError, KeyError, IndexError) as e:
-                    logger.warning(f"Failed to parse MiniMax response: {e}")
+                    logger.warning(f"Failed to parse MiniMax M2-Stable response: {e}")
                     if attempt < self.max_retries:
                         continue
                     return self._fallback_routing(tool_name, available_providers)
@@ -138,7 +138,7 @@ Respond with ONLY a JSON object, no other text."""
                 self.routing_cache.set_minimax_decision(cache_key, validated_decision)
 
                 logger.info(
-                    f"MiniMax Routing: {tool_name} → {validated_decision['provider']}/"
+                    f"MiniMax M2-Stable Routing: {tool_name} → {validated_decision['provider']}/"
                     f"{validated_decision['model']} "
                     f"({validated_decision.get('reasoning', 'N/A')})"
                 )
@@ -146,18 +146,18 @@ Respond with ONLY a JSON object, no other text."""
                 return validated_decision
 
             except asyncio.TimeoutError:
-                logger.warning(f"MiniMax timeout (attempt {attempt + 1}/{self.max_retries + 1})")
+                logger.warning(f"MiniMax M2-Stable timeout (attempt {attempt + 1}/{self.max_retries + 1})")
                 if attempt < self.max_retries:
                     await asyncio.sleep(1)  # Wait before retry
                     continue
             except Exception as e:
-                logger.error(f"MiniMax routing error (attempt {attempt + 1}): {e}")
+                logger.error(f"MiniMax M2-Stable routing error (attempt {attempt + 1}): {e}")
                 if attempt < self.max_retries:
                     await asyncio.sleep(1)
                     continue
 
         # All attempts failed, use fallback
-        logger.warning(f"MiniMax failed after {self.max_retries + 1} attempts, using fallback")
+        logger.warning(f"MiniMax M2-Stable failed after {self.max_retries + 1} attempts, using fallback")
         return self._fallback_routing(tool_name, available_providers)
 
     def _build_routing_prompt(
@@ -166,7 +166,7 @@ Respond with ONLY a JSON object, no other text."""
         context: Dict[str, Any],
         providers: Dict[str, Dict[str, Any]]
     ) -> str:
-        """Build routing prompt for MiniMax M2."""
+        """Build routing prompt for MiniMax M2-Stable."""
         return f"""
 Tool: {tool_name}
 Request Context: {json.dumps(context, indent=2)}
@@ -220,7 +220,7 @@ Respond with JSON:
         tool_name: str,
         providers: Dict[str, Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Fallback routing when MiniMax M2 fails."""
+        """Fallback routing when MiniMax M2-Stable fails."""
         # Simple fallback: GLM for web search, Kimi for others
         return {
             'provider': 'GLM',

@@ -556,10 +556,43 @@ def _normalize_outputs(outputs: List[Any]) -> List[Dict[str, Any]]:
 # The function is now part of HealthMonitor._health_writer() method
 
 
+async def start_http_servers():
+    """Start HTTP monitoring servers on ports 8080, 8082, 8000"""
+    from aiohttp import web
+    import threading
+
+    # Health check server on port 8082
+    async def health_handler(request):
+        return web.json_response({
+            "status": "healthy",
+            "service": "exai-mcp-daemon",
+            "timestamp": time.time()
+        })
+
+    # Simple HTTP server for health checks
+    app = web.Application()
+    app.router.add_get('/health', health_handler)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', 8082)
+    await site.start()
+    logger.info("✓ Health check HTTP server started on port 8082")
+
+    # Note: In production, you might want to start additional servers:
+    # - Port 8080: Monitoring dashboard
+    # - Port 8000: Prometheus metrics
+    # For now, keeping it minimal with just the health check
+
+
 async def main_async() -> None:
     global STARTED_AT
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
+
+    # Start HTTP servers in the background
+    logger.info("Starting HTTP monitoring servers...")
+    asyncio.create_task(start_http_servers())
 
     # CRITICAL FIX (2025-11-07): Configure providers eagerly at startup
     # Previously, providers were only configured on first client request (lazy loading)
