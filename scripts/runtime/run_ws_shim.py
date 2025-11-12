@@ -77,9 +77,9 @@ class MCPShimProtocol:
                 if "method" in data:
                     logger.debug(f"Received MCP: {data['method']}")
 
-                # Handle MCP initialize
+                # Skip initialize - already handled in run() before this handler started
                 if data.get("method") == "initialize":
-                    await self._handle_initialize(data)
+                    logger.debug("Skipping initialize (already handled)")
                     continue
 
                 # Handle MCP tools/list
@@ -109,12 +109,16 @@ class MCPShimProtocol:
         client_info = data.get("params", {}).get("clientInfo", {})
         protocol_version = data.get("params", {}).get("protocolVersion", "2024-11-05")
 
+        # Get auth token for daemon
+        auth_token = os.getenv("EXAI_WS_TOKEN", "")
+
         # Send custom hello to daemon
         hello_msg = {
             "op": "hello",
             "protocolVersion": protocol_version,
             "capabilities": data.get("params", {}).get("capabilities", {}),
-            "clientInfo": client_info
+            "clientInfo": client_info,
+            "token": auth_token
         }
 
         logger.debug(f"Sending hello to daemon: {hello_msg}")
@@ -163,6 +167,61 @@ class MCPShimProtocol:
             }
             await self.client_ws.send(json.dumps(error_response))
 
+    async def _handle_initialize_with_hello(self, init_data):
+        """Handle initialize with hello handshake - used before concurrent handlers start."""
+        client_info = init_data.get("params", {}).get("clientInfo", {})
+        protocol_version = init_data.get("params", {}).get("protocolVersion", "2024-11-05")
+
+        # Get auth token for daemon
+        auth_token = os.getenv("EXAI_WS_TOKEN", "")
+
+        # Send custom hello to daemon with token
+        hello_msg = {
+            "op": "hello",
+            "protocolVersion": protocol_version,
+            "capabilities": init_data.get("params", {}).get("capabilities", {}),
+            "clientInfo": client_info,
+            "token": auth_token
+        }
+
+        logger.info(f"Sending hello to daemon with token")
+        await self.daemon_ws.send(json.dumps(hello_msg))
+
+        # Wait for hello_ack
+        try:
+            response = await asyncio.wait_for(self.daemon_ws.recv(), timeout=10)
+            hello_ack = json.loads(response)
+
+            logger.info(f"Received hello_ack from daemon: ok={hello_ack.get('ok')}")
+
+            if hello_ack.get("ok"):
+                # Send MCP initialize response back to client
+                init_response = {
+                    "jsonrpc": "2.0",
+                    "id": init_data.get("id"),
+                    "result": {
+                        "protocolVersion": "2024-11-05",
+                        "capabilities": {
+                            "tools": {}
+                        },
+                        "serverInfo": {
+                            "name": "exai-mcp-shim",
+                            "version": "1.0.0"
+                        }
+                    }
+                }
+                await self.client_ws.send(json.dumps(init_response))
+                logger.info("✓✓✓ MCP initialization complete with daemon auth ✓✓✓")
+            else:
+                error_msg = hello_ack.get("error", "unknown error")
+                logger.error(f"Daemon hello failed: {error_msg}")
+                raise Exception(f"Daemon authentication failed: {error_msg}")
+
+        except asyncio.TimeoutError:
+            logger.error("✗ Timeout waiting for daemon hello_ack")
+            raise Exception("Daemon hello timeout - connection may have been closed")
+
+
     async def _handle_tools_list(self, data):
         """Handle tools/list - just forward to daemon."""
         # Convert MCP request to daemon format
@@ -177,7 +236,7 @@ class MCPShimProtocol:
         await self.daemon_ws.send(json.dumps({
             "op": "call_tool",
             "id": data.get("id"),
-            "tool": tool_call.get("name"),
+            "name": tool_call.get("name"),
             "arguments": tool_call.get("arguments", {})
         }))
 
@@ -220,7 +279,7 @@ class MCPShimProtocol:
             # Already handled in _handle_initialize
             pass
 
-        elif op == "list_tools_result":
+        elif op == "list_tools_result" or op == "list_tools_res":
             # Convert to MCP tools/list response
             tools = data.get("tools", [])
             mcp_response = {
@@ -230,7 +289,7 @@ class MCPShimProtocol:
             }
             await self.client_ws.send(json.dumps(mcp_response))
 
-        elif op == "call_result":
+        elif op == "call_result" or op == "call_res":
             # Convert to MCP tools/call response
             result = data.get("result", [])
             mcp_response = {
@@ -266,7 +325,28 @@ class MCPShimProtocol:
         if not await self.connect_to_daemon():
             raise Exception("Failed to connect to daemon")
 
-        # Run both handlers concurrently
+        # Perform hello handshake before starting concurrent handlers
+        # This prevents the "cannot call recv while another coroutine is already waiting" error
+        try:
+            # Wait for the first message from client (should be initialize)
+            init_message = await asyncio.wait_for(self.client_ws.recv(), timeout=30)
+            init_data = json.loads(init_message)
+
+            if init_data.get("method") == "initialize":
+                # Handle the initialize and hello handshake
+                await self._handle_initialize_with_hello(init_data)
+            else:
+                # Unexpected message, close connection
+                logger.error(f"Expected initialize, got {init_data.get('method')}")
+                return
+        except asyncio.TimeoutError:
+            logger.error("Timeout waiting for initialize message")
+            return
+        except Exception as e:
+            logger.error(f"Error during hello handshake: {e}", exc_info=True)
+            return
+
+        # Now run both handlers concurrently (they won't try to recv during hello)
         try:
             await asyncio.gather(
                 self.handle_client_messages(),

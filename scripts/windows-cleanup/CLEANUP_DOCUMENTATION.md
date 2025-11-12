@@ -4,6 +4,8 @@
 
 This document describes the automated process cleanup system implemented to prevent process bloat and orphaned processes in the EX-AI MCP Server environment.
 
+**Note**: The Docker-based cleanup service was removed from `docker-compose.yml` because Windows container images cannot run on Linux Docker hosts. Instead, use the PowerShell cleanup scripts with Task Scheduler for automated daily cleanup.
+
 ## Problem Statement
 
 **Root Cause Identified**:

@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  ex-ai-mcp:
+    build: .
+    container_name: ex-ai-mcp-server
+    environment:
+      - MINIMAX_ENABLED=true
+      - MINIMAX_M2_KEY=${MINIMAX_M2_KEY}
+      - MINIMAX_TIMEOUT=5
+      - MINIMAX_RETRY=2
+      - FAST_MODEL_DEFAULT=glm-4.5-flash
+      - LONG_MODEL_DEFAULT=kimi-k2-0711-preview
+      - ROUTER_DIAGNOSTICS_ENABLED=true
+      - ROUTER_CACHE_TTL=300
+      - ROUTER_LOG_LEVEL=INFO
+      - GLM_API_KEY=${GLM_API_KEY}
+      - KIMI_API_KEY=${KIMI_API_KEY}
+      - CONTEXT_ENGINEERING=false
+      - PYTHONPATH=/app
+    volumes:
+      - ./src:/app/src
+      - ./tools:/app/tools
+      - ./logs:/app/logs
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.path.insert(0, '/app'); from src.router.hybrid_router import get_hybrid_router; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  redis_data:
+
+networks:
+  default:
+    name: ex-ai-network
