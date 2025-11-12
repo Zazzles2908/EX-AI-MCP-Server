@@ -26,6 +26,9 @@ _repo_root = Path(__file__).resolve().parents[2]
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
+# Setup logging FIRST (before using logger)
+logger = logging.getLogger(__name__)
+
 # Load environment
 try:
     from src.bootstrap import load_env
@@ -37,12 +40,10 @@ except Exception as e:
     env_file = os.getenv('ENV_FILE', '.env')
     load_dotenv(env_file)
 
-logger = logging.getLogger(__name__)
-
 # Configuration
 DAEMON_HOST = os.getenv("EXAI_WS_HOST", "127.0.0.1")
-# Use the external port (what Docker maps 8079 to)
-DAEMON_PORT = int(os.getenv("EXAI_WS_PORT", "3004"))
+# Use the external port (what Docker maps 8079 to) - FIX: Default should be 3010 not 3004
+DAEMON_PORT = int(os.getenv("EXAI_WS_PORT", "3010"))
 SHIM_PORT = int(os.getenv("SHIM_LISTEN_PORT", "3005"))  # Listen on different port
 
 
