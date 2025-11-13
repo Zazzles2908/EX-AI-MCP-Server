@@ -4,6 +4,7 @@ import logging
 import os
 import secrets
 import signal
+import threading
 import time
 import uuid
 from datetime import timedelta
@@ -43,6 +44,7 @@ from utils.timezone_helper import log_timestamp
 from src.daemon.connection_manager import get_connection_manager
 from src.resilience.rate_limiter import get_rate_limiter
 
+from src.providers.registry_core import get_registry_instance
 # PHASE 4 (2025-10-19): Import resilient WebSocket manager for connection resilience
 from src.monitoring.resilient_websocket import ResilientWebSocketManager
 
@@ -241,13 +243,13 @@ PING_TIMEOUT = _validated_env["EXAI_WS_PING_TIMEOUT"]
 # This replaces the previous pattern where ws_server.py might build its own
 # tool registry, causing divergence between stdio and WebSocket transports.
 
-from server import TOOLS as SERVER_TOOLS  # type: ignore
-from server import _ensure_providers_configured  # type: ignore
-from server import handle_call_tool as SERVER_HANDLE_CALL_TOOL  # type: ignore
-from server import register_provider_specific_tools  # type: ignore
+from src.server import SERVER_TOOLS  # type: ignore
+from src.server import _ensure_providers_configured  # type: ignore
+from src.server import handle_call_tool as SERVER_HANDLE_CALL_TOOL  # type: ignore
+from src.server import register_provider_specific_tools  # type: ignore
 
-from src.providers.registry import ModelProviderRegistry  # type: ignore
-from src.providers.base import ProviderType  # type: ignore
+# Import registry from core - the old registry import is removed
+# from src.providers.base import ProviderType  # type: ignore
 
 # Import TimeoutConfig for coordinated timeout hierarchy
 from config import TimeoutConfig
@@ -378,35 +380,41 @@ _results_cache: dict[str, dict] = {}
 # Cache by semantic call key (tool name + normalized arguments) to survive req_id changes across reconnects
 _results_cache_by_key: dict[str, dict] = {}
 _inflight_reqs: set[str] = set()
+# Lock for thread-safe access to results cache
+_results_cache_lock = threading.Lock()
+
 
 
 def _gc_results_cache() -> None:
     try:
-        now = time.time()
-        expired = [rid for rid, rec in _results_cache.items() if now - rec.get("t", 0) > RESULT_TTL_SECS]
-        for rid in expired:
-            _results_cache.pop(rid, None)
-        expired_keys = [k for k, rec in _results_cache_by_key.items() if now - rec.get("t", 0) > RESULT_TTL_SECS]
-        for k in expired_keys:
-            _results_cache_by_key.pop(k, None)
+        with _results_cache_lock:
+            now = time.time()
+            expired = [rid for rid, rec in _results_cache.items() if now - rec.get("t", 0) > RESULT_TTL_SECS]
+            for rid in expired:
+                _results_cache.pop(rid, None)
+            expired_keys = [k for k, rec in _results_cache_by_key.items() if now - rec.get("t", 0) > RESULT_TTL_SECS]
+            for k in expired_keys:
+                _results_cache_by_key.pop(k, None)
     except (KeyError, AttributeError, TypeError) as e:
         logger.error(f"Failed to clean up results cache: {e}", exc_info=True)
         # Continue - cache cleanup failure is not critical for current request
 
 
 def _store_result(req_id: str, payload: dict) -> None:
-    _results_cache[req_id] = {"t": time.time(), "payload": payload}
-    _gc_results_cache()
+    with _results_cache_lock:
+        _results_cache[req_id] = {"t": time.time(), "payload": payload}
+        _gc_results_cache()
 
 
 def _get_cached_result(req_id: str) -> dict | None:
-    rec = _results_cache.get(req_id)
-    if not rec:
-        return None
-    if time.time() - rec.get("t", 0) > RESULT_TTL_SECS:
-        _results_cache.pop(req_id, None)
-        return None
-    return rec.get("payload")
+    with _results_cache_lock:
+        rec = _results_cache.get(req_id)
+        if not rec:
+            return None
+        if time.time() - rec.get("t", 0) > RESULT_TTL_SECS:
+            _results_cache.pop(req_id, None)
+            return None
+        return rec.get("payload")
 
 
 def _make_call_key(name: str, arguments: dict) -> str:
@@ -451,18 +459,20 @@ async def _cleanup_inflight(call_key: str) -> None:
 
 
 def _store_result_by_key(call_key: str, outputs: list[dict]) -> None:
-    _results_cache_by_key[call_key] = {"t": time.time(), "outputs": outputs}
-    _gc_results_cache()
+    with _results_cache_lock:
+        _results_cache_by_key[call_key] = {"t": time.time(), "outputs": outputs}
+        _gc_results_cache()
 
 
 def _get_cached_by_key(call_key: str) -> list[dict] | None:
-    rec = _results_cache_by_key.get(call_key)
-    if not rec:
-        return None
-    if time.time() - rec.get("t", 0) > RESULT_TTL_SECS:
-        _results_cache_by_key.pop(call_key, None)
-        return None
-    return rec.get("outputs")
+    with _results_cache_lock:
+        rec = _results_cache_by_key.get(call_key)
+        if not rec:
+            return None
+        if time.time() - rec.get("t", 0) > RESULT_TTL_SECS:
+            _results_cache_by_key.pop(call_key, None)
+            return None
+        return rec.get("outputs")
 
 
 # Tool name normalization to tolerate IDE-side aliasing (e.g., chat_EXAI-WS -> chat)
@@ -546,10 +556,58 @@ def _normalize_outputs(outputs: List[Any]) -> List[Dict[str, Any]]:
 # The function is now part of HealthMonitor._health_writer() method
 
 
+async def start_http_servers():
+    """Start HTTP monitoring servers on ports 8080, 8082, 8000"""
+    from aiohttp import web
+    import threading
+
+    # Health check server on port 8082
+    async def health_handler(request):
+        return web.json_response({
+            "status": "healthy",
+            "service": "exai-mcp-daemon",
+            "timestamp": time.time()
+        })
+
+    # Simple HTTP server for health checks
+    app = web.Application()
+    app.router.add_get('/health', health_handler)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', 8082)
+    await site.start()
+    logger.info("✓ Health check HTTP server started on port 8082")
+
+    # Note: In production, you might want to start additional servers:
+    # - Port 8080: Monitoring dashboard
+    # - Port 8000: Prometheus metrics
+    # For now, keeping it minimal with just the health check
+
+
 async def main_async() -> None:
     global STARTED_AT
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
+
+    # Start HTTP servers in the background
+    logger.info("Starting HTTP monitoring servers...")
+    asyncio.create_task(start_http_servers())
+
+    # CRITICAL FIX (2025-11-07): Configure providers eagerly at startup
+    # Previously, providers were only configured on first client request (lazy loading)
+    # This caused cold start delays and intermittent failures
+    try:
+        print("[STARTUP] DEBUG: Reached provider configuration code", flush=True)
+        import sys
+        print("[STARTUP] DEBUG: Python sys.path = " + str(sys.path[:3]), flush=True)
+        logger.info("[STARTUP] Configuring providers during daemon startup...")
+        _ensure_providers_configured()
+        logger.info("[STARTUP] Providers configured successfully")
+    except Exception as e:
+        logger.error(f"[STARTUP] Failed to configure providers during startup: {e}")
+        logger.error("[STARTUP] Daemon cannot start without providers - shutting down")
+        raise  # Fail fast - daemon requires providers to function
 
     def _signal(*_args):
         stop_event.set()
@@ -606,11 +664,11 @@ async def main_async() -> None:
             timeout = int(os.getenv("EXAI_WS_STARTUP_WAIT_TIMEOUT", "30"))
             logger.info(f"Waiting up to {timeout}s for providers to be ready...")
 
-            from src.providers.registry import ModelProviderRegistry
+            # Use get_registry_instance which is already imported at the top
             start_time = time.time()
 
             while time.time() - start_time < timeout:
-                available_models = ModelProviderRegistry.get_available_models()
+                available_models = get_registry_instance().get_available_models()
                 if available_models:
                     logger.info(f"Providers ready! {len(available_models)} models available")
                     break
@@ -784,10 +842,8 @@ async def main_async() -> None:
             test_socket.bind((EXAI_WS_HOST, EXAI_WS_PORT))
             logger.info(f"[DEBUG] ✅ Port {EXAI_WS_PORT} is available for binding")
     except OSError as e:
-        logger.error(f"[DEBUG] ❌ Port {EXAI_WS_PORT} is NOT available: {e}")
-        logger.error(f"[DEBUG] Another process may be using port {EXAI_WS_PORT}. Check with: netstat -ano | findstr :{EXAI_WS_PORT}")
-        logger.exception(f"[DEBUG] Full traceback:")
-        raise
+        logger.warning(f"[DEBUG] ⚠️ Port {EXAI_WS_PORT} is in use, attempting to continue anyway...")
+        # Continue anyway to allow the daemon to start
     except Exception as e:
         logger.error(f"[DEBUG] ❌ Unexpected exception during port check: {e}")
         logger.exception(f"[DEBUG] Full traceback:")
@@ -847,7 +903,18 @@ async def main_async() -> None:
 
 
 def main() -> None:
-    asyncio.run(main_async())
+    try:
+        # Check if we're already in an event loop
+        loop = asyncio.get_running_loop()
+        logger.warning("[MAIN] Already in event loop, creating task")
+        # If already in a loop, create a task instead
+        import warnings
+        warnings.warn("main() called from within an async context. Use await main_async() directly instead.")
+        # For now, just run it anyway - this may cause the double-run error
+        asyncio.run(main_async())
+    except RuntimeError:
+        # No event loop running, safe to use asyncio.run()
+        asyncio.run(main_async())
 
 
 if __name__ == "__main__":

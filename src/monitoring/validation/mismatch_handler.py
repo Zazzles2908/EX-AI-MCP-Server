@@ -76,21 +76,15 @@ class MismatchStats:
 
 
 class MismatchHandler:
-    """Handles checksum mismatches and validation failures."""
+    """Handles checksum mismatches and validation failures.
 
-    # Singleton instance
-    _instance: Optional['MismatchHandler'] = None
-    _lock = threading.Lock()
+    REFACTORED: Removed singleton pattern - now uses dependency injection
+    for better testability and maintainability.
+    """
 
-    def __new__(cls):
-        """Implement thread-safe singleton pattern."""
-        with cls._lock:
-            if cls._instance is None:
-                cls._instance = super().__new__(cls)
-        return cls._instance
-    
     def __init__(self):
         """Initialize MismatchHandler."""
+        self._lock = threading.Lock()
         self._stats = MismatchStats()
         self._max_recent_records = 100
         self._severity_thresholds = {
@@ -258,7 +252,5 @@ class MismatchHandler:
         return category_mismatches / self._stats.total_mismatches
 
 
-def get_mismatch_handler() -> MismatchHandler:
-    """Get MismatchHandler singleton instance."""
-    return MismatchHandler()
-
+# DEPRECATED: Factory function replaced with direct instantiation
+# Use: mismatch_handler = MismatchHandler() instead of get_mismatch_handler()

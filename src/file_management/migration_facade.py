@@ -446,7 +446,7 @@ class FileManagementFacade:
                 "id, storage_path, original_name, size_bytes"
             ).eq("id", file_id).execute()
 
-            if not file_result.data or len(file_result.data) == 0:
+            if not file_result.data or not file_result.data:
                 return FileOperationResult(
                     success=False,
                     error=f"File {file_id} not found in database"
@@ -513,7 +513,7 @@ class FileManagementFacade:
                 "id, storage_path"
             ).eq("id", file_id).execute()
 
-            if not file_result.data or len(file_result.data) == 0:
+            if not file_result.data or not file_result.data:
                 return FileOperationResult(
                     success=False,
                     error=f"File {file_id} not found in database"
@@ -748,7 +748,7 @@ class FileManagementFacade:
                         f"shadow={shadow_ref.file_hash}"
                     )
 
-        results_match = len(discrepancies) == 0
+        results_match = not discrepancies
 
         return {
             "results_match": results_match,

@@ -47,7 +47,7 @@ try:
     _DETAILED_METRICS_AVAILABLE = True
 except ImportError:
     _DETAILED_METRICS_AVAILABLE = False
-    logger.warning("[SEMANTIC_CACHE_MANAGER] Detailed metrics collector not available")
+    logger.debug("[SEMANTIC_CACHE_MANAGER] Detailed metrics collector not available (optional feature)")
     def record_detailed_hit(*args, **kwargs): pass
     def record_detailed_miss(*args, **kwargs): pass
     def record_detailed_set(*args, **kwargs): pass
@@ -156,8 +156,8 @@ class SemanticCacheManager(BaseCacheManager):
     
     def get(
         self,
-        prompt: str,
-        model: str,
+        prompt: Optional[str] = None,
+        model: Optional[str] = None,
         temperature: Optional[float] = None,
         thinking_mode: Optional[str] = None,
         use_websearch: bool = False,
@@ -167,18 +167,44 @@ class SemanticCacheManager(BaseCacheManager):
         """
         Get cached response if available and not expired.
 
+        This method supports TWO calling conventions:
+        1. Direct: get(prompt="...", model="glm-4.5", temperature=0.5)
+        2. Dict unpacking: get(**{'prompt': '...', 'model': 'glm-4.5', 'temperature': 0.5})
+
         Args:
-            prompt: The prompt text
-            model: Model name
+            prompt: The prompt text (can be None if passed via kwargs)
+            model: Model name (can be None if passed via kwargs)
             temperature: Temperature value
             thinking_mode: Thinking mode
             use_websearch: Whether web search is enabled
             system_prompt_hash: Hash of system prompt
-            **kwargs: Additional parameters
+            **kwargs: Additional parameters (also used for prompt/model if not passed directly)
 
         Returns:
             Cached response if available, None otherwise
         """
+        # Handle both calling conventions
+        # If prompt is None, try to extract from kwargs (dict unpacking)
+        if prompt is None:
+            if not kwargs:
+                raise TypeError("get() missing required argument: 'prompt' (or dict with 'prompt' key)")
+            prompt = kwargs.get('prompt')
+            model = kwargs.get('model', model)
+            temperature = kwargs.get('temperature', temperature)
+            thinking_mode = kwargs.get('thinking_mode', thinking_mode)
+            use_websearch = kwargs.get('use_websearch', use_websearch)
+            system_prompt_hash = kwargs.get('system_prompt_hash', system_prompt_hash)
+
+        if not prompt:
+            raise TypeError("get() missing required argument: 'prompt'")
+
+        # Handle missing model - use a placeholder or skip caching
+        if not model:
+            # If no model is provided, we can't do semantic caching
+            # Just return None to skip cache
+            logger.debug(f"[SEMANTIC_CACHE] No model provided for prompt, skipping cache")
+            return None
+
         # Start timing for metrics (Week 2-3 Monitoring Phase - 2025-10-31)
         start_time = time.time()
 
@@ -227,9 +253,9 @@ class SemanticCacheManager(BaseCacheManager):
     
     def set(
         self,
-        prompt: str,
-        model: str,
-        response: Any,
+        prompt: Optional[str] = None,
+        model: Optional[str] = None,
+        response: Optional[Any] = None,
         temperature: Optional[float] = None,
         thinking_mode: Optional[str] = None,
         use_websearch: bool = False,
@@ -240,17 +266,46 @@ class SemanticCacheManager(BaseCacheManager):
         """
         Cache a response with TTL.
 
+        This method supports TWO calling conventions:
+        1. Direct: set(prompt="...", model="glm-4.5", response=..., temperature=0.5)
+        2. Dict unpacking: set(**{'prompt': '...', 'model': 'glm-4.5', 'response': ..., 'temperature': 0.5})
+
         Args:
-            prompt: The prompt text
-            model: Model name
-            response: The response to cache
+            prompt: The prompt text (can be None if passed via kwargs)
+            model: Model name (can be None if passed via kwargs)
+            response: The response to cache (can be None if passed via kwargs)
             temperature: Temperature value
             thinking_mode: Thinking mode
             use_websearch: Whether web search is enabled
             system_prompt_hash: Hash of system prompt
             ttl_override: Override default TTL for this entry
-            **kwargs: Additional parameters
+            **kwargs: Additional parameters (also used for prompt/model/response if not passed directly)
         """
+        # Handle both calling conventions
+        # If prompt is None, try to extract from kwargs (dict unpacking)
+        if prompt is None:
+            if not kwargs:
+                raise TypeError("set() missing required argument: 'prompt' (or dict with 'prompt' key)")
+            prompt = kwargs.get('prompt')
+            model = kwargs.get('model', model)
+            response = kwargs.get('response', response)
+            temperature = kwargs.get('temperature', temperature)
+            thinking_mode = kwargs.get('thinking_mode', thinking_mode)
+            use_websearch = kwargs.get('use_websearch', use_websearch)
+            system_prompt_hash = kwargs.get('system_prompt_hash', system_prompt_hash)
+            ttl_override = kwargs.get('ttl_override', ttl_override)
+
+        if not prompt:
+            raise TypeError("set() missing required argument: 'prompt'")
+
+        # Handle missing model - use a placeholder or skip caching
+        if not model:
+            logger.debug(f"[SEMANTIC_CACHE] No model provided for prompt, skipping cache")
+            return
+
+        if response is None:
+            raise TypeError("set() missing required argument: 'response'")
+
         # Start timing for metrics (Week 2-3 Monitoring Phase - 2025-10-31)
         start_time = time.time()
 

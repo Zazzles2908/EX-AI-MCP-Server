@@ -29,7 +29,7 @@ from src.file_management.exceptions import (
     FileValidationError
 )
 from src.file_management.providers.base import FileProviderInterface
-from src.logging.file_operations_logger import FileOperationsLogger
+from src.logging_infrastructure.file_operations_logger import FileOperationsLogger
 from src.storage.supabase_client import SupabaseStorageManager
 
 

@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "kimi_chat_with_tools_basic_glm_1759844305436",
-  "name": "kimi_chat_with_tools",
-  "arguments": {
-    "prompt": "What's the weather?",
-    "tools": []
-  }
-}

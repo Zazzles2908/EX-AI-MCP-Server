@@ -234,17 +234,22 @@ async def get_conversation_queue() -> ConversationQueue:
     global _conversation_queue
     
     if _conversation_queue is None:
-        # Import here to avoid circular dependency
-        from config import CONVERSATION_QUEUE_SIZE, CONVERSATION_QUEUE_WARNING_THRESHOLD
-        from utils.conversation.supabase_memory import process_conversation_update
-        
-        _conversation_queue = ConversationQueue(
-            max_size=CONVERSATION_QUEUE_SIZE,
-            consumer_func=process_conversation_update,
-            warning_threshold=CONVERSATION_QUEUE_WARNING_THRESHOLD
-        )
-        await _conversation_queue.start()
-        logger.info("[CONV_QUEUE] Global queue initialized")
+        try:
+            # Import here to avoid circular dependency
+            from config import CONVERSATION_QUEUE_SIZE, CONVERSATION_QUEUE_WARNING_THRESHOLD
+            from utils.conversation.supabase_memory import process_conversation_update
+
+            _conversation_queue = ConversationQueue(
+                max_size=CONVERSATION_QUEUE_SIZE,
+                consumer_func=process_conversation_update,
+                warning_threshold=CONVERSATION_QUEUE_WARNING_THRESHOLD
+            )
+            await _conversation_queue.start()
+            logger.info("[CONV_QUEUE] Global queue initialized")
+        except Exception as e:
+            logger.warning(f"[CONV_QUEUE] Failed to initialize conversation queue: {e}. Daemon will continue without it.")
+            # Return a minimal no-op queue
+            _conversation_queue = None
         
     return _conversation_queue
 

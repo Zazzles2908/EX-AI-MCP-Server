@@ -261,13 +261,13 @@ class TestingPanel {
             element.className = 'regression-item';
             element.innerHTML = `
                 <div class="regression-header">
-                    <span class="regression-tool">${regression.type.toUpperCase()}</span>
-                    <span class="regression-severity">${regression.severity.toUpperCase()}</span>
+                    <span class="regression-tool">${this.escapeHtml(regression.type.toUpperCase())}</span>
+                    <span class="regression-severity">${this.escapeHtml(regression.severity.toUpperCase())}</span>
                 </div>
                 <div class="regression-details">
-                    ${regression.message}
+                    ${this.escapeHtml(regression.message)}
                     <br>
-                    Current: ${regression.current.toFixed(1)} | Baseline: ${regression.baseline.toFixed(1)}
+                    Current: ${this.escapeHtml(regression.current.toFixed(1))} | Baseline: ${this.escapeHtml(regression.baseline.toFixed(1))}
                 </div>
             `;
             container.appendChild(element);
@@ -305,7 +305,7 @@ class TestingPanel {
             memory,
             timestamp: new Date().toISOString()
         });
-        
+
         // Update stats
         if (success) {
             this.stats.passed++;
@@ -313,8 +313,17 @@ class TestingPanel {
             this.stats.failed++;
         }
         this.stats.total++;
-        
+
         this.updateTestStats(this.stats);
+    }
+
+    /**
+     * Escape HTML to prevent XSS
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 }
 

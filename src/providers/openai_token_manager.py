@@ -21,6 +21,8 @@ from typing import TYPE_CHECKING, Dict
 if TYPE_CHECKING:
     pass
 
+from src.daemon.error_handling import log_error, ErrorCode
+
 logger = logging.getLogger(__name__)
 
 
@@ -137,5 +139,5 @@ class OpenAITokenManager:
                 }
             }
         except Exception as e:
-            logger.error(f"Failed to process image {image_path}: {e}")
+            log_error(ErrorCode.INTERNAL_ERROR, f"Failed to process image {image_path}: {e}", exc_info=True)
             raise

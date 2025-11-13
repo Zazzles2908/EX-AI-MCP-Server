@@ -1,31 +1,14 @@
 """
-GLM Provider - Core Chat Functions
+GLM Provider - Minimal Implementation
 
-Core chat generation functionality for GLM provider.
-Handles payload building, content generation, and chat completions.
-
-This is part of the Phase 3 refactoring that split the large glm_chat.py
-into focused modules:
-- glm_provider.py: Core chat functions (this file)
-- glm_streaming_handler.py: Streaming implementations
-- glm_tool_processor.py: Tool call processing
+Simplified GLM provider for chat completions.
 """
 
-import json
-import logging
 import os
-import time
-from typing import Any, Optional
-
-from .base import ModelResponse, ProviderType
-
-# Import monitoring utilities
-from utils.monitoring import record_glm_event
-from utils.timezone_helper import log_timestamp
-
-# Import circuit breaker
-from src.resilience.circuit_breaker_manager import circuit_breaker_manager
-import pybreaker
+import logging
+from typing import Any, List, Dict, Optional
+from openai import AsyncOpenAI
+from src.providers.base import ProviderType, ModelCapabilities, ModelResponse
 
 logger = logging.getLogger(__name__)
 
@@ -36,20 +19,25 @@ def build_payload(
     model_name: str,
     temperature: float,
     max_output_tokens: Optional[int],
+    tools: Optional[list] = None,
+    tool_choice: Optional[Any] = None,
     **kwargs
 ) -> dict:
-    """Build request payload for GLM API.
+    """
+    Build a payload for GLM chat completions API.
 
     Args:
         prompt: User prompt
-        system_prompt: Optional system prompt
-        model_name: Model name (already resolved)
-        temperature: Temperature value (already validated)
-        max_output_tokens: Optional max output tokens
-        **kwargs: Additional parameters (stream, tools, tool_choice, etc.)
+        system_prompt: System prompt (optional)
+        model_name: Model name
+        temperature: Temperature setting
+        max_output_tokens: Maximum output tokens (optional)
+        tools: Optional tools list
+        tool_choice: Optional tool choice
+        **kwargs: Additional parameters (e.g., response_format)
 
     Returns:
-        Request payload dictionary
+        Dict payload for API call
     """
     messages = []
     if system_prompt:
@@ -59,306 +47,221 @@ def build_payload(
     payload = {
         "model": model_name,
         "messages": messages,
-        # Allow callers to request streaming; default False for MCP tools
-        "stream": bool(kwargs.get("stream", False)),
     }
 
     if temperature is not None:
         payload["temperature"] = temperature
 
-    if max_output_tokens:
+    if max_output_tokens is not None:
         payload["max_tokens"] = max_output_tokens
 
-    # Handle tools if provided
-    if kwargs.get("tools"):
-        payload["tools"] = kwargs["tools"]
-
-    if kwargs.get("tool_choice"):
-        payload["tool_choice"] = kwargs["tool_choice"]
-
-    return payload
-
-
-def generate_content(
-    prompt: str,
-    *,
-    sdk_client: Any,
-    http_client: Any,
-    model_name: str,
-    system_prompt: Optional[str] = None,
-    temperature: float = 0.3,
-    max_output_tokens: Optional[int] = None,
-    tools: Optional[list] = None,
-    tool_choice: Optional[Any] = None,
-    stream: bool = False,
-    stream_timeout: float = 300.0,
-    request_id: Optional[str] = None,
-    on_chunk_callback: Optional[callable] = None,
-    session_id: Optional[str] = None,
-    use_sdk: bool = False,
-    **kwargs
-) -> ModelResponse:
-    """
-    Generate content using GLM API with circuit breaker protection.
-
-    Args:
-        prompt: User prompt
-        sdk_client: ZhipuAI SDK client (can be None if use_sdk=False)
-        http_client: HTTP client for fallback
-        model_name: Model name
-        system_prompt: Optional system prompt
-        temperature: Temperature (default 0.3)
-        max_output_tokens: Optional max tokens
-        tools: Optional tools for function calling
-        tool_choice: Optional tool choice directive
-        stream: Enable streaming (default False)
-        stream_timeout: Stream timeout in seconds (default 300)
-        request_id: Optional request ID
-        on_chunk_callback: Optional callback for streaming chunks
-        session_id: Optional session ID
-        use_sdk: Whether to use SDK client (default False)
-        **kwargs: Additional parameters
-
-    Returns:
-        ModelResponse with content and metadata
-
-    Raises:
-        RuntimeError: On API errors
-    """
-    # Get circuit breaker
-    breaker = circuit_breaker_manager.get_breaker('glm')
-    start_time = time.time()
-    error = None
-    request_size = len(str({"prompt": prompt, "kwargs": kwargs}).encode('utf-8'))
-    response_size = 0
-    stream_mode = stream
-
-    try:
-        # Build payload
-        payload = build_payload(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            model_name=model_name,
-            temperature=temperature,
-            max_output_tokens=max_output_tokens,
-            stream=stream,
-            tools=tools,
-            tool_choice=tool_choice,
-            **kwargs
-        )
-
-        # Log request details
-        logger.debug(f"GLM request: model={model_name}, stream={stream}, use_sdk={use_sdk}")
-
-        # Use SDK if available, otherwise fall back to HTTP client
-        if use_sdk and sdk_client:
-            # Apply circuit breaker and make request with SDK
-            @breaker
-            def _call_with_breaker():
-                return sdk_client.chat.completions.create(**payload)
-        else:
-            # Fall back to HTTP client
-            @breaker
-            def _call_with_breaker():
-                return http_client.post("/chat/completions", json=payload)
-
-        result = _call_with_breaker()
-
-        # DEBUG: Log result type and attributes
-        logger.debug(f"GLM result type: {type(result)}, has choices: {hasattr(result, 'choices')}, is dict: {isinstance(result, dict)}")
-        if not isinstance(result, dict):
-            logger.debug(f"GLM result attributes: {dir(result)}")
-
-        # Process result - handle both SDK object and HTTP dict responses
-        if isinstance(result, dict):
-            # HTTP client returns dict
-            content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-            actual_model = result.get("model", model_name)
-            response_id = result.get("id")
-            created_ts = result.get("created")
-            usage = result.get("usage", {})
-        else:
-            # SDK returns object - handle both zai-sdk StreamResponse and regular response
-            # zai-sdk returns StreamResponse which needs to be consumed
-            if hasattr(result, '__iter__') and not hasattr(result, 'choices'):
-                # StreamResponse - consume the stream
-                chunks = []
-                for chunk in result:
-                    if hasattr(chunk, 'choices') and chunk.choices:
-                        delta = chunk.choices[0].delta
-                        if hasattr(delta, 'content') and delta.content:
-                            chunks.append(delta.content)
-                content = ''.join(chunks)
-                # Get metadata from last chunk
-                actual_model = chunk.model if hasattr(chunk, 'model') else model_name
-                response_id = chunk.id if hasattr(chunk, 'id') else None
-                created_ts = chunk.created if hasattr(chunk, 'created') else None
-                usage = {}  # Stream responses don't have usage info
-            else:
-                # Regular response object
-                content = result.choices[0].message.content if result.choices else ""
-                actual_model = result.model if hasattr(result, 'model') else model_name
-                response_id = result.id if hasattr(result, 'id') else None
-                created_ts = result.created if hasattr(result, 'created') else None
-                usage = dict(result.usage) if hasattr(result, 'usage') and result.usage else {}
-
-        response_size = len(str(content).encode('utf-8'))
-
-        # Return successful response
-        return ModelResponse(
-            content=content or "",
-            usage=usage,
-            model_name=model_name,
-            friendly_name="GLM",
-            provider=ProviderType.GLM,
-            metadata={
-                "model": actual_model or model_name,
-                "id": response_id,
-                "created": created_ts,
-                "tools": payload.get("tools"),
-                "tool_choice": payload.get("tool_choice"),
-                "streamed": False,
-            },
-        )
-
-    except pybreaker.CircuitBreakerError:
-        # Circuit breaker is OPEN - GLM API is unavailable
-        logger.error("GLM circuit breaker OPEN - API unavailable")
-        error = "Circuit breaker OPEN - GLM API unavailable"
-
-        # Return error response (graceful degradation)
-        return ModelResponse(
-            content="",
-            usage=None,
-            model_name=model_name,
-            friendly_name="GLM",
-            provider=ProviderType.GLM,
-            metadata={
-                "error": error,
-                "circuit_breaker_open": True,
-            },
-        )
-
-    except Exception as e:
-        logger.error("GLM generate_content failed: %s", e)
-        error = str(e)
-        raise RuntimeError(f"GLM generate_content failed: {e}")
-
-    finally:
-        # Record monitoring event
-        try:
-            response_time_ms = (time.time() - start_time) * 1000
-
-            # Extract token usage
-            total_tokens = 0
-            # Note: usage would be available in the result if successful
-            # For error tracking, we'll use 0
-
-            # Determine direction based on error state
-            direction = "error" if error else "receive"
-
-            metadata = {
-                "model": model_name,
-                "tokens": total_tokens,
-                "streamed": stream_mode,
-                "timestamp": log_timestamp(),
-            }
-            if session_id:
-                metadata["session_id"] = session_id
-
-            record_glm_event(
-                direction=direction,
-                function_name="glm_provider.generate_content",
-                data_size=response_size if not error else request_size,
-                response_time_ms=response_time_ms,
-                error=error if error else None,
-                metadata=metadata
-            )
-
-        except Exception as e:
-            logger.error(f"Failed to record monitoring event: {e}", exc_info=True)
-
-
-def chat_completions_create(
-    sdk_client: Any,
-    *,
-    model: str,
-    messages: list[dict[str, Any]],
-    tools: Optional[list[Any]] = None,
-    tool_choice: Optional[Any] = None,
-    temperature: float = 0.3,
-    **kwargs
-) -> dict:
-    """
-    SDK-native chat completions method for GLM provider.
-
-    This method accepts pre-built message arrays (SDK-native format) instead of
-    building messages from text prompts. This is the preferred method for tools
-    and workflow systems that manage conversation history.
-
-    Args:
-        sdk_client: ZhipuAI SDK client instance
-        model: Model name (already resolved)
-        messages: Pre-built message array in OpenAI format
-        tools: Optional list of tools for function calling
-        tool_choice: Optional tool choice directive
-        temperature: Temperature value (default 0.3)
-        **kwargs: Additional parameters (stream, thinking_mode, etc.)
-
-    Returns:
-        Normalized dict with provider, model, content, usage, metadata
-    """
-    # Build payload from messages
-    payload = {
-        "model": model,
-        "messages": messages,
-        "temperature": temperature,
-    }
-
-    # Add optional parameters
     if tools:
         payload["tools"] = tools
 
-    if tool_choice:
+    if tool_choice is not None:
         payload["tool_choice"] = tool_choice
 
-    # Add any additional kwargs
+    # Handle additional kwargs (e.g., response_format for structured output)
     for key, value in kwargs.items():
         if key not in payload:
             payload[key] = value
 
-    try:
-        # Make request with circuit breaker protection
-        breaker = circuit_breaker_manager.get_breaker('glm')
+    return payload
 
-        @breaker
-        def _call_with_breaker():
-            return sdk_client.chat.completions.create(**payload)
 
-        result = _call_with_breaker()
+def chat_completions_create(
+    messages: List[Dict[str, str]],
+    model: str = "glm-4.5-flash",
+    temperature: float = 0.3,
+    max_tokens: Optional[int] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    **kwargs
+) -> ModelResponse:
+    """
+    Standalone chat completions function for backward compatibility.
 
-        # Extract response data
-        content = result.choices[0].message.content if result.choices else ""
-        usage = dict(result.usage) if hasattr(result, 'usage') and result.usage else {}
+    Args:
+        messages: List of messages
+        model: Model name
+        temperature: Temperature
+        max_tokens: Max tokens
+        api_key: API key (optional, uses env var if not provided)
+        base_url: Base URL (optional, uses env var if not provided)
+        **kwargs: Additional parameters
 
-        # Return normalized response
-        return {
-            "provider": "glm",
-            "model": model,
-            "content": content,
-            "usage": usage,
-            "metadata": {
-                "id": result.id if hasattr(result, 'id') else None,
-                "created": result.created if hasattr(result, 'created') else None,
-                "finish_reason": result.choices[0].finish_reason if result.choices else None,
-            },
-            "raw": result,
-        }
+    Returns:
+        ModelResponse
+    """
+    provider = GLMProvider(api_key=api_key, base_url=base_url)
+    import asyncio
+    return asyncio.run(provider.chat_completions_create(
+        messages=messages,
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        **kwargs
+    ))
 
-    except pybreaker.CircuitBreakerError:
-        logger.error("GLM circuit breaker OPEN during chat_completions_create")
-        raise RuntimeError("GLM API unavailable (circuit breaker open)")
 
-    except Exception as e:
-        logger.error("GLM chat_completions_create failed: %s", e)
-        raise RuntimeError(f"GLM chat completion failed: {e}")
+def generate_content(
+    prompt: str,
+    model_name: str = "glm-4.5-flash",
+    system_prompt: Optional[str] = None,
+    temperature: float = 0.3,
+    max_tokens: Optional[int] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    **kwargs
+) -> ModelResponse:
+    """
+    Standalone generate content function for backward compatibility.
+
+    Args:
+        prompt: User prompt
+        model_name: Model name
+        system_prompt: System prompt (optional)
+        temperature: Temperature
+        max_tokens: Max tokens
+        api_key: API key (optional, uses env var if not provided)
+        base_url: Base URL (optional, uses env var if not provided)
+        **kwargs: Additional parameters
+
+    Returns:
+        ModelResponse
+    """
+    provider = GLMProvider(api_key=api_key, base_url=base_url)
+    import asyncio
+    return asyncio.run(provider.generate_content(
+        prompt=prompt,
+        model_name=model_name,
+        system_prompt=system_prompt,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        **kwargs
+    ))
+
+
+class GLMProvider:
+    """Minimal GLM provider implementation."""
+
+    # List of supported models
+    SUPPORTED_MODELS = {
+        "glm-4": ModelCapabilities(),
+        "glm-4.5": ModelCapabilities(),
+        "glm-4.5-flash": ModelCapabilities(),
+        "glm-4.6": ModelCapabilities(),
+    }
+
+    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
+        # Use provided api_key or fall back to environment
+        self.api_key = api_key or os.getenv("GLM_API_KEY")
+        # Use provided base_url or fall back to default
+        self.base_url = base_url or os.getenv("GLM_API_URL") or "https://open.bigmodel.cn/api/paas/v4/"
+        self.client = None
+
+        if self.api_key:
+            self.client = AsyncOpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url
+            )
+
+    def get_provider_type(self) -> ProviderType:
+        """Get the provider type."""
+        return ProviderType.GLM
+
+    def validate_model_name(self, model_name: str) -> bool:
+        """Check if the model is supported by this provider."""
+        return model_name in self.SUPPORTED_MODELS
+
+    def list_models(self, respect_restrictions: bool = True) -> List[str]:
+        """List all supported models."""
+        return list(self.SUPPORTED_MODELS.keys())
+
+    def get_capabilities(self, model_name: str) -> ModelCapabilities:
+        """Get capabilities for a model."""
+        return self.SUPPORTED_MODELS.get(model_name, ModelCapabilities())
+
+    def supports_streaming(self, model_name: str) -> bool:
+        """Check if model supports streaming."""
+        return True
+
+    def supports_thinking_mode(self, model_name: str) -> bool:
+        """Check if model supports thinking mode."""
+        return False
+
+    def supports_images(self, model_name: str) -> bool:
+        """Check if model supports image input."""
+        return "vision" in model_name.lower()
+
+    async def generate_content(
+        self,
+        prompt: str,
+        model_name: str = "glm-4.5-flash",
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.3,
+        max_tokens: Optional[int] = None,
+        **kwargs
+    ) -> ModelResponse:
+        """Generate content using chat completions."""
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        return await self.chat_completions_create(
+            messages=messages,
+            model=model_name,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            **kwargs
+        )
+
+    async def chat_completions_create(
+        self,
+        messages: List[Dict[str, str]],
+        model: str = "glm-4.5-flash",
+        temperature: float = 0.3,
+        max_tokens: Optional[int] = None,
+        **kwargs
+    ) -> ModelResponse:
+        """Create chat completion.
+
+        Args:
+            messages: List of messages
+            model: Model name
+            temperature: Temperature
+            max_tokens: Max tokens
+            **kwargs: Additional parameters
+
+        Returns:
+            Generated ModelResponse
+        """
+        if not self.client:
+            return ModelResponse(
+                content="Error: GLM API key not configured",
+                model_name=model,
+                provider=self.get_provider_type()
+            )
+
+        try:
+            response = await self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                **kwargs
+            )
+            return ModelResponse(
+                content=response.choices[0].message.content,
+                usage=response.usage.dict() if hasattr(response.usage, 'dict') else {},
+                model_name=model,
+                provider=self.get_provider_type()
+            )
+
+        except Exception as e:
+            logger.error(f"GLM API error: {e}")
+            return ModelResponse(
+                content=f"Error: {str(e)}",
+                model_name=model,
+                provider=self.get_provider_type()
+            )

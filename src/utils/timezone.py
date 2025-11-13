@@ -25,7 +25,7 @@ def get_melbourne_now() -> datetime:
     
     Example:
         >>> now = get_melbourne_now()
-        >>> print(now.tzinfo)  # AEDT or AEST
+        >>> logger.info(now.tzinfo)  # AEDT or AEST
     """
     return datetime.now(MELBOURNE_TZ)
 
@@ -39,7 +39,7 @@ def get_iso_timestamp() -> str:
     
     Example:
         >>> timestamp = get_iso_timestamp()
-        >>> print(timestamp)
+        >>> logger.info(timestamp)
         2025-10-09T16:30:45+11:00
     """
     return get_melbourne_now().isoformat()
@@ -54,7 +54,7 @@ def get_human_readable_timestamp() -> str:
     
     Example:
         >>> timestamp = get_human_readable_timestamp()
-        >>> print(timestamp)
+        >>> logger.info(timestamp)
         2025-10-09 16:30:45 AEDT
     """
     now = get_melbourne_now()
@@ -71,7 +71,7 @@ def get_unix_timestamp() -> float:
     
     Example:
         >>> timestamp = get_unix_timestamp()
-        >>> print(timestamp)
+        >>> logger.info(timestamp)
         1728454245.123456
     """
     return datetime.now(MELBOURNE_TZ).timestamp()
@@ -92,7 +92,7 @@ def get_timestamp_dict() -> Dict[str, Any]:
     
     Example:
         >>> timestamps = get_timestamp_dict()
-        >>> print(timestamps)
+        >>> logger.info(timestamps)
         {
             'timestamp': 1728454245.123456,
             'timestamp_iso': '2025-10-09T16:30:45+11:00',
@@ -124,7 +124,7 @@ def format_timestamp(dt: datetime, include_timezone: bool = True) -> str:
         >>> from datetime import datetime
         >>> dt = datetime.now(MELBOURNE_TZ)
         >>> formatted = format_timestamp(dt)
-        >>> print(formatted)
+        >>> logger.info(formatted)
         2025-10-09 16:30:45 AEDT
     """
     # Convert to Melbourne timezone if not already
@@ -151,7 +151,7 @@ def parse_iso_timestamp(iso_string: str) -> datetime:
     
     Example:
         >>> dt = parse_iso_timestamp("2025-10-09T16:30:45+11:00")
-        >>> print(dt.tzinfo)
+        >>> logger.info(dt.tzinfo)
         AEDT
     """
     dt = datetime.fromisoformat(iso_string)
@@ -168,7 +168,7 @@ def log_timestamp() -> str:
         str: Log-friendly timestamp
     
     Example:
-        >>> print(f"[{log_timestamp()}] Server started")
+        >>> logger.info(f"[{log_timestamp()}] Server started")
         [2025-10-09 16:30:45 AEDT] Server started
     """
     return get_human_readable_timestamp()
@@ -184,7 +184,7 @@ def json_timestamp() -> Dict[str, Any]:
     Example:
         >>> import json
         >>> data = {"event": "startup", **json_timestamp()}
-        >>> print(json.dumps(data, indent=2))
+        >>> logger.info(json.dumps(data, indent=2))
         {
           "event": "startup",
           "timestamp": 1728454245.123456,
@@ -205,7 +205,7 @@ def filename_timestamp() -> str:
     
     Example:
         >>> filename = f"backup_{filename_timestamp()}.json"
-        >>> print(filename)
+        >>> logger.info(filename)
         backup_2025-10-09_16-30-45.json
     """
     now = get_melbourne_now()

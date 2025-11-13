@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "challenge_basic_kimi_1759663161459",
-  "name": "challenge",
-  "arguments": {
-    "claim": "Python is the best language",
-    "model": "kimi-k2-0905-preview"
-  }
-}

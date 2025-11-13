@@ -5,6 +5,8 @@ import os
 import time
 from typing import Optional
 
+from src.daemon.error_handling import log_error, ErrorCode
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,7 +50,7 @@ def save_cache_token(session_id: str, tool_name: str, prefix_hash: str, token: s
     except (TypeError, ValueError, KeyError) as e:
         logger.warning("Failed to save cache token: %s", e)
     except Exception as e:
-        logger.error("Unexpected error saving cache token: %s", e)
+        log_error(ErrorCode.INTERNAL_ERROR, f"Unexpected error saving cache token: {e}", exc_info=True)
 
 
 def get_cache_token(session_id: str, tool_name: str, prefix_hash: str) -> Optional[str]:
@@ -76,7 +78,7 @@ def get_cache_token(session_id: str, tool_name: str, prefix_hash: str) -> Option
         logger.warning("Failed to get cache token: %s", e)
         return None
     except Exception as e:
-        logger.error("Unexpected error getting cache token: %s", e)
+        log_error(ErrorCode.INTERNAL_ERROR, f"Unexpected error getting cache token: {e}", exc_info=True)
         return None
 
 
@@ -105,7 +107,7 @@ def purge_cache_tokens() -> None:
     except (TypeError, ValueError, KeyError) as e:
         logger.warning("Failed to purge cache tokens: %s", e)
     except Exception as e:
-        logger.error("Unexpected error purging cache tokens: %s", e)
+        log_error(ErrorCode.INTERNAL_ERROR, f"Unexpected error purging cache tokens: {e}", exc_info=True)
 
 
 __all__ = [

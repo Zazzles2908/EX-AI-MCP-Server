@@ -1,8 +1,0 @@
-{
-  "op": "call_tool_res",
-  "request_id": "kimi_capture_headers_basic_kimi_1759664151394",
-  "error": {
-    "code": "EXEC_ERROR",
-    "message": "Error code: 404 - {'error': {'message': 'Not found the model glm-4.5-flash or Permission denied', 'type': 'resource_not_found_error'}}"
-  }
-}

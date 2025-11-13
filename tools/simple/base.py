@@ -26,6 +26,9 @@ from utils.client_info import get_current_session_fingerprint, get_cached_client
 from utils.progress import send_progress
 from utils.progress_utils.messages import ProgressMessages
 
+# Import the registry for model selection
+from src.providers.registry_core import get_registry_instance
+
 
 class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixin, BaseTool):
     """
@@ -322,7 +325,11 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
             # NEW (2025-10-24): Store streaming callback for provider access
             self._on_chunk_callback = on_chunk
 
-            logger.info(f"{self.get_name()} tool called with arguments: {list(arguments.keys())}")
+            # FIX: Handle both dict and ToolRequest object types
+            if hasattr(arguments, 'keys'):
+                logger.info(f"{self.get_name()} tool called with arguments: {list(arguments.keys())}")
+            else:
+                logger.info(f"{self.get_name()} tool called with request object: {type(arguments).__name__}")
             logger.info(f"TOOL_EXEC_DEBUG: Arguments stored, about to send progress")
             try:
                 from utils.progress import send_progress
@@ -331,8 +338,14 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 pass
 
             # Validate request using the tool's Pydantic model
+            # FIX: Handle both dict and already-validated request objects
             request_model = self.get_request_model()
-            request = request_model(**arguments)
+            if isinstance(arguments, request_model):
+                # Arguments is already a validated request object
+                request = arguments
+            else:
+                # Arguments is a dict, validate it
+                request = request_model(**arguments)
             logger.debug(f"Request validation successful for {self.get_name()}")
             try:
                 from utils.progress import send_progress
@@ -363,17 +376,19 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
             self._current_model_name = model_name
 
             # Handle model context from arguments (for in-process testing)
-            if "_model_context" in arguments:
+            # FIX: Check if arguments is dict before checking for key
+            if isinstance(arguments, dict) and "_model_context" in arguments:
                 self._model_context = arguments["_model_context"]
                 logger.debug(f"{self.get_name()}: Using model context from arguments")
             else:
                 # Create model context if not provided
                 from utils.model.context import ModelContext
-                from src.providers.registry import ModelProviderRegistry as _Registry
+                from src.providers.registry_core import get_registry_instance
                 # Avoid constructing ModelContext('auto') which triggers provider lookup error.
                 if (model_name or "").strip().lower() == "auto":
                     try:
-                        seed = _Registry.get_preferred_fallback_model(self.get_model_category())
+                        registry_instance = get_registry_instance()
+                        seed = registry_instance.get_preferred_fallback_model(self.get_model_category())
                     except Exception:
                         seed = None
                     seed = seed or "glm-4.5-flash"
@@ -509,14 +524,20 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
 
             # Generate AI response with fallback (free-first → paid) when applicable
             import os as _os
-            from src.providers.registry import ModelProviderRegistry as _Registry
+            from src.providers.registry import get_registry
             selected_model = self._current_model_name
             tool_call_metadata = []  # collected sanitized tool-call events for UI dropdown
 
-            def _call_with_model(_model_name: str):
+            # Create async bridge helper
+            import asyncio
+            import inspect
+
+            async def _call_with_model_async(_model_name: str):
+                """Async version of the model call logic."""
                 nonlocal selected_model, provider
                 selected_model = _model_name
-                prov = _Registry.get_provider_for_model(_model_name)
+                registry_instance = get_registry()
+                prov = registry_instance.get_provider_for_model(_model_name)
                 if not prov:
                     raise RuntimeError(f"No provider available for model '{_model_name}'")
                 provider = prov  # update for downstream logging/usage
@@ -558,7 +579,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 except Exception:
                     pass
                 # NEW (2025-10-24): Pass streaming callback to provider
-                if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback:
+                if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and prov.supports_streaming(_model_name):
                     provider_kwargs["on_chunk"] = self._on_chunk_callback
 
                 # CRITICAL FIX (2025-10-26): Add logging to verify actual API calls
@@ -567,15 +588,30 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 logger.info(f"[{self.get_name()}] CALLING PROVIDER: {prov.__class__.__name__} with prompt length {len(prompt)}")
                 call_start = _time.time()
 
-                result = prov.generate_content(
-                    prompt=prompt,
-                    model_name=_model_name,
-                    system_prompt=system_prompt,
-                    temperature=temperature,
-                    thinking_mode=thinking_mode if prov.supports_thinking_mode(_model_name) else None,
-                    images=images if images else None,
+                # Build kwargs dict, excluding images if not supported
+                generate_kwargs = {
+                    "prompt": prompt,
+                    "model_name": _model_name,
+                    "system_prompt": system_prompt,
+                    "temperature": temperature,
                     **provider_kwargs,
-                )
+                }
+
+                # Only add thinking_mode if supported
+                thinking_mode_value = thinking_mode if prov.supports_thinking_mode(_model_name) else None
+                if thinking_mode_value:
+                    generate_kwargs["thinking_mode"] = thinking_mode_value
+
+                # Only add images if provider supports it
+                if images and prov.supports_images(_model_name):
+                    generate_kwargs["images"] = images
+
+                # Only add on_chunk if provider supports streaming
+                if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and prov.supports_streaming(_model_name):
+                    generate_kwargs["on_chunk"] = self._on_chunk_callback
+
+                # Handle async provider calls - we're in an async function, so use await
+                result = await prov.generate_content(**generate_kwargs)
 
                 # Log response time to verify real API calls (should be >100ms for real AI)
                 call_duration_ms = (_time.time() - call_start) * 1000
@@ -584,7 +620,48 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
 
                 return result
 
-            # Honor explicit model first; only use fallback chain when model=='auto' or on failure if enabled
+            # Sync wrapper for _call_with_model_async to bridge with call_with_fallback
+            def _call_with_model(_model_name: str):
+                import asyncio
+                import threading
+                import concurrent.futures
+
+                # Try to get the running loop
+                try:
+                    loop = asyncio.get_running_loop()
+                    # We're in an async context - use a new thread with its own event loop
+                    logger.warning(f"[DEBUG] Using thread-based execution for model '{_model_name}' (async context detected)")
+                    result_container = []
+                    exception_container = []
+
+                    def run_in_thread():
+                        new_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(new_loop)
+                        try:
+                            result = new_loop.run_until_complete(_call_with_model_async(_model_name))
+                            result_container.append(result)
+                        except Exception as e:
+                            import traceback
+                            exception_container.append(e)
+                        finally:
+                            new_loop.close()
+
+                    thread = threading.Thread(target=run_in_thread, daemon=True)
+                    thread.start()
+                    thread.join(timeout=120)  # 2 minute timeout
+
+                    if exception_container:
+                        raise exception_container[0]
+                    if not result_container:
+                        raise TimeoutError(f"Model call timed out for model '{_model_name}'")
+                    return result_container[0]
+
+                except RuntimeError as e:
+                    # No running loop, safe to use asyncio.run()
+                    logger.warning(f"[DEBUG] Using asyncio.run() for model '{_model_name}' (sync context detected)")
+                    return asyncio.run(_call_with_model_async(_model_name))
+
+            # Honor explicit model first; only use hybrid router when model=='auto' or on failure if enabled
             _fb_on_failure = _os.getenv("FALLBACK_ON_FAILURE", "true").strip().lower() == "true"
             _is_auto = (self._current_model_name or "").strip().lower() == "auto"
 
@@ -623,7 +700,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                         provider_kwargs["continuation_id"] = continuation_id
 
                     # NEW (2025-10-24): Pass streaming callback to provider (direct call path)
-                    if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback:
+                    if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and provider.supports_streaming(self._current_model_name):
                         provider_kwargs["on_chunk"] = self._on_chunk_callback
 
                     # Try semantic cache first
@@ -650,15 +727,27 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                         model_response = cached_response
                     else:
                         logger.debug(f"Semantic cache MISS for {self.get_name()} (model={self._current_model_name})")
-                        model_response = provider.generate_content(
-                            prompt=prompt,
-                            model_name=self._current_model_name,
-                            system_prompt=system_prompt,
-                            temperature=temperature,
-                            thinking_mode=thinking_mode if provider.supports_thinking_mode(self._current_model_name) else None,
-                            images=images if images else None,
+
+                        # Build kwargs dict, excluding images if not supported
+                        generate_kwargs = {
+                            "prompt": prompt,
+                            "model_name": self._current_model_name,
+                            "system_prompt": system_prompt,
+                            "temperature": temperature,
                             **provider_kwargs,
-                        )
+                        }
+
+                        # Only add thinking_mode if supported
+                        thinking_mode_value = thinking_mode if provider.supports_thinking_mode(self._current_model_name) else None
+                        if thinking_mode_value:
+                            generate_kwargs["thinking_mode"] = thinking_mode_value
+
+                        # Only add images if provider supports it
+                        if images and provider.supports_images(self._current_model_name):
+                            generate_kwargs["images"] = images
+
+                        # Handle async provider calls - already in async context
+                        model_response = await provider.generate_content(**generate_kwargs)
 
                         # Cache the response
                         if model_response is not None:
@@ -673,69 +762,14 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                             )
                 except Exception as _explicit_err:
                     if _fb_on_failure:
-                        logger.warning(f"Explicit model call failed; entering fallback chain: {str(_explicit_err)}")
-                        tool_category = self.get_model_category()
-                        logger.info(f"Using fallback chain for category {tool_category.name}")
-                        # Derive simple hints for context-aware routing
-                        hints = []
-                        try:
-                            u = (self.get_request_prompt(request) or "").lower()
-                            if any(k in u for k in ("image", "diagram", "vision")):
-                                hints.append("vision")
-                            if any(k in u for k in ("think", "reason", "chain of thought", "deep")):
-                                hints.append("deep_reasoning")
-                        except Exception:
-                            pass
-                        try:
-                            if estimated_tokens and int(estimated_tokens) > 48000:
-                                hints.append("long_context")
-                                hints.append(f"estimated_tokens:{int(estimated_tokens)}")
-                        except Exception:
-                            pass
-                        try:
-                            user_prompt_raw = self.get_request_prompt(request) or ""
-                            raw_tokens = estimate_tokens(user_prompt_raw)
-                            if int(raw_tokens) > 48000:
-                                hints.append("long_context")
-                                hints.append(f"estimated_tokens:{int(raw_tokens)}")
-                        except Exception:
-                            pass
-                        model_response = _Registry.call_with_fallback(tool_category, _call_with_model, hints=hints)
-                        # Sync the model context and current name to the selected model
-                        self._current_model_name = selected_model
-                        self._model_context.model_name = selected_model
+                        logger.warning(f"Explicit model call failed; entering hybrid router fallback: {str(_explicit_err)}")
+                        model_response = await self._route_and_execute(request, _call_with_model, is_retry=True)
                     else:
                         raise
             else:
-                # Auto mode: use category-aware fallback chain
-                tool_category = self.get_model_category()
-                logger.info(f"Using fallback chain for category {tool_category.name}")
-                hints = []
-                try:
-                    u = (self.get_request_prompt(request) or "").lower()
-                    if any(k in u for k in ("image", "diagram", "vision")):
-                        hints.append("vision")
-                    if any(k in u for k in ("think", "reason", "chain of thought", "deep")):
-                        hints.append("deep_reasoning")
-                except Exception:
-                    pass
-                try:
-                    if estimated_tokens and int(estimated_tokens) > 48000:
-                        hints.append("long_context")
-                        hints.append(f"estimated_tokens:{int(estimated_tokens)}")
-                except Exception:
-                    pass
-                try:
-                    user_prompt_raw = self.get_request_prompt(request) or ""
-                    raw_tokens = estimate_tokens(user_prompt_raw)
-                    if int(raw_tokens) > 48000:
-                        hints.append("long_context")
-                        hints.append(f"estimated_tokens:{int(raw_tokens)}")
-                except Exception:
-                    pass
-                model_response = _Registry.call_with_fallback(tool_category, _call_with_model, hints=hints)
-                self._current_model_name = selected_model
-                self._model_context.model_name = selected_model
+                # Auto mode: use hybrid router for intelligent routing
+                logger.info("Using hybrid router for auto model selection")
+                model_response = await self._route_and_execute(request, _call_with_model, is_retry=False)
 
             logger.info(f"Received response from {provider.get_provider_type().value} API for {self.get_name()}")
             send_progress(ProgressMessages.processing_response())
@@ -1238,7 +1272,11 @@ Please provide a thoughtful, comprehensive response:"""
         current_args = getattr(self, "_current_arguments", None)
         if current_args:
             # If server.py embedded conversation history, it stores original prompt separately
-            original_user_prompt = current_args.get("_original_user_prompt")
+            # FIX: Handle both dict and ToolRequest object types
+            if hasattr(current_args, 'get'):
+                original_user_prompt = current_args.get("_original_user_prompt")
+            else:
+                original_user_prompt = getattr(current_args, "_original_user_prompt", None)
             if original_user_prompt is not None:
                 # Use original user prompt for size validation (excludes conversation history)
                 return original_user_prompt
@@ -1448,3 +1486,111 @@ Please provide a thoughtful, comprehensive response:"""
             self.get_websearch_guidance = original_guidance
 
         return full_prompt
+
+    async def _route_and_execute(
+        self,
+        request,
+        call_fn,
+        is_retry: bool = False
+    ):
+        """
+        Route request using hybrid router and execute with selected model.
+
+        This method replaces the old call_with_fallback logic with the new
+        hybrid router that combines MiniMax M2 intelligence with RouterService
+        fallback for production reliability.
+
+        Args:
+            request: The validated request object
+            call_fn: Function to call with selected model (e.g., _call_with_model)
+            is_retry: True if this is a retry after explicit model failure
+
+        Returns:
+            Model response from the selected provider
+        """
+        from src.router.hybrid_router import get_hybrid_router
+
+        # Get hybrid router instance
+        hybrid_router = get_hybrid_router()
+
+        # Build request context for routing
+        # Include relevant details from the request for intelligent routing
+        request_context = {
+            "tool_name": self.get_name(),
+            "requested_model": self._current_model_name,
+            "images": self.get_request_images(request),
+            "files": self.get_request_files(request),
+            "use_websearch": self.get_request_use_websearch(request),
+            "thinking_mode": self.get_request_thinking_mode(request),
+            "temperature": self.get_request_temperature(request),
+            "continuation_id": self.get_request_continuation_id(request),
+            "is_retry": is_retry,
+        }
+
+        # Log routing attempt
+        logger.info(
+            f"[HYBRID_ROUTER] Routing request for tool '{self.get_name()}' "
+            f"(auto mode, is_retry={is_retry})"
+        )
+
+        try:
+            # Use hybrid router to get routing decision
+            route_decision = await hybrid_router.route_request(
+                tool_name=self.get_name(),
+                request_context=request_context,
+            )
+
+            # Extract selected model from routing decision
+            selected_model = route_decision.chosen
+            routing_method = route_decision.meta.get("routing_method", "unknown") if route_decision.meta else "unknown"
+
+            logger.info(
+                f"[HYBRID_ROUTER] Selected model: {selected_model} via {routing_method} "
+                f"(requested: {route_decision.requested})"
+            )
+
+            # Update instance variables to match selected model
+            self._current_model_name = selected_model
+            self._model_context.model_name = selected_model
+
+            # Get provider for selected model
+            registry_instance = get_registry_instance()
+            provider = registry_instance.get_provider_for_model(selected_model)
+
+            if not provider:
+                raise RuntimeError(f"No provider available for selected model '{selected_model}'")
+
+            # Update provider reference
+            # Note: The call_fn closure will update the provider variable
+
+            # Execute with selected model
+            model_response = call_fn(selected_model)
+
+            # Log successful execution
+            logger.info(
+                f"[HYBRID_ROUTER] Successfully executed with {selected_model} "
+                f"via {routing_method}"
+            )
+
+            return model_response
+
+        except Exception as e:
+            logger.error(f"[HYBRID_ROUTER] Routing execution failed: {e}")
+
+            # If hybrid routing fails, fall back to basic auto selection
+            logger.warning("[HYBRID_ROUTER] Falling back to basic auto model selection")
+            try:
+                # Import and use router service for basic fallback
+                from src.router.service import RouterService
+                router_service = RouterService()
+                basic_decision = router_service.choose_model("auto")
+                fallback_model = basic_decision.chosen
+
+                logger.info(f"[HYBRID_ROUTER] Fallback model: {fallback_model}")
+                self._current_model_name = fallback_model
+                self._model_context.model_name = fallback_model
+
+                return call_fn(fallback_model)
+            except Exception as fallback_error:
+                logger.error(f"[HYBRID_ROUTER] Fallback also failed: {fallback_error}")
+                raise e

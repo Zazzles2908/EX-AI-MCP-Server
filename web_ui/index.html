@@ -221,8 +221,10 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://mxaazuhlqewmkweewyaz.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14YWF6dWhscWV3bWt3ZWV3eWF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxOTA1MjUsImV4cCI6MjA3Mzc2NjUyNX0.4UfuP40d5L72bp-WAXYTSOF8-P11eR3C5oEcr8dZHVI';
+        // WARNING: Never commit real credentials to version control
+        // Use environment variables in production
+        const SUPABASE_URL = 'https://your-project.supabase.co';
+        const SUPABASE_ANON_KEY = 'your_supabase_anon_key_here';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentSessionId = null;
         

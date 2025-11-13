@@ -973,3 +973,18 @@ button:active {
     color: #ef4444;
 }
 
+/* Time range selector for cache metrics */
+.time-range-selector {
+    padding: 8px 12px;
+    background: #2a2f4a;
+    color: #e0e0e0;
+    border: 1px solid #667eea;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.time-range-selector:hover {
+    background: #3a3f5a;
+}
+

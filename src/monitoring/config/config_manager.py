@@ -25,33 +25,22 @@ logger = logging.getLogger(__name__)
 class ConfigManager:
     """
     Manages dual-write configuration with environment variable support.
-    
+
     Loads configuration from .env file and provides methods for:
     - Configuration validation
     - Runtime updates
     - Change notifications
     - Configuration queries
+
+    REFACTORED: Removed singleton pattern - now uses dependency injection
+    for better testability and maintainability.
     """
-    
-    _instance: Optional['ConfigManager'] = None
-    _config: DualWriteConfig = None
-    _change_listeners: List[Callable] = []
-    
-    def __new__(cls):
-        """Singleton pattern."""
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
-        return cls._instance
-    
+
     def __init__(self):
         """Initialize configuration manager."""
-        if self._initialized:
-            return
-        
-        self._initialized = True
-        self._config = self._load_from_env()
-        
+        self._config: DualWriteConfig = self._load_from_env()
+        self._change_listeners: List[Callable] = []
+
         if not self._config.validate():
             logger.error("Configuration validation failed, using defaults")
             self._config = DualWriteConfig()
@@ -230,11 +219,8 @@ class ConfigManager:
         return self._config.to_dict()
 
 
-# Singleton instance
-_config_manager = ConfigManager()
-
-
-def get_config_manager() -> ConfigManager:
-    """Get the singleton ConfigManager instance."""
-    return _config_manager
+# DEPRECATED: Singleton instance removed
+# Use dependency injection instead:
+# config_manager = ConfigManager()
+# consumer = SomeClass(config_manager)
 

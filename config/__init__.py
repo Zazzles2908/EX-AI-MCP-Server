@@ -80,11 +80,7 @@ except ImportError:
     FILE_UPLOAD_GUIDANCE = None
 
 # Backward compatibility: Import config helper
-try:
-    from utils.config.helpers import get_auggie_config_path
-except ImportError:
-    # utils.config.helpers might not exist
-    get_auggie_config_path = None
+# (Auggie configuration helper removed - 2025-11-08)
 
 
 __all__ = [
@@ -158,8 +154,5 @@ __all__ = [
     # File handling
     "FILE_PATH_GUIDANCE",
     "FILE_UPLOAD_GUIDANCE",
-    
-    # Helpers
-    "get_auggie_config_path",
 ]
 

@@ -72,28 +72,28 @@ class AuditorPanel {
     
     renderObservation(observation) {
         const container = document.getElementById('auditorObservations');
-        
+
         // Remove "no observations" message if present
         const noObsMsg = container.querySelector('.no-observations');
         if (noObsMsg) {
             noObsMsg.remove();
         }
-        
+
         // Create observation element
         const element = document.createElement('div');
         element.className = `observation observation-${observation.severity}`;
         element.id = `obs-${observation.id}`;
         element.dataset.severity = observation.severity;
         element.dataset.category = observation.category;
-        
+
         element.innerHTML = `
             <div class="observation-header">
                 <span class="severity-badge ${observation.severity}">
-                    ${observation.severity.toUpperCase()}
+                    ${this.escapeHtml(observation.severity.toUpperCase())}
                 </span>
-                <span class="category-badge">${observation.category}</span>
-                <span class="confidence">Confidence: ${observation.confidence}%</span>
-                <span class="timestamp">${this.formatTimestamp(observation.timestamp)}</span>
+                <span class="category-badge">${this.escapeHtml(observation.category)}</span>
+                <span class="confidence">Confidence: ${this.escapeHtml(observation.confidence + '%')}</span>
+                <span class="timestamp">${this.escapeHtml(this.formatTimestamp(observation.timestamp))}</span>
             </div>
             <div class="observation-body">
                 <p class="observation-text">${this.escapeHtml(observation.observation)}</p>
@@ -104,15 +104,15 @@ class AuditorPanel {
                 ` : ''}
             </div>
             <div class="observation-actions">
-                <button onclick="auditorPanel.acknowledgeObservation('${observation.id}')">
+                <button onclick="auditorPanel.acknowledgeObservation('${this.escapeHtml(observation.id)}')">
                     ✓ Acknowledge
                 </button>
-                <button onclick="auditorPanel.viewRelatedEvents('${observation.id}')">
+                <button onclick="auditorPanel.viewRelatedEvents('${this.escapeHtml(observation.id)}')">
                     📊 View Events
                 </button>
             </div>
         `;
-        
+
         // Insert at top (most recent first)
         container.insertBefore(element, container.firstChild);
     }
@@ -126,14 +126,14 @@ class AuditorPanel {
             <div class="alert-content">
                 <strong>Critical Issue Detected</strong>
                 <p>${this.escapeHtml(observation.observation)}</p>
-                <button onclick="auditorPanel.acknowledgeObservation('${observation.id}'); this.parentElement.parentElement.remove();">
+                <button onclick="auditorPanel.acknowledgeObservation('${this.escapeHtml(observation.id)}'); this.parentElement.parentElement.remove();">
                     Acknowledge
                 </button>
             </div>
         `;
-        
+
         document.body.appendChild(toast);
-        
+
         // Auto-remove after 10 seconds
         setTimeout(() => {
             if (toast.parentElement) {
@@ -191,33 +191,40 @@ class AuditorPanel {
     }
     
     filterObservations() {
-        const severityFilter = document.getElementById('severityFilter').value;
-        const categoryFilter = document.getElementById('categoryFilter').value;
-        
-        const observations = document.querySelectorAll('.observation');
-        
-        observations.forEach(obs => {
-            const severity = obs.dataset.severity;
-            const category = obs.dataset.category;
-            
-            let show = true;
-            
-            // Apply severity filter
-            if (severityFilter !== 'all') {
-                if (severityFilter === 'critical' && severity !== 'critical') {
-                    show = false;
-                } else if (severityFilter === 'warning' && severity === 'info') {
+        // Debounce the filter to prevent excessive re-rendering
+        if (this.filterTimeout) {
+            clearTimeout(this.filterTimeout);
+        }
+
+        this.filterTimeout = setTimeout(() => {
+            const severityFilter = document.getElementById('severityFilter').value;
+            const categoryFilter = document.getElementById('categoryFilter').value;
+
+            const observations = document.querySelectorAll('.observation');
+
+            observations.forEach(obs => {
+                const severity = obs.dataset.severity;
+                const category = obs.dataset.category;
+
+                let show = true;
+
+                // Apply severity filter
+                if (severityFilter !== 'all') {
+                    if (severityFilter === 'critical' && severity !== 'critical') {
+                        show = false;
+                    } else if (severityFilter === 'warning' && severity === 'info') {
+                        show = false;
+                    }
+                }
+
+                // Apply category filter
+                if (categoryFilter !== 'all' && category !== categoryFilter) {
                     show = false;
                 }
-            }
-            
-            // Apply category filter
-            if (categoryFilter !== 'all' && category !== categoryFilter) {
-                show = false;
-            }
-            
-            obs.style.display = show ? 'block' : 'none';
-        });
+
+                obs.style.display = show ? 'block' : 'none';
+            });
+        }, 200); // 200ms debounce delay
     }
     
     formatTimestamp(timestamp) {

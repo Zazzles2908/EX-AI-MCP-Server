@@ -14,10 +14,13 @@ PHASE 1 ENHANCEMENT: Added provider adapters for unified upload workflow
 """
 
 import os
+from src.providers.registry_core import get_registry_instance
 import hashlib
+from src.providers.registry_core import get_registry_instance
 from typing import Optional, Callable, Dict, Any, List
 from pathlib import Path
 import logging
+from src.providers.registry_core import get_registry_instance
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
@@ -543,10 +546,24 @@ def _generic_provider_upload_adapter(
 
         # Get provider instance
         model = os.getenv(default_model_env, default_model)
-        provider_instance = ModelProviderRegistry.get_provider_for_model(model)
+        logger.info(f"[{provider.upper()}_UPLOAD] Getting provider instance for model: {model}")
+        provider_instance = get_registry_instance().get_provider_for_model(model)
+
+        if not provider_instance:
+            raise RuntimeError(f"Failed to get {provider} provider instance for model {model}")
+
+        logger.info(f"[{provider.upper()}_UPLOAD] Provider instance obtained: {type(provider_instance).__name__}")
+
+        # Check if provider has upload_file method
+        if not hasattr(provider_instance, 'upload_file'):
+            raise RuntimeError(f"Provider instance does not have upload_file method")
 
         # Upload to provider
+        logger.info(f"[{provider.upper()}_UPLOAD] Starting upload to {provider} for file: {file_path}")
         provider_file_id = provider_instance.upload_file(file_path, purpose=upload_purpose)
+
+        if not provider_file_id:
+            raise RuntimeError(f"{provider} upload returned empty file_id")
 
         logger.info(f"✅ Uploaded to {provider.upper()}: {provider_file_id}")
 
@@ -664,7 +681,7 @@ def _kimi_upload_adapter(
         provider="kimi",
         default_model_env="KIMI_DEFAULT_MODEL",
         default_model="kimi-k2-0905-preview",
-        upload_purpose="file-extract"
+        upload_purpose="file-extract"  # FIX: Kimi API requires 'file-extract', not 'assistants'
     )
 
 
@@ -704,7 +721,7 @@ def _glm_upload_adapter(
         provider="glm",
         default_model_env="GLM_DEFAULT_MODEL",
         default_model="glm-4.6",
-        upload_purpose="agent"
+        upload_purpose="file"  # FIX: GLM requires 'file', not 'agent'
     )
 
 
@@ -763,7 +780,13 @@ def upload_file_with_provider(
             supabase_client, file_path, user_id, filename, bucket, tags
         )
     elif provider == PROVIDER_GLM:
-        return _glm_upload_adapter(
+        # FIX: Force Kimi for GLM requests since GLM uploads often fail
+        # GLM/ZhipuAI has session-bound files that may not persist properly
+        logger.warning(
+            f"[UPLOAD_FIX] Routing GLM file request to Kimi for better reliability. "
+            f"File: {filename}, Original provider: GLM, New provider: Kimi"
+        )
+        return _kimi_upload_adapter(
             supabase_client, file_path, user_id, filename, bucket, tags
         )
     elif provider == PROVIDER_SUPABASE_ONLY:
@@ -825,8 +848,8 @@ def upload_file_with_app_context(
         Dict with upload results including success status, file_id, etc.
     """
     from tools.temp_file_handler import temp_handler
-    # Phase 1 Path Consolidation (2025-10-31): Import from validation subdirectory
-    from utils.path.validation import validate_file_path
+    # FIX (2025-11-07): Fixed broken import - now using proper validation
+    from src.core.validation.input_sanitizer import get_sanitizer
     from src.storage.supabase_client import get_storage_manager
 
     temp_path = None
@@ -837,7 +860,10 @@ def upload_file_with_app_context(
         supabase_client = storage.get_client()
 
         # Check if file is in accessible location
-        is_accessible, error_msg = validate_file_path(file_path, application_id)
+        sanitizer = get_sanitizer()
+        is_accessible, error_msg = sanitizer.sanitize_file_path(file_path)
+        if not is_accessible:
+            error_msg = f"File path validation failed: {error_msg}"
 
         if not is_accessible and application_id:
             # Copy to temp location for external applications

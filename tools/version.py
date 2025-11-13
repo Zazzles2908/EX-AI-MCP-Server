@@ -245,8 +245,11 @@ class VersionTool(BaseTool):
             ]
             provider_names = ["Moonshot Kimi", "ZhipuAI GLM", "Google Gemini", "OpenAI", "X.AI", "DIAL", "OpenRouter", "Custom/Local"]
 
+            from src.providers.registry_core import get_registry_instance
+            registry = get_registry_instance()
+
             for provider_type, provider_name in zip(provider_types, provider_names):
-                provider = ModelProviderRegistry.get_provider(provider_type)
+                provider = registry.get_provider(provider_type)
                 status = "✅ Configured" if provider is not None else "❌ Not configured"
                 provider_status.append(f"- **{provider_name}**: {status}")
 
@@ -255,7 +258,7 @@ class VersionTool(BaseTool):
 
             # Get total available models
             try:
-                available_models = ModelProviderRegistry.get_available_models(respect_restrictions=True)
+                available_models = registry.get_available_models(respect_restrictions=True)
                 output_lines.append(f"\n\n**Available Models**: {len(available_models)}")
             except Exception:
                 output_lines.append("\n\n**Available Models**: Unknown")

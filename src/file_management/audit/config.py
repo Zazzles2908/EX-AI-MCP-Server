@@ -5,8 +5,8 @@ This module provides configuration templates and examples for setting up
 the audit trail logging system in different environments and use cases.
 """
 
-import asyncio
 import os
+import logging
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List
 
@@ -19,6 +19,8 @@ from .audit_logger import (
     log_user_activity
 )
 
+
+logger = logging.getLogger(__name__)
 
 class AuditConfig:
     """Configuration class for audit logger settings"""
@@ -41,6 +43,8 @@ class AuditConfig:
         self.enable_streaming = enable_streaming
         self.enable_security_detection = enable_security_detection
 
+
+logger = logging.getLogger(__name__)
 
 class AuditLoggerFactory:
     """Factory class for creating configured audit loggers"""
@@ -78,7 +82,7 @@ class AuditLoggerFactory:
     @staticmethod
     async def _file_operation_streamer(event) -> None:
         """Real-time streaming callback for file operations"""
-        print(f"FILE OPERATION: {event.action} on {event.resource_path} by {event.user_id}")
+        logger.info(f"FILE OPERATION: {event.action} on {event.resource_path} by {event.user_id}")
         
         # Here you could integrate with:
         # - Real-time monitoring dashboards
@@ -89,7 +93,7 @@ class AuditLoggerFactory:
     async def _security_event_handler(event) -> None:
         """Handle security events in real-time"""
         if event.security_level in [SecurityLevel.HIGH, SecurityLevel.CRITICAL]:
-            print(f"SECURITY ALERT: {event.action} by {event.user_id} - Level: {event.security_level.value}")
+            logger.info(f"SECURITY ALERT: {event.action} by {event.user_id} - Level: {event.security_level.value}")
             
             # Here you could integrate with:
             # - SIEM systems
@@ -100,19 +104,19 @@ class AuditLoggerFactory:
     async def _compliance_streamer_gdpr(event) -> None:
         """GDPR-specific event streaming"""
         if ComplianceStandard.GDPR in event.compliance_tags:
-            print(f"GDPR EVENT: {event.action} - Data subject: {event.user_id}")
+            logger.info(f"GDPR EVENT: {event.action} - Data subject: {event.user_id}")
     
     @staticmethod
     async def _compliance_streamer_hipaa(event) -> None:
         """HIPAA-specific event streaming"""
         if ComplianceStandard.HIPAA in event.compliance_tags:
-            print(f"HIPAA EVENT: {event.action} - PHI access by: {event.user_id}")
+            logger.info(f"HIPAA EVENT: {event.action} - PHI access by: {event.user_id}")
     
     @staticmethod
     async def _compliance_streamer_sox(event) -> None:
         """SOX-specific event streaming"""
         if ComplianceStandard.SOX in event.compliance_tags:
-            print(f"SOX EVENT: {event.action} - Financial data access by: {event.user_id}")
+            logger.info(f"SOX EVENT: {event.action} - Financial data access by: {event.user_id}")
 
 
 async def setup_production_audit_logger() -> AuditLogger:
@@ -251,12 +255,12 @@ async def demo_comprehensive_logging():
             end_date=end_date
         )
         
-        print(f"GDPR Report: {gdpr_report['report_metadata']['total_events']} events")
-        print(f"SOX Report: {sox_report['report_metadata']['total_events']} events")
+        logger.info(f"GDPR Report: {gdpr_report['report_metadata']['total_events']} events")
+        logger.info(f"SOX Report: {sox_report['report_metadata']['total_events']} events")
         
         # Demonstrate real-time streaming
         def streaming_callback(event):
-            print(f"STREAM: {event.event_type.value} - {event.action}")
+            logger.info(f"STREAM: {event.event_type.value} - {event.action}")
         
         logger.register_streaming_callback(streaming_callback)
         
@@ -274,6 +278,8 @@ async def demo_comprehensive_logging():
 
 
 # Integration examples for different frameworks
+
+logger = logging.getLogger(__name__)
 
 class FlaskAuditMiddleware:
     """Audit middleware for Flask applications"""

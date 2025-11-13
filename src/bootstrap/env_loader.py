@@ -93,7 +93,7 @@ def load_env(env_file: Optional[str] = None, override: bool = True) -> bool:
         return False
     except Exception as e:
         # Any other error during loading
-        print(f"[ENV_LOADER] ❌ Error loading environment: {e}")
+        logger.info(f"[ENV_LOADER] ❌ Error loading environment: {e}")
         return False
 
 

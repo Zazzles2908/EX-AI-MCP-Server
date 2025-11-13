@@ -27,11 +27,12 @@ from openai import OpenAI
 # Import existing utilities
 from utils.file.deduplication import FileDeduplicationManager
 from src.storage.hybrid_supabase_manager import HybridSupabaseManager
+from tools.shared.base_tool import BaseTool
 
 logger = logging.getLogger(__name__)
 
 # Default download directory (Docker container path)
-DEFAULT_DOWNLOAD_DIR = "/mnt/project/downloads/"
+DEFAULT_DOWNLOAD_DIR = os.getenv("EXAI_DOWNLOAD_DIR", "/tmp/exai-downloads/")
 
 # Default cache expiry (7 days as recommended by EXAI)
 DEFAULT_CACHE_EXPIRY_DAYS = 7
@@ -124,7 +125,7 @@ def _sanitize_filename(filename: str) -> str:
     return safe_name
 
 
-class SmartFileDownloadTool:
+class SmartFileDownloadTool(BaseTool):
     """
     Unified file download interface with automatic caching and integrity validation.
     
@@ -142,23 +143,45 @@ class SmartFileDownloadTool:
     
     def __init__(self):
         """Initialize the smart file download tool."""
+        super().__init__()  # Initialize BaseToolCore which sets self.name
         # Initialize storage manager
         self.storage_manager = HybridSupabaseManager()
-        
+
         # Initialize deduplication manager
         self.dedup_manager = FileDeduplicationManager(
             storage_manager=self.storage_manager
         )
-        
+
         # Provider API keys
         self.moonshot_api_key = os.getenv("MOONSHOT_API_KEY")
         self.glm_api_key = os.getenv("GLM_API_KEY")
-        
+
         # Ensure download directory exists
         self._ensure_download_dir()
-        
+
         logger.info("[SMART_FILE_DOWNLOAD] Tool initialized successfully")
-    
+
+    @staticmethod
+    def get_name() -> str:
+        return "smart_file_download"
+
+    @staticmethod
+    def get_description() -> str:
+        return """
+        Smart File Download Tool - Unified file download interface with caching and integrity validation.
+
+        This tool provides seamless file download capabilities with:
+        - Cache-first download strategy (Supabase → Provider)
+        - SHA256-based integrity verification
+        - Provider fallback (Kimi → Supabase)
+        - Download tracking and analytics
+        - Automatic error handling and retry logic
+
+        Usage:
+            tool = SmartFileDownloadTool()
+            local_path = await tool.execute(file_id="file_abc123")
+        """
+
     def _ensure_download_dir(self):
         """Ensure the default download directory exists."""
         Path(DEFAULT_DOWNLOAD_DIR).mkdir(parents=True, exist_ok=True)
@@ -184,9 +207,16 @@ class SmartFileDownloadTool:
         # This handles Windows converting /mnt/project/ to C:\mnt\project\
         normalized_path = os.path.normpath(destination).replace('\\', '/')
 
-        # Ensure path is within /mnt/project/
-        if not normalized_path.startswith("/mnt/project/"):
-            raise ValueError(f"Downloads must be within /mnt/project/, got: {normalized_path}")
+        # Check if path is within allowed directories (/mnt/project/, /tmp/, or downloads dir)
+        allowed_patterns = ["/mnt/project/", "/tmp/exai-downloads/"]
+        if DEFAULT_DOWNLOAD_DIR and DEFAULT_DOWNLOAD_DIR not in ["/tmp/exai-downloads/"]:
+            allowed_patterns.append(DEFAULT_DOWNLOAD_DIR)
+
+        if not any(normalized_path.startswith(pattern) for pattern in allowed_patterns):
+            raise ValueError(
+                f"Downloads must be within allowed directories {allowed_patterns}, "
+                f"got: {normalized_path}"
+            )
 
         # Ensure parent directory exists (use original path for actual filesystem operations)
         Path(destination).parent.mkdir(parents=True, exist_ok=True)
@@ -388,17 +418,71 @@ class SmartFileDownloadTool:
         Download file from Supabase storage.
         
         Args:
-            file_id: Supabase file ID or path
+            file_id: Supabase file ID or path (storage path)
             destination: Destination directory or file path
-            
+
         Returns:
             Local file path
-            
+
         Raises:
-            NotImplementedError: Supabase storage download not yet implemented
+            RuntimeError: If Supabase is not enabled or download fails
         """
-        # TODO: Implement Supabase storage download
-        raise NotImplementedError("Supabase storage download not yet implemented")
+        if not self.storage_manager.enabled:
+            raise RuntimeError("Supabase storage is not enabled")
+
+        try:
+            client = self.storage_manager.get_client()
+            if not client:
+                raise RuntimeError("Supabase client not available")
+
+            # Parse file_id to extract bucket and path
+            # Expected format: "user-files/contexts/{uuid}/{filename}"
+            # or "user-files/system/{uuid}/{filename}"
+            file_id = file_id.strip('/')
+
+            # Extract bucket name and file path
+            parts = file_id.split('/', 1)
+            if len(parts) != 2:
+                raise ValueError(f"Invalid file_id format: {file_id}")
+
+            bucket_name, file_path = parts
+
+            # Download file from Supabase storage
+            logger.info(f"[SMART_FILE_DOWNLOAD] Downloading from Supabase: bucket={bucket_name}, path={file_path}")
+
+            # Download the file
+            result = client.storage.from_(bucket_name).download(file_path)
+
+            if not result:
+                raise RuntimeError(f"Failed to download file: {file_id}")
+
+            # Determine destination path
+            if os.path.isdir(destination):
+                filename = os.path.basename(file_path)
+                local_path = os.path.join(destination, filename)
+            else:
+                local_path = destination
+
+            # Ensure destination directory exists
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
+
+            # Write downloaded content to file
+            with open(local_path, 'wb') as f:
+                f.write(result)
+
+            logger.info(f"[SMART_FILE_DOWNLOAD] Successfully downloaded to: {local_path}")
+
+            # Verify integrity if possible
+            try:
+                self._verify_integrity(file_id, local_path)
+            except Exception as e:
+                logger.warning(f"[SMART_FILE_DOWNLOAD] Integrity verification failed: {e}")
+
+            return local_path
+
+        except Exception as e:
+            logger.error(f"[SMART_FILE_DOWNLOAD] Download failed: {e}", exc_info=True)
+            raise RuntimeError(f"Failed to download from Supabase: {e}")
     
     async def _verify_integrity(self, file_id: str, local_path: str):
         """
@@ -549,7 +633,7 @@ class SmartFileDownloadTool:
 
         Args:
             file_id: Provider file ID or Supabase file ID
-            destination: Optional destination path (default: /mnt/project/downloads/)
+            destination: Optional destination path (default: {DEFAULT_DOWNLOAD_DIR})
 
         Returns:
             Local file path

@@ -49,6 +49,84 @@ class OrchestrationMixin:
         self._max_consecutive_failures = 3
         self._last_failure_error = None
 
+    def _validate_and_convert_parameters(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """
+        Validate and convert parameters before creating the workflow request.
+
+        This method handles parameter validation and conversion for workflow tools,
+        including legacy parameter format conversion (e.g., task -> step, deadline -> total_steps).
+
+        Args:
+            arguments: Raw arguments passed to the tool
+
+        Returns:
+            Validated and converted arguments
+
+        Raises:
+            ValueError: If required parameters are missing or invalid
+        """
+        tool_name = self.get_name()
+        validated_args = arguments.copy()
+
+        # Special handling for planner tool - convert legacy parameters
+        if tool_name == "planner":
+            # Check if legacy parameters are being used
+            has_legacy_params = any(param in validated_args for param in ["task", "deadline"])
+            has_new_params = all(param in validated_args for param in ["step", "step_number", "total_steps", "next_step_required"])
+
+            if has_legacy_params and not has_new_params:
+                # Convert legacy parameters to new format
+                logger.info(f"[{tool_name}] Converting legacy parameters to new format")
+
+                if "task" in validated_args:
+                    validated_args["step"] = validated_args.pop("task")
+
+                if "deadline" in validated_args:
+                    # Convert deadline to total_steps
+                    # For now, default to 1 step if only deadline is provided
+                    # In a real implementation, this might parse the deadline date
+                    # and calculate steps based on complexity
+                    deadline = validated_args.pop("deadline")
+                    validated_args["total_steps"] = 1
+                    logger.info(f"[{tool_name}] Converted deadline '{deadline}' to total_steps=1")
+
+                # Set default values for other required parameters if not provided
+                if "step_number" not in validated_args:
+                    validated_args["step_number"] = 1
+                    logger.info(f"[{tool_name}] Added default step_number=1")
+
+                if "next_step_required" not in validated_args:
+                    validated_args["next_step_required"] = True
+                    logger.info(f"[{tool_name}] Added default next_step_required=True")
+
+                if "findings" not in validated_args:
+                    validated_args["findings"] = "Legacy parameter conversion completed"
+                    logger.info(f"[{tool_name}] Added default findings")
+
+            elif not has_new_params:
+                # Missing required parameters - provide helpful error message
+                required_params = ["step", "step_number", "total_steps", "next_step_required"]
+                missing_params = [p for p in required_params if p not in validated_args]
+
+                error_msg = (
+                    f"[{tool_name}] Missing required parameters: {missing_params}\n\n"
+                    f"Expected parameters (new format):\n"
+                    f"  - step:str - The current planning step description\n"
+                    f"  - step_number:int - Current step number (starts at 1)\n"
+                    f"  - total_steps:int - Total estimated steps\n"
+                    f"  - next_step_required:bool - Whether another step is needed\n\n"
+                    f"Legacy parameters (deprecated):\n"
+                    f"  - task:str (converted to 'step')\n"
+                    f"  - deadline:str (converted to 'total_steps' defaulting to 1)\n\n"
+                    f"Received parameters: {list(validated_args.keys())}\n\n"
+                    f"Please use the new parameter format or provide all required parameters."
+                )
+
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+
+        return validated_args
+
     # ================================================================================
     # Main Workflow Orchestration
     # ================================================================================
@@ -56,7 +134,7 @@ class OrchestrationMixin:
     async def execute_workflow(self, arguments: dict[str, Any]) -> list[TextContent]:
         """
         Main workflow orchestration following debug tool pattern.
-        
+
         Comprehensive workflow implementation that handles all common patterns:
         1. Request validation and step management
         2. Continuation and backtracking support
@@ -70,9 +148,12 @@ class OrchestrationMixin:
         try:
             # Store arguments for access by helper methods
             self._current_arguments = arguments  # type: ignore
-            
+
+            # Validate and convert parameters before creating request
+            validated_arguments = self._validate_and_convert_parameters(arguments)
+
             # Validate request using tool-specific model
-            request = self.get_workflow_request_model()(**arguments)
+            request = self.get_workflow_request_model()(**validated_arguments)
             
             # Emit progress start breadcrumb
             try:

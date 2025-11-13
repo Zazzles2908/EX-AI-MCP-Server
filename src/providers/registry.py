@@ -1,78 +1,81 @@
-"""
-Model Provider Registry - Public API
+"""Minimal provider registry after 98% reduction."""
 
-This module provides the public API for the provider registry system.
-It re-exports all components from the specialized modules for backward compatibility.
+from typing import Any, Dict, Optional
 
-Architecture:
-- registry_config.py: Configuration, feature flags, and health monitoring
-- registry_core.py: Core registry functionality (registration, initialization, discovery)
-- registry_selection.py: Model selection, fallback chains, and diagnostics
 
-For implementation details, see the individual modules.
-"""
+class ModelProviderRegistry:
+    """Minimal provider registry."""
 
-# ================================================================================
-# Configuration and Health Monitoring
-# ================================================================================
+    def __init__(self):
+        self.providers = {}
+        self._register_default_providers()
 
-from src.providers.registry_config import (
-    # Feature flag functions
-    _health_enabled,
-    _cb_enabled,
-    _health_log_only,
-    _retry_attempts,
-    _backoff_base,
-    _backoff_max,
-    _free_tier_enabled,
-    _free_model_list,
-    _apply_free_first,
-    _cost_aware_enabled,
-    _load_model_costs,
-    _max_cost_per_request,
-    _apply_cost_aware,
-    _get_health_manager,
-    # Health wrapper
-    HealthWrappedProvider,
-)
+    def _register_default_providers(self):
+        """Register default providers."""
+        from .glm_provider import GLMProvider
+        from .kimi import KimiProvider
 
-# ================================================================================
-# Core Registry
-# ================================================================================
+        self.providers["GLM"] = GLMProvider()
+        self.providers["KIMI"] = KimiProvider()
 
-from src.providers.registry_core import ModelProviderRegistry
+    def get_provider(self, name: str) -> Optional[Any]:
+        """Get provider by name."""
+        return self.providers.get(name)
 
-# ================================================================================
-# Selection and Diagnostics
-# ================================================================================
+    def get_provider_for_model(self, model: str) -> Optional[Any]:
+        """Get provider for model."""
+        model_lower = model.lower()
+        if "glm" in model_lower:
+            return self.providers.get("GLM")
+        elif "kimi" in model_lower or "moonshot" in model_lower:
+            return self.providers.get("KIMI")
+        return self.providers.get("GLM")
 
-from src.providers.registry_selection import ProviderDiagnostics
+    def get_available_models(self) -> Dict[str, str]:
+        """Get mapping of available models to provider names."""
+        models = {}
+        for provider_name, provider in self.providers.items():
+            try:
+                if hasattr(provider, 'list_models'):
+                    for model in provider.list_models():
+                        models[model] = provider_name
+            except Exception:
+                # Skip providers that don't have list_models
+                pass
+        return models
 
-# ================================================================================
-# Public API
-# ================================================================================
+    @classmethod
+    def call_with_fallback(cls, category, call_fn, hints=None):
+        """Execute call_fn with fallback logic."""
+        # Get the global registry instance
+        registry = get_registry()
+        # Define fallback models to try in order
+        fallback_models = ["glm-4.5-flash", "moonshot-v1-8k"]
+        last_error = None
 
-__all__ = [
-    # Core registry
-    "ModelProviderRegistry",
-    # Health monitoring
-    "HealthWrappedProvider",
-    # Diagnostics
-    "ProviderDiagnostics",
-    # Feature flags (internal use)
-    "_health_enabled",
-    "_cb_enabled",
-    "_health_log_only",
-    "_retry_attempts",
-    "_backoff_base",
-    "_backoff_max",
-    "_free_tier_enabled",
-    "_free_model_list",
-    "_apply_free_first",
-    "_cost_aware_enabled",
-    "_load_model_costs",
-    "_max_cost_per_request",
-    "_apply_cost_aware",
-    "_get_health_manager",
-]
+        for model_name in fallback_models:
+            try:
+                # Check if this model is available
+                provider = registry.get_provider_for_model(model_name)
+                if provider:
+                    result = call_fn(model_name)
+                    return result
+            except Exception as e:
+                last_error = e
+                continue
 
+        # If all providers failed, raise the last error
+        if last_error:
+            raise last_error
+
+
+# Global registry instance
+_registry = None
+
+
+def get_registry() -> ModelProviderRegistry:
+    """Get global registry instance."""
+    global _registry
+    if _registry is None:
+        _registry = ModelProviderRegistry()
+    return _registry

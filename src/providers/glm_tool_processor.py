@@ -19,6 +19,12 @@ from typing import Any, Optional, Tuple
 # Import provider base
 from .base import ModelResponse, ProviderType
 
+# Import circuit breaker manager
+from src.resilience.circuit_breaker_manager import circuit_breaker_manager
+
+# Import error handling framework
+from src.daemon.error_handling import ProviderError, ErrorCode, log_error
+
 logger = logging.getLogger(__name__)
 
 
@@ -62,7 +68,7 @@ def _process_tool_calls_in_text(text: str, context: str = "unknown") -> Tuple[st
             logger.warning(f"Web search execution failed ({context})")
         return processed_text, success
     except Exception as e:
-        logger.error(f"Tool call processing failed ({context}): {e}")
+        log_error(ErrorCode.TOOL_EXECUTION_ERROR, f"Tool call processing failed ({context}): {e}", exc_info=True)
         return text, False
 
 
@@ -111,7 +117,7 @@ def chat_completions_create_messages_with_session(
 
     def _execute_glm_chat():
         """Execute GLM chat within session."""
-        breaker = session_manager.circuit_breaker
+        breaker = circuit_breaker_manager.get_breaker('glm')
 
         try:
             # Build payload
@@ -163,8 +169,8 @@ def chat_completions_create_messages_with_session(
                 )
 
         except Exception as e:
-            logger.error(f"GLM chat execution failed: {e}")
-            raise
+            log_error(ErrorCode.PROVIDER_ERROR, f"GLM chat execution failed: {e}", exc_info=True)
+            raise ProviderError("GLM", e) from e
 
     # Execute with session management
     result_container = session_manager.execute_sync(
@@ -195,7 +201,15 @@ def _handle_non_streaming_response(
 
     # Extract response data
     content = result.choices[0].message.content if result.choices else ""
-    usage = dict(result.usage) if hasattr(result, 'usage') and result.usage else {}
+    # Fix: Access CompletionUsage object attributes instead of trying to convert to dict
+    if hasattr(result, 'usage') and result.usage:
+        usage = {
+            "prompt_tokens": result.usage.prompt_tokens,
+            "completion_tokens": result.usage.completion_tokens,
+            "total_tokens": result.usage.total_tokens
+        }
+    else:
+        usage = {}
     actual_model = result.model if hasattr(result, 'model') else model_name
     response_id = result.id if hasattr(result, 'id') else None
     created_ts = result.created if hasattr(result, 'created') else None
@@ -294,11 +308,11 @@ def _handle_streaming_response(
                 continue
 
     except TimeoutError as timeout_err:
-        logger.error(f"GLM streaming timeout: {timeout_err}")
-        raise RuntimeError(f"GLM SDK streaming timeout: {timeout_err}") from timeout_err
+        log_error(ErrorCode.TIMEOUT, f"GLM streaming timeout: {timeout_err}", exc_info=True)
+        raise ProviderError("GLM", timeout_err) from timeout_err
 
     except Exception as stream_err:
-        raise RuntimeError(f"GLM SDK streaming failed: {stream_err}") from stream_err
+        raise ProviderError("GLM", stream_err) from stream_err
 
     # Capture monitoring data before return
     text = "".join(content_parts)
@@ -320,7 +334,7 @@ def _handle_streaming_response(
                             text = text + "\n\n[Web Search Results]\n" + json.dumps(search_data, indent=2, ensure_ascii=False)
                             logger.info("[WEBSEARCH_FIX] GLM web_search executed successfully via SDK streaming tool_calls")
                     except Exception as e:
-                        logger.error(f"[WEBSEARCH_FIX] Failed to parse web_search tool call: {e}")
+                        log_error(ErrorCode.TOOL_EXECUTION_ERROR, f"[WEBSEARCH_FIX] Failed to parse web_search tool call: {e}", exc_info=True)
     else:
         # Fallback: Check for text-embedded tool calls (legacy format)
         text, _ = _process_tool_calls_in_text(text, context="SDK streaming")

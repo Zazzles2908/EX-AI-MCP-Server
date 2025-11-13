@@ -40,7 +40,7 @@ async def check_health():
         # Connect with timeout using asyncio.wait_for
         ws = await asyncio.wait_for(
             websockets.connect(
-                'ws://127.0.0.1:8079',
+                'ws://127.0.0.1:3000',  # Updated to match docker-compose port mapping (3000→8079)
                 ping_interval=None,
                 ping_timeout=None
             ),

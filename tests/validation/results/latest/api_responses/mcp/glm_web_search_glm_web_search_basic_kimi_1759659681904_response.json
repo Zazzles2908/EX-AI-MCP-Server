@@ -1,8 +1,0 @@
-{
-  "op": "call_tool_res",
-  "request_id": "glm_web_search_basic_kimi_1759659681897",
-  "error": {
-    "code": "EXEC_ERROR",
-    "message": "search_query is required"
-  }
-}

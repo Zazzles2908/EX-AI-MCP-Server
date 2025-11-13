@@ -16,15 +16,21 @@ Performance Improvements:
 """
 
 import asyncio
+from src.providers.registry_core import get_registry_instance
 import logging
+from src.providers.registry_core import get_registry_instance
 import mimetypes
+from src.providers.registry_core import get_registry_instance
 import os
+from src.providers.registry_core import get_registry_instance
 from pathlib import Path
 from typing import AsyncGenerator, Optional, Dict, Any
 from datetime import datetime
 
 import aiofiles
+from src.providers.registry_core import get_registry_instance
 import aiohttp
+from src.providers.registry_core import get_registry_instance
 
 logger = logging.getLogger(__name__)
 
@@ -265,7 +271,7 @@ async def upload_via_supabase_gateway_kimi_async(
             raise RuntimeError("KIMI_API_KEY not configured")
         
         default_model = os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview")
-        prov = ModelProviderRegistry.get_provider_for_model(default_model)
+        prov = get_registry_instance().get_provider_for_model(default_model)
         
         if not isinstance(prov, KimiModelProvider):
             prov = KimiModelProvider(api_key=api_key)

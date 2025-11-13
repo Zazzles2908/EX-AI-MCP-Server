@@ -1,7 +1,7 @@
-﻿import warnings
+import warnings
 import logging
 from typing import Optional, Dict, Any, List
-from src.file_management.unified_manager import UnifiedFileManager as NewUnifiedFileManager, FileUploadResult, FileUploadError
+from src.file_management.unified_manager import UnifiedFileManager as NewUnifiedFileManager, UploadResult, FileUploadError
 
 logger = logging.getLogger(__name__)
 DEPRECATION_MESSAGE = "DEPRECATED: src.storage.unified_file_manager. Use src.file_management.unified_manager"
@@ -14,7 +14,7 @@ class UnifiedFileManager:
     def __init__(self, *args, **kwargs):
         _emit_deprecation_warning("UnifiedFileManager.__init__")
         self._manager = NewUnifiedFileManager(*args, **kwargs)
-    async def upload_file(self, file_path: str, provider: Optional[str] = None, purpose: Optional[str] = None, **kwargs) -> FileUploadResult:
+    async def upload_file(self, file_path: str, provider: Optional[str] = None, purpose: Optional[str] = None, **kwargs) -> UploadResult:
         _emit_deprecation_warning("upload_file")
         return await self._manager.upload_file(file_path, provider, purpose, **kwargs)
     async def delete_file(self, file_id: str, provider: Optional[str] = None, **kwargs) -> bool:
@@ -28,4 +28,4 @@ class UnifiedFileManager:
         return getattr(self._manager, name)
 
 warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning, stacklevel=2)
-__all__ = ['UnifiedFileManager', 'FileUploadResult', 'FileUploadError']
+__all__ = ['UnifiedFileManager', 'UploadResult', 'FileUploadError']

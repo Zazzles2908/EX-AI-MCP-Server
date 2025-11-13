@@ -19,6 +19,8 @@ import pybreaker
 # PHASE 2.2.3 (2025-10-21): Import concurrent session manager
 from src.utils.concurrent_session_manager import get_session_manager
 
+from src.daemon.error_handling import ProviderError, ErrorCode, log_error
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,7 +106,7 @@ def chat_completions_create(
         except (TypeError, ValueError, UnicodeError) as e:
             logger.warning(f"Failed to set header {hname}: {e}")
         except Exception as e:
-            logger.error(f"Unexpected error setting header {hname}: {e}")
+            log_error(ErrorCode.INTERNAL_ERROR, f"Unexpected error setting header {hname}: {e}", exc_info=True)
 
     if call_key:
         _safe_set("Idempotency-Key", str(call_key))
@@ -267,7 +269,7 @@ def chat_completions_create(
 
                 choices = raw_payload.choices if hasattr(raw_payload, "choices") else raw_payload.get("choices")
 
-                if not choices or len(choices) == 0:
+                if not choices or not choices:
                     raise ValueError(
                         f"Invalid Kimi API response: empty 'choices' array. "
                         f"This may indicate an API error or rate limit."
@@ -312,7 +314,7 @@ def chat_completions_create(
                         reasoning_content = msg.get("reasoning_content")
             except ValueError as e:
                 # Re-raise validation errors - these indicate API problems
-                logger.error(f"Kimi API response validation failed (model: {model}): {e}")
+                log_error(ErrorCode.PROVIDER_ERROR, f"Kimi API response validation failed (model: {model}): {e}", exc_info=True)
                 raise
             except Exception as e:
                 logger.warning(f"Failed to extract content from Kimi response (model: {model}): {e}")
@@ -363,7 +365,7 @@ def chat_completions_create(
                 content_text = (raw_payload.get("choices", [{}])[0].get("message", {}) or {}).get("content", "")
     except pybreaker.CircuitBreakerError:
         # PHASE 1 (2025-10-18): Circuit breaker is OPEN - Kimi API is unavailable
-        logger.error("Kimi circuit breaker OPEN - API unavailable")
+        log_error(ErrorCode.SERVICE_UNAVAILABLE, "Kimi circuit breaker OPEN - API unavailable")
         error = "Circuit breaker OPEN - Kimi API unavailable"
 
         # PHASE 3 (2025-10-23): Monitoring will be recorded in finally block
@@ -381,10 +383,10 @@ def chat_completions_create(
             },
         }
     except Exception as e:
-        logger.error("Kimi chat call error: %s", e)
+        log_error(ErrorCode.PROVIDER_ERROR, f"Kimi chat call error: {e}", exc_info=True)
         error = str(e)
         # PHASE 3 (2025-10-23): Monitoring will be recorded in finally block
-        raise
+        raise ProviderError("Kimi", e) from e
     finally:
         # PHASE 3 (2025-10-23): ALWAYS record monitoring event (all code paths)
         logger.info(f"[MONITORING_DEBUG] FINALLY BLOCK ENTERED for model={model}")
@@ -413,7 +415,7 @@ def chat_completions_create(
             )
             logger.info(f"[MONITORING_DEBUG] Successfully called record_kimi_event")
         except Exception as e:
-            logger.error(f"[MONITORING_DEBUG] FINALLY BLOCK ERROR: {e}", exc_info=True)
+            log_error(ErrorCode.INTERNAL_ERROR, f"FINALLY BLOCK ERROR: {e}", exc_info=True)
 
     # Normalize usage to a plain dict to ensure JSON-serializable output
     _usage = None

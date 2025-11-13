@@ -26,6 +26,8 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 import os
 
+from src.daemon.error_handling import ProviderError, ErrorCode, log_error
+
 logger = logging.getLogger(__name__)
 
 
@@ -151,7 +153,7 @@ class RetryHandler:
                 last_exception = e
                 
                 if not self._should_retry(e):
-                    logger.warning(f"[RETRY] Non-retryable error for {func_name}: {e}")
+                    log_error(ErrorCode.INTERNAL_ERROR, f"Non-retryable error for {func_name}: {e}", exc_info=True)
                     raise
                 
                 if attempt < self.config.max_attempts - 1:
@@ -159,7 +161,7 @@ class RetryHandler:
                     logger.info(f"[RETRY] Attempt {attempt + 1} failed for {func_name}, retrying after {delay:.2f}s: {e}")
                     await asyncio.sleep(delay)
                 else:
-                    logger.error(f"[RETRY] Max retries ({self.config.max_attempts}) exceeded for {func_name}: {e}")
+                    log_error(ErrorCode.PROVIDER_ERROR, f"Max retries ({self.config.max_attempts}) exceeded for {func_name}: {e}", exc_info=True)
         
         raise last_exception
 
@@ -227,15 +229,15 @@ class CircuitBreaker:
         # Reject if circuit is open
         if self.state == CircuitState.OPEN:
             error_msg = f"Circuit breaker is OPEN for {self.provider_name} - provider unavailable"
-            logger.warning(f"[CIRCUIT] {error_msg}")
-            raise Exception(error_msg)
+            log_error(ErrorCode.SERVICE_UNAVAILABLE, error_msg)
+            raise ProviderError(self.provider_name, Exception(error_msg))
         
         # Limit calls in half-open state
         if self.state == CircuitState.HALF_OPEN:
             if self.half_open_calls >= self.config.half_open_max_calls:
                 error_msg = f"Circuit breaker HALF_OPEN for {self.provider_name} - max calls exceeded"
-                logger.warning(f"[CIRCUIT] {error_msg}")
-                raise Exception(error_msg)
+                log_error(ErrorCode.SERVICE_UNAVAILABLE, error_msg)
+                raise ProviderError(self.provider_name, Exception(error_msg))
             self.half_open_calls += 1
         
         try:
@@ -279,7 +281,7 @@ class CircuitBreaker:
         elif self.failure_count >= self.config.failure_threshold:
             old_state = self.state
             self.state = CircuitState.OPEN
-            logger.error(f"[CIRCUIT] State transition: {old_state.value} → {self.state.value} for {self.provider_name} - {self.failure_count} failures")
+            log_error(ErrorCode.PROVIDER_ERROR, f"State transition: {old_state.value} -> {self.state.value} for {self.provider_name} - {self.failure_count} failures")
 
 
 # ============================================================================

@@ -251,6 +251,44 @@ package-lock.json
 docker-data/
 .docker/
 
+# -----------------------------------------------------------------------------
+# SECURITY ADDITIONS (2025-11-08) - Prevent credential leaks
+# -----------------------------------------------------------------------------
+
+# MCP Configuration with JWT tokens (HIGH SECURITY RISK)
+config/daemon/mcp-config.*.json
+config/daemon/*.json
+
+# Scripts with hardcoded secrets
+scripts/*_with_secrets.py
+scripts/hardcoded_*.py
+
+# Documentation with exposed tokens
+docs/**/*secret*.md
+docs/**/*token*.md
+docs/**/*key*.md
+
+# Testing environment files
+tests/validation/.env.testing
+
+# Logs with sensitive data
+logs/*.log
+logs/ws_daemon.log
+logs/exai_native_mcp.log
+
+# VSCode settings with tokens
+.vscode/settings.json
+
+# All env files (enhanced security)
+*.env
+.env.*
+
+
 # Conversation History (contains sensitive data)
 Fixed_monitoring_errors*.json
 *conversation_history*.json
+
+# MCP Configuration Files (contain access tokens - HIGH SECURITY RISK)
+.mcp.json
+.claude/.mcp.json
+project-template/.mcp.json

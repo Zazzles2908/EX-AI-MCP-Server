@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "tracer_basic_glm_1759663687228",
-  "name": "tracer",
-  "arguments": {
-    "code": "def factorial(n): return 1 if n==0 else n*factorial(n-1)",
-    "model": "glm-4.5-flash"
-  }
-}

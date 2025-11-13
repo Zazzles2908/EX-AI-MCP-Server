@@ -22,6 +22,8 @@ from typing import Optional
 
 from openai import OpenAI
 
+from src.daemon.error_handling import log_error, ErrorCode
+
 logger = logging.getLogger(__name__)
 
 
@@ -173,10 +175,7 @@ class OpenAIClientManager:
                     minimal_kwargs["base_url"] = self.base_url
                 return OpenAI(**minimal_kwargs)
             except Exception as fallback_error:
-                logger.error(
-                    f"Even minimal OpenAI client creation failed: {fallback_error}",
-                    exc_info=True
-                )
+                log_error(ErrorCode.INTERNAL_ERROR, f"Even minimal OpenAI client creation failed: {fallback_error}", exc_info=True)
                 raise
         finally:
             # Restore original proxy environment variables

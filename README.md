@@ -57,8 +57,9 @@ A production-ready MCP (Model Context Protocol) server with intelligent routing 
 | **Configure features** | [docs/01_Core_Architecture/02_SDK_Integration.md](docs/01_Core_Architecture/02_SDK_Integration.md) |
 | **Deploy to production** | [docs/02_Service_Components/02_Docker.md](docs/02_Service_Components/02_Docker.md) |
 | **Troubleshoot issues** | [docs/guides/](docs/guides/) |
+| **See current status** | [docs/reports/EXAI_MCP_STATUS_REPORT.md](docs/reports/EXAI_MCP_STATUS_REPORT.md) |
 | **Track current work** | [docs/fix_implementation/WEEKLY_FIX_ROADMAP_2025-10-20.md](docs/fix_implementation/WEEKLY_FIX_ROADMAP_2025-10-20.md) |
-| **See what's been fixed** | [docs/fix_implementation/](docs/fix_implementation/) |
+| **See what's been fixed** | [docs/reports/](docs/reports/) |
 
 ### 📖 Documentation Structure
 
@@ -68,6 +69,86 @@ A production-ready MCP (Model Context Protocol) server with intelligent routing 
 - **[docs/03_Data_Management/](docs/03_Data_Management/)** - User auth, tools/functions, file storage
 - **[docs/05_CURRENT_WORK/](docs/05_CURRENT_WORK/)** - Active implementation phases, strategic plans, completion reports
 - **[docs/guides/](docs/guides/)** - How-to guides and best practices
+  - [MCP Configuration Guide](docs/guides/MCP_CONFIGURATION_GUIDE.md)
+  - [Native ClaudeCode Setup](docs/guides/NATIVE_CLAUDECODE_SETUP.md)
+  - [Supabase Setup Guide](docs/guides/SUPABASE_MCP_SETUP_GUIDE.md)
+  - [Supabase Testing Guide](docs/guides/SUPABASE_MCP_TESTING_GUIDE.md)
+- **[docs/reports/](docs/reports/)** - Operational reports and status updates
+  - [EXAI MCP Status Report](docs/reports/EXAI_MCP_STATUS_REPORT.md)
+  - [Completeness Verification](docs/reports/FINAL_COMPLETENESS_VERIFICATION.md)
+  - [Docker Operational Report](docs/reports/DOCKER_OPERATIONAL_REPORT.md)
+
+### 📋 Comprehensive Documentation System (NEW!)
+
+**Complete project documentation with integration strategy:**
+
+#### Core Documentation
+- **[documents/01-architecture-overview/](documents/01-architecture-overview/)** - System architecture, components, and design patterns
+  - [System Architecture Overview](documents/01-architecture-overview/01_system_architecture.md)
+  - [Component Integration Guide](documents/01-architecture-overview/02_component_integration.md)
+  - [Data Flow Diagrams](documents/01-architecture-overview/03_data_flow_diagrams.md)
+  - [Mermaid Diagrams](documents/01-architecture-overview/04_mermaid_diagrams.md)
+
+#### Database & Storage
+- **[documents/02-database-integration/](documents/02-database-integration/)** - Supabase integration and schema documentation
+  - [Schema to Code Mapping](documents/02-database-integration/schema-to-code-mapping/)
+  - [Repository Layer Guide](documents/02-database-integration/repository-layer-guide/)
+  - [Performance Optimization](documents/02-database-integration/performance-optimization/)
+
+#### Security & Authentication
+- **[documents/03-security-authentication/](documents/03-security-authentication/)** - Security best practices and authentication
+  - [JWT Authentication Guide](documents/03-security-authentication/01_jwt_authentication.md)
+  - [API Key Management](documents/03-security-authentication/02_api_key_management.md)
+  - [Security Best Practices](documents/03-security-authentication/03_security_best_practices.md)
+
+#### API & Tools Reference
+- **[documents/04-api-tools-reference/](documents/04-api-tools-reference/)** - Complete API and tools documentation
+  - [MCP Tools Reference](documents/04-api-tools-reference/01_mcp_tools_reference.md)
+  - [Provider APIs](documents/04-api-tools-reference/02_provider_apis.md)
+  - [Integration Examples](documents/04-api-tools-reference/03_integration_examples.md)
+
+#### Operations & Management
+- **[documents/05-operations-management/](documents/05-operations-management/)** - Deployment, monitoring, and operations
+  - [Deployment Guide](documents/05-operations-management/01_deployment_guide.md)
+  - [Monitoring & Health Checks](documents/05-operations-management/02_monitoring_health_checks.md)
+  - [Troubleshooting Guide](documents/05-operations-management/03_troubleshooting_guide.md)
+
+#### Development Guides
+- **[documents/06-development-guides/](documents/06-development-guides/)** - Development workflows and best practices
+  - [Contributing Guidelines](documents/06-development-guides/01_contributing_guidelines.md)
+  - [Code Review Process](documents/06-development-guides/02_code_review_process.md)
+  - [Testing Strategy](documents/06-development-guides/03_testing_strategy.md)
+
+#### Integration Strategy
+- **[documents/integration-strategy-checklist.md](documents/integration-strategy-checklist.md)** - Master checklist for system integration
+
+### 🌐 Claude Web Application Connection
+
+**Status**: ✅ **FULLY CONFIGURED AND TESTED**
+
+The EX-AI MCP Server can be accessed through the **Claude web application** (claude.ai) with AI-enhanced features:
+
+- **Configuration File**: `.mcp.json` in project root
+- **MCP Server**: `claude_web_app_mcp.py` (minimal, dependency-free)
+- **Web App Format**: Uses "enhancements" array for optimal compatibility
+- **Available Features**: AI monitoring, semantic caching, batch processing with GLM-4.6 and Kimi K2
+
+**Quick Start**:
+1. Open https://claude.ai
+2. Navigate to your project folder
+3. Enhancements auto-load from `.mcp.json`
+4. Use AI-powered features (GLM-4.6, Kimi K2) in your conversations
+
+**Documentation**:
+- [SIMPLE_CLAUDE_CONNECTION.md](SIMPLE_CLAUDE_CONNECTION.md) - Quick start guide
+- [WEB_APP_CONNECTION_COMPLETE.md](WEB_APP_CONNECTION_COMPLETE.md) - Complete status & verification
+- [test_claude_connection.py](test_claude_connection.py) - Diagnostic tool
+
+**Verification**:
+```bash
+cd /c/Project/EX-AI-MCP-Server
+python test_claude_connection.py
+```
 
 ### 🚀 Phase 2.6-2.7: WebSocket → Supabase Realtime Migration
 

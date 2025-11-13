@@ -23,6 +23,8 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 if TYPE_CHECKING:
     from .base import ModelCapabilities, ModelResponse, ProviderType
 
+from src.daemon.error_handling import ProviderError, ErrorCode, log_error
+
 logger = logging.getLogger(__name__)
 
 
@@ -138,16 +140,6 @@ class OpenAIContentGenerator:
             # Log sanitized payload
             self._log_sanitized_payload(completion_params)
 
-            # Special-case o3-pro
-            if resolved_model == "o3-pro":
-                return self._generate_with_responses_endpoint(
-                    model_name=resolved_model,
-                    messages=messages,
-                    temperature=temperature,
-                    max_output_tokens=max_output_tokens,
-                    **kwargs,
-                )
-
             # Execute chat request with retries
             result = self._execute_chat_request(completion_params, **kwargs)
 
@@ -159,8 +151,8 @@ class OpenAIContentGenerator:
 
         except Exception as e:
             error = str(e)
-            logger.error(f"Content generation failed: {error}", exc_info=True)
-            raise
+            log_error(ErrorCode.PROVIDER_ERROR, f"Content generation failed: {error}", exc_info=True)
+            raise ProviderError("OpenAI", e) from e
 
         finally:
             # Record monitoring event if Kimi
@@ -189,7 +181,7 @@ class OpenAIContentGenerator:
                         metadata=metadata
                     )
                 except Exception as e:
-                    logger.error(f"Failed to record monitoring event: {e}", exc_info=True)
+                    log_error(ErrorCode.INTERNAL_ERROR, f"Failed to record monitoring event: {e}", exc_info=True)
 
     def _resolve_model_name(self, model_name: str) -> str:
         """Resolve model name (placeholder for future expansion)."""
@@ -485,7 +477,8 @@ class OpenAIContentGenerator:
                     logger.debug(f"Failed to process streaming event: {e}")
                     continue
         except Exception as stream_err:
-            raise RuntimeError(f"Streaming failed: {stream_err}") from stream_err
+            log_error(ErrorCode.PROVIDER_ERROR, f"Streaming failed: {stream_err}", exc_info=True)
+            raise ProviderError("OpenAI", stream_err) from stream_err
 
         content = "".join(content_parts)
         return ModelResponse(
@@ -568,12 +561,32 @@ class OpenAIContentGenerator:
         max_output_tokens: Optional[int],
         **kwargs
     ) -> "ModelResponse":
-        """Generate content using responses endpoint (for o3-pro)."""
-        # This is a placeholder - would need full implementation
-        # For now, raise NotImplementedError
-        raise NotImplementedError(
-            "Responses endpoint not yet implemented in refactored code"
+        """
+        Generate content using responses endpoint (for o3-pro).
+
+        NOTE: This method is currently unused. The o3-pro model falls back to
+        the standard chat completion endpoint. This placeholder is retained for
+        future implementation if needed.
+
+        For now, this method should not be called as o3-pro models use the
+        standard chat completion flow.
+        """
+        # This is a placeholder for future implementation
+        # Currently not used - o3-pro models use standard chat completions
+        logger.warning(
+            f"_generate_with_responses_endpoint called for {model_name}, "
+            f"but responses endpoint is not yet implemented. "
+            f"This should not happen as o3-pro models use chat completions."
         )
+        # Fall back to standard method instead of raising
+        completion_params = self._build_completion_params(
+            model_name,
+            messages,
+            temperature,
+            max_output_tokens,
+            **kwargs
+        )
+        return self._execute_chat_request(completion_params, **kwargs)
 
     def safe_extract_output_text(self, response) -> str:
         """Safely extract output text from response."""

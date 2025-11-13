@@ -27,8 +27,8 @@ from enum import Enum
 from pathlib import Path
 
 from src.file_management.comprehensive_validator import ComprehensiveFileValidator
-from src.file_management.providers.kimi_provider import KimiProvider
-from src.file_management.providers.glm_provider import GLMProvider
+from src.file_management.providers.kimi_provider import KimiFileProvider
+from src.file_management.providers.glm_provider import GLMFileProvider
 from src.file_management.exceptions import FileUploadError, FileValidationError
 from src.storage.supabase_client import SupabaseStorageManager
 from src.auth.file_upload_auth import FileUploadAuth
@@ -210,8 +210,8 @@ class UnifiedFileManager:
         
         # Initialize providers
         self.providers = {
-            Provider.KIMI: KimiProvider(),
-            Provider.GLM: GLMProvider()
+            Provider.KIMI: KimiFileProvider(),
+            Provider.GLM: GLMFileProvider()
         }
         
         # Initialize supporting components

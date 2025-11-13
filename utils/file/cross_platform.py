@@ -82,21 +82,20 @@ class CrossPlatformPathHandler:
             logger.debug("Detected Docker environment with /mnt/project mount - using /mnt/project/ mappings")
             # FILE UPLOAD FIX: Map C: to /mnt/project for file upload support
             # This allows accessing files from c:\Project\... via /mnt/project/...
-            return {'C:': '/mnt/project', 'D:': '/mnt/project', 'E:': '/mnt/project'}
+            return {'C:': '/mnt/project', 'D:': '/mnt/project', 'E': '/mnt/project'}
         elif is_docker:
             logger.debug("Detected Docker environment - using /app/ mappings")
-            return {'C:': '/app', 'D:': '/app', 'E:': '/app'}
+            return {'C:': '/app', 'D:': '/app', 'E': '/app'}
+        elif is_windows:
+            # FIX (2025-11-04): Check Windows before WSL to avoid wrong detection
+            logger.debug("Detected Windows host - using /mnt/project/ mappings for Docker access")
+            return {'C:': '/mnt/project', 'D:': '/mnt/project', 'E': '/mnt/project'}
         elif is_wsl:
             logger.debug("Detected WSL environment - using /mnt/ mappings")
-            return {'C:': '/mnt/c', 'D:': '/mnt/d', 'E:': '/mnt/e'}
-        elif is_windows:
-            # FIX (2025-10-30): When running on Windows host, assume files will be
-            # accessed via Docker container with /mnt/project mount
-            logger.debug("Detected Windows host - using /mnt/project/ mappings for Docker access")
-            return {'C:': '/mnt/project', 'D:': '/mnt/project', 'E:': '/mnt/project'}
+            return {'C:': '/mnt/c', 'D': '/mnt/d', 'E': '/mnt/e'}
         else:
             logger.debug("Unknown environment - defaulting to Docker /app/ mappings")
-            return {'C:': '/app', 'D:': '/app', 'E:': '/app'}
+            return {'C:': '/app', 'D:': '/app', 'E': '/app'}
     
     @lru_cache(maxsize=256)
     def normalize_path_cached(self, file_path: str) -> Tuple[str, bool, Optional[str]]:
@@ -141,9 +140,9 @@ class CrossPlatformPathHandler:
         # UPDATED: Handle both forward slashes (/app/c:/) and backslashes (/app/c:\)
         if file_path.startswith('/app/c:/') or file_path.startswith('/app/C:/') or \
            file_path.startswith('/app/c:\\') or file_path.startswith('/app/C:\\'):
-            logger.warning(f"[PATH_FIX] Detected double-prefixed path, stripping /app/ prefix: {file_path}")
+            logger.debug(f"[PATH_FIX] Detected double-prefixed path, stripping /app/ prefix: {file_path}")
             file_path = file_path[5:]  # Remove '/app/' prefix (5 characters)
-            logger.info(f"[PATH_FIX] Corrected path: {file_path}")
+            logger.debug(f"[PATH_FIX] Corrected path: {file_path}")
 
         # CRITICAL: Check Windows paths FIRST before os.path.isabs()
         # because os.path.isabs() returns True for Windows paths on Windows,

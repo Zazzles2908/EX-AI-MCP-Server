@@ -8,11 +8,12 @@ services:
 
     # Port mapping: host:container
     # PHASE 3 (2025-10-18): Added monitoring, health check, and metrics ports
+    # PORT STRATEGY FIX (2025-11-08): Using 3000-3003 range to avoid Orchestrator conflicts
     ports:
-      - "8079:8079"  # WebSocket Daemon (MCP protocol)
-      - "8080:8080"  # Monitoring Dashboard (WebSocket + HTTP)
-      - "8082:8082"  # Health Check Endpoint (HTTP) - Changed from 8081 to avoid conflict with Redis Commander
-      - "8000:8000"  # Prometheus Metrics (HTTP)
+      - "3010:8079"  # WebSocket Daemon (MCP protocol) - Host 3010 → Container 8079
+      - "3001:8080"  # Monitoring Dashboard (WebSocket + HTTP) - Host 3001 → Container 8080
+      - "3002:8082"  # Health Check Endpoint (HTTP) - Host 3002 → Container 8082
+      - "3003:8000"  # Prometheus Metrics (HTTP) - Host 3003 → Container 8000
 
     # Environment variables (override .env.docker)
     # TIMEZONE FIX (2025-10-18): Add consistent timezone for log correlation
@@ -29,6 +30,7 @@ services:
     # REBUILD (2025-10-19): Added all source directories for complete hot reload
     # ARCHITECTURAL FIX (2025-10-21): Added missing directories for complete hot reload
     # FILE UPLOAD FIX (2025-10-28): Added TEST_FILES_DIR mounts for cross-platform file upload
+    # PORT STRATEGY FIX (2025-11-08): Added docker-compose.yml mount for file operations
     volumes:
       # Source code (development mode - hot reload)
       - ./src:/app/src
@@ -37,6 +39,8 @@ services:
       - ./scripts/ws:/app/scripts/ws
       - ./scripts/runtime:/app/scripts/runtime
       - ./scripts/baseline_collection:/app/scripts/baseline_collection  # FIX: Mount baseline test files
+      # Project files
+      - .:/mnt/project/EX-AI-MCP-Server  # Mount entire project for file operations
       - ./systemprompts:/app/systemprompts  # FIX: Enable hot reload for prompt changes
       - ./streaming:/app/streaming          # FIX: Enable hot reload for streaming changes
       - ./static:/app/static                # FIX: Enable hot reload for static file changes
@@ -98,9 +102,8 @@ services:
     container_name: exai-redis
 
     # P0-9 Security Fix: Enable Redis authentication
-    # Use custom redis.conf for persistence configuration + password from environment
-    # Note: Using shell form to allow environment variable expansion
-    command: sh -c "redis-server /usr/local/etc/redis/redis.conf --requirepass $$REDIS_PASSWORD"
+    # Use Redis environment variable for password
+    command: sh -c "redis-server --maxmemory 4gb --maxmemory-policy allkeys-lru --appendonly yes --appendfsync everysec --auto-aof-rewrite-percentage 100 --auto-aof-rewrite-min-size 64mb --aof-load-truncated yes --aof-use-rdb-preamble yes --tcp-backlog 511 --timeout 0 --tcp-keepalive 300 --databases 16 --loglevel notice --protected-mode no --bind 0.0.0.0 --latency-monitor-threshold 100 --slowlog-log-slower-than 10000 --slowlog-max-len 128 --requirepass $$REDIS_PASSWORD"
 
     # Environment variables
     # TIMEZONE FIX (2025-10-18): Add consistent timezone for log correlation
@@ -109,22 +112,22 @@ services:
 
     environment:
       - TZ=Australia/Melbourne
+      - REDIS_PASSWORD=ExAi2025RedisSecurePass123
 
     # Port mapping (exposed for debugging/monitoring)
     ports:
       - "6379:6379"
 
-    # Volume mounts for persistence and configuration
+    # Volume mounts for persistence
     volumes:
       - redis-data:/data
-      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
 
     # Restart policy
     restart: unless-stopped
 
     # Health check (P0-9: Updated to use authentication)
     healthcheck:
-      test: ["CMD", "sh", "-c", "redis-cli -a $$REDIS_PASSWORD ping"]
+      test: ["CMD", "redis-cli", "-a", "ExAi2025RedisSecurePass123", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -156,16 +159,25 @@ services:
     ports:
       - "8081:8081"
 
-    # CRITICAL FIX (2025-10-18): Simplified configuration using only environment variables
-    # Note: localhost:6379 connection attempts are a known Redis Commander behavior but don't prevent functionality
+    # FINAL FIX: Using command-line args to bypass ALL config file issues
+    # This avoids the buggy REDIS_HOSTS parsing AND config file issues
+    command: >
+      sh -c "node ./bin/redis-commander --redis-host exai-redis --redis-port 6379 --redis-password ExAi2025RedisSecurePass123 --redis-db 0 --http-user admin --http-password ExAi2025RedisCommander@1qaz"
+
     environment:
-      - REDIS_HOSTS=local:exai-redis:6379:0:${REDIS_PASSWORD}
-      - HTTP_USER=${REDIS_COMMANDER_USER:-admin}
-      - HTTP_PASSWORD=${REDIS_COMMANDER_PASSWORD:-admin}
+      # HTTP Basic Auth for web interface
       - TZ=Australia/Melbourne
 
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
     # Logging configuration
     logging:

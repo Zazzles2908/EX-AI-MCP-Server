@@ -86,6 +86,7 @@ class RetryMixin:
             f"{operation_name} error after {actual_attempts} "
             f"attempt{'s' if actual_attempts > 1 else ''}: {str(last_exception)}"
         )
-        logger.error(error_msg)
-        raise RuntimeError(error_msg) from last_exception
+        log_error(ErrorCode.INTERNAL_ERROR, error_msg, exc_info=True)
+        log_error(ErrorCode.PROVIDER_ERROR, error_msg)
+        raise ProviderError("Provider", Exception(error_msg)) from last_exception
 

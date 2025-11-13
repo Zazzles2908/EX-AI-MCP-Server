@@ -48,38 +48,32 @@ class ChecksumResult:
 
 
 class ChecksumManager:
-    """Manages checksum generation and validation for events."""
-    
-    # Singleton instance
-    _instance: Optional['ChecksumManager'] = None
-    _lock = threading.Lock()
+    """Manages checksum generation and validation for events.
 
-    # Metrics
-    _checksums_generated: int = 0
-    _checksums_validated: int = 0
-    _validation_failures: int = 0
-    _algorithm_distribution: Dict[str, int] = {}
-    _secret_key: Optional[str] = None
+    REFACTORED: Removed singleton pattern - now uses dependency injection
+    for better testability and maintainability.
+    """
 
-    def __new__(cls):
-        """Implement thread-safe singleton pattern."""
-        with cls._lock:
-            if cls._instance is None:
-                cls._instance = super().__new__(cls)
-        return cls._instance
-    
     def __init__(self):
         """Initialize ChecksumManager."""
+        self._lock = threading.Lock()
         self._default_algorithm = ChecksumAlgorithm.CRC32
         self._critical_algorithm = ChecksumAlgorithm.SHA256
-    
-    @classmethod
-    def reset_metrics(cls):
+
+        # Metrics
+        self._checksums_generated: int = 0
+        self._checksums_validated: int = 0
+        self._validation_failures: int = 0
+        self._algorithm_distribution: Dict[str, int] = {}
+        self._secret_key: Optional[str] = None
+
+    def reset_metrics(self):
         """Reset metrics (for testing)."""
-        cls._checksums_generated = 0
-        cls._checksums_validated = 0
-        cls._validation_failures = 0
-        cls._algorithm_distribution = {}
+        with self._lock:
+            self._checksums_generated = 0
+            self._checksums_validated = 0
+            self._validation_failures = 0
+            self._algorithm_distribution = {}
     
     def _serialize_event_data(self, data: Dict[str, Any]) -> str:
         """
@@ -236,28 +230,29 @@ class ChecksumManager:
     
     def get_metrics(self) -> Dict[str, Any]:
         """Get checksum metrics."""
-        total_checksums = self._checksums_generated
-        total_validations = self._checksums_validated
-        
-        return {
-            'checksums_generated': total_checksums,
-            'checksums_validated': total_validations,
-            'validation_failures': self._validation_failures,
-            'validation_failure_rate': (
-                self._validation_failures / total_validations
-                if total_validations > 0 else 0
-            ),
-            'algorithm_distribution': self._algorithm_distribution.copy(),
-        }
-    
+        with self._lock:
+            total_checksums = self._checksums_generated
+            total_validations = self._checksums_validated
+
+            return {
+                'checksums_generated': total_checksums,
+                'checksums_validated': total_validations,
+                'validation_failures': self._validation_failures,
+                'validation_failure_rate': (
+                    self._validation_failures / total_validations
+                    if total_validations > 0 else 0
+                ),
+                'algorithm_distribution': self._algorithm_distribution.copy(),
+            }
+
     def flush_metrics(self) -> Dict[str, Any]:
         """Get and reset metrics."""
-        metrics = self.get_metrics()
-        ChecksumManager.reset_metrics()
-        return metrics
+        with self._lock:
+            metrics = self.get_metrics()
+            self.reset_metrics()
+            return metrics
 
 
-def get_checksum_manager() -> ChecksumManager:
-    """Get ChecksumManager singleton instance."""
-    return ChecksumManager()
+# DEPRECATED: Factory function replaced with direct instantiation
+# Use: checksum_manager = ChecksumManager() instead of get_checksum_manager()
 

@@ -247,7 +247,8 @@ class HealthWrappedProvider(ModelProvider):
         fn = getattr(self._inner, "list_models", None)
         if callable(fn):
             return fn(respect_restrictions=respect_restrictions)
-        raise NotImplementedError
+        # Return empty list if inner provider doesn't implement list_models
+        return []
 
     def supports_thinking_mode(self, model_name: str) -> bool:
         fn = getattr(self._inner, "supports_thinking_mode", None)

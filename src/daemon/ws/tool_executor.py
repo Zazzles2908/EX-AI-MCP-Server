@@ -24,11 +24,14 @@ from src.daemon.ws.connection_manager import _safe_send
 
 # Import middleware
 from src.daemon.middleware.semaphores import SemaphoreGuard
+from src.daemon.error_handling import ToolNotFoundError
 
 # Import utilities
 from utils.monitoring import record_websocket_event
 from utils.timezone_helper import log_timestamp
 from utils.infrastructure.semantic_cache import get_semantic_cache
+
+from src.daemon.error_handling import ToolExecutionError, ErrorCode, log_error
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +80,7 @@ class ToolExecutor:
             self.semantic_cache = get_semantic_cache()
             logger.info("[SEMANTIC_CACHE] Initialized semantic cache")
         except Exception as e:
-            logger.error(f"[SEMANTIC_CACHE] Failed to initialize cache: {e}")
+            log_error(ErrorCode.INTERNAL_ERROR, f"Failed to initialize cache: {e}", exc_info=True)
             self.semantic_cache = None
 
     def _should_cache_tool(self, tool_name: str) -> bool:
@@ -172,8 +175,8 @@ class ToolExecutor:
         # Get tool
         tool = self.server_tools.get(name)
         if not tool:
-            logger.error(f"[DEBUG] Tool not found in registry: {name}")
-            return False, None, f"Tool not found: {name}"
+            log_error(ErrorCode.TOOL_NOT_FOUND, f"Tool not found: {name}", req_id)
+            raise ToolNotFoundError(name, available_tools=list(self.server_tools.keys()))
 
         # DEBUG: Log tool object details
         logger.info(f"[DEBUG] Tool found: {tool}, type: {type(tool)}")
@@ -194,7 +197,7 @@ class ToolExecutor:
                         logger.info(f"[SEMANTIC_CACHE] Cache hit for {name}")
                         return True, cached_result, None
                 except Exception as e:
-                    logger.error(f"[SEMANTIC_CACHE] Failed to get cached result: {e}")
+                    log_error(ErrorCode.INTERNAL_ERROR, f"Failed to get cached result: {e}", req_id, exc_info=True)
 
         # Determine provider
         provider_name = self._get_provider_for_tool(name)
@@ -260,7 +263,7 @@ class ToolExecutor:
                 )
                 logger.info(f"[SEMANTIC_CACHE] Cached result for {name}")
             except Exception as e:
-                logger.error(f"[SEMANTIC_CACHE] Failed to cache result for {name}: {e}")
+                log_error(ErrorCode.INTERNAL_ERROR, f"Failed to cache result for {name}: {e}", req_id, exc_info=True)
 
         # Return result after semaphores are released
         return success, outputs, error_msg
@@ -345,7 +348,10 @@ class ToolExecutor:
 
         except Exception as e:
             error_msg = f"Tool execution failed: {str(e)}"
-            logger.error(f"[{req_id}] {error_msg}", exc_info=True)
+            log_error(ErrorCode.TOOL_EXECUTION_ERROR, error_msg, req_id, exc_info=True)
+            # Get tool name for error reporting
+            tool_name = tool.get_name() if hasattr(tool, 'get_name') else str(tool)
+            raise ToolExecutionError(tool_name, e) from e
 
         finally:
             # Cleanup progress task

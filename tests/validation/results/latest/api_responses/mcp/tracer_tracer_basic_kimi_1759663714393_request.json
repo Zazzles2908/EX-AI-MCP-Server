@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "tracer_basic_kimi_1759663714393",
-  "name": "tracer",
-  "arguments": {
-    "code": "def factorial(n): return 1 if n==0 else n*factorial(n-1)",
-    "model": "kimi-k2-0905-preview"
-  }
-}

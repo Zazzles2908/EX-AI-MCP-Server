@@ -1,8 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "toolcall_log_tail_basic_glm_1759839721576",
-  "name": "toolcall_log_tail",
-  "arguments": {
-    "lines": 10
-  }
-}

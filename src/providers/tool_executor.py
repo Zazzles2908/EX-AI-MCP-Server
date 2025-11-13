@@ -42,8 +42,9 @@ def run_web_search_backend(query: str) -> dict:
                 "This is required for web search functionality. "
                 "In Docker, verify .env.docker is properly mounted and contains GLM_API_KEY."
             )
-            logger.error(error_msg)
-            raise RuntimeError(error_msg)
+            log_error(ErrorCode.INTERNAL_ERROR, error_msg, exc_info=True)
+            log_error(ErrorCode.PROVIDER_ERROR, error_msg)
+            raise ProviderError("Provider", Exception(error_msg))
 
         # Log API key presence (first 8 chars only for security)
         logger.debug(f"GLM_API_KEY found: {api_key[:8]}... (length: {len(api_key)})")
@@ -109,7 +110,7 @@ def run_web_search_backend(query: str) -> dict:
             f"Endpoint: {web_search_url}\n"
             f"This may indicate: API key invalid, rate limiting, or network restrictions in Docker."
         )
-        logger.error(error_msg, exc_info=True)
+        log_error(ErrorCode.INTERNAL_ERROR, error_msg, exc_info=True)
         return {"engine": "glm_native", "query": query, "error": error_msg, "results": []}
 
     except urllib.error.URLError as e:
@@ -120,12 +121,12 @@ def run_web_search_backend(query: str) -> dict:
             f"This may indicate: Docker container lacks internet access, DNS resolution failure, "
             f"or firewall blocking outbound connections."
         )
-        logger.error(error_msg, exc_info=True)
+        log_error(ErrorCode.INTERNAL_ERROR, error_msg, exc_info=True)
         return {"engine": "glm_native", "query": query, "error": error_msg, "results": []}
 
     except Exception as e:
         error_msg = f"GLM web search failed: {e}"
-        logger.error(error_msg)
+        log_error(ErrorCode.INTERNAL_ERROR, error_msg, exc_info=True)
         return {"engine": "glm_native", "query": query, "error": error_msg, "results": []}
 
 
@@ -249,7 +250,7 @@ def execute_tool_call(tool_call: Dict[str, Any]) -> Dict[str, Any]:
             }
 
     except Exception as e:
-        logger.error(f"Tool execution failed: {e}")
+        log_error(ErrorCode.INTERNAL_ERROR, f"Tool execution failed: {e}", exc_info=True)
         return {
             "role": "tool",
             "tool_call_id": str(tool_call.get("id", "tc-0")),

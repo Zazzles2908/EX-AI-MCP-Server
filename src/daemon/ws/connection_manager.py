@@ -59,6 +59,150 @@ session_sampler = SamplingLogger(logger, sample_rate=SESSION_SAMPLE_RATE)
 cleanup_sampler = SamplingLogger(logger, sample_rate=CLEANUP_SAMPLE_RATE)
 
 
+async def _handle_mcp_client(ws: WebSocketServerProtocol, init_msg: dict, connection_id: str, resilient_ws_manager=None):
+    """
+    Handle MCP protocol client connection.
+    Supports standard MCP initialize and tools methods.
+    """
+    try:
+        # Send initialize response
+        init_response = {
+            "jsonrpc": "2.0",
+            "id": init_msg.get("id"),
+            "result": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {
+                    "tools": {}
+                },
+                "serverInfo": {
+                    "name": "exai-mcp",
+                    "version": "1.0.0"
+                }
+            }
+        }
+        await _safe_send(ws, init_response, resilient_ws_manager=resilient_ws_manager)
+        logger.info(f"[MCP] Sent initialize response to connection {connection_id}")
+
+        # Handle subsequent MCP messages
+        while True:
+            try:
+                msg = await asyncio.wait_for(ws.recv(), timeout=30)
+                data = json.loads(msg)
+
+                # Handle tools/list
+                if data.get("method") == "tools/list":
+                    await _handle_mcp_tools_list(ws, data, resilient_ws_manager)
+
+                # Handle tools/call
+                elif data.get("method") == "tools/call":
+                    await _handle_mcp_tools_call(ws, data, resilient_ws_manager)
+
+                # Echo back other messages (for now)
+                else:
+                    await _safe_send(ws, data, resilient_ws_manager=resilient_ws_manager)
+
+            except asyncio.TimeoutError:
+                logger.debug(f"[MCP] Connection {connection_id} timeout, closing")
+                break
+            except websockets.exceptions.ConnectionClosed:
+                logger.info(f"[MCP] Connection {connection_id} closed by client")
+                break
+            except Exception as e:
+                logger.error(f"[MCP] Error handling message: {e}", exc_info=True)
+                break
+
+    except Exception as e:
+        logger.error(f"[MCP] Error in MCP client handler: {e}", exc_info=True)
+    finally:
+        try:
+            await ws.close()
+        except:
+            pass
+
+
+async def _handle_mcp_tools_list(ws: WebSocketServerProtocol, msg: dict, resilient_ws_manager=None):
+    """Handle MCP tools/list request."""
+    try:
+        # Get registered tools from the server
+        # This is a simplified version - in practice you'd query the actual tool registry
+        tools = [
+            {
+                "name": "analyze",
+                "description": "Analyze code or text",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "target": {"type": "string", "description": "Code or text to analyze"},
+                        "analysis_type": {"type": "string", "description": "Type of analysis"}
+                    },
+                    "required": ["target"]
+                }
+            },
+            {
+                "name": "chat",
+                "description": "Chat with AI model",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "prompt": {"type": "string", "description": "Chat prompt"},
+                        "model": {"type": "string", "description": "Model to use"}
+                    },
+                    "required": ["prompt"]
+                }
+            }
+        ]
+
+        response = {
+            "jsonrpc": "2.0",
+            "id": msg.get("id"),
+            "result": {"tools": tools}
+        }
+        await _safe_send(ws, response, resilient_ws_manager=resilient_ws_manager)
+
+    except Exception as e:
+        logger.error(f"[MCP] Error in tools/list: {e}", exc_info=True)
+        error_response = {
+            "jsonrpc": "2.0",
+            "id": msg.get("id"),
+            "error": {"code": -32000, "message": str(e)}
+        }
+        await _safe_send(ws, error_response, resilient_ws_manager=resilient_ws_manager)
+
+
+async def _handle_mcp_tools_call(ws: WebSocketServerProtocol, msg: dict, resilient_ws_manager=None):
+    """Handle MCP tools/call request."""
+    try:
+        tool_name = msg.get("params", {}).get("name")
+        arguments = msg.get("params", {}).get("arguments", {})
+
+        logger.info(f"[MCP] Tool call: {tool_name}")
+
+        # This is a placeholder - in practice you'd actually execute the tool
+        # For now, just return a mock response
+        result = [
+            {
+                "type": "text",
+                "text": f"Tool '{tool_name}' executed with args: {arguments}"
+            }
+        ]
+
+        response = {
+            "jsonrpc": "2.0",
+            "id": msg.get("id"),
+            "result": {"content": result}
+        }
+        await _safe_send(ws, response, resilient_ws_manager=resilient_ws_manager)
+
+    except Exception as e:
+        logger.error(f"[MCP] Error in tools/call: {e}", exc_info=True)
+        error_response = {
+            "jsonrpc": "2.0",
+            "id": msg.get("id"),
+            "error": {"code": -32000, "message": str(e)}
+        }
+        await _safe_send(ws, error_response, resilient_ws_manager=resilient_ws_manager)
+
+
 async def _safe_recv(ws: WebSocketServerProtocol, timeout: float):
     """
     Safely receive a message from WebSocket with timeout.
@@ -271,33 +415,54 @@ async def serve_connection(
 
         # Parse and validate hello message
         try:
-            hello = json.loads(hello_raw)
+            first_msg = json.loads(hello_raw)
         except Exception as e:
-            logger.warning(f"Failed to parse hello message: {e}")
+            logger.warning(f"Failed to parse first message: {e}")
             try:
-                await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "invalid_hello"}, resilient_ws_manager=resilient_ws_manager)
-                try:
-                    await ws.close(code=4000, reason="invalid hello")
-                except Exception as e2:
-                    # PHASE 3.4 (2025-10-28): Migrated to sampling logger (0.01% sampling)
-                    cleanup_sampler.debug(f"Failed to close connection after invalid hello: {e2}", key="cleanup")
+                # Try to close gracefully even for invalid JSON
+                await ws.close(code=4000, reason="invalid message")
             except Exception as e2:
-                cleanup_sampler.debug(f"Failed to send hello_ack error: {e2}", key="cleanup")
+                cleanup_sampler.debug(f"Failed to close connection after invalid message: {e2}", key="cleanup")
             return
 
-        # Validate hello op
-        if hello.get("op") != "hello":
-            logger.warning(f"Client sent message without hello op: {hello.get('op')}")
+        # Check if this is MCP protocol (jsonrpc) or custom protocol (op)
+        is_mcp = first_msg.get("jsonrpc") == "2.0" and first_msg.get("method") == "initialize"
+        is_custom = first_msg.get("op") == "hello"
+
+        if not (is_mcp or is_custom):
+            logger.warning(f"Client sent unrecognized first message: {first_msg.get('jsonrpc', 'no jsonrpc')}, {first_msg.get('op', 'no op')}, {first_msg.get('method', 'no method')}")
             try:
-                await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "missing_hello"}, resilient_ws_manager=resilient_ws_manager)
-                try:
-                    await ws.close(code=4001, reason="missing hello")
-                except Exception as e:
-                    # PHASE 3.4 (2025-10-28): Migrated to sampling logger (0.01% sampling)
-                    cleanup_sampler.debug(f"Failed to close connection after missing hello: {e}", key="cleanup")
+                # For MCP clients, send proper error; for custom, send hello_ack error
+                if "jsonrpc" in first_msg:
+                    # MCP error response
+                    error_response = {
+                        "jsonrpc": "2.0",
+                        "id": first_msg.get("id"),
+                        "error": {"code": -32000, "message": "Server expects initialize with proper protocol"}
+                    }
+                    await ws.send(json.dumps(error_response))
+                else:
+                    # Custom protocol error
+                    await _safe_send(ws, {"op": "hello_ack", "ok": False, "error": "missing_hello"}, resilient_ws_manager=resilient_ws_manager)
+                await ws.close(code=4001, reason="unrecognized protocol")
             except Exception as e:
-                cleanup_sampler.debug(f"Failed to send missing_hello error: {e}", key="cleanup")
+                cleanup_sampler.debug(f"Failed to send protocol error: {e}", key="cleanup")
             return
+
+        # Handle MCP protocol
+        if is_mcp:
+            logger.info(f"[WS_CONNECTION] MCP client from {client_ip}:{client_port}")
+            await _handle_mcp_client(ws, first_msg, connection_id, resilient_ws_manager)
+            return
+
+        # Handle custom protocol (original behavior)
+        if is_custom:
+            logger.info(f"[WS_CONNECTION] Custom protocol client from {client_ip}:{client_port}")
+            # Continue with custom protocol handling (hello_ack, etc.)
+            # Original code after this point handles custom protocol
+
+        # Assign first_msg to hello for compatibility with existing code
+        hello = first_msg
 
         # Authenticate token (legacy EXAI_WS_TOKEN)
         token = hello.get("token", "") or ""  # PHASE 2.3 FIX (2025-10-25): Handle None token

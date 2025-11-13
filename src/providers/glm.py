@@ -25,7 +25,7 @@ class GLMModelProvider(ModelProvider):
     SUPPORTED_MODELS: dict[str, ModelCapabilities] = glm_config.SUPPORTED_MODELS
 
     def __init__(self, api_key: str, base_url: Optional[str] = None, **kwargs):
-        super().__init__(api_key, **kwargs)
+        self.api_key = api_key
         self.base_url = base_url or self.DEFAULT_BASE_URL
         # Initialize HTTP client first (always needed as fallback)
         self.client = HttpClient(self.base_url, api_key=self.api_key, api_key_header="Authorization", api_key_prefix="Bearer ")
@@ -59,6 +59,31 @@ class GLMModelProvider(ModelProvider):
         capabilities = self.SUPPORTED_MODELS.get(resolved)
         return bool(capabilities and capabilities.supports_extended_thinking)
 
+    def supports_images(self, model_name: str) -> bool:
+        """Check if the model supports image inputs.
+
+        Args:
+            model_name: Name of the model to check
+
+        Returns:
+            True if the model supports images, False otherwise
+        """
+        resolved = self._resolve_model_name(model_name)
+        capabilities = self.SUPPORTED_MODELS.get(resolved)
+        return bool(capabilities and capabilities.supports_images)
+
+    def supports_streaming(self, model_name: str) -> bool:
+        """Check if the model/provider supports streaming callbacks (on_chunk).
+
+        Args:
+            model_name: Name of the model to check
+
+        Returns:
+            True if the model supports streaming, False otherwise
+        """
+        # GLM provider does not support streaming callbacks
+        return False
+
     def list_models(self, respect_restrictions: bool = True):
         return super().list_models(respect_restrictions=respect_restrictions)
 
@@ -73,6 +98,51 @@ class GLMModelProvider(ModelProvider):
 
     def count_tokens(self, text: str, model_name: str) -> int:
         return glm_config.count_tokens(text, model_name)
+
+    def _resolve_model_name(self, model_name: str) -> str:
+        """Resolve model shorthand to full name.
+
+        Args:
+            model_name: Model name that may be an alias
+
+        Returns:
+            Resolved model name
+        """
+        # First check if it's already a base model name (case-sensitive exact match)
+        if model_name in self.SUPPORTED_MODELS:
+            return model_name
+
+        # Check case-insensitively for both base models and aliases
+        model_name_lower = model_name.lower()
+
+        # Check base model names case-insensitively
+        for base_model in self.SUPPORTED_MODELS:
+            if base_model.lower() == model_name_lower:
+                return base_model
+
+        # Check aliases
+        for base_model, capabilities in self.SUPPORTED_MODELS.items():
+            if capabilities.aliases:
+                if any(alias.lower() == model_name_lower for alias in capabilities.aliases):
+                    return base_model
+
+        # If not found, return as-is
+        return model_name
+
+    def get_effective_temperature(self, model_name: str, temperature: float) -> float:
+        """Get effective temperature for model (with constraints).
+
+        Args:
+            model_name: Name of the model
+            temperature: Requested temperature
+
+        Returns:
+            Effective temperature (clamped to model constraints)
+        """
+        capabilities = self.SUPPORTED_MODELS.get(model_name)
+        if capabilities and hasattr(capabilities, 'temperature_constraint'):
+            return capabilities.temperature_constraint.get_corrected_value(temperature)
+        return temperature
 
     def _build_payload(self, prompt: str, system_prompt: Optional[str], model_name: str, temperature: float, max_output_tokens: Optional[int], **kwargs) -> dict:
         resolved = self._resolve_model_name(model_name)

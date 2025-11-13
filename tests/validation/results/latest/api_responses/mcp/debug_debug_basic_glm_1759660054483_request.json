@@ -1,9 +1,0 @@
-{
-  "op": "call_tool",
-  "request_id": "debug_basic_glm_1759660054483",
-  "name": "debug",
-  "arguments": {
-    "code": "def test(): return 42",
-    "model": "glm-4.5-flash"
-  }
-}

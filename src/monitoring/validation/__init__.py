@@ -16,14 +16,14 @@ from .checksum import (
     ChecksumManager,
     ChecksumAlgorithm,
     ChecksumResult,
-    get_checksum_manager,
+    # DEPRECATED: get_checksum_manager removed - use ChecksumManager() instead
 )
 from .mismatch_handler import (
     MismatchHandler,
     MismatchRecord,
     MismatchStats,
     MismatchSeverity,
-    get_mismatch_handler,
+    # DEPRECATED: get_mismatch_handler removed - use MismatchHandler() instead
 )
 
 __all__ = [
@@ -34,11 +34,11 @@ __all__ = [
     'ChecksumManager',
     'ChecksumAlgorithm',
     'ChecksumResult',
-    'get_checksum_manager',
+    # DEPRECATED: 'get_checksum_manager' - use ChecksumManager() instead
     'MismatchHandler',
     'MismatchRecord',
     'MismatchStats',
     'MismatchSeverity',
-    'get_mismatch_handler',
+    # DEPRECATED: 'get_mismatch_handler' - use MismatchHandler() instead
 ]
 

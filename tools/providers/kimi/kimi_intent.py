@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 from tools.shared.base_tool import BaseTool
 from tools.shared.base_models import ToolRequest
 from src.providers.registry import ModelProviderRegistry
+from src.providers.registry_core import get_registry_instance
 from src.providers.kimi import KimiModelProvider
+from src.providers.registry_core import get_registry_instance
 
 
 class KimiIntentAnalysisTool(BaseTool):
@@ -86,7 +88,7 @@ class KimiIntentAnalysisTool(BaseTool):
             raise ValueError("prompt is required")
 
         # Resolve Kimi provider
-        prov = ModelProviderRegistry.get_provider_for_model(os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview"))
+        prov = get_registry_instance().get_provider_for_model(os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview"))
         if not isinstance(prov, KimiModelProvider):
             api_key = os.getenv("KIMI_API_KEY") or os.getenv("MOONSHOT_API_KEY")
             if not api_key:

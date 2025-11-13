@@ -1,8 +1,0 @@
-{
-  "op": "call_tool_res",
-  "request_id": "glm_upload_file_basic_glm_1759839816299",
-  "error": {
-    "code": "EXEC_ERROR",
-    "message": "file is required"
-  }
-}

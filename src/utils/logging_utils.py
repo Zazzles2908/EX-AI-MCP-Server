@@ -88,7 +88,7 @@ class AsyncLogHandler(logging.Handler):
                 continue
             except Exception as e:
                 # Avoid infinite loop if target handler fails
-                print(f"AsyncLogHandler error: {e}")
+                logger.info(f"AsyncLogHandler error: {e}")
     
     def emit(self, record: logging.LogRecord):
         """
@@ -126,7 +126,7 @@ class AsyncLogHandler(logging.Handler):
 
             # Only log drops occasionally to avoid spam
             if self._dropped_count % 100 == 0:
-                print(f"AsyncLogHandler: Dropped {self._dropped_count} logs (strategy={self.overflow_strategy})")
+                logger.info(f"AsyncLogHandler: Dropped {self._dropped_count} logs (strategy={self.overflow_strategy})")
     
     def get_stats(self) -> dict:
         """Get handler statistics."""

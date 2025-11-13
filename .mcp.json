@@ -1,0 +1,66 @@
+{
+  "mcpServers": {
+    "exai-mcp": {
+      "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
+      "args": [
+        "-u",
+        "C:/Project/EX-AI-MCP-Server/scripts/runtime/start_ws_shim_safe.py"
+      ],
+      "env": {
+        "ENV_FILE": "C:/Project/EX-AI-MCP-Server/.env",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONIOENCODING": "utf-8",
+        "LOG_LEVEL": "INFO",
+        "EXAI_WS_HOST": "127.0.0.1",
+        "SHIM_LISTEN_PORT": "3005",
+        "EXAI_WS_PORT": "3010",
+        "EXAI_WS_TOKEN": "pYf69sHNkOYlYLRTJfMrxCQghO5OJOUFbUxqaxp9Zxo",
+        "EX_SESSION_SCOPE_STRICT": "true",
+        "EX_SESSION_SCOPE_ALLOW_CROSS_SESSION": "false",
+        "SIMPLE_TOOL_TIMEOUT_SECS": "30",
+        "WORKFLOW_TOOL_TIMEOUT_SECS": "46",
+        "EXPERT_ANALYSIS_TIMEOUT_SECS": "60",
+        "GLM_TIMEOUT_SECS": "30",
+        "KIMI_TIMEOUT_SECS": "40",
+        "KIMI_WEB_SEARCH_TIMEOUT_SECS": "30"
+      }
+    },
+    "filesystem-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:/",
+        "C:/Users",
+        "C:/Project"
+      ]
+    },
+    "git-mcp": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-git"
+      ]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
+    "memory-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ]
+    },
+    "mermaid-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@narasimhaponnada/mermaid-mcp-server"
+      ]
+    }
+  }
+}

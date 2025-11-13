@@ -9,6 +9,8 @@ import os
 from pathlib import Path
 from typing import Any
 
+from src.daemon.error_handling import ProviderError, ErrorCode, log_error
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,16 +18,16 @@ logger = logging.getLogger(__name__)
 # Legacy Upload Function (Backward Compatibility)
 # ============================================================================
 
-def upload_file(client: Any, file_path: str, purpose: str = "assistants") -> str:
+def upload_file(client: Any, file_path: str, purpose: str = "file-extract") -> str:
     """Upload a local file to Moonshot (Kimi) and return file_id.
 
-    CRITICAL FIX (2025-11-02): Changed default purpose from 'file-extract' to 'assistants'
-    Valid purposes for Kimi/Moonshot (OpenAI SDK): ['assistants', 'vision', 'batch', 'fine-tune']
+    CRITICAL FIX (2025-11-04): Updated VALID_PURPOSES based on actual API behavior
+    Valid purposes for Kimi/Moonshot API: ['file-extract', 'batch', 'batch_output', 'lambda']
 
     Args:
         client: OpenAI-compatible client instance
         file_path: Path to a local file
-        purpose: Moonshot purpose tag - MUST be one of: 'assistants', 'vision', 'batch', 'fine-tune'
+        purpose: Moonshot purpose tag - MUST be one of: 'file-extract', 'batch', 'batch_output', 'lambda'
 
     Returns:
         The provider-assigned file id string
@@ -36,11 +38,12 @@ def upload_file(client: Any, file_path: str, purpose: str = "assistants") -> str
         RuntimeError: If upload fails or doesn't return an ID
     """
     # Validate purpose parameter (CRITICAL SECURITY FIX)
-    VALID_PURPOSES = ["assistants", "vision", "batch", "fine-tune"]
+    # Updated based on actual API response: API accepts 'file-extract', 'batch', 'batch_output', 'lambda'
+    VALID_PURPOSES = ["file-extract", "batch", "batch_output", "lambda"]
     if purpose not in VALID_PURPOSES:
         raise ValueError(
             f"Invalid purpose: '{purpose}'. "
-            f"Valid purposes for Kimi/Moonshot: {VALID_PURPOSES}"
+            f"Valid purposes for Kimi/Moonshot API: {VALID_PURPOSES}"
         )
     # Resolve relative paths from project root if not absolute
     p = Path(file_path)
@@ -73,7 +76,8 @@ def upload_file(client: Any, file_path: str, purpose: str = "assistants") -> str
     result = client.files.create(file=p, purpose=purpose)
     file_id = getattr(result, "id", None) or (result.get("id") if isinstance(result, dict) else None)
     if not file_id:
-        raise RuntimeError("Moonshot upload did not return a file id")
+        log_error(ErrorCode.PROVIDER_ERROR, "Moonshot upload did not return a file id")
+        raise ProviderError("Kimi", Exception("Moonshot upload did not return a file id"))
     return file_id
 
 
@@ -198,7 +202,8 @@ class KimiFileProvider:
         )
 
         if not file_id:
-            raise RuntimeError("Moonshot upload did not return a file id")
+            log_error(ErrorCode.PROVIDER_ERROR, "Moonshot upload did not return a file id")
+            raise ProviderError("Kimi", Exception("Moonshot upload did not return a file id"))
 
         return file_id
 
