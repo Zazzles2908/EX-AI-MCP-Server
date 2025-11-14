@@ -224,3 +224,29 @@ class ToolRegistry:
                 descs[name] = {"error": f"Failed to get descriptor: {e}"}
         return descs
 
+
+# ================================================================================
+# GLOBAL REGISTRY INSTANCE FOR MCP SERVER ACCESS
+# ================================================================================
+# Singleton pattern for tool registry to allow both daemon and MCP server
+# to access the same instance
+
+_REGISTRY_INSTANCE: Optional[ToolRegistry] = None
+
+
+def get_tool_registry() -> ToolRegistry:
+    """
+    Get the singleton ToolRegistry instance.
+
+    This function is used by both the daemon WebSocket server and the native
+    MCP server to access the same tool registry instance.
+
+    Returns:
+        ToolRegistry: The singleton registry instance
+    """
+    global _REGISTRY_INSTANCE
+    if _REGISTRY_INSTANCE is None:
+        _REGISTRY_INSTANCE = ToolRegistry()
+        _REGISTRY_INSTANCE.build_tools()
+    return _REGISTRY_INSTANCE
+

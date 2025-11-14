@@ -16,6 +16,7 @@ import time
 import socket
 import subprocess
 import logging
+import json
 from pathlib import Path
 
 logging.basicConfig(
@@ -113,8 +114,39 @@ def start_shim():
     except Exception as e:
         logger.warning(f"Could not load .env file: {e}")
 
+    # TURNKEY FIX (2025-11-14): Validate daemon connection BEFORE starting shim
+    logger.info("=" * 60)
+    logger.info("TURNKEY STARTUP - Validating Daemon Connection")
+    logger.info("=" * 60)
+    try:
+        import asyncio
+        import websockets
+
+        async def test_daemon():
+            uri = f"ws://127.0.0.1:{os.getenv('EXAI_WS_PORT', '3010')}"
+            token = os.getenv("EXAI_WS_TOKEN", "")
+            async with websockets.connect(uri, ping_interval=None) as websocket:
+                hello = {'op': 'hello', 'token': token, 'data': {'protocolVersion': '2024-11-05', 'clientInfo': {'name': 'shim-validator'}}}
+                await websocket.send(json.dumps(hello))
+                ack = await asyncio.wait_for(websocket.recv(), timeout=5)
+                return json.loads(ack).get('ok', False)
+
+        result = asyncio.run(test_daemon())
+        if result:
+            logger.info("✓ DAEMON READY - Starting shim")
+        else:
+            logger.error("✗ DAEMON NOT READY - Please ensure container is running")
+            logger.error("  Run: docker-compose up -d")
+            return 1
+    except Exception as e:
+        logger.error(f"✗ Daemon validation failed: {e}")
+        logger.error("  Is EXAI MCP container running on port 3010?")
+        return 1
+
     # Start the shim
+    logger.info("=" * 60)
     logger.info(f"Starting shim: {SHIM_SCRIPT}")
+    logger.info("=" * 60)
     try:
         # CRITICAL: Get environment AFTER loading .env
         env = os.environ.copy()
@@ -131,6 +163,7 @@ def start_shim():
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,  # FIX: Keep stderr separate from stdout
             text=True,
+            encoding='utf-8',  # CRITICAL: Fix Unicode errors on Windows
             bufsize=1
         )
 
@@ -151,7 +184,17 @@ def start_shim():
         # Read stdout (MCP protocol) - DON'T LOG IT, just pass it through
         for line in iter(process.stdout.readline, ''):
             # MCP protocol messages go to stdout, don't log them
-            print(line.rstrip(), flush=True)
+            if line:
+                try:
+                    print(line.rstrip(), flush=True)
+                except Exception as e:
+                    # Handle any encoding errors gracefully
+                    logger.error(f"Error printing line: {e}")
+                    try:
+                        # Try to print with replacement characters
+                        print(line.rstrip().encode('utf-8', errors='replace').decode('utf-8', errors='replace'), flush=True)
+                    except:
+                        pass
 
         return process.wait()
 

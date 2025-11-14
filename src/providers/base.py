@@ -87,6 +87,32 @@ class ModelResponse:
         self.provider = provider
         self.metadata = metadata or {}
 
+    def model_dump(self) -> Dict[str, Any]:
+        """
+        Serialize ModelResponse to dictionary for JSON output.
+
+        Returns:
+            Dict containing all ModelResponse fields
+        """
+        return {
+            "content": self.content,
+            "usage": self.usage,
+            "model_name": self.model_name,
+            "friendly_name": self.friendly_name,
+            "provider": self.provider.value if self.provider else None,
+            "metadata": self.metadata,
+        }
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Serialize ModelResponse to dictionary for JSON output.
+        Alias for model_dump() for compatibility with cache manager.
+
+        Returns:
+            Dict containing all ModelResponse fields
+        """
+        return self.model_dump()
+
 
 class TemperatureConstraint:
     """Base temperature constraint."""

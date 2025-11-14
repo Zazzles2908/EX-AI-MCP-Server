@@ -252,17 +252,16 @@ class KimiChatWithToolsTool(BaseTool):
                             existing = getattr(prov, "get_cache_token", lambda *a, **k: None)(sid, "kimi_chat_with_tools", pf)
                             if not existing:
                                 # Prime using provider wrapper (captures token via headers)
-                                _ = await _aio.to_thread(
-                                    lambda: prov.chat_completions_create(
-                                        model=model_used,
-                                        messages=norm_msgs[:max(1, min(3, len(norm_msgs)))],
-                                        tools=None,
-                                        tool_choice=None,
-                                        temperature=float(arguments.get("temperature", 0.6)),
-                                        _session_id=sid,
-                                        _call_key=arguments.get("_call_key") or arguments.get("call_key"),
-                                        _tool_name=self.get_name(),
-                                    )
+                                # FIX: chat_completions_create is async, so await it directly
+                                _ = await prov.chat_completions_create(
+                                    model=model_used,
+                                    messages=norm_msgs[:max(1, min(3, len(norm_msgs)))],
+                                    tools=None,
+                                    tool_choice=None,
+                                    temperature=float(arguments.get("temperature", 0.6)),
+                                    _session_id=sid,
+                                    _call_key=arguments.get("_call_key") or arguments.get("call_key"),
+                                    _tool_name=self.get_name(),
                                 )
                 except Exception:
                     pass
@@ -511,7 +510,9 @@ class KimiChatWithToolsTool(BaseTool):
                 except Exception:
                     timeout_secs = 180.0
                 try:
-                    result = await _aio.wait_for(_aio.to_thread(_call), timeout=timeout_secs)
+                    # FIX: chat_completions_create is async, so await it directly
+                    # Don't use _aio.to_thread() for async functions
+                    result = await _aio.wait_for(_call(), timeout=timeout_secs)
                 except _aio.TimeoutError:
                     err = {"status": "execution_error", "error": f"Kimi chat timed out after {int(timeout_secs)}s"}
                     return [TextContent(type="text", text=json.dumps(err, ensure_ascii=False))]

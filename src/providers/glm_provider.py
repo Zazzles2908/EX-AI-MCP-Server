@@ -182,6 +182,10 @@ class GLMProvider:
         """Get capabilities for a model."""
         return self.SUPPORTED_MODELS.get(model_name, ModelCapabilities())
 
+    def get_model_configurations(self) -> dict[str, ModelCapabilities]:
+        """Get all model configurations with capabilities."""
+        return self.SUPPORTED_MODELS
+
     def supports_streaming(self, model_name: str) -> bool:
         """Check if model supports streaming."""
         return True
@@ -244,12 +248,17 @@ class GLMProvider:
             )
 
         try:
+            # Remove unsupported parameters from kwargs
+            # on_chunk is an OpenAI SDK parameter not supported by GLM API
+            kwargs_copy = kwargs.copy()
+            kwargs_copy.pop('on_chunk', None)
+
             response = await self.client.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                **kwargs
+                **kwargs_copy
             )
             return ModelResponse(
                 content=response.choices[0].message.content,

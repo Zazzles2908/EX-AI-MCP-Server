@@ -75,6 +75,9 @@ from src.daemon.ws.connection_manager import _safe_send
 # Import logging utilities
 from src.utils.logging_utils import get_logger, SamplingLogger
 
+# Import protocol adapter for dual protocol support
+from src.daemon.ws.protocol_adapter import ProtocolAdapter
+
 # Module-specific configuration
 import os
 
@@ -108,7 +111,8 @@ class RequestRouter:
         provider_sems: Dict[str, asyncio.Semaphore],
         validated_env: Dict[str, Any],
         use_per_session_semaphores: bool = False,
-        port: int = 8079  # Port for semaphore isolation
+        port: int = 8079,  # Port for semaphore isolation
+        provider_registry=None  # Provider registry for ProtocolAdapter
     ):
         """
         Initialize request router.
@@ -121,11 +125,13 @@ class RequestRouter:
             provider_sems: Provider-specific semaphores
             validated_env: Validated environment variables
             use_per_session_semaphores: Whether to use per-session semaphores
+            provider_registry: ProviderRegistry instance for ProtocolAdapter
         """
         self.session_manager = session_manager
         self.server_tools = server_tools
         self.validated_env = validated_env
         self.port = port
+        self.provider_registry = provider_registry
 
         # Log port-specific initialization
         logger.info(f"[PORT_ISOLATION] RequestRouter initialized for port {self.port}")
@@ -149,6 +155,9 @@ class RequestRouter:
             progress_interval=progress_interval,
             use_per_session_semaphores=use_per_session_semaphores
         )
+
+        # Initialize protocol adapter for dual protocol support
+        self.protocol_adapter = ProtocolAdapter(self.tool_executor, provider_registry)
 
         # Configuration
         self.retry_after_secs = int(validated_env.get("RETRY_AFTER_SECS", 5))
@@ -202,7 +211,7 @@ class RequestRouter:
         """
         Handle a WebSocket message.
 
-        Routes messages to appropriate handlers based on operation type.
+        Routes messages to appropriate handlers based on protocol type.
 
         Args:
             ws: WebSocket connection
@@ -210,25 +219,56 @@ class RequestRouter:
             msg: Message dictionary
             resilient_ws_manager: Optional ResilientWebSocketManager instance
         """
-        op = msg.get("op")
-        req_id = msg.get("request_id", "unknown")
+        # Detect protocol type
+        if "jsonrpc" in msg and msg.get("jsonrpc") == "2.0":
+            # MCP JSON-RPC protocol - route to ProtocolAdapter
+            logger.debug(f"[ROUTER] Detected MCP JSON-RPC protocol for message: {msg.get('method', 'unknown')}")
+            try:
+                await self.protocol_adapter.handle_message(msg, ws)
+            except Exception as e:
+                logger.error(f"[ROUTER] Error handling MCP message: {e}", exc_info=True)
+                await _safe_send(
+                    ws,
+                    create_error_response(
+                        ErrorCode.INTERNAL_ERROR,
+                        f"MCP message handling failed: {str(e)}",
+                        request_id=msg.get("id", "unknown")
+                    ),
+                    resilient_ws_manager=resilient_ws_manager
+                )
+        elif "op" in msg:
+            # EXAI custom protocol - handle as before
+            op = msg.get("op")
+            req_id = msg.get("request_id", "unknown")
 
-        # Route based on operation
-        if op in ("tool_call", "call_tool"):
-            await self._handle_tool_call(ws, session_id, msg, req_id, resilient_ws_manager)
-        elif op == "cancel":
-            await self._handle_cancel(ws, session_id, msg, req_id, resilient_ws_manager)
-        elif op == "ping":
-            await self._handle_ping(ws, req_id, resilient_ws_manager)
-        elif op == "list_tools":
-            await self._handle_list_tools(ws, req_id, resilient_ws_manager)
+            logger.debug(f"[ROUTER] Detected EXAI custom protocol for operation: {op}")
+
+            # Route based on operation
+            if op in ("tool_call", "call_tool"):
+                await self._handle_tool_call(ws, session_id, msg, req_id, resilient_ws_manager)
+            elif op == "cancel":
+                await self._handle_cancel(ws, session_id, msg, req_id, resilient_ws_manager)
+            elif op == "ping":
+                await self._handle_ping(ws, req_id, resilient_ws_manager)
+            elif op == "list_tools":
+                await self._handle_list_tools(ws, req_id, resilient_ws_manager)
+            else:
+                await _safe_send(
+                    ws,
+                    create_error_response(
+                        ErrorCode.INVALID_REQUEST,
+                        f"Unknown operation: {op}",
+                        request_id=req_id
+                    ),
+                    resilient_ws_manager=resilient_ws_manager
+                )
         else:
+            # Unknown message format
             await _safe_send(
                 ws,
                 create_error_response(
                     ErrorCode.INVALID_REQUEST,
-                    f"Unknown operation: {op}",
-                    request_id=req_id
+                    "Unknown message format - must have 'op' (EXAI) or 'jsonrpc' (MCP) field"
                 ),
                 resilient_ws_manager=resilient_ws_manager
             )
@@ -296,7 +336,9 @@ class RequestRouter:
             # Check cache for duplicate request
             call_key = make_call_key(normalized_name, arguments)
             cached_result = await self.cache_manager.get_cached_result(call_key)
+            logger.info(f"[DEBUG_CACHE] Cache check for {call_key}: cached_result={cached_result is not None}")
             if cached_result is not None:
+                logger.info(f"[DEBUG_CACHE] Sending cached result, type={type(cached_result)}")
                 await _safe_send(
                     ws,
                     {
@@ -307,6 +349,7 @@ class RequestRouter:
                     },
                     resilient_ws_manager=resilient_ws_manager
                 )
+                logger.info(f"[DEBUG_CACHE] Cached result sent")
                 return
 
             # Check for inflight request
@@ -334,14 +377,27 @@ class RequestRouter:
             inflight_future = asyncio.Future()
             await self.cache_manager.add_inflight(req_id, inflight_future)
 
+            logger.info(f"[DEBUG_ROUTER] About to call execute_tool for {normalized_name}")
             # Execute tool
-            success, outputs, error_msg = await self.tool_executor.execute_tool(
-                normalized_name,
-                arguments,
-                ws,
-                req_id,
-                resilient_ws_manager
-            )
+            try:
+                logger.info(f"[DEBUG_ROUTER] About to await execute_tool...")
+                success, outputs, error_msg = await asyncio.wait_for(
+                    self.tool_executor.execute_tool(
+                        normalized_name,
+                        arguments,
+                        ws,
+                        req_id,
+                        resilient_ws_manager
+                    ),
+                    timeout=30.0
+                )
+                logger.info(f"[DEBUG_ROUTER] execute_tool returned: success={success}, outputs_type={type(outputs)}, error_msg={error_msg}")
+            except asyncio.TimeoutError:
+                logger.error(f"[DEBUG_ROUTER] execute_tool TIMED OUT after 30s")
+                raise
+            except Exception as e:
+                logger.error(f"[DEBUG_ROUTER] Exception during execute_tool: {type(e).__name__}: {e}", exc_info=True)
+                raise
 
             # Set result in future and send response
             if success:

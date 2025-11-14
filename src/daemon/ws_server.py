@@ -251,6 +251,8 @@ from src.server import register_provider_specific_tools  # type: ignore
 # Import registry from core - the old registry import is removed
 # from src.providers.base import ProviderType  # type: ignore
 
+from tools.registry import get_tool_registry
+
 # Import TimeoutConfig for coordinated timeout hierarchy
 from config import TimeoutConfig
 
@@ -603,11 +605,42 @@ async def main_async() -> None:
         print("[STARTUP] DEBUG: Python sys.path = " + str(sys.path[:3]), flush=True)
         logger.info("[STARTUP] Configuring providers during daemon startup...")
         _ensure_providers_configured()
-        logger.info("[STARTUP] Providers configured successfully")
+        register_provider_specific_tools()
+        logger.info(f"[STARTUP] Providers configured successfully. Total tools available: {len(SERVER_TOOLS)}")
+
+        # CRITICAL FIX (2025-10-24): Wait for providers to be ready before continuing
+        # This prevents tool schemas from being generated with empty model lists
+        if os.getenv("EXAI_WS_STARTUP_WAIT_PROVIDERS", "false").lower() == "true":
+            timeout = int(os.getenv("EXAI_WS_STARTUP_WAIT_TIMEOUT", "30"))
+            logger.info(f"[STARTUP] Waiting up to {timeout}s for providers to be ready...")
+
+            # Use get_registry_instance which is already imported at the top
+            start_time = time.time()
+
+            while time.time() - start_time < timeout:
+                available_models = get_registry_instance().get_available_models()
+                if available_models:
+                    logger.info(f"[STARTUP] Providers ready! {len(available_models)} models available")
+                    break
+                logger.debug("Waiting for providers to initialize...")
+                time.sleep(0.5)
+            else:
+                logger.warning(f"[STARTUP] Provider wait timeout after {timeout}s - continuing anyway")
     except Exception as e:
         logger.error(f"[STARTUP] Failed to configure providers during startup: {e}")
         logger.error("[STARTUP] Daemon cannot start without providers - shutting down")
         raise  # Fail fast - daemon requires providers to function
+
+    # Get provider registry and tool registries
+    try:
+        logger.info("[STARTUP] Initializing provider registry...")
+        provider_registry = get_registry_instance()
+        tool_registry = get_tool_registry()
+        logger.info(f"[STARTUP] Registries initialized successfully")
+    except Exception as e:
+        logger.error(f"[STARTUP] Failed to initialize registries: {e}")
+        logger.error("[STARTUP] Daemon cannot start without registries - shutting down")
+        raise
 
     def _signal(*_args):
         stop_event.set()
@@ -649,37 +682,6 @@ async def main_async() -> None:
         logger.error(f"FATAL: Invalid timeout configuration: {e}")
         logger.error("Please check your environment variables and fix the configuration")
         return  # Exit - cannot run with invalid timeout configuration
-
-    # CRITICAL FIX: Configure providers and register tools at startup (not per-request)
-    # This prevents deadlock when _ensure_providers_configured() is called in async context
-    logger.info("Configuring providers and registering tools at daemon startup...")
-    try:
-        _ensure_providers_configured()
-        register_provider_specific_tools()
-        logger.info(f"Providers configured successfully. Total tools available: {len(SERVER_TOOLS)}")
-
-        # CRITICAL FIX (2025-10-24): Wait for providers to be ready before continuing
-        # This prevents tool schemas from being generated with empty model lists
-        if os.getenv("EXAI_WS_STARTUP_WAIT_PROVIDERS", "false").lower() == "true":
-            timeout = int(os.getenv("EXAI_WS_STARTUP_WAIT_TIMEOUT", "30"))
-            logger.info(f"Waiting up to {timeout}s for providers to be ready...")
-
-            # Use get_registry_instance which is already imported at the top
-            start_time = time.time()
-
-            while time.time() - start_time < timeout:
-                available_models = get_registry_instance().get_available_models()
-                if available_models:
-                    logger.info(f"Providers ready! {len(available_models)} models available")
-                    break
-                logger.debug("Waiting for providers to initialize...")
-                time.sleep(0.5)
-            else:
-                logger.warning(f"Provider wait timeout after {timeout}s - continuing anyway")
-
-    except Exception as e:
-        logger.error(f"Failed to configure providers at startup: {e}", exc_info=True)
-        logger.warning("Daemon will start but provider-specific tools may not be available")
 
     # CRITICAL FIX (2025-10-16): Initialize conversation storage at startup
     # This prevents lazy initialization on every call which adds 300-700ms latency
@@ -745,7 +747,7 @@ async def main_async() -> None:
         provider_max_inflight={"KIMI": KIMI_MAX_INFLIGHT, "GLM": GLM_MAX_INFLIGHT}
     )
 
-    # Initialize RequestRouter
+    # Initialize RequestRouter with provider registry for dual protocol support
     # PHASE 3 FIX (2025-10-25): Pass port for semaphore isolation (EXAI validated)
     request_router = RequestRouter(
         session_manager=_sessions,
@@ -754,32 +756,11 @@ async def main_async() -> None:
         provider_sems=_provider_sems,
         validated_env=_validated_env,
         use_per_session_semaphores=USE_PER_SESSION_SEMAPHORES,
-        port=EXAI_WS_PORT  # Port-specific semaphore isolation
+        port=EXAI_WS_PORT,  # Port-specific semaphore isolation
+        provider_registry=provider_registry  # Pass provider registry for ProtocolAdapter
     )
 
     logger.info("WebSocket modules initialized successfully")
-
-    # CRITICAL FIX (P1): Validate timeout hierarchy on startup
-    logger.info("Validating timeout hierarchy...")
-    try:
-        from config import TimeoutConfig
-        # Use centralized timeout configuration (EXAI Fix #3 - 2025-10-21)
-        tool_timeout = float(os.getenv("WORKFLOW_TOOL_TIMEOUT_SECS", str(TimeoutConfig.WORKFLOW_TOOL_TIMEOUT_SECS)))
-        daemon_timeout = TimeoutConfig.get_daemon_timeout()
-
-        if daemon_timeout <= tool_timeout:
-            logger.error(f"CRITICAL: Daemon timeout ({daemon_timeout}s) must be greater than tool timeout ({tool_timeout}s)")
-            logger.error("This will cause tools to timeout before the daemon can handle them properly.")
-            logger.error("Please fix your timeout configuration or update TimeoutConfig.get_daemon_timeout()")
-        else:
-            ratio = daemon_timeout / tool_timeout
-            logger.info(f"Timeout hierarchy validated: daemon={daemon_timeout}s, tool={tool_timeout}s (ratio={ratio:.2f}x)")
-
-            # Warn if ratio is too low
-            if ratio < 1.3:
-                logger.warning(f"Timeout ratio is low ({ratio:.2f}x). Consider increasing daemon timeout for better reliability.")
-    except Exception as e:
-        logger.error(f"Failed to validate timeout hierarchy: {e}")
 
     # Wrapper to handle post-handshake protocol errors gracefully
     async def _connection_wrapper(ws: WebSocketServerProtocol) -> None:
@@ -849,9 +830,13 @@ async def main_async() -> None:
         logger.exception(f"[DEBUG] Full traceback:")
         raise
 
-    logger.info(f"Starting WS daemon on ws://{EXAI_WS_HOST}:{EXAI_WS_PORT}")
+    logger.info(f"Starting EXAI MCP WebSocket daemon...")
+    logger.info(f"  - WebSocket server: ws://{EXAI_WS_HOST}:{EXAI_WS_PORT} (EXAI custom protocol)")
+
     try:
         logger.debug("About to enter websockets.serve context manager...")
+
+        # Start both WebSocket server and native MCP server concurrently
         async with websockets.serve(
             _connection_wrapper,  # Handles post-handshake protocol errors
             EXAI_WS_HOST,
@@ -861,9 +846,9 @@ async def main_async() -> None:
             ping_timeout=PING_TIMEOUT,
             # Week 3 Fix #12 (2025-10-21): Use validated close timeout
             close_timeout=float(_validated_env["EXAI_WS_CLOSE_TIMEOUT"]),
-        ) as server:
+        ) as ws_server:
             logger.info(f"✅ WebSocket server successfully started and listening on ws://{EXAI_WS_HOST}:{EXAI_WS_PORT}")
-            logger.debug(f"Server object: {server}")
+            logger.debug(f"WebSocket server object: {ws_server}")
 
             # Week 3 Fix #15 (2025-10-21): Start background tasks using extracted modules
             # Start health monitoring tasks
@@ -875,10 +860,30 @@ async def main_async() -> None:
             session_cleanup_task = asyncio.create_task(session_handler.start_periodic_cleanup(stop_event))
 
             logger.info("[BACKGROUND_TASKS] Started health monitoring and session cleanup tasks")
+            logger.info("🚀 EXAI MCP daemon ready - WebSocket protocol active")
 
-            # Wait indefinitely until a signal or external shutdown sets the event
-            logger.debug("Server ready - waiting for stop_event...")
-            await stop_event.wait()
+            # Wait for shutdown signal
+            logger.debug("Waiting for shutdown signal...")
+            try:
+                await asyncio.wait(
+                    [asyncio.create_task(stop_event.wait())],
+                    return_when=asyncio.FIRST_COMPLETED
+                )
+            except Exception as e:
+                logger.error(f"Error in server wait loop: {e}", exc_info=True)
+                raise
+
+    except OSError as e:
+        # Friendly message on address-in-use
+        if getattr(e, "errno", None) in (98, 10048):  # 98=EADDRINUSE (POSIX), 10048=WSAEADDRINUSE (Windows)
+            logger.error(
+                "Address already in use: ws://%s:%s. A daemon is likely already running. "
+                "Use scripts/run_ws_shim.py to connect, or stop the existing daemon. See logs/mcp_server.log and logs/ws_daemon.health.json.",
+                EXAI_WS_HOST,
+                EXAI_WS_PORT,
+            )
+            return
+        raise
     except OSError as e:
         # Friendly message on address-in-use
         if getattr(e, "errno", None) in (98, 10048):  # 98=EADDRINUSE (POSIX), 10048=WSAEADDRINUSE (Windows)

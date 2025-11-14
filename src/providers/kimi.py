@@ -11,12 +11,54 @@ logger = logging.getLogger(__name__)
 class KimiProvider:
     """Minimal Kimi provider implementation."""
 
-    # List of supported models
+    # List of supported models with capabilities
     SUPPORTED_MODELS = {
-        "moonshot-v1-8k": ModelCapabilities(),
-        "moonshot-v1-32k": ModelCapabilities(),
-        "moonshot-v1-128k": ModelCapabilities(),
-        "moonshot-v1-8k-vision": ModelCapabilities(),
+        "moonshot-v1-8k": ModelCapabilities(
+            provider=ProviderType.KIMI,
+            model_name="moonshot-v1-8k",
+            friendly_name="Moonshot v1 8K",
+            context_window=8000,
+            max_output_tokens=4000,
+            supports_function_calling=True,
+            supports_streaming=True,
+            supports_system_prompts=True,
+            description="Moonshot v1 8K context - Fast responses for quick tasks"
+        ),
+        "moonshot-v1-32k": ModelCapabilities(
+            provider=ProviderType.KIMI,
+            model_name="moonshot-v1-32k",
+            friendly_name="Moonshot v1 32K",
+            context_window=32000,
+            max_output_tokens=16000,
+            supports_function_calling=True,
+            supports_streaming=True,
+            supports_system_prompts=True,
+            description="Moonshot v1 32K context - Balanced performance and context"
+        ),
+        "moonshot-v1-128k": ModelCapabilities(
+            provider=ProviderType.KIMI,
+            model_name="moonshot-v1-128k",
+            friendly_name="Moonshot v1 128K",
+            context_window=128000,
+            max_output_tokens=32000,
+            supports_function_calling=True,
+            supports_streaming=True,
+            supports_system_prompts=True,
+            description="Moonshot v1 128K context - Large document analysis"
+        ),
+        "moonshot-v1-8k-vision": ModelCapabilities(
+            provider=ProviderType.KIMI,
+            model_name="moonshot-v1-8k-vision",
+            friendly_name="Moonshot v1 8K Vision",
+            context_window=8000,
+            max_output_tokens=4000,
+            supports_images=True,
+            max_image_size_mb=10.0,
+            supports_function_calling=True,
+            supports_streaming=True,
+            supports_system_prompts=True,
+            description="Moonshot v1 8K Vision - Image understanding and analysis"
+        ),
     }
 
     def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
@@ -48,6 +90,10 @@ class KimiProvider:
     def get_capabilities(self, model_name: str) -> ModelCapabilities:
         """Get capabilities for a model."""
         return self.SUPPORTED_MODELS.get(model_name, ModelCapabilities())
+
+    def get_model_configurations(self) -> Dict[str, ModelCapabilities]:
+        """Get all model configurations with capabilities."""
+        return self.SUPPORTED_MODELS
 
     def supports_streaming(self, model_name: str) -> bool:
         """Check if model supports streaming."""
@@ -111,12 +157,17 @@ class KimiProvider:
             )
 
         try:
+            # Remove unsupported parameters from kwargs
+            # on_chunk is an OpenAI SDK parameter not supported by Kimi API
+            kwargs_copy = kwargs.copy()
+            kwargs_copy.pop('on_chunk', None)
+
             response = await self.client.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                **kwargs
+                **kwargs_copy
             )
             return ModelResponse(
                 content=response.choices[0].message.content,
@@ -132,3 +183,7 @@ class KimiProvider:
                 model_name=model,
                 provider=self.get_provider_type()
             )
+
+
+# Alias for backward compatibility
+KimiModelProvider = KimiProvider

@@ -318,3 +318,10 @@ __all__ = [
     'CategoryMapping',
     'RoutingDecision'
 ]
+
+# Re-export from capabilities.models for compatibility
+from tools.capabilities.models import (
+    ToolOutput,
+    ContinuationOffer,
+    SPECIAL_STATUS_MODELS
+)

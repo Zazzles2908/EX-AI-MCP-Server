@@ -1,31 +1,39 @@
 # EX-AI-MCP-Server - Claude Code Configuration
-**Last Updated**: 2025-11-13
+**Last Updated**: 2025-11-14
 **Status**: WebSocket MCP Server Development Platform 🚀
-**Version**: 2.3 (Post-Cleanup & Fixes)
+**Version**: 2.4 (Documentation & Agent Workflow Standards)
 
 ---
 
-## ⚠️ CRITICAL: Recent Fixes (2025-11-13)
+## 🚨 MANDATORY: Read This First (Agents & Developers)
 
-### **Issues Fixed:**
-1. **Stdout Redirection Bug** - Wrapper was logging MCP protocol messages (FIXED)
-2. **Timeout Configuration** - Increased from 10s to 30s (FIXED)
-3. **Docker Layer Caching** - Rebuild without cache required (FIXED)
-4. **ModelCapabilities Class** - Missing parameters added (FIXED)
-5. **Environment Path Resolution** - Corrected .env loading (FIXED)
-6. **Logging Pollution** - MCP loggers set to ERROR only (FIXED)
+**Before proceeding with ANY task, you MUST read these 4 documents in order:**
 
-### **Rebuild Command (CRITICAL):**
-```bash
-# From root directory
-docker-compose build --no-cache
+1. **[CLAUDE.md](CLAUDE.md)** ← You are here - Project overview
+2. **[docs/workflow/AGENT_WORKFLOW.md](documents/08-agent-workflow/AGENT_WORKFLOW.md)** ← Workflow standards & guidelines
+3. **[docs/workflow/ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md)** ← Environment file management
+4. **[docs/architecture/EXAI_MCP_ARCHITECTURE.md](docs/ARCHITECTURE.md)** ← System architecture & integration
 
-# Start services
-docker-compose up -d
+⚠️ **DO NOT proceed with any work until you've read all 4 documents above**
 
-# Verify health
-curl http://127.0.0.1:3002/health
-```
+---
+
+## 📚 Documentation Quick Links
+
+### **For Agents (Read First!)**
+- **[docs/workflow/AGENT_WORKFLOW.md](documents/08-agent-workflow/AGENT_WORKFLOW.md)** - Mandatory workflow, file organization, testing standards
+- **[docs/workflow/ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md)** - Environment file management (.env, .env.docker, etc.)
+- **[docs/architecture/EXAI_MCP_ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture, three-tier design, deployment
+
+### **For Developers**
+- **[README.md](README.md)** - Project overview and quick start
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
+- **[docs/integration/EXAI_MCP_INTEGRATION_GUIDE.md](docs/integration/EXAI_MCP_INTEGRATION_GUIDE.md)** - Integration guide
+
+### **For Operations**
+- **[docs/troubleshooting/README.md](docs/troubleshooting/README.md)** - Troubleshooting and diagnostics
+- **[scripts/](scripts/)** - Operational scripts and utilities
 
 ### **Directory Structure (Cleaned 2025-11-13):**
 ```
@@ -263,7 +271,7 @@ This project implements:
 
 3. **Deployment**
    - Docker build: `docker-compose build`
-   - Service restart: `docker-compose restart exai-mcp-daemon`
+   - Service restart: `docker-compose restart exai-mcp-server`
    - Health verification: `curl http://127.0.0.1:3002/health`
 
 ---
@@ -274,7 +282,7 @@ This project implements:
 ```bash
 # Start EX-AI-MCP-Server
 cd C:/Project/EX-AI-MCP-Server
-docker-compose up -d exai-mcp-daemon
+docker-compose up -d exai-mcp-server
 
 # Verify startup
 docker-compose ps
@@ -287,7 +295,7 @@ curl http://127.0.0.1:3002/health
 docker-compose ps
 
 # Logs
-docker-compose logs -f exai-mcp-daemon
+docker-compose logs -f exai-mcp-server
 docker-compose logs -f ws-shim
 
 # Health
@@ -338,7 +346,7 @@ python scripts/validate_environment.py
 ### Log Locations
 ```
 logs/
-├── exai-mcp-daemon.log     # Main daemon logs
+├── exai-mcp-server.log     # Main daemon logs
 ├── ws-shim.log            # WebSocket shim logs
 ├── provider-routing.log   # Provider routing decisions
 ├── tool-execution.log     # Tool execution results
@@ -358,9 +366,9 @@ logs/
 3. Check health: `curl http://127.0.0.1:3002/health`
 
 **Solutions**:
-1. Start daemon: `docker-compose up -d exai-mcp-daemon`
+1. Start daemon: `docker-compose up -d exai-mcp-server`
 2. Restart if stuck: `docker-compose restart`
-3. Check logs: `docker-compose logs exai-mcp-daemon`
+3. Check logs: `docker-compose logs exai-mcp-server`
 
 ### Issue: npx MCP Servers Failing
 
@@ -521,7 +529,7 @@ EXPERT_ANALYSIS_TIMEOUT_SECS=60
 
 3. **Review Recent Logs**
    ```bash
-   tail -50 logs/exai-mcp-daemon.log
+   tail -50 logs/exai-mcp-server.log
    tail -50 logs/ws-shim.log
    ```
 
@@ -544,7 +552,7 @@ EXPERT_ANALYSIS_TIMEOUT_SECS=60
    - Daemon not responding on port 3010
    - Check Docker container status
    - Verify environment variables
-   - Review: `docker-compose logs exai-mcp-daemon`
+   - Review: `docker-compose logs exai-mcp-server`
 
 2. **filesystem-mcp Installation**
    - npx package not found or misconfigured
@@ -769,7 +777,7 @@ python scripts/ws/ws_chat_once.py
 ### **For Debugging:**
 ```bash
 # Watch daemon logs in real-time
-docker-compose logs -f exai-daemon
+docker-compose logs -f exai-mcp-server
 
 # Watch shim logs
 tail -f logs/ws-shim.log

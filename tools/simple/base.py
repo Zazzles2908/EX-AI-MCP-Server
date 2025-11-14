@@ -578,9 +578,8 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                         provider_kwargs["stream"] = True
                 except Exception:
                     pass
-                # NEW (2025-10-24): Pass streaming callback to provider
-                if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and prov.supports_streaming(_model_name):
-                    provider_kwargs["on_chunk"] = self._on_chunk_callback
+                # NOTE: on_chunk callback removed - not supported by GLM/Kimi APIs
+                # Streaming is handled via provider's native stream parameter
 
                 # CRITICAL FIX (2025-10-26): Add logging to verify actual API calls
                 # This helps identify when semantic cache or mock mode is being used
@@ -606,9 +605,9 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                 if images and prov.supports_images(_model_name):
                     generate_kwargs["images"] = images
 
-                # Only add on_chunk if provider supports streaming
-                if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and prov.supports_streaming(_model_name):
-                    generate_kwargs["on_chunk"] = self._on_chunk_callback
+                # Note: on_chunk is not passed to providers anymore (fixed API compatibility)
+                # Streaming is handled internally by providers that support it
+                # The _on_chunk_callback is used for WebSocket streaming to clients
 
                 # Handle async provider calls - we're in an async function, so use await
                 result = await prov.generate_content(**generate_kwargs)
@@ -699,9 +698,8 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
                     if continuation_id:
                         provider_kwargs["continuation_id"] = continuation_id
 
-                    # NEW (2025-10-24): Pass streaming callback to provider (direct call path)
-                    if hasattr(self, '_on_chunk_callback') and self._on_chunk_callback and provider.supports_streaming(self._current_model_name):
-                        provider_kwargs["on_chunk"] = self._on_chunk_callback
+                    # NOTE: on_chunk callback removed - not supported by GLM/Kimi APIs
+                    # Streaming is handled via provider's native stream parameter
 
                     # Try semantic cache first
                     from utils.infrastructure.semantic_cache import get_semantic_cache

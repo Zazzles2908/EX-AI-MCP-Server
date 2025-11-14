@@ -41,19 +41,26 @@ COPY --from=builder /root/.local /root/.local
 # Make sure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
 
-# Copy application code
+# Copy application source code
+# ALL directories included for complete build
 COPY src/ ./src/
 COPY tools/ ./tools/
 COPY utils/ ./utils/
-COPY systemprompts/ ./systemprompts/
-COPY streaming/ ./streaming/
-COPY scripts/ws/ ./scripts/ws/
-COPY scripts/runtime/ ./scripts/runtime/
+COPY configurations/ ./configurations/
+COPY scripts/ ./scripts/
 COPY static/ ./static/
 COPY src/server.py ./
 # config.py is deprecated - configuration moved to config/ package
 COPY config/ ./config/
-COPY .env.docker .env
+# Database and migration files
+COPY database/ ./database/
+COPY migration/ ./migration/
+# Tests for verification
+COPY tests/ ./tests/
+# Web UI for dashboard
+COPY web_ui/ ./web_ui/
+# Data files (performance metrics, monitoring)
+COPY data/ ./data/
 
 # Create logs directory
 RUN mkdir -p logs

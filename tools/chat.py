@@ -57,7 +57,11 @@ CHAT_FIELD_DESCRIPTIONS = {
 class ChatRequest(ToolRequest):
     """Request model for Chat tool"""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     prompt: str = Field(..., description=CHAT_FIELD_DESCRIPTIONS["prompt"])
+    # Backward compatibility: accept 'message' as alias for 'prompt'
+    message: Optional[str] = Field(default=None, alias="message", description="Alias for prompt (backward compatibility)")
     files: Optional[list[str]] = Field(default_factory=list, description=CHAT_FIELD_DESCRIPTIONS["files"])
     images: Optional[list[str]] = Field(default_factory=list, description=CHAT_FIELD_DESCRIPTIONS["images"])
     continuation_id: Optional[str] = Field(default=None, description=(
@@ -211,6 +215,10 @@ class ChatTool(SimpleTool):
         Prepare the chat prompt with optional context files + conversation context
         when continuation_id is provided.
         """
+        # Backward compatibility: if 'message' was provided but 'prompt' is empty, use 'message' as 'prompt'
+        if not request.prompt and request.message:
+            request.prompt = request.message
+
         # Optional security enforcement per Cleanup/Upgrade prompts
         try:
             from config import SECURE_INPUTS_ENFORCED
@@ -327,12 +335,21 @@ class ChatTool(SimpleTool):
                             metadata['model_used'] = model_name
                         provider = model_info.get("provider")
                         if provider:
-                            # Extract provider name from class name (e.g., "GLMModelProvider" -> "glm")
-                            provider_class_name = provider.__class__.__name__
-                            if provider_class_name.endswith("ModelProvider"):
-                                provider_name = provider_class_name[:-len("ModelProvider")].lower()
+                            # Extract provider name from provider object or dict
+                            # FIX (2025-11-14): Handle both object and dict types for provider
+                            if hasattr(provider, '__class__'):
+                                # Provider is an object
+                                provider_class_name = provider.__class__.__name__
+                                if provider_class_name.endswith("ModelProvider"):
+                                    provider_name = provider_class_name[:-len("ModelProvider")].lower()
+                                else:
+                                    provider_name = provider_class_name.lower()
                             else:
-                                provider_name = provider_class_name.lower()
+                                # Provider is a dict or other type
+                                if isinstance(provider, dict):
+                                    provider_name = provider.get("name", str(provider).lower())
+                                else:
+                                    provider_name = str(provider).lower()
                             metadata['provider_used'] = provider_name
 
                         # FIX (2025-10-24): Extract usage from model_info (not model_metadata)

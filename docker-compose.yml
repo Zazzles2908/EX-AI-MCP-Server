@@ -1,9 +1,9 @@
 services:
-  exai-daemon:
+  exai-mcp-server:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: exai-mcp-daemon
+    container_name: exai-mcp-server
     image: exai-mcp-server:latest
 
     # Port mapping: host:container
@@ -21,6 +21,8 @@ services:
       - PYTHONUNBUFFERED=1
       - PYTHONIOENCODING=utf-8
       - TZ=Australia/Melbourne
+      # Health check configuration - waits for daemon startup before testing endpoints
+      - EXAI_HEALTH_CHECK_STARTUP_DELAY=15
 
     # Mount .env.docker as .env in container
     env_file:
@@ -32,18 +34,20 @@ services:
     # FILE UPLOAD FIX (2025-10-28): Added TEST_FILES_DIR mounts for cross-platform file upload
     # PORT STRATEGY FIX (2025-11-08): Added docker-compose.yml mount for file operations
     volumes:
-      # Source code (development mode - hot reload)
-      - ./src:/app/src
-      - ./utils:/app/utils
-      - ./tools:/app/tools
-      - ./scripts/ws:/app/scripts/ws
-      - ./scripts/runtime:/app/scripts/runtime
-      - ./scripts/baseline_collection:/app/scripts/baseline_collection  # FIX: Mount baseline test files
+      # Source code is now BAKED INTO the IMAGE (no volume mounts needed)
+      # Volume mounts were causing issues on Windows Docker Desktop
+      # - ./src:/app/src
+      # - ./utils:/app/utils
+      # - ./tools:/app/tools
+      # - ./scripts/ws:/app/scripts/ws
+      # - ./scripts/runtime:/app/scripts/runtime
+      # - ./scripts/baseline_collection:/app/scripts/baseline_collection
+
       # Project files
-      - .:/mnt/project/EX-AI-MCP-Server  # Mount entire project for file operations
-      - ./systemprompts:/app/systemprompts  # FIX: Enable hot reload for prompt changes
-      - ./streaming:/app/streaming          # FIX: Enable hot reload for streaming changes
-      - ./static:/app/static                # FIX: Enable hot reload for static file changes
+      # - .:/mnt/project/EX-AI-MCP-Server  # Mount entire project for file operations
+      # - ./systemprompts:/app/systemprompts  # FIX: Enable hot reload for prompt changes
+      # - ./streaming:/app/streaming          # FIX: Enable hot reload for streaming changes
+      # - ./static:/app/static                # FIX: Enable hot reload for static file changes
 
       # Data directories
       - ./logs:/app/logs
@@ -60,11 +64,18 @@ services:
 
     # Depends on Redis for conversation storage
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
     # Restart policy
     restart: unless-stopped
-    
+
+    # CRITICAL: Run automated health check on every container start
+    # This ensures issues are detected and reported automatically after every rebuild
+    # Updated: Run native daemon with dual protocol support (WebSocket + MCP stdio)
+    # Test native MCP server directly
+    command: sh -c "python scripts/health_check_automated.py || true && python -m src.daemon.ws_server"
+
     # Health check
     healthcheck:
       test: ["CMD", "python", "-c", "import socket; s = socket.socket(); s.settimeout(2); s.connect(('127.0.0.1', 8079)); s.close(); exit(0)"]
@@ -103,7 +114,7 @@ services:
 
     # P0-9 Security Fix: Enable Redis authentication
     # Use Redis environment variable for password
-    command: sh -c "redis-server --maxmemory 4gb --maxmemory-policy allkeys-lru --appendonly yes --appendfsync everysec --auto-aof-rewrite-percentage 100 --auto-aof-rewrite-min-size 64mb --aof-load-truncated yes --aof-use-rdb-preamble yes --tcp-backlog 511 --timeout 0 --tcp-keepalive 300 --databases 16 --loglevel notice --protected-mode no --bind 0.0.0.0 --latency-monitor-threshold 100 --slowlog-log-slower-than 10000 --slowlog-max-len 128 --requirepass $$REDIS_PASSWORD"
+    command: sh -c "redis-server --maxmemory 4gb --maxmemory-policy allkeys-lru --appendonly yes --appendfsync everysec --auto-aof-rewrite-percentage 100 --auto-aof-rewrite-min-size 64mb --aof-load-truncated yes --aof-use-rdb-preamble yes --tcp-backlog 511 --timeout 0 --tcp-keepalive 300 --databases 16 --loglevel notice --protected-mode no --bind 0.0.0.0 --latency-monitor-threshold 100 --slowlog-log-slower-than 10000 --slowlog-max-len 128 --requirepass \$$REDIS_PASSWORD"
 
     # Environment variables
     # TIMEZONE FIX (2025-10-18): Add consistent timezone for log correlation
@@ -112,7 +123,6 @@ services:
 
     environment:
       - TZ=Australia/Melbourne
-      - REDIS_PASSWORD=ExAi2025RedisSecurePass123
 
     # Port mapping (exposed for debugging/monitoring)
     ports:
@@ -127,7 +137,7 @@ services:
 
     # Health check (P0-9: Updated to use authentication)
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "ExAi2025RedisSecurePass123", "ping"]
+      test: ["CMD", "sh", "-c", "echo 'auth $$REDIS_PASSWORD' | redis-cli -a $$REDIS_PASSWORD ping"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -162,11 +172,12 @@ services:
     # FINAL FIX: Using command-line args to bypass ALL config file issues
     # This avoids the buggy REDIS_HOSTS parsing AND config file issues
     command: >
-      sh -c "node ./bin/redis-commander --redis-host exai-redis --redis-port 6379 --redis-password ExAi2025RedisSecurePass123 --redis-db 0 --http-user admin --http-password ExAi2025RedisCommander@1qaz"
+      sh -c "node ./bin/redis-commander --redis-host exai-redis --redis-port 6379 --redis-password $${REDIS_PASSWORD} --redis-db 0 --http-user admin --http-password ExAi2025RedisCommander@1qaz"
 
     environment:
       # HTTP Basic Auth for web interface
       - TZ=Australia/Melbourne
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
 
     depends_on:
       redis:
@@ -197,4 +208,3 @@ networks:
   default:
     name: exai-network
     driver: bridge
-

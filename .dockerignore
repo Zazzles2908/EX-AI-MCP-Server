@@ -35,13 +35,7 @@ Dockerfile*
 docker-compose*
 .dockerignore
 
-# Documentation
-docs/
-README.md
-*.md
-
 # Tests
-tests/
 simulator_tests/
 test_simulation_files/
 pytest.ini

@@ -266,6 +266,7 @@ class ToolExecutor:
                 log_error(ErrorCode.INTERNAL_ERROR, f"Failed to cache result for {name}: {e}", req_id, exc_info=True)
 
         # Return result after semaphores are released
+        logger.info(f"[DEBUG_RETURN] execute_tool returning: success={success}, outputs_type={type(outputs)}, error_msg={error_msg}")
         return success, outputs, error_msg
 
     def _get_provider_for_tool(self, tool_name: str) -> Optional[str]:
@@ -340,7 +341,7 @@ class ToolExecutor:
             success = True
 
             # Send completion message after streaming finishes
-            await self._send_stream_completion(ws, req_id, resilient_ws_manager)
+            await self._send_stream_completion(ws, req_id, outputs, resilient_ws_manager)
 
         except asyncio.TimeoutError:
             error_msg = f"Tool execution timed out after {self.call_timeout}s"
@@ -417,10 +418,19 @@ class ToolExecutor:
         self,
         ws: WebSocketServerProtocol,
         req_id: str,
+        outputs: Optional[list],
         resilient_ws_manager=None
     ) -> None:
-        """Send a streaming completion message to the client."""
+        """Send streaming completion message and final tool result to the client.
+
+        Args:
+            ws: WebSocket connection
+            req_id: Request ID
+            outputs: Tool execution outputs to send
+            resilient_ws_manager: WebSocket manager
+        """
         try:
+            # Send stream completion first
             await _safe_send(
                 ws,
                 {
@@ -430,5 +440,19 @@ class ToolExecutor:
                 },
                 resilient_ws_manager=resilient_ws_manager
             )
+            logger.debug(f"Stream completion sent for {req_id}")
+
+            # Send the final tool result
+            if outputs is not None:
+                await _safe_send(
+                    ws,
+                    {
+                        "op": "call_tool_res",
+                        "request_id": req_id,
+                        "outputs": outputs
+                    },
+                    resilient_ws_manager=resilient_ws_manager
+                )
+                logger.debug(f"Final tool result sent for {req_id}, outputs type: {type(outputs)}, len: {len(outputs) if isinstance(outputs, list) else 'N/A'}")
         except Exception as e:
             logger.debug(f"Stream completion send failed: {e}")

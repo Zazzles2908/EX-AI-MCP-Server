@@ -1,6 +1,0 @@
-# Security - Keep all secrets hidden
-secrets/
-*.secret
-*.key
-*.pem
-SECRETS.md

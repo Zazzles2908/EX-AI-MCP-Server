@@ -55,7 +55,7 @@ A production-ready MCP (Model Context Protocol) server with intelligent routing 
 | **Understand the system** | [docs/01_Core_Architecture/01_System_Overview.md](docs/01_Core_Architecture/01_System_Overview.md) |
 | **Use the tools** | [docs/02_Service_Components/EXAI_TOOL_DECISION_GUIDE.md](docs/02_Service_Components/EXAI_TOOL_DECISION_GUIDE.md) |
 | **Configure features** | [docs/01_Core_Architecture/02_SDK_Integration.md](docs/01_Core_Architecture/02_SDK_Integration.md) |
-| **Deploy to production** | [docs/02_Service_Components/02_Docker.md](docs/02_Service_Components/02_Docker.md) |
+| **Deploy to production** | [docker-compose.yml](docker-compose.yml) |
 | **Troubleshoot issues** | [docs/guides/](docs/guides/) |
 | **See current status** | [docs/reports/EXAI_MCP_STATUS_REPORT.md](docs/reports/EXAI_MCP_STATUS_REPORT.md) |
 | **Track current work** | [docs/fix_implementation/WEEKLY_FIX_ROADMAP_2025-10-20.md](docs/fix_implementation/WEEKLY_FIX_ROADMAP_2025-10-20.md) |
