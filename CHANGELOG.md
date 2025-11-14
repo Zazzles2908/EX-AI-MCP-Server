@@ -7,6 +7,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [6.1.0] - 2025-11-14
+
+### Added - OPTION 3: NATIVE MCP SERVER INTEGRATION
+- **Native MCP Server**: Implemented direct MCP protocol support without shim layer
+  - Created dual-mode operation: --mode stdio, --mode websocket, --mode both
+  - Integrated `src/daemon/mcp_server.py` into main daemon process
+  - Native stdio support for direct Claude Code connection
+
+- **CLI Argument Parsing**: Added command-line mode selection
+  - `--mode websocket`: Custom EXAI WebSocket protocol (legacy mode)
+  - `--mode stdio`: Native MCP protocol over stdio (NEW)
+  - `--mode both`: Dual protocol support (NEW)
+  - Parsing implemented in `src/daemon/ws_server.py:590-600`
+
+- **Docker Integration**: Added dedicated MCP stdio service
+  - New service: `exai-mcp-stdio` in docker-compose.yml
+  - Runs native MCP server with stdin_open and tty enabled
+  - Depends on Redis for conversation storage
+  - Command: `python -m src.daemon.ws_server --mode stdio`
+
+- **Claude Code Configuration**: Updated .mcp.json for direct connection
+  - Changed from WebSocket shim to direct Docker exec
+  - Command: `docker exec -i exai-mcp-stdio python -m src.daemon.ws_server --mode stdio`
+  - Eliminates protocol translation layer
+
+### Fixed - CRITICAL ISSUES (4 FIXES)
+1. **Threading Lock in Async Context**: Fixed blocking event loop
+   - Changed `threading.Lock()` to `asyncio.Lock()` in ws_server.py:386
+   - Updated all cache operations to use async context managers
+   - Prevents deadlocks in concurrent operations
+
+2. **Config Validation Crash**: Fixed NoneType error
+   - Added null check before .startswith() in config.py:61
+   - SUPABASE_URL now optional with warning instead of crash
+   - Allows server startup without Supabase credentials
+
+3. **Duplicate Exception Handling**: Removed unreachable code
+   - Deleted duplicate OSError exception block (ws_server.py:887-897)
+   - Cleaned up dead code from previous refactoring
+
+4. **Timeout Configuration**: Consolidated duplicate definitions
+   - Unified WORKFLOW_TOOL_TIMEOUT_SECS (46s in production, 45s in operations.py)
+   - Updated operations.py default to match production (46s)
+   - Single source of truth for timeout configuration
+
+### Changed - SYSTEM ARCHITECTURE
+- **Multi-Protocol Support**: Daemon now handles both protocols
+  - WebSocket server on port 3010 for custom EXAI protocol
+  - Native MCP server over stdio for MCP clients
+  - Both can run simultaneously in "both" mode
+
+- **Process Model**: Simplified deployment
+  - Option A: Run both protocols in single daemon process
+  - Option B: Run native MCP server in dedicated container
+  - Eliminates separate shim process dependency
+
+### Documentation Added
+- **Comprehensive Analysis**: Created `docs/external-reviews/COMPREHENSIVE_SYSTEM_ANALYSIS.md`
+  - Complete audit of codebase
+  - Critical issues identification
+  - Technical debt analysis
+  - Step-by-step fix instructions
+
+- **Quick Fix Guide**: Created `docs/external-reviews/QUICK_FIX_CHECKLIST.md`
+  - Ready-to-execute commands
+  - Testing procedures
+  - Completion criteria
+
+### Verified
+- ✅ Python syntax validation: All files compile successfully
+- ✅ CLI argument parsing: Help message works correctly
+- ✅ Docker configuration: New service added to docker-compose.yml
+- ✅ MCP configuration: .mcp.json updated for direct connection
+- ✅ All critical issues: 4/4 fixed
+- ✅ Option 3 integration: Fully implemented
+
+### Breaking Changes
+- **MCP Connection**: Claude Code must use new Docker exec command
+- **Daemon Startup**: New --mode parameter controls protocol selection
+- **Process Architecture**: No longer requires separate shim process
+
+---
+
 ## [6.0.0] - 2025-11-14
 
 ### Changed - MAJOR DOCUMENTATION CONSOLIDATION

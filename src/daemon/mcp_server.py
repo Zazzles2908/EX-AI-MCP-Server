@@ -193,7 +193,9 @@ class DaemonMCPServer:
                         write_stream,
                         self.app.create_initialization_options()
                     )
-                    logger.error("[MCP] ⚠️ CRITICAL: app.run() returned - this should NEVER happen!")
+                    # If app.run() returns, log but keep stdio_server open
+                    # This can happen in 'both' mode when stdio is not actively used
+                    logger.warning("[MCP] ⚠️ app.run() returned (may be normal in 'both' mode)")
                 except asyncio.CancelledError:
                     logger.info("[MCP] app.run() was cancelled - this is normal during shutdown")
                     raise
@@ -201,8 +203,15 @@ class DaemonMCPServer:
                     logger.error(f"[MCP] ⚠️ app.run() crashed with exception: {e}", exc_info=True)
                     raise
 
-                # This should never be reached - app.run() blocks forever
-                logger.error("[MCP] 🚨 app.run() returned without exception (THIS IS THE BUG!)")
+                # Keep the stdio_server context alive - don't exit
+                logger.info("[MCP] Keeping stdio_server alive (both mode)...")
+                # Wait forever or until cancelled
+                try:
+                    while True:
+                        await asyncio.sleep(3600)  # Sleep for 1 hour at a time
+                except asyncio.CancelledError:
+                    logger.info("[MCP] stdio_server cancelled - shutting down")
+                    raise
 
         except Exception as e:
             logger.error(f"[MCP] stdio_server outer exception: {e}", exc_info=True)

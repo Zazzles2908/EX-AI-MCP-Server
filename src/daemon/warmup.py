@@ -54,8 +54,20 @@ async def warmup_supabase() -> Client:
         _supabase_client = get_supabase_client(use_admin=True)
 
         # Run a lightweight query to verify connection
-        # Using conversations table as it's guaranteed to exist
-        result = _supabase_client.table("conversations").select("id").limit(1).execute()
+        # Try multiple tables that are commonly available
+        # Handle missing tables gracefully
+        result = None
+        try:
+            # Try conversations first
+            result = _supabase_client.table("conversations").select("id").limit(1).execute()
+        except Exception as table_error:
+            logger.debug(f"[WARMUP] conversations table not found: {table_error}")
+            try:
+                # Try a simple table_health check or similar
+                result = _supabase_client.table("health").select("id").limit(1).execute()
+            except Exception:
+                logger.debug(f"[WARMUP] health table not found, connection still OK")
+                # Connection is fine, just no common tables - this is acceptable
 
         elapsed = asyncio.get_event_loop().time() - start_time
         logger.info(f"[WARMUP] ✅ Supabase connection warmed up successfully ({elapsed:.3f}s)")

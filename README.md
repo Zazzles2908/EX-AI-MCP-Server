@@ -1,12 +1,24 @@
-# EX-AI MCP Server - Production-Ready v2.3
+# EX-AI MCP Server - Production-Ready v6.1.0
 
-![Twin Entry-Points](https://img.shields.io/badge/twin--entry--points-safe-brightgreen)
+![Native MCP](https://img.shields.io/badge/native--mcp-server-v6.1.0-brightgreen)
 ![Tool Count](https://img.shields.io/badge/tools-29-blue)
 ![Python](https://img.shields.io/badge/python-3.13-blue)
-![Phase A](https://img.shields.io/badge/Phase%20A-Complete-brightgreen)
-![Phase B](https://img.shields.io/badge/Phase%20B-Complete-brightgreen)
-![Phase C](https://img.shields.io/badge/Phase%20C-Complete-brightgreen)
-![Phase 2.6-2.7](https://img.shields.io/badge/Phase%202.6--2.7-In%20Progress-blue)
+![Dual Protocol](https://img.shields.io/badge/dual--protocol-WebSocket+%2B+MCP-brightgreen)
+![Mode Support](https://img.shields.io/badge/mode--support-stdio%7Cwebsocket%7Cboth-blue)
+
+> **Version 6.1.0 (2025-11-14): Native MCP Server Integration** 🚀
+>
+> **MAJOR UPDATE - Option 3 Implementation:**
+> - ✅ **Native MCP Server**: Direct MCP protocol support without shim layer
+> - ✅ **Dual-Mode Operation**: `--mode stdio`, `--mode websocket`, `--mode both`
+> - ✅ **Docker Integration**: New `exai-mcp-stdio` service for native MCP
+> - ✅ **Critical Fixes**: 4 critical issues resolved (threading locks, config validation, etc.)
+> - ✅ **Simplified Architecture**: Eliminates protocol translation overhead
+>
+> **Quick Start (v6.1.0+):**
+> ```bash
+> docker-compose up -d exai-mcp-stdio
+> ```
 
 > **2025-11-01 Phase 2.6-2.7: WebSocket → Supabase Realtime Migration** 🚀
 >

@@ -1,7 +1,7 @@
 # EX-AI-MCP-Server - Claude Code Configuration
 **Last Updated**: 2025-11-14
-**Status**: WebSocket MCP Server Development Platform 🚀
-**Version**: 2.4 (Documentation & Agent Workflow Standards)
+**Status**: Dual-Protocol MCP Server (WebSocket + Native STDIO) 🚀
+**Version**: 2.5 (Native MCP Server Integration)
 
 ---
 
@@ -51,12 +51,18 @@ c:\Project\EX-AI-MCP-Server\
 ```
 
 ### **Critical Files (DO NOT MODIFY WITHOUT CARE):**
-- `scripts/runtime/run_ws_shim.py` - MCP stdio bridge
-- `scripts/runtime/start_ws_shim_safe.py` - Wrapper script (FIXED for stdout)
+- `src/daemon/ws_server.py` - Main daemon with dual-mode support (FIXED v6.1.0)
+- `src/daemon/mcp_server.py` - Native MCP server implementation
 - `src/providers/base.py` - ModelCapabilities class (FIXED)
-- `.mcp.json` - MCP client configuration
+- `docker-compose.yml` - Container orchestration (UPDATED v6.1.0)
+- `.mcp.json` - MCP client configuration (UPDATED v6.1.0)
 - `.env` - Local environment variables
 - `.env.docker` - Container environment variables
+
+### **Legacy Files (Deprecated in v6.1.0):**
+- `scripts/runtime/run_ws_shim.py` - WebSocket shim (NO LONGER USED)
+- `scripts/runtime/start_ws_shim_safe.py` - Shim wrapper (NO LONGER USED)
+- These are kept for backward compatibility but native MCP is recommended
 
 ---
 
@@ -75,6 +81,33 @@ This project implements:
 
 ### System Architecture
 
+The system now supports **TWO MODES** of operation:
+
+#### Mode 1: Native MCP Server (RECOMMENDED - Version 6.1.0+)
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Claude Code (MCP Client)                                    │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼ (Native MCP over STDIO)
+┌─────────────────────────────────────────────────────────────┐
+│  EX-AI Daemon - Native MCP Server (docker exec)             │
+│  • Direct MCP protocol (no translation)                     │
+│  • Provider Integration (GLM, KIMI, MiniMax)                │
+│  • Tool Execution                                           │
+│  • Route Management                                         │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+         ┌───────────┴───────────┐
+         ▼                       ▼
+    AI Providers            Tool Ecosystem
+    • GLM                   • Analysis Tools
+    • KIMI                  • Planning Tools
+    • MiniMax               • Routing Intelligence
+```
+
+#### Mode 2: WebSocket Shim (LEGACY - Still Supported)
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Claude Code (MCP Client)                                    │
@@ -83,7 +116,7 @@ This project implements:
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  WebSocket Shim (Port 3005) - run_ws_shim.py                │
-│  • Protocol Translation                                     │
+│  • Protocol Translation (MCP ↔ WebSocket)                   │
 │  • Message Routing                                          │
 │  • Session Management                                       │
 └────────────────────┬────────────────────────────────────────┘
@@ -109,7 +142,8 @@ This project implements:
 
 | Port | Service | Purpose |
 |------|---------|---------|
-| 3005 | WebSocket Shim | MCP client connections |
+| STDIO | Native MCP | Direct MCP protocol (no port needed) |
+| 3005 | WebSocket Shim | MCP client connections (legacy) |
 | 3010 | EX-AI Daemon | Internal WebSocket daemon |
 | 3001 | Monitoring Dashboard | Web UI for system status |
 | 3002 | Health Check | HTTP health endpoint |
@@ -119,28 +153,41 @@ This project implements:
 
 ## 🛠️ Available MCP Tools
 
-### Current Status ⚠️
+### Current Status ✅
 - ✅ **git-mcp** - Connected (uvx version)
 - ✅ **sequential-thinking** - Connected
 - ✅ **memory-mcp** - Connected
-- ❌ **exai-mcp** - Failed (check if daemon is running)
+- ✅ **exai-mcp** - Native MCP Server (Version 6.1.0+)
 - ❌ **filesystem-mcp** - Failed (check npx dependencies)
 - ❌ **mermaid-mcp** - Failed (check package installation)
 
 ### Tool Details
 
-#### 1. exai-mcp (⚠️ Requires Daemon)
-**Purpose**: The core WebSocket MCP server
-**Command**: Python WebSocket shim
+#### 1. exai-mcp (✅ Native MCP Server - Version 6.1.0+)
+**Purpose**: Native MCP server with direct protocol support
+**Command**: Docker exec with native MCP protocol
 **Configuration**:
-- Port: 3010 (daemon) / 3005 (shim)
+- Mode: Native MCP over STDIO (no protocol translation)
+- Container: exai-mcp-stdio
+- Command: `docker exec -i exai-mcp-stdio python -m src.daemon.ws_server --mode stdio`
 - Environment: Full GLM, KIMI, MiniMax config
-- Token: Configured for authentication
+
+**Available Modes**:
+- `--mode stdio`: Native MCP protocol (RECOMMENDED)
+- `--mode websocket`: Legacy WebSocket protocol
+- `--mode both`: Dual protocol support
 
 **Troubleshooting**:
-- Check if Docker daemon is running: `docker ps | grep exai-mcp-server`
-- Verify port 3010 is open: `curl http://127.0.0.1:3002/health`
-- Check .venv activation: Ensure `C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe` exists
+- Check if Docker daemon is running: `docker ps | grep exai-mcp-stdio`
+- Start native MCP server: `docker-compose up -d exai-mcp-stdio`
+- Verify health: `curl http://127.0.0.1:3002/health`
+- Test native MCP: `echo '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | docker exec -i exai-mcp-stdio python -m src.daemon.ws_server --mode stdio`
+
+**Changes in v6.1.0**:
+- ✅ Eliminated WebSocket shim layer (scripts/runtime/run_ws_shim.py)
+- ✅ Direct MCP protocol support over STDIO
+- ✅ Native stdio with docker exec
+- ✅ Dual-mode operation (stdio/websocket/both)
 
 #### 2. git-mcp (✅ Working)
 **Purpose**: Version control operations
@@ -280,8 +327,11 @@ This project implements:
 
 ### Starting the System
 ```bash
-# Start EX-AI-MCP-Server
+# Option 1: Start native MCP server (RECOMMENDED - v6.1.0+)
 cd C:/Project/EX-AI-MCP-Server
+docker-compose up -d exai-mcp-stdio
+
+# Option 2: Start dual-mode daemon (WebSocket + MCP)
 docker-compose up -d exai-mcp-server
 
 # Verify startup
@@ -289,29 +339,47 @@ docker-compose ps
 curl http://127.0.0.1:3002/health
 ```
 
-### Checking MCP Status
+### Native MCP Server Commands (v6.1.0+)
+```bash
+# Start native MCP server
+docker-compose up -d exai-mcp-stdio
+
+# Test native MCP protocol
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | \
+docker exec -i exai-mcp-stdio python -m src.daemon.ws_server --mode stdio
+
+# List tools via native MCP
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | \
+docker exec -i exai-mcp-stdio python -m src.daemon.ws_server --mode stdio
+
+# Check MCP server logs
+docker-compose logs -f exai-mcp-stdio
+```
+
+### Dual-Mode Daemon Commands
+```bash
+# Start in different modes
+python -m src.daemon.ws_server --mode stdio      # Native MCP only
+python -m src.daemon.ws_server --mode websocket  # WebSocket only
+python -m src.daemon.ws_server --mode both       # Both protocols
+
+# With Docker
+docker exec exai-mcp-server python -m src.daemon.ws_server --mode stdio
+```
+
+### Checking System Status
 ```bash
 # All services
 docker-compose ps
 
-# Logs
+# Logs (native MCP server)
+docker-compose logs -f exai-mcp-stdio
+
+# Logs (dual-mode daemon)
 docker-compose logs -f exai-mcp-server
-docker-compose logs -f ws-shim
 
-# Health
+# Health check
 curl http://127.0.0.1:3002/health
-```
-
-### Testing Protocol
-```bash
-# Test WebSocket connection
-python scripts/ws/ws_chat_once.py
-
-# Test MCP protocol
-python scripts/validate_mcp_connection.py
-
-# Full test suite
-python scripts/run_all_tests.py
 ```
 
 ### Debugging Tools
@@ -447,6 +515,39 @@ EXPERT_ANALYSIS_TIMEOUT_SECS=60
 ```
 
 ### MCP Configuration (.mcp.json)
+
+#### Version 6.1.0+ Configuration (Native MCP Server)
+```json
+{
+  "mcpServers": {
+    "exai-mcp": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "exai-mcp-stdio",
+        "python",
+        "-m",
+        "src.daemon.ws_server",
+        "--mode",
+        "stdio"
+      ],
+      "env": {
+        "ENV_FILE": "C:/Project/EX-AI-MCP-Server/.env.docker",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONIOENCODING": "utf-8"
+      }
+    },
+    "filesystem-mcp": { ... },
+    "git-mcp": { ... },
+    "sequential-thinking": { ... },
+    "memory-mcp": { ... },
+    "mermaid-mcp": { ... }
+  }
+}
+```
+
+#### Legacy Configuration (WebSocket Shim - Deprecated)
 ```json
 {
   "mcpServers": {
@@ -459,17 +560,12 @@ EXPERT_ANALYSIS_TIMEOUT_SECS=60
         "EXAI_WS_TOKEN": "pYf69sHNkOYlYLRTJfMrxCQghO5OJOUFbUxqaxp9Zxo",
         ...
       }
-    },
-    "filesystem-mcp": { ... },
-    "git-mcp": { ... },
-    "sequential-thinking": { ... },
-    "memory-mcp": { ... },
-    "mermaid-mcp": { ... }
+    }
   }
 }
 ```
 
-**Note**: Currently 3 MCPs connected, 3 MCPs failing. See "Current Issues" below.
+**Note**: Version 6.1.0+ uses native MCP server. Status: 4 MCPs connected ✅, 2 MCPs failing.
 
 ---
 

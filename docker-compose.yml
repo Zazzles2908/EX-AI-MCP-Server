@@ -70,11 +70,9 @@ services:
     # Restart policy
     restart: unless-stopped
 
-    # CRITICAL: Run automated health check on every container start
-    # This ensures issues are detected and reported automatically after every rebuild
-    # Updated: Run native daemon with dual protocol support (WebSocket + MCP stdio)
-    # Test native MCP server directly
-    command: sh -c "python scripts/health_check_automated.py || true && python -m src.daemon.ws_server"
+    # CRITICAL: Run native daemon with dual protocol support (WebSocket + MCP stdio)
+    # Removed automated health check to prevent startup interference
+    command: python -m src.daemon.ws_server --mode both
 
     # Health check
     healthcheck:

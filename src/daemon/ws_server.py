@@ -45,6 +45,9 @@ from src.daemon.connection_manager import get_connection_manager
 from src.resilience.rate_limiter import get_rate_limiter
 
 from src.providers.registry_core import get_registry_instance
+# Import registry functions
+from tools.registry import get_tool_registry
+
 # PHASE 4 (2025-10-19): Import resilient WebSocket manager for connection resilience
 from src.monitoring.resilient_websocket import ResilientWebSocketManager
 
@@ -253,8 +256,6 @@ from src.server import register_provider_specific_tools  # type: ignore
 
 # Import registry from core - the old registry import is removed
 # from src.providers.base import ProviderType  # type: ignore
-
-from tools.registry import get_tool_registry
 
 # Import TimeoutConfig for coordinated timeout hierarchy
 from config import TimeoutConfig
@@ -608,6 +609,9 @@ async def main_async() -> None:
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
 
+    # CRITICAL: Prevent async logging cleanup until daemon is shutting down
+    logger.info("🔧 Daemon startup initiated...")
+
     # Parse command line arguments
     args = parse_args()
     logger.info(f"Starting in mode: {args.mode}")
@@ -874,9 +878,35 @@ async def main_async() -> None:
         # Start native MCP server if needed
         if args.mode in ["stdio", "both"]:
             logger.info(f"  - Native MCP server: stdio (MCP protocol)")
-            mcp_server = DaemonMCPServer(tool_registry, provider_registry)
-            mcp_task = asyncio.create_task(mcp_server.run_stdio())
-            tasks.append(mcp_task)
+            try:
+                # Verify registries are functional
+                provider_registry = get_registry_instance()
+                tool_registry = get_tool_registry()
+
+                if provider_registry is None or tool_registry is None:
+                    raise ValueError("Registries not properly initialized")
+
+                mcp_server = DaemonMCPServer(tool_registry, provider_registry)
+
+                # CRITICAL: Don't await the MCP server task - let it run in background
+                if args.mode == "stdio":
+                    # For stdio mode, this is the ONLY task
+                    mcp_task = asyncio.create_task(mcp_server.run_stdio())
+                    logger.info("✅ Native MCP server started (stdio mode)")
+                    tasks.append(mcp_task)
+                else:
+                    # For 'both' mode, start MCP server without blocking
+                    mcp_task = asyncio.create_task(mcp_server.run_stdio())
+                    logger.info("✅ Native MCP server started (both mode)")
+                    tasks.append(mcp_task)
+
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize native MCP server: {e}")
+                if args.mode == "stdio":
+                    raise  # Critical for stdio mode
+                else:
+                    logger.warning("⚠️ Continuing without MCP server in 'both' mode")
+                    # Don't add to tasks, just continue without it
 
         # Week 3 Fix #15 (2025-10-21): Start background tasks using extracted modules
         # Start health monitoring tasks
@@ -932,19 +962,24 @@ async def main_async() -> None:
         shutdown_async_logging()
 
 
-def main() -> None:
+def main():
+    """Main entry point - handles all async context properly."""
+    # CRITICAL: Always create a new event loop for daemon processes
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     try:
-        # Check if we're already in an event loop
-        loop = asyncio.get_running_loop()
-        logger.warning("[MAIN] Already in event loop, creating task")
-        # If already in a loop, create a task instead
-        import warnings
-        warnings.warn("main() called from within an async context. Use await main_async() directly instead.")
-        # For now, just run it anyway - this may cause the double-run error
-        asyncio.run(main_async())
-    except RuntimeError:
-        # No event loop running, safe to use asyncio.run()
-        asyncio.run(main_async())
+        # Run the async main function in the new loop
+        loop.run_until_complete(main_async())
+    except KeyboardInterrupt:
+        logger.info("🛑 Interrupted by user")
+    except Exception as e:
+        logger.error(f"❌ Fatal error in main: {e}")
+        raise
+    finally:
+        # Clean up the loop
+        if not loop.is_running():
+            loop.close()
 
 
 if __name__ == "__main__":
