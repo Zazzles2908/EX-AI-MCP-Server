@@ -421,7 +421,7 @@ class ToolExecutor:
         outputs: Optional[list],
         resilient_ws_manager=None
     ) -> None:
-        """Send streaming completion message and final tool result to the client.
+        """Send final tool result after streaming completes.
 
         Args:
             ws: WebSocket connection
@@ -430,20 +430,9 @@ class ToolExecutor:
             resilient_ws_manager: WebSocket manager
         """
         try:
-            # Send stream completion first
-            await _safe_send(
-                ws,
-                {
-                    "op": "stream_complete",
-                    "request_id": req_id,
-                    "timestamp": log_timestamp()
-                },
-                resilient_ws_manager=resilient_ws_manager
-            )
-            logger.debug(f"Stream completion sent for {req_id}")
-
-            # Send the final tool result
+            # Send the final tool result (replaces stream_complete + call_tool_res)
             if outputs is not None:
+                logger.info(f"Sending final tool result for {req_id}, outputs type: {type(outputs)}, len: {len(outputs) if isinstance(outputs, list) else 'N/A'}")
                 await _safe_send(
                     ws,
                     {
@@ -453,6 +442,6 @@ class ToolExecutor:
                     },
                     resilient_ws_manager=resilient_ws_manager
                 )
-                logger.debug(f"Final tool result sent for {req_id}, outputs type: {type(outputs)}, len: {len(outputs) if isinstance(outputs, list) else 'N/A'}")
+                logger.info(f"Final tool result sent successfully for {req_id}")
         except Exception as e:
-            logger.debug(f"Stream completion send failed: {e}")
+            logger.error(f"Stream completion send failed: {e}", exc_info=True)

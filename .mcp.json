@@ -1,19 +1,21 @@
 {
   "mcpServers": {
     "exai-mcp": {
-      "command": "C:/Project/EX-AI-MCP-Server/.venv/Scripts/python.exe",
+      "command": "docker",
       "args": [
-        "-u",
-        "scripts/runtime/run_ws_shim.py"
+        "exec",
+        "-i",
+        "exai-mcp-stdio",
+        "python",
+        "-m",
+        "src.daemon.ws_server",
+        "--mode",
+        "stdio"
       ],
       "env": {
-        "EXAI_WS_PORT": "3010",
-        "SHIM_LISTEN_PORT": "3005",
-        "EXAI_WS_TOKEN": "pYf69sHNkOYlYLRTJfMrxCQghO5OJOUFbUxqaxp9Zxo",
         "ENV_FILE": "C:/Project/EX-AI-MCP-Server/.env.docker",
         "PYTHONUNBUFFERED": "1",
-        "PYTHONIOENCODING": "utf-8",
-        "LOG_LEVEL": "INFO"
+        "PYTHONIOENCODING": "utf-8"
       }
     },
     "filesystem-mcp": {

@@ -48,6 +48,9 @@ from src.providers.registry_core import get_registry_instance
 # PHASE 4 (2025-10-19): Import resilient WebSocket manager for connection resilience
 from src.monitoring.resilient_websocket import ResilientWebSocketManager
 
+# Import native MCP server for Option 3 integration
+from src.daemon.mcp_server import DaemonMCPServer
+
 # Week 2 Fix #8 (2025-10-21): Import standardized error handling
 from src.daemon.error_handling import (
     ErrorCode,
@@ -382,14 +385,14 @@ _results_cache: dict[str, dict] = {}
 # Cache by semantic call key (tool name + normalized arguments) to survive req_id changes across reconnects
 _results_cache_by_key: dict[str, dict] = {}
 _inflight_reqs: set[str] = set()
-# Lock for thread-safe access to results cache
-_results_cache_lock = threading.Lock()
+# Lock for async-safe access to results cache
+_results_cache_lock = asyncio.Lock()
 
 
 
-def _gc_results_cache() -> None:
+async def _gc_results_cache() -> None:
     try:
-        with _results_cache_lock:
+        async with _results_cache_lock:
             now = time.time()
             expired = [rid for rid, rec in _results_cache.items() if now - rec.get("t", 0) > RESULT_TTL_SECS]
             for rid in expired:
@@ -402,14 +405,14 @@ def _gc_results_cache() -> None:
         # Continue - cache cleanup failure is not critical for current request
 
 
-def _store_result(req_id: str, payload: dict) -> None:
-    with _results_cache_lock:
+async def _store_result(req_id: str, payload: dict) -> None:
+    async with _results_cache_lock:
         _results_cache[req_id] = {"t": time.time(), "payload": payload}
-        _gc_results_cache()
+        await _gc_results_cache()
 
 
-def _get_cached_result(req_id: str) -> dict | None:
-    with _results_cache_lock:
+async def _get_cached_result(req_id: str) -> dict | None:
+    async with _results_cache_lock:
         rec = _results_cache.get(req_id)
         if not rec:
             return None
@@ -460,14 +463,14 @@ async def _cleanup_inflight(call_key: str) -> None:
         await _inflight_meta_cache.pop(call_key)
 
 
-def _store_result_by_key(call_key: str, outputs: list[dict]) -> None:
-    with _results_cache_lock:
+async def _store_result_by_key(call_key: str, outputs: list[dict]) -> None:
+    async with _results_cache_lock:
         _results_cache_by_key[call_key] = {"t": time.time(), "outputs": outputs}
-        _gc_results_cache()
+        await _gc_results_cache()
 
 
-def _get_cached_by_key(call_key: str) -> list[dict] | None:
-    with _results_cache_lock:
+async def _get_cached_by_key(call_key: str) -> list[dict] | None:
+    async with _results_cache_lock:
         rec = _results_cache_by_key.get(call_key)
         if not rec:
             return None
@@ -587,10 +590,27 @@ async def start_http_servers():
     # For now, keeping it minimal with just the health check
 
 
+def parse_args():
+    """Parse command line arguments."""
+    import argparse
+    parser = argparse.ArgumentParser(description="EXAI MCP Server")
+    parser.add_argument(
+        "--mode",
+        choices=["websocket", "stdio", "both"],
+        default="both",
+        help="Server mode: websocket (custom protocol), stdio (MCP native), both (dual mode)"
+    )
+    return parser.parse_args()
+
+
 async def main_async() -> None:
     global STARTED_AT
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
+
+    # Parse command line arguments
+    args = parse_args()
+    logger.info(f"Starting in mode: {args.mode}")
 
     # Start HTTP servers in the background
     logger.info("Starting HTTP monitoring servers...")
@@ -830,60 +850,65 @@ async def main_async() -> None:
         logger.exception(f"[DEBUG] Full traceback:")
         raise
 
-    logger.info(f"Starting EXAI MCP WebSocket daemon...")
-    logger.info(f"  - WebSocket server: ws://{EXAI_WS_HOST}:{EXAI_WS_PORT} (EXAI custom protocol)")
+    logger.info(f"Starting EXAI MCP daemon in '{args.mode}' mode...")
+
+    tasks = []
 
     try:
-        logger.debug("About to enter websockets.serve context manager...")
-
-        # Start both WebSocket server and native MCP server concurrently
-        async with websockets.serve(
-            _connection_wrapper,  # Handles post-handshake protocol errors
-            EXAI_WS_HOST,
-            EXAI_WS_PORT,
-            max_size=MAX_MSG_BYTES,
-            ping_interval=PING_INTERVAL,
-            ping_timeout=PING_TIMEOUT,
-            # Week 3 Fix #12 (2025-10-21): Use validated close timeout
-            close_timeout=float(_validated_env["EXAI_WS_CLOSE_TIMEOUT"]),
-        ) as ws_server:
+        # Start WebSocket server if needed
+        if args.mode in ["websocket", "both"]:
+            logger.info(f"  - WebSocket server: ws://{EXAI_WS_HOST}:{EXAI_WS_PORT} (EXAI custom protocol)")
+            ws_server = await websockets.serve(
+                _connection_wrapper,  # Handles post-handshake protocol errors
+                EXAI_WS_HOST,
+                EXAI_WS_PORT,
+                max_size=MAX_MSG_BYTES,
+                ping_interval=PING_INTERVAL,
+                ping_timeout=PING_TIMEOUT,
+                # Week 3 Fix #12 (2025-10-21): Use validated close timeout
+                close_timeout=float(_validated_env["EXAI_WS_CLOSE_TIMEOUT"]),
+            )
             logger.info(f"✅ WebSocket server successfully started and listening on ws://{EXAI_WS_HOST}:{EXAI_WS_PORT}")
-            logger.debug(f"WebSocket server object: {ws_server}")
+            tasks.append(asyncio.create_task(ws_server.wait_closed()))
 
-            # Week 3 Fix #15 (2025-10-21): Start background tasks using extracted modules
-            # Start health monitoring tasks
-            logger.debug("Starting health monitoring tasks...")
-            health_writer_task, semaphore_health_task = health_monitor.start_monitoring_tasks(stop_event)
+        # Start native MCP server if needed
+        if args.mode in ["stdio", "both"]:
+            logger.info(f"  - Native MCP server: stdio (MCP protocol)")
+            mcp_server = DaemonMCPServer(tool_registry, provider_registry)
+            mcp_task = asyncio.create_task(mcp_server.run_stdio())
+            tasks.append(mcp_task)
 
-            # Start session cleanup task
-            logger.debug("Starting session cleanup task...")
-            session_cleanup_task = asyncio.create_task(session_handler.start_periodic_cleanup(stop_event))
+        # Week 3 Fix #15 (2025-10-21): Start background tasks using extracted modules
+        # Start health monitoring tasks
+        logger.debug("Starting health monitoring tasks...")
+        health_writer_task, semaphore_health_task = health_monitor.start_monitoring_tasks(stop_event)
 
-            logger.info("[BACKGROUND_TASKS] Started health monitoring and session cleanup tasks")
+        # Start session cleanup task
+        logger.debug("Starting session cleanup task...")
+        session_cleanup_task = asyncio.create_task(session_handler.start_periodic_cleanup(stop_event))
+
+        logger.info("[BACKGROUND_TASKS] Started health monitoring and session cleanup tasks")
+
+        if args.mode == "websocket":
             logger.info("🚀 EXAI MCP daemon ready - WebSocket protocol active")
+        elif args.mode == "stdio":
+            logger.info("🚀 EXAI MCP daemon ready - Native MCP protocol active")
+        else:
+            logger.info("🚀 EXAI MCP daemon ready - Dual mode (WebSocket + MCP) active")
 
-            # Wait for shutdown signal
+            # Wait for shutdown signal or any server task to complete
             logger.debug("Waiting for shutdown signal...")
             try:
+                # Add stop_event to tasks
+                all_tasks = tasks + [asyncio.create_task(stop_event.wait())]
                 await asyncio.wait(
-                    [asyncio.create_task(stop_event.wait())],
+                    all_tasks,
                     return_when=asyncio.FIRST_COMPLETED
                 )
             except Exception as e:
                 logger.error(f"Error in server wait loop: {e}", exc_info=True)
                 raise
 
-    except OSError as e:
-        # Friendly message on address-in-use
-        if getattr(e, "errno", None) in (98, 10048):  # 98=EADDRINUSE (POSIX), 10048=WSAEADDRINUSE (Windows)
-            logger.error(
-                "Address already in use: ws://%s:%s. A daemon is likely already running. "
-                "Use scripts/run_ws_shim.py to connect, or stop the existing daemon. See logs/mcp_server.log and logs/ws_daemon.health.json.",
-                EXAI_WS_HOST,
-                EXAI_WS_PORT,
-            )
-            return
-        raise
     except OSError as e:
         # Friendly message on address-in-use
         if getattr(e, "errno", None) in (98, 10048):  # 98=EADDRINUSE (POSIX), 10048=WSAEADDRINUSE (Windows)

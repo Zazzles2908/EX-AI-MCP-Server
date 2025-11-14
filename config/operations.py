@@ -71,7 +71,7 @@ class OperationsConfig(BaseConfig):
     # ============================================================================
     # Tool-level timeouts (primary)
     SIMPLE_TOOL_TIMEOUT_SECS: int = BaseConfig.get_int("SIMPLE_TOOL_TIMEOUT_SECS", 30)
-    WORKFLOW_TOOL_TIMEOUT_SECS: int = BaseConfig.get_int("WORKFLOW_TOOL_TIMEOUT_SECS", 45)
+    WORKFLOW_TOOL_TIMEOUT_SECS: int = BaseConfig.get_int("WORKFLOW_TOOL_TIMEOUT_SECS", 46)
     EXPERT_ANALYSIS_TIMEOUT_SECS: int = BaseConfig.get_int("EXPERT_ANALYSIS_TIMEOUT_SECS", 60)
 
     # Provider timeouts

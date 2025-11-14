@@ -58,10 +58,12 @@ class Config:
             ValueError: If configuration is invalid.
         """
         # Validate Supabase URL format
-        if not self.supabase_url.startswith(("http://", "https://")):
+        if self.supabase_url and not self.supabase_url.startswith(("http://", "https://")):
             raise ValueError(
                 f"SUPABASE_URL must start with http:// or https://, got: {self.supabase_url}"
             )
+        elif not self.supabase_url:
+            logger.warning("SUPABASE_URL not set - Supabase features will be unavailable")
 
         # Validate timeout hierarchy
         if self.tool_timeout_secs >= self.daemon_timeout_secs:

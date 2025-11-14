@@ -107,6 +107,64 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Native MCP server for direct Claude Code integration
+  exai-mcp-stdio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: exai-mcp-stdio
+    image: exai-mcp-server:latest
+
+    # Enable stdio for MCP native protocol
+    stdin_open: true
+    tty: true
+
+    # Environment variables (override .env.docker)
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONIOENCODING=utf-8
+      - TZ=Australia/Melbourne
+
+    # Mount .env.docker as .env in container
+    env_file:
+      - .env.docker
+
+    # Volume mounts for logs and docs
+    volumes:
+      - ./logs:/app/logs
+      - ./docs:/app/docs
+      - ./.env.docker:/app/.env:ro
+      # FILE UPLOAD FIX: Mount project root for file upload support
+      - c:\Project:/mnt/project:ro
+
+    # Depends on Redis for conversation storage
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Run native MCP server in stdio mode
+    command: python -m src.daemon.ws_server --mode stdio
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   # Redis service for conversation persistence
   redis:
     image: redis:7-alpine
