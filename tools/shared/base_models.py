@@ -22,11 +22,14 @@ logger = logging.getLogger(__name__)
 # Last Updated: 2025-10-25 - Enhanced with decision matrices and capability hints
 COMMON_FIELD_DESCRIPTIONS = {
     "model": (
-        "Model to use. Native models: 'auto', 'kimi-k2-0905-preview', 'kimi-k2-0711-preview', "
-        "'moonshot-v1-8k', 'moonshot-v1-32k', 'kimi-k2-turbo-preview', 'moonshot-v1-128k', "
+        "Model to use. PRIORITY ORDER: "
+        "K2 Thinking (PREMIUM): 'kimi-k2-thinking-turbo', 'kimi-k2-thinking', "
+        "K2 Standard: 'kimi-k2-0905-preview', 'kimi-k2-turbo-preview', 'kimi-k2-0711-preview', "
+        "Kimi Latest: 'kimi-latest', 'kimi-latest-128k', 'kimi-latest-32k', 'kimi-latest-8k', "
+        "Kimi Thinking: 'kimi-thinking-preview', "
+        "Moonshot (LEGACY - avoid): 'moonshot-v1-128k', 'moonshot-v1-32k', 'moonshot-v1-8k', "
         "'moonshot-v1-8k-vision-preview', 'moonshot-v1-32k-vision-preview', 'moonshot-v1-128k-vision-preview', "
-        "'kimi-latest', 'kimi-latest-8k', 'kimi-latest-32k', 'kimi-latest-128k', 'kimi-thinking-preview', "
-        "'glm-4.6', 'glm-4.5-flash', 'glm-4.5', 'glm-4.5-air', 'glm-4.5v'. "
+        "GLM: 'glm-4.6', 'glm-4.5-flash', 'glm-4.5', 'glm-4.5-air', 'glm-4.5v'. "
         "Use 'auto' to let the server select the best model. Defaults to 'glm-4.5-flash' if not specified."
     ),
     "temperature": (

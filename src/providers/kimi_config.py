@@ -14,9 +14,44 @@ logger = logging.getLogger(__name__)
 
 # Kimi Model Configurations
 # Last Verified: 2025-10-09 against https://platform.moonshot.ai/docs
+# REORGANIZED: K2 models first (best), moonshot-v1 last (legacy)
 SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
-    # Prioritize k2 preview models when allowed
-    # Source: https://platform.moonshot.ai/docs/pricing/chat
+    # ===== K2 POWERHOUSE MODELS (TOP PRIORITY) =====
+    # These are the premium models - use these first!
+
+    # K2 Thinking Models (Best of the best)
+    "kimi-k2-thinking-turbo": ModelCapabilities(
+        provider=ProviderType.KIMI,
+        model_name="kimi-k2-thinking-turbo",
+        friendly_name="Kimi K2 Thinking Turbo",
+        context_window=262144,  # 256K
+        max_output_tokens=8192,
+        supports_images=True,
+        max_image_size_mb=100.0,
+        supports_function_calling=True,
+        supports_streaming=True,
+        supports_system_prompts=True,
+        supports_extended_thinking=True,  # Key: Enable for thinking mode
+        description="Kimi K2 with extended thinking mode, high-speed (256K context)",
+        aliases=["kimi-k2-thinking-turbo", "kimi-thinking-k2-turbo"],
+    ),
+    "kimi-k2-thinking": ModelCapabilities(
+        provider=ProviderType.KIMI,
+        model_name="kimi-k2-thinking",
+        friendly_name="Kimi K2 Thinking",
+        context_window=262144,  # 256K
+        max_output_tokens=8192,
+        supports_images=True,
+        max_image_size_mb=100.0,
+        supports_function_calling=True,
+        supports_streaming=True,
+        supports_system_prompts=True,
+        supports_extended_thinking=True,  # Key: Enable for thinking mode
+        description="Kimi K2 with extended thinking mode (256K context)",
+        aliases=["kimi-k2-thinking", "kimi-thinking-k2"],
+    ),
+
+    # K2 Standard Models (High performance)
     "kimi-k2-0905-preview": ModelCapabilities(
         provider=ProviderType.KIMI,
         model_name="kimi-k2-0905-preview",
@@ -24,13 +59,28 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         context_window=262144,  # 256K = 262144 tokens (verified 2025-10-09 from platform.moonshot.ai)
         max_output_tokens=8192,
         supports_images=True,  # Supports vision
-        max_image_size_mb=20.0,
+        max_image_size_mb=100.0,
         supports_function_calling=True,  # Supports ToolCalls
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
         description="Kimi K2 2024-09 preview with 256K context and vision",
         aliases=["kimi-k2-0905", "kimi-k2"],
+    ),
+    "kimi-k2-turbo-preview": ModelCapabilities(
+        provider=ProviderType.KIMI,
+        model_name="kimi-k2-turbo-preview",
+        friendly_name="Kimi",
+        context_window=262144,  # 256K = 262144 tokens (verified 2025-10-09)
+        max_output_tokens=8192,
+        supports_images=True,  # Supports vision
+        max_image_size_mb=100.0,
+        supports_function_calling=True,  # Supports ToolCalls
+        supports_streaming=True,  # 60-100 tokens/sec
+        supports_system_prompts=True,
+        supports_extended_thinking=False,
+        description="Kimi K2 Turbo high-speed 256K (60-100 tokens/sec)",
+        aliases=["kimi-k2-turbo"],
     ),
     "kimi-k2-0711-preview": ModelCapabilities(
         provider=ProviderType.KIMI,
@@ -47,48 +97,95 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         description="Kimi K2 2024-07 preview with 128K context (no vision)",
         aliases=["kimi-k2-0711"],
     ),
-    # Canonical moonshot v1 series
-    "moonshot-v1-8k": ModelCapabilities(
+
+    # Kimi Latest Series (Good alternatives)
+    "kimi-latest": ModelCapabilities(
         provider=ProviderType.KIMI,
-        model_name="moonshot-v1-8k",
+        model_name="kimi-latest",
         friendly_name="Kimi",
-        context_window=8192,
-        max_output_tokens=2048,
-        supports_images=False,
-        supports_function_calling=False,
+        context_window=128000,
+        max_output_tokens=8192,
+        supports_images=True,
+        max_image_size_mb=100.0,
+        supports_function_calling=True,
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="Moonshot v1 8k",
+        description="Kimi latest vision 128k",
     ),
-    "moonshot-v1-32k": ModelCapabilities(
+    "kimi-thinking-preview": ModelCapabilities(
         provider=ProviderType.KIMI,
-        model_name="moonshot-v1-32k",
-        friendly_name="Kimi",
+        model_name="kimi-thinking-preview",
+        friendly_name="Kimi Thinking",
+        context_window=131072,  # 128K = 131072 tokens
+        max_output_tokens=8192,
+        supports_images=True,
+        max_image_size_mb=100.0,
+        supports_function_calling=True,
+        supports_streaming=True,
+        supports_system_prompts=True,
+        supports_extended_thinking=True,  # ✅ KEEP: Model DOES support extended thinking
+        description="Kimi multimodal reasoning 128k with extended thinking (reasoning_content field)",
+        aliases=["kimi-thinking"],
+    ),
+    "kimi-latest-128k": ModelCapabilities(
+        provider=ProviderType.KIMI,
+        model_name="kimi-latest-128k",
+        friendly_name="Kimi Latest 128K",
+        context_window=131072,  # 128K = 131072 tokens
+        max_output_tokens=8192,
+        supports_images=True,
+        max_image_size_mb=100.0,
+        supports_function_calling=True,
+        supports_streaming=True,
+        supports_system_prompts=True,
+        supports_extended_thinking=False,
+        description="Kimi latest vision 128k",
+    ),
+    "kimi-latest-32k": ModelCapabilities(
+        provider=ProviderType.KIMI,
+        model_name="kimi-latest-32k",
+        friendly_name="Kimi Latest 32K",
         context_window=32768,
         max_output_tokens=4096,
-        supports_images=False,
+        supports_images=True,
+        max_image_size_mb=100.0,
+        supports_function_calling=True,
+        supports_streaming=True,
+        supports_system_prompts=True,
+        supports_extended_thinking=False,
+        description="Kimi latest vision 32k",
+    ),
+    "kimi-latest-8k": ModelCapabilities(
+        provider=ProviderType.KIMI,
+        model_name="kimi-latest-8k",
+        friendly_name="Kimi Latest 8K",
+        context_window=8192,
+        max_output_tokens=2048,
+        supports_images=True,
+        max_image_size_mb=100.0,
+        supports_function_calling=True,
+        supports_streaming=True,
+        supports_system_prompts=True,
+        supports_extended_thinking=False,
+        description="Kimi latest vision 8k",
+    ),
+
+    # Moonshot v1 Series (LEGACY - Lowest Priority)
+    # These are kept for backward compatibility but should be avoided
+    "moonshot-v1-128k-vision-preview": ModelCapabilities(
+        provider=ProviderType.KIMI,
+        model_name="moonshot-v1-128k-vision-preview",
+        friendly_name="Kimi",
+        context_window=128000,
+        max_output_tokens=8192,
+        supports_images=True,
+        max_image_size_mb=100.0,
         supports_function_calling=False,
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="Moonshot v1 32k",
-    ),
-    # New models from Moonshot docs
-    "kimi-k2-turbo-preview": ModelCapabilities(
-        provider=ProviderType.KIMI,
-        model_name="kimi-k2-turbo-preview",
-        friendly_name="Kimi",
-        context_window=262144,  # 256K = 262144 tokens (verified 2025-10-09)
-        max_output_tokens=8192,
-        supports_images=True,  # Supports vision
-        max_image_size_mb=20.0,
-        supports_function_calling=True,  # Supports ToolCalls
-        supports_streaming=True,  # 60-100 tokens/sec
-        supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="Kimi K2 Turbo high-speed 256K (60-100 tokens/sec)",
-        aliases=["kimi-k2-turbo"],
+        description="Moonshot v1 128k vision preview",
     ),
     "moonshot-v1-128k": ModelCapabilities(
         provider=ProviderType.KIMI,
@@ -103,20 +200,6 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         supports_extended_thinking=False,
         description="Moonshot v1 128k",
     ),
-    "moonshot-v1-8k-vision-preview": ModelCapabilities(
-        provider=ProviderType.KIMI,
-        model_name="moonshot-v1-8k-vision-preview",
-        friendly_name="Kimi",
-        context_window=8192,
-        max_output_tokens=2048,
-        supports_images=True,
-        max_image_size_mb=20.0,
-        supports_function_calling=False,
-        supports_streaming=True,
-        supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="Moonshot v1 8k vision preview",
-    ),
     "moonshot-v1-32k-vision-preview": ModelCapabilities(
         provider=ProviderType.KIMI,
         model_name="moonshot-v1-32k-vision-preview",
@@ -124,131 +207,52 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         context_window=32768,
         max_output_tokens=4096,
         supports_images=True,
-        max_image_size_mb=20.0,
+        max_image_size_mb=100.0,
         supports_function_calling=False,
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
         description="Moonshot v1 32k vision preview",
     ),
-    "moonshot-v1-128k-vision-preview": ModelCapabilities(
+    "moonshot-v1-32k": ModelCapabilities(
         provider=ProviderType.KIMI,
-        model_name="moonshot-v1-128k-vision-preview",
+        model_name="moonshot-v1-32k",
         friendly_name="Kimi",
-        context_window=128000,
-        max_output_tokens=8192,
-        supports_images=True,
-        max_image_size_mb=20.0,
+        context_window=32768,
+        max_output_tokens=4096,
+        supports_images=False,
         supports_function_calling=False,
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="Moonshot v1 128k vision preview",
+        description="Moonshot v1 32k",
     ),
-    "kimi-latest": ModelCapabilities(
+    "moonshot-v1-8k-vision-preview": ModelCapabilities(
         provider=ProviderType.KIMI,
-        model_name="kimi-latest",
+        model_name="moonshot-v1-8k-vision-preview",
         friendly_name="Kimi",
-        context_window=128000,
-        max_output_tokens=8192,
-        supports_images=True,
-        max_image_size_mb=20.0,
-        supports_function_calling=True,
-        supports_streaming=True,
-        supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="Kimi latest vision 128k",
-    ),
-    "kimi-latest-8k": ModelCapabilities(
-        provider=ProviderType.KIMI,
-        model_name="kimi-latest-8k",
-        friendly_name="Kimi Latest 8K",
         context_window=8192,
         max_output_tokens=2048,
         supports_images=True,
-        max_image_size_mb=20.0,
-        supports_function_calling=True,
+        max_image_size_mb=100.0,
+        supports_function_calling=False,
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="Kimi latest vision 8k",
+        description="Moonshot v1 8k vision preview",
     ),
-    "kimi-latest-32k": ModelCapabilities(
+    "moonshot-v1-8k": ModelCapabilities(
         provider=ProviderType.KIMI,
-        model_name="kimi-latest-32k",
-        friendly_name="Kimi Latest 32K",
-        context_window=32768,
-        max_output_tokens=4096,
-        supports_images=True,
-        max_image_size_mb=20.0,
-        supports_function_calling=True,
+        model_name="moonshot-v1-8k",
+        friendly_name="Kimi",
+        context_window=8192,
+        max_output_tokens=2048,
+        supports_images=False,
+        supports_function_calling=False,
         supports_streaming=True,
         supports_system_prompts=True,
         supports_extended_thinking=False,
-        description="Kimi latest vision 32k",
-    ),
-    "kimi-latest-128k": ModelCapabilities(
-        provider=ProviderType.KIMI,
-        model_name="kimi-latest-128k",
-        friendly_name="Kimi Latest 128K",
-        context_window=131072,  # 128K = 131072 tokens
-        max_output_tokens=8192,
-        supports_images=True,
-        max_image_size_mb=20.0,
-        supports_function_calling=True,
-        supports_streaming=True,
-        supports_system_prompts=True,
-        supports_extended_thinking=False,
-        description="Kimi latest vision 128k",
-    ),
-    "kimi-thinking-preview": ModelCapabilities(
-        provider=ProviderType.KIMI,
-        model_name="kimi-thinking-preview",
-        friendly_name="Kimi Thinking",
-        context_window=131072,  # 128K = 131072 tokens
-        max_output_tokens=8192,
-        supports_images=True,
-        max_image_size_mb=20.0,
-        supports_function_calling=True,
-        supports_streaming=True,
-        supports_system_prompts=True,
-        supports_extended_thinking=True,  # ✅ KEEP: Model DOES support extended thinking
-        description="Kimi multimodal reasoning 128k with extended thinking (reasoning_content field)",
-        # ❌ REMOVED (2025-11-03): thinking_mode_config dict was fiction
-        # External AI fact-check: X-Moonshot-Thinking header does NOT exist
-        # Thinking mode works automatically - no special headers needed
-        # Response field is 'reasoning_content' (returned automatically)
-        aliases=["kimi-thinking"],
-    ),
-    "kimi-k2-thinking": ModelCapabilities(
-        provider=ProviderType.KIMI,
-        model_name="kimi-k2-thinking",
-        friendly_name="Kimi K2 Thinking",
-        context_window=262144,  # 256K
-        max_output_tokens=8192,
-        supports_images=True,
-        max_image_size_mb=20.0,
-        supports_function_calling=True,
-        supports_streaming=True,
-        supports_system_prompts=True,
-        supports_extended_thinking=True,  # Key: Enable for thinking mode
-        description="Kimi K2 with extended thinking mode (256K context)",
-        aliases=["kimi-k2-thinking", "kimi-thinking-k2"],
-    ),
-    "kimi-k2-thinking-turbo": ModelCapabilities(
-        provider=ProviderType.KIMI,
-        model_name="kimi-k2-thinking-turbo",
-        friendly_name="Kimi K2 Thinking Turbo",
-        context_window=262144,  # 256K
-        max_output_tokens=8192,
-        supports_images=True,
-        max_image_size_mb=20.0,
-        supports_function_calling=True,
-        supports_streaming=True,
-        supports_system_prompts=True,
-        supports_extended_thinking=True,  # Key: Enable for thinking mode
-        description="Kimi K2 with extended thinking mode, high-speed (256K context)",
-        aliases=["kimi-k2-thinking-turbo", "kimi-thinking-k2-turbo"],
+        description="Moonshot v1 8k (LEGACY - use K2 models instead)",
     ),
 }
 

@@ -45,7 +45,8 @@ def setup_async_safe_logging(level: int = logging.INFO) -> logging.handlers.Queu
     
     # Create the actual handlers that will write logs
     # These run in a separate thread, so they won't block the event loop
-    console_handler = logging.StreamHandler(sys.stdout)
+    # CRITICAL: Use stderr to avoid polluting MCP protocol stdout stream
+    console_handler = logging.StreamHandler(sys.stderr)
     console_handler.setLevel(level)
     
     # Format for log messages

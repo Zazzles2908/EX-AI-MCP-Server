@@ -41,7 +41,7 @@ MODEL_TOKEN_LIMITS = {
         'default_output_tokens': 16384,
         'provider': 'kimi'
     },
-    # K2 models - 256K context (per user correction and official docs)
+    # K2 models (per official docs and user correction)
     'kimi-k2-0905-preview': {
         'max_context_tokens': 262144,  # 256K
         'max_output_tokens': 229376,  # 256K - safety margin
@@ -49,12 +49,25 @@ MODEL_TOKEN_LIMITS = {
         'provider': 'kimi'
     },
     'kimi-k2-0711-preview': {
+        'max_context_tokens': 131072,  # 128K (NOT 256K!)
+        'max_output_tokens': 114688,
+        'default_output_tokens': 8192,
+        'provider': 'kimi'
+    },
+    'kimi-k2-turbo-preview': {
         'max_context_tokens': 262144,  # 256K
         'max_output_tokens': 229376,
         'default_output_tokens': 16384,
         'provider': 'kimi'
     },
-    'kimi-k2-turbo-preview': {
+    # K2 Thinking Models (PREMIUM - 256K with extended thinking)
+    'kimi-k2-thinking': {
+        'max_context_tokens': 262144,  # 256K
+        'max_output_tokens': 229376,
+        'default_output_tokens': 16384,
+        'provider': 'kimi'
+    },
+    'kimi-k2-thinking-turbo': {
         'max_context_tokens': 262144,  # 256K
         'max_output_tokens': 229376,
         'default_output_tokens': 16384,

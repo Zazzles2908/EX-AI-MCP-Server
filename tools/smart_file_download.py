@@ -182,6 +182,42 @@ class SmartFileDownloadTool(BaseTool):
             local_path = await tool.execute(file_id="file_abc123")
         """
 
+    def get_input_schema(self) -> Dict[str, Any]:
+        """Return JSON schema for tool input parameters."""
+        return {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+                "file_id": {
+                    "type": "string",
+                    "description": "Provider file ID or Supabase file ID to download"
+                },
+                "destination": {
+                    "type": "string",
+                    "description": f"Optional destination path (default: {DEFAULT_DOWNLOAD_DIR})"
+                }
+            },
+            "required": ["file_id"],
+            "additionalProperties": False
+        }
+
+    def get_system_prompt(self) -> str:
+        """Return system prompt for file download operations."""
+        return """You are a file download assistant that helps download files from various providers.
+
+When downloading files:
+1. Verify the file_id format is correct
+2. Check if file exists in cache first
+3. Download from appropriate provider (Kimi/Supabase)
+4. Verify file integrity using SHA256
+5. Report download location and status
+
+Always provide clear feedback about:
+- Cache hits vs. fresh downloads
+- Download progress for large files
+- Any errors encountered
+- Final file location"""
+
     def _ensure_download_dir(self):
         """Ensure the default download directory exists."""
         Path(DEFAULT_DOWNLOAD_DIR).mkdir(parents=True, exist_ok=True)

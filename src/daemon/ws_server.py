@@ -926,18 +926,19 @@ async def main_async() -> None:
         else:
             logger.info("🚀 EXAI MCP daemon ready - Dual mode (WebSocket + MCP) active")
 
-            # Wait for shutdown signal or any server task to complete
-            logger.debug("Waiting for shutdown signal...")
-            try:
-                # Add stop_event to tasks
-                all_tasks = tasks + [asyncio.create_task(stop_event.wait())]
-                await asyncio.wait(
-                    all_tasks,
-                    return_when=asyncio.FIRST_COMPLETED
-                )
-            except Exception as e:
-                logger.error(f"Error in server wait loop: {e}", exc_info=True)
-                raise
+        # CRITICAL FIX: Wait for tasks in both stdio and both modes
+        # This prevents the server from exiting immediately
+        logger.debug("Waiting for shutdown signal...")
+        try:
+            # Add stop_event to tasks
+            all_tasks = tasks + [asyncio.create_task(stop_event.wait())]
+            await asyncio.wait(
+                all_tasks,
+                return_when=asyncio.FIRST_COMPLETED
+            )
+        except Exception as e:
+            logger.error(f"Error in server wait loop: {e}", exc_info=True)
+            raise
 
     except OSError as e:
         # Friendly message on address-in-use

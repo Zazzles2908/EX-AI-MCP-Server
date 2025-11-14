@@ -9,7 +9,7 @@ images, and conversation continuation for seamless multi-turn interactions.
 import logging
 from typing import TYPE_CHECKING, Any, Optional
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 if TYPE_CHECKING:
     from tools.models import ToolModelCategory

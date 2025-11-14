@@ -47,8 +47,8 @@ class Config:
     kimi_api_key: str = field(default_factory=lambda: os.getenv("KIMI_API_KEY", ""))
     glm_api_key: str = field(default_factory=lambda: os.getenv("GLM_API_KEY", ""))
 
-    # Model defaults
-    kimi_default_model: str = field(default_factory=lambda: os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0711-preview"))
+    # Model defaults (K2-0905 has 256K context, better than k2-0711 with 128K)
+    kimi_default_model: str = field(default_factory=lambda: os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview"))
     glm_default_model: str = field(default_factory=lambda: os.getenv("GLM_DEFAULT_MODEL", "glm-4.5-flash"))
 
     # ========================================================================

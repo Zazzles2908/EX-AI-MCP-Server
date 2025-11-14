@@ -33,7 +33,7 @@ class KimiChatWithToolsTool(BaseTool):
                         {"type": "array", "items": {"oneOf": [{"type": "string"}, {"type": "object"}]}}
                     ]
                 },
-                "model": {"type": "string", "default": os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0711-preview")},
+                "model": {"type": "string", "default": os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview")},
                 "tools": {"type": "array", "items": {"type": "object"}},
                 "tool_choice": {"oneOf": [{"type": "string"}, {"type": "object"}]},
                 "temperature": {"type": "number", "default": 0.6},
@@ -82,10 +82,17 @@ class KimiChatWithToolsTool(BaseTool):
         on_chunk: Any = None  # NEW (2025-10-24): Streaming callback support
     ) -> list[TextContent]:
         # Resolve provider instance from registry; force Kimi provider and model id
-        requested_model = arguments.get("model") or os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0711-preview")
-        # Map any non-Kimi requests (e.g., 'auto', 'glm-4.5-flash') to a valid Kimi default
-        if requested_model not in {"kimi-k2-0711-preview","kimi-k2-0905-preview","kimi-k2-turbo-preview","kimi-latest","kimi-thinking-preview","moonshot-v1-8k","moonshot-v1-32k","moonshot-v1-128k","moonshot-v1-8k-vision-preview","moonshot-v1-32k-vision-preview","moonshot-v1-128k-vision-preview"}:
-            requested_model = os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0711-preview")
+        requested_model = arguments.get("model") or os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview")
+        # Updated: Include K2 thinking models (premium), deprioritize moonshot-v1 (legacy)
+        if requested_model not in {
+            "kimi-k2-thinking-turbo", "kimi-k2-thinking",  # K2 Thinking (PREMIUM)
+            "kimi-k2-0905-preview", "kimi-k2-turbo-preview", "kimi-k2-0711-preview",  # K2 Standard
+            "kimi-thinking-preview",  # Kimi thinking (128K)
+            "kimi-latest", "kimi-latest-128k", "kimi-latest-32k", "kimi-latest-8k",  # Kimi latest
+            "moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k",  # Moonshot (LEGACY - avoid)
+            "moonshot-v1-8k-vision-preview", "moonshot-v1-32k-vision-preview", "moonshot-v1-128k-vision-preview"
+        }:
+            requested_model = os.getenv("KIMI_DEFAULT_MODEL", "kimi-k2-0905-preview")
 
         registry = get_registry_instance()
         prov = registry.get_provider(ProviderType.KIMI)
@@ -490,16 +497,17 @@ class KimiChatWithToolsTool(BaseTool):
 
             for _ in range(3):  # limit tool loop depth
                 def _call():
-                    return prov.chat_completions_create(
-                        model=model_used,
-                        messages=messages_local,
-                        tools=tools,
-                        tool_choice=tool_choice,
-                        temperature=float(arguments.get("temperature", 0.6)),
-                        _session_id=arguments.get("_session_id"),
-                        _call_key=arguments.get("_call_key"),
-                        _tool_name=self.get_name(),
-                    )
+                    # Filter out parameters not supported by Kimi provider
+                    call_kwargs = {
+                        "model": model_used,
+                        "messages": messages_local,
+                        "temperature": float(arguments.get("temperature", 0.6)),
+                    }
+                    if tools:
+                        call_kwargs["tools"] = tools
+                    if tool_choice:
+                        call_kwargs["tool_choice"] = tool_choice
+                    return prov.chat_completions_create(**call_kwargs)
                 # Apply per-call timeout to avoid long hangs on web-enabled prompts
                 # Choose timeout based on whether web search is enabled
                 try:
@@ -522,25 +530,35 @@ class KimiChatWithToolsTool(BaseTool):
                 if not tcs:
                     _dbg = _is_trace_enabled()
                     try:
-                        raw_payload = result.get("raw") if isinstance(result, dict) else None
-                        if hasattr(raw_payload, "model_dump"):
-                            raw_payload = raw_payload.model_dump()
-                        choices = (raw_payload or {}).get("choices") or []
-                        msg = (choices[0].get("message") if choices else {}) or {}
-                        content_text = (msg.get("content") or "") if isinstance(msg, dict) else ""
+                        # Handle ModelResponse (has content attribute) vs raw dict (has raw field)
+                        if hasattr(result, 'content'):
+                            # ModelResponse from KimiProvider
+                            content_text = result.content or ""
+                            usage = result.usage if hasattr(result, 'usage') else None
+                            raw_payload = None
+                        else:
+                            # Raw dict response
+                            raw_payload = result.get("raw") if isinstance(result, dict) else None
+                            if hasattr(raw_payload, "model_dump"):
+                                raw_payload = raw_payload.model_dump()
+                            choices = (raw_payload or {}).get("choices") or []
+                            msg = (choices[0].get("message") if choices else {}) or {}
+                            content_text = (msg.get("content") or "") if isinstance(msg, dict) else ""
+                            usage = result.get("usage") if isinstance(result, dict) else None
+
                         normalized = {
                             "provider": "KIMI",
                             "model": model_used,
                             "content": content_text,
                             "tool_calls": None,
-                            "usage": result.get("usage") if isinstance(result, dict) else None,
+                            "usage": usage,
                             "raw": raw_payload or (result.get("raw") if isinstance(result, dict) else {}),
                         }
                         if _dbg:
                             summary = {
                                 "status": "no_tool_calls",
                                 "content_preview": (content_text or "")[:256],
-                                "has_tool_calls_field": bool((msg or {}).get("tool_calls")) if isinstance(msg, dict) else False,
+                                "has_tool_calls_field": False,  # No tool calls in this path
                             }
                             _emit_trace({"normalized": normalized, "trace": summary})
                         return [TextContent(type="text", text=json.dumps(normalized, ensure_ascii=False))]

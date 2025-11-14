@@ -50,7 +50,8 @@ class ModelProviderRegistry:
         # Get the global registry instance
         registry = get_registry()
         # Define fallback models to try in order
-        fallback_models = ["glm-4.5-flash", "moonshot-v1-8k"]
+        # Updated: Use K2 model (256K context) instead of legacy moonshot-v1-8k (8K context)
+        fallback_models = ["glm-4.5-flash", "kimi-k2-0905-preview"]
         last_error = None
 
         for model_name in fallback_models:

@@ -189,7 +189,7 @@ services:
       - redis-data:/data
 
     # Restart policy
-    restart: unless-stopped
+    restart: on-failure
 
     # Health check (P0-9: Updated to use authentication)
     healthcheck:
@@ -220,7 +220,7 @@ services:
   redis-commander:
     image: rediscommander/redis-commander:latest
     container_name: exai-redis-commander
-    restart: unless-stopped
+    restart: on-failure
 
     ports:
       - "8081:8081"

@@ -292,3 +292,7 @@ Fixed_monitoring_errors*.json
 .mcp.json
 .claude/.mcp.json
 project-template/.mcp.json
+
+# External Reviews Package (contains large external package - 248 files)
+# Moved to docs/implementation-2025-11-15/external-package-docs/ for organization
+docs/external-reviews/
