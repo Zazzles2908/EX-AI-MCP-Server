@@ -220,6 +220,36 @@ SUPPORTED_MODELS: dict[str, ModelCapabilities] = {
         # Response field is 'reasoning_content' (returned automatically)
         aliases=["kimi-thinking"],
     ),
+    "kimi-k2-thinking": ModelCapabilities(
+        provider=ProviderType.KIMI,
+        model_name="kimi-k2-thinking",
+        friendly_name="Kimi K2 Thinking",
+        context_window=262144,  # 256K
+        max_output_tokens=8192,
+        supports_images=True,
+        max_image_size_mb=20.0,
+        supports_function_calling=True,
+        supports_streaming=True,
+        supports_system_prompts=True,
+        supports_extended_thinking=True,  # Key: Enable for thinking mode
+        description="Kimi K2 with extended thinking mode (256K context)",
+        aliases=["kimi-k2-thinking", "kimi-thinking-k2"],
+    ),
+    "kimi-k2-thinking-turbo": ModelCapabilities(
+        provider=ProviderType.KIMI,
+        model_name="kimi-k2-thinking-turbo",
+        friendly_name="Kimi K2 Thinking Turbo",
+        context_window=262144,  # 256K
+        max_output_tokens=8192,
+        supports_images=True,
+        max_image_size_mb=20.0,
+        supports_function_calling=True,
+        supports_streaming=True,
+        supports_system_prompts=True,
+        supports_extended_thinking=True,  # Key: Enable for thinking mode
+        description="Kimi K2 with extended thinking mode, high-speed (256K context)",
+        aliases=["kimi-k2-thinking-turbo", "kimi-thinking-k2-turbo"],
+    ),
 }
 
 

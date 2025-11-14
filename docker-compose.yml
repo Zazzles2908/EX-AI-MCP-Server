@@ -68,7 +68,7 @@ services:
         condition: service_healthy
 
     # Restart policy
-    restart: unless-stopped
+    restart: on-failure
 
     # CRITICAL: Run native daemon with dual protocol support (WebSocket + MCP stdio)
     # Removed automated health check to prevent startup interference
@@ -141,7 +141,7 @@ services:
         condition: service_healthy
 
     # Restart policy
-    restart: unless-stopped
+    restart: on-failure
 
     # Run native MCP server in stdio mode
     command: python -m src.daemon.ws_server --mode stdio

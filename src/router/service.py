@@ -157,6 +157,29 @@ class RouterService:
         Backward compatible: callers can continue using choose_model().
         """
         req = (requested or "auto").strip()
+
+        # Basic capability check for thinking mode
+        if hint and "thinking" in hint and "thinking" not in hint.get("params", {}):
+            # Find models that support extended thinking
+            thinking_models = []
+            try:
+                avail = get_registry_instance().get_available_models(respect_restrictions=True)
+                for model_name in avail.keys():
+                    provider = get_registry_instance().get_provider_for_model(model_name)
+                    if provider:
+                        capabilities = provider.get_capabilities(model_name)
+                        if capabilities and capabilities.supports_extended_thinking:
+                            thinking_models.append(model_name)
+
+                if thinking_models:
+                    # Prioritize thinking-capable models in the hint
+                    logger.debug(f"Found {len(thinking_models)} thinking-capable models: {thinking_models}")
+                    # Update hint to prioritize thinking models
+                    hint = hint.copy() if hint else {}
+                    hint["preferred_models"] = thinking_models + hint.get("preferred_models", [])
+            except Exception as e:
+                logger.debug(f"Capability validation failed: {e}")
+
         if req.lower() != "auto":
             prov = get_registry_instance().get_provider_for_model(req)
             if prov is not None:
