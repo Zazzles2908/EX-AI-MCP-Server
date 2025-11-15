@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from tools.shared.base_tool import BaseTool
-from src.providers.registry import ModelProviderRegistry
+from src.providers.registry_core import ModelProviderRegistry
 
 
 class HealthTool(BaseTool):

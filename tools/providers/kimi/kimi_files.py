@@ -23,7 +23,7 @@ from tools.shared.base_tool import BaseTool
 from tools.shared.base_models import ToolRequest
 from src.providers.kimi import KimiModelProvider
 from src.providers.registry_core import get_registry_instance
-from src.providers.registry import ModelProviderRegistry
+from src.providers.registry_core import ModelProviderRegistry
 from src.providers.registry_core import get_registry_instance
 from utils.file.cross_platform import get_path_handler
 from utils.file.cache import FileCache

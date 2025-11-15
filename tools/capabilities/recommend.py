@@ -150,7 +150,7 @@ class RecommendTool(SimpleTool):
             category = ToolModelCategory.BALANCED
 
         # Suggest model using registry preference and hints-aware bias
-        from src.providers.registry import ModelProviderRegistry
+        from src.providers.registry_core import ModelProviderRegistry
         # Use get_preferred_fallback_model for a baseline suggestion
         baseline_model = ModelProviderRegistry.get_preferred_fallback_model(category)
 

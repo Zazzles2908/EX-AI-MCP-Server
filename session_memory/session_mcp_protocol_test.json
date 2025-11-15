@@ -1,0 +1,21 @@
+{
+  "session_id": "mcp_protocol_test",
+  "start_time": "2025-11-15T09:51:39.995514+00:00",
+  "project_path": ".",
+  "operations": [],
+  "mcp_validation": {},
+  "issues_found": [
+    {
+      "timestamp": "2025-11-15T09:57:59.021431+00:00",
+      "severity": "medium",
+      "description": "No tools response received",
+      "resolution": null
+    }
+  ],
+  "fixes_applied": [],
+  "tools_tested": [],
+  "file_examinations": [],
+  "decisions": [],
+  "end_time": "2025-11-15T09:57:59.022045+00:00",
+  "duration_seconds": 379.026537
+}

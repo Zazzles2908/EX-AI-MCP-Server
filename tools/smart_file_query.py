@@ -52,7 +52,7 @@ from src.storage.hybrid_supabase_manager import HybridSupabaseManager
 # Direct Supabase hub and provider access (NO tool wrappers)
 from tools.supabase_upload import upload_file_with_provider
 from src.storage.supabase_client import get_storage_manager
-from src.providers.registry import ModelProviderRegistry
+from src.providers.registry_core import ModelProviderRegistry
 
 # Base tool
 from tools.shared.base_tool import BaseTool

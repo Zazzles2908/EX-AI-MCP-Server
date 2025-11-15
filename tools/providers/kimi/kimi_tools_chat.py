@@ -6,7 +6,7 @@ from mcp.types import TextContent
 from tools.shared.base_tool import BaseTool
 from tools.shared.base_models import ToolRequest
 from src.providers.kimi import KimiModelProvider
-from src.providers.registry import ModelProviderRegistry
+from src.providers.registry_core import ModelProviderRegistry
 from src.providers.registry_core import get_registry_instance
 from src.providers.base import ProviderType
 

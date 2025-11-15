@@ -18,8 +18,9 @@ from mcp.server.stdio import stdio_server
 from src.providers.registry_core import get_registry_instance
 from src.router.minimax_m2_router import MiniMaxM2Router
 
-# Initialize logging
-logging.basicConfig(level=logging.INFO)
+# Initialize logging - respect LOG_LEVEL environment variable
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(level=getattr(logging, log_level, logging.INFO))
 logger = logging.getLogger(__name__)
 
 # Initialize server

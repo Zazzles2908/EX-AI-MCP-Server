@@ -98,7 +98,7 @@ class SimpleToolExecutionMixin:
             else:
                 # Create model context if not provided
                 from utils.model.context import ModelContext
-                from src.providers.registry import ModelProviderRegistry as _Registry
+                from src.providers.registry_core import ModelProviderRegistry as _Registry
                 
                 # Avoid constructing ModelContext('auto') which triggers provider lookup error
                 if (model_name or "").strip().lower() == "auto":

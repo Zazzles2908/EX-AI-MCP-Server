@@ -49,7 +49,7 @@ class KimiCaptureHeadersTool(BaseTool):
 
     async def execute(self, arguments: dict[str, Any], on_chunk=None):
         from mcp.types import TextContent
-        from src.providers.registry import ModelProviderRegistry
+        from src.providers.registry_core import ModelProviderRegistry
         from src.providers.kimi import KimiModelProvider
 
         if not (os.getenv("KIMI_API_KEY") or os.getenv("MOONSHOT_API_KEY")):

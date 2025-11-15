@@ -1,0 +1,29 @@
+{
+  "session_id": "mcp_validation_simple",
+  "start_time": "2025-11-15T10:39:55.153015+00:00",
+  "project_path": "C:\\Project\\EX-AI-MCP-Server",
+  "operations": [],
+  "mcp_validation": {
+    "exai_mcp": {
+      "timestamp": "2025-11-15T10:40:00.216040+00:00",
+      "status": "failed",
+      "details": {
+        "test_method": "direct_subprocess"
+      }
+    },
+    "minimax_search": {
+      "timestamp": "2025-11-15T10:40:00.249236+00:00",
+      "status": "success",
+      "details": {
+        "test_method": "installation_test"
+      }
+    }
+  },
+  "issues_found": [],
+  "fixes_applied": [],
+  "tools_tested": [],
+  "file_examinations": [],
+  "decisions": [],
+  "end_time": "2025-11-15T10:40:00.249803+00:00",
+  "duration_seconds": 5.096794
+}

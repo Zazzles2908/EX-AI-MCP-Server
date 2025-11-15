@@ -53,7 +53,7 @@ PROJECT_ROOT = str(_root)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from src.providers.registry import ModelProviderRegistry  # type: ignore
+from src.providers.registry_core import ModelProviderRegistry  # type: ignore
 from src.providers.registry_core import get_registry_instance
 
 

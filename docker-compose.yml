@@ -21,6 +21,8 @@ services:
       - PYTHONUNBUFFERED=1
       - PYTHONIOENCODING=utf-8
       - TZ=Australia/Melbourne
+      # LOGGING FIX (2025-11-15): Reduce startup noise by setting log level to WARNING
+      - LOG_LEVEL=WARNING
       # Health check configuration - waits for daemon startup before testing endpoints
       - EXAI_HEALTH_CHECK_STARTUP_DELAY=15
 
@@ -122,6 +124,8 @@ services:
       - PYTHONUNBUFFERED=1
       - PYTHONIOENCODING=utf-8
       - TZ=Australia/Melbourne
+      # LOGGING FIX (2025-11-15): Reduce startup noise by setting log level to WARNING
+      - LOG_LEVEL=WARNING
 
     # Mount .env.docker as .env in container
     env_file:

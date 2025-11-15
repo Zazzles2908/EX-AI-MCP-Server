@@ -524,7 +524,7 @@ class SimpleTool(WebSearchMixin, ToolCallMixin, StreamingMixin, ContinuationMixi
 
             # Generate AI response with fallback (free-first → paid) when applicable
             import os as _os
-            from src.providers.registry import get_registry
+            from src.providers.registry_core import get_registry
             selected_model = self._current_model_name
             tool_call_metadata = []  # collected sanitized tool-call events for UI dropdown
 

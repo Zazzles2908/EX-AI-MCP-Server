@@ -228,7 +228,7 @@ class VersionTool(BaseTool):
         # Check for configured providers
         try:
             from src.providers.base import ProviderType
-            from src.providers.registry import ModelProviderRegistry
+            from src.providers.registry_core import ModelProviderRegistry
 
             provider_status = []
 

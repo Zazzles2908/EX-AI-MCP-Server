@@ -1,59 +1,29 @@
 {
   "mcpServers": {
     "exai-mcp": {
-      "command": "docker",
+      "command": "python",
       "args": [
-        "exec",
-        "-i",
-        "exai-mcp-stdio",
-        "python",
-        "-m",
-        "src.daemon.ws_server",
-        "--mode",
-        "stdio"
+        "-u",
+        "scripts/runtime/run_ws_shim.py"
       ],
       "env": {
-        "ENV_FILE": "C:/Project/EX-AI-MCP-Server/.env.docker",
+        "ENV_FILE": ".env",
         "PYTHONUNBUFFERED": "1",
         "PYTHONIOENCODING": "utf-8"
       }
     },
-    "filesystem-mcp": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "C:/",
-        "C:/Users",
-        "C:/Project"
-      ]
-    },
-    "git-mcp": {
+    "minimax_search": {
+      "description": "MiniMax Search - Web search and intelligent browsing",
+      "type": "stdio",
       "command": "uvx",
       "args": [
-        "mcp-server-git"
-      ]
-    },
-    "sequential-thinking": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ]
-    },
-    "memory-mcp": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ]
-    },
-    "mermaid-mcp": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@narasimhaponnada/mermaid-mcp-server"
-      ]
+        "--from",
+        "git+https://github.com/MiniMax-AI/minimax_search",
+        "minimax-search"
+      ],
+      "env": {
+        "MINIMAX_API_KEY": "${MINIAGENT_API_KEY}"
+      }
     }
   }
 }

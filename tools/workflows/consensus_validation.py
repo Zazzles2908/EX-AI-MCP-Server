@@ -28,7 +28,7 @@ def validate_consensus_step_one(request) -> None:
         raise ValueError(f"total_steps ({total_steps}) must equal len(models) ({len(models)}) in step 1")
 
     # Validate each model availability
-    from src.providers.registry import ModelProviderRegistry
+    from src.providers.registry_core import ModelProviderRegistry
 
     unavailable: list[str] = []
     for m in models:
@@ -46,7 +46,7 @@ def validate_consensus_step_one(request) -> None:
                 if s.strip()
             }
             if hidden_enabled and name.strip().lower() in sentinels:
-                from src.providers.registry import ModelProviderRegistry as _Reg
+                from src.providers.registry_core import ModelProviderRegistry as _Reg
 
                 routed = _Reg.get_preferred_fallback_model(None)
                 if routed:

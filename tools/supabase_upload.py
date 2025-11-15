@@ -542,7 +542,7 @@ def _generic_provider_upload_adapter(
 
     try:
         # 3. Upload to provider SDK
-        from src.providers.registry import ModelProviderRegistry
+        from src.providers.registry_core import ModelProviderRegistry
 
         # Get provider instance
         model = os.getenv(default_model_env, default_model)

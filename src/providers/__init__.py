@@ -15,7 +15,7 @@ from .base import (
     DiscreteTemperatureConstraint,
     create_temperature_constraint,
 )
-from .registry import ModelProviderRegistry
+from .registry_core import ModelProviderRegistry
 
 # Do NOT import concrete providers at package import time to avoid side effects
 # (e.g., optional deps, environment not ready). Import them explicitly where needed.

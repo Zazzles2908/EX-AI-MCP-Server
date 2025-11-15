@@ -1,0 +1,136 @@
+{
+  "session_id": "final_validation",
+  "start_time": "2025-11-15T10:39:34.992050+00:00",
+  "project_path": "C:\\Project\\EX-AI-MCP-Server",
+  "operations": [
+    {
+      "timestamp": "2025-11-15T10:39:34.992201+00:00",
+      "type": "file_exists",
+      "description": "Key file exists: .mcp.json",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:34.992219+00:00",
+      "type": "file_exists",
+      "description": "Key file exists: .env",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:34.992235+00:00",
+      "type": "file_exists",
+      "description": "Key file exists: .vscode/settings.json",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:34.992248+00:00",
+      "type": "file_exists",
+      "description": "Key file exists: docker-compose.yml",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:34.992262+00:00",
+      "type": "file_exists",
+      "description": "Key file exists: scripts/runtime/run_ws_shim.py",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:34.992363+00:00",
+      "type": "exai_mcp_configured",
+      "description": "EX-AI MCP server properly configured",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:34.992369+00:00",
+      "type": "minimax_mcp_configured",
+      "description": "MiniMax Search MCP server configured",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:34.992453+00:00",
+      "type": "env_var_present",
+      "description": "Environment variable present: MINIMAX_API_KEY",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:34.992460+00:00",
+      "type": "env_var_present",
+      "description": "Environment variable present: MINIAGENT_API_KEY",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:34.992463+00:00",
+      "type": "env_var_present",
+      "description": "Environment variable present: EXAI_WS_HOST",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:34.992468+00:00",
+      "type": "env_var_present",
+      "description": "Environment variable present: EXAI_WS_PORT",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:34.992473+00:00",
+      "type": "env_var_present",
+      "description": "Environment variable present: EXAI_WS_TOKEN",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:35.022266+00:00",
+      "type": "docker_available",
+      "description": "Docker available: Docker version 28.5.1, build e180ab8",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:35.100504+00:00",
+      "type": "docker_running",
+      "description": "4 Docker services running",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:35.118850+00:00",
+      "type": "uvx_available",
+      "description": "uvx package manager available",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:38.427239+00:00",
+      "type": "exai_module_load",
+      "description": "EX-AI MCP server module loads successfully",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:38.427248+00:00",
+      "type": "exai_testing_note",
+      "description": "EX-AI MCP server requires Docker daemon for full functionality",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:38.427444+00:00",
+      "type": "memory_system_active",
+      "description": "Session memory system active with 8 sessions",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T10:39:38.427473+00:00",
+      "type": "validation_complete",
+      "description": "Validation completed with status: SUCCESS",
+      "details": {}
+    }
+  ],
+  "mcp_validation": {},
+  "issues_found": [
+    {
+      "timestamp": "2025-11-15T10:39:37.993814+00:00",
+      "severity": "medium",
+      "description": "MiniMax Search installation failed",
+      "resolution": "None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.\nTraceback (most recent call last):\n  File"
+    }
+  ],
+  "fixes_applied": [],
+  "tools_tested": [],
+  "file_examinations": [],
+  "decisions": [],
+  "end_time": "2025-11-15T10:39:38.428045+00:00",
+  "duration_seconds": 3.435999
+}

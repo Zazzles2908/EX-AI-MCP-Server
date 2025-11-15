@@ -3,13 +3,13 @@
 import os
 import logging
 from typing import Any, List, Dict, Optional
-from src.providers.base import ProviderType, ModelCapabilities, ModelResponse
+from src.providers.base import ProviderType, ModelCapabilities, ModelResponse, ModelProvider
 from .kimi_config import SUPPORTED_MODELS as KIMI_CONFIG_MODELS
 
 logger = logging.getLogger(__name__)
 
 
-class KimiProvider:
+class KimiProvider(ModelProvider):
     """Minimal Kimi provider implementation."""
     
     # Use K2 models from kimi_config
@@ -41,6 +41,10 @@ class KimiProvider:
     def get_model_capabilities(self, model_name: str) -> Optional[ModelCapabilities]:
         """Get model capabilities."""
         return self.SUPPORTED_MODELS.get(model_name)
+    
+    def list_models(self, respect_restrictions: bool = True):
+        """List all supported models."""
+        return list(self.SUPPORTED_MODELS.keys())
     
     async def chat_completions_create(
         self,

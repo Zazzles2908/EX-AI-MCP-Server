@@ -91,7 +91,7 @@ class ListModelsTool(BaseTool):
             from src.providers.openrouter_registry import OpenRouterModelRegistry  # type: ignore
         except Exception:
             OpenRouterModelRegistry = None  # type: ignore
-        from src.providers.registry import ModelProviderRegistry
+        from src.providers.registry_core import ModelProviderRegistry
 
         output_lines = [
             "# Available AI Models\n",
@@ -178,7 +178,7 @@ class ListModelsTool(BaseTool):
             try:
                 # Get OpenRouter provider from registry to properly apply restrictions
                 from src.providers.base import ProviderType
-                from src.providers.registry import ModelProviderRegistry
+                from src.providers.registry_core import ModelProviderRegistry
                 from src.providers.registry_core import get_registry_instance
 
                 registry = get_registry_instance()

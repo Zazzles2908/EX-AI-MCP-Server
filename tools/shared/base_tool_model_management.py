@@ -244,7 +244,7 @@ class ModelManagementMixin:
 
             # For tests: Check if we should require model selection
             if self._should_require_model_selection(model_name):
-                from src.providers.registry import ModelProviderRegistry
+                from src.providers.registry_core import ModelProviderRegistry
                 tool_category = self.get_model_category()
                 suggested_model = ModelProviderRegistry.get_preferred_fallback_model(tool_category)
                 available_models = self._get_available_models()

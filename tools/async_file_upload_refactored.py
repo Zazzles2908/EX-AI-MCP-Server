@@ -263,7 +263,7 @@ async def upload_via_supabase_gateway_kimi_async(
     
     # 3. Async Kimi upload
     try:
-        from src.providers.registry import ModelProviderRegistry
+        from src.providers.registry_core import ModelProviderRegistry
         from src.providers.kimi import KimiModelProvider
         
         api_key = os.getenv("KIMI_API_KEY")
