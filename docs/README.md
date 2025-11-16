@@ -29,6 +29,7 @@ The EX-AI MCP Server is a **sophisticated AI infrastructure** with:
 ### **🎯 Essential Documentation**
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture overview
 - **[COMPREHENSIVE_ORGANIZATION_PLAN.md](COMPREHENSIVE_ORGANIZATION_PLAN.md)** - Organization strategy and approach
+- **[MINIMAX_M2_INTEGRATION_GUIDE.md](guides/MINIMAX_M2_INTEGRATION_GUIDE.md)** - MiniMax M2 smart routing optimization
 
 ### **📊 Analysis & Assessment**
 - **[analysis/](analysis/)** - System analysis, assessments, and optimization guides
@@ -38,6 +39,7 @@ The EX-AI MCP Server is a **sophisticated AI infrastructure** with:
 - **[development/](development/)** - Development guidelines and workflows
 - **[operations/](operations/)** - Deployment and operations guides
 - **[guides/](guides/)** - Implementation guides and best practices
+- **[PROGRESS_CHECKLIST.md](PROGRESS_CHECKLIST.md)** - Development progress tracking
 
 ### **🔧 Technical Reference**
 - **[api/](api/)** - API documentation and provider references
