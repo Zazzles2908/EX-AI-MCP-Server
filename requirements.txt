@@ -1,0 +1,45 @@
+# Core EX-AI MCP Server Dependencies
+# Auto-generated requirements file for the main project
+
+# HTTP and WebSocket clients
+websockets>=11.0.0
+aiohttp>=3.8.0
+requests>=2.31.0
+
+# Container management
+docker>=6.1.0
+
+# AI Model Providers
+anthropic>=0.25.0
+openai>=1.3.0
+
+# Database and caching
+asyncpg>=0.29.0
+aiofiles>=23.0.0
+
+# Configuration and environment
+python-dotenv>=1.0.0
+pydantic>=2.4.0
+pydantic-settings>=2.0.0
+
+# Security and authentication
+PyJWT>=2.8.0
+cryptography>=41.0.0
+
+# Data processing
+orjson>=3.9.0
+ujson>=5.8.0
+
+# Monitoring and logging
+structlog>=23.0.0
+prometheus-client>=0.17.0
+
+# Development and testing (for VSCode resolution)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+
+# Code quality
+flake8>=6.0.0
+black>=23.0.0
+isort>=5.12.0

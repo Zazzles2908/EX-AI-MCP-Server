@@ -468,7 +468,7 @@ class ModelManagementMixin:
                         cm = "glm-4"
                     # Filter obvious provider ids
                     low = cm.lower()
-                    if low in {"z-ai", "zhipu"}:
+                    if low in {"z-ai"}:
                         continue
                     if any(s in low for s in ["-250414", "-airx"]):
                         continue
@@ -494,7 +494,7 @@ class ModelManagementMixin:
 
             # Canonicalize + filter questionable names from being exposed in schemas
             def _canonicalize_and_filter(models: list[str]) -> list[str]:
-                disallow_exact = {"z-ai", "zhipu"}
+                disallow_exact = {"z-ai"}
                 # REMOVED: "-preview", "-0711", "-0905" from disallow list
                 # These are valid K2 model names that user prefers (kimi-k2-0905-preview, etc.)
                 # Only filter out truly invalid/internal model IDs

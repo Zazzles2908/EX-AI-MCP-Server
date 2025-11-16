@@ -680,11 +680,9 @@ class ExpertAnalysisMixin:
                 async_provider = None
                 try:
                     if provider_type == ProviderType.GLM:
-                        from src.providers.async_glm import AsyncGLMProvider
-                        async_provider = AsyncGLMProvider(
-                            api_key=os.getenv("GLM_API_KEY"),
-                            base_url=os.getenv("GLM_API_URL")
-                        )
+                        # async_glm removed - GLM uses zai-sdk sync interface
+                        # Use sync provider with asyncio.to_thread() for async operations
+                        async_provider = None
                     elif provider_type == ProviderType.KIMI:
                         from src.providers.async_kimi import AsyncKimiProvider
                         async_provider = AsyncKimiProvider(

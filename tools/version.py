@@ -243,7 +243,7 @@ class VersionTool(BaseTool):
                 ProviderType.OPENROUTER,
                 ProviderType.CUSTOM,
             ]
-            provider_names = ["Moonshot Kimi", "ZhipuAI GLM", "Google Gemini", "OpenAI", "X.AI", "DIAL", "OpenRouter", "Custom/Local"]
+            provider_names = ["Moonshot Kimi", "Z.ai GLM", "Google Gemini", "OpenAI", "X.AI", "DIAL", "OpenRouter", "Custom/Local"]
 
             from src.providers.registry_core import get_registry_instance
             registry = get_registry_instance()

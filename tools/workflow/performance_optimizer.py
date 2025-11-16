@@ -219,7 +219,7 @@ def normalize_path(path: str) -> str:
     to avoid double caching and memory waste.
 
     Examples:
-        Windows: c:\Project\EX-AI-MCP-Server\src\file.py -> /app/src/file.py
+        Windows: c:\\Project\\EX-AI-MCP-Server\\src\\file.py -> /app/src/file.py
         Linux:   /app/src/file.py -> /app/src/file.py (unchanged)
         Relative: src/file.py -> /app/src/file.py
 

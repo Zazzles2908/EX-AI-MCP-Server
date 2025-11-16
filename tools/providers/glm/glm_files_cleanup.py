@@ -1,7 +1,7 @@
 """
-GLM (ZhipuAI) Agent Files cleanup utility.
+GLM (Z.ai) Agent Files cleanup utility.
 
-Safely list and optionally delete stored files in your ZhipuAI (GLM) account used by agent APIs.
+Safely list and optionally delete stored files in your Z.ai (GLM) account used by agent APIs.
 Default mode is dry-run (no deletions). Requires GLM_API_KEY and GLM_API_URL in your env.
 
 Usage examples:
@@ -117,7 +117,7 @@ def filter_before(files: List[Dict[str, Any]], threshold_ts: int) -> List[Dict[s
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="ZhipuAI (GLM) files cleanup utility")
+    ap = argparse.ArgumentParser(description="Z.ai (GLM) files cleanup utility")
     ap.add_argument("--list", action="store_true", help="List files (limited)")
     ap.add_argument("--limit", type=int, default=200, help="Max files to list")
     ap.add_argument("--summary", action="store_true", help="Print summary counts only")

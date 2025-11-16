@@ -192,7 +192,7 @@ class OperationsConfig(BaseConfig):
     # 2. Setting these too high may waste tokens; too low may cause truncation
     # 3. Official model limits (as of 2025-10-14):
     #    - Kimi K2 models: 16384 tokens (official Moonshot AI limit)
-    #    - GLM models: 8192 tokens (official ZhipuAI limit)
+    #    - GLM models: 8192 tokens (official Z.ai limit)
     # 4. Set to 0 or empty string to disable automatic max_tokens (let model use its default)
     #
     # USAGE:

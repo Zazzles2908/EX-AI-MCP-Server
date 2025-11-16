@@ -57,7 +57,7 @@ class GLMWebSearchTool(BaseTool):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are a direct wrapper around ZhipuAI GLM native web search.\n"
+            "You are a direct wrapper around Z.ai GLM native web search.\n"
             "Call POST {GLM_API_URL}/web_search with Bearer auth and relay results as JSON.\n\n"
             "Parameters:\n- search_query (required)\n- count (default 10)\n"
             "- search_engine (default 'search-prime')\n- search_domain_filter (optional)\n- search_recency_filter (oneDay|oneWeek|oneMonth|oneYear|all)\n"
@@ -65,17 +65,17 @@ class GLMWebSearchTool(BaseTool):
         )
 
     def _get_base_url(self) -> str:
-        # Prefer GLM_API_URL, fallback to ZHIPUAI_API_URL, default official base
+        # Prefer GLM_API_URL, fallback to ZAI_BASE_URL, default official base
         return (
             os.getenv("GLM_API_URL")
-            or os.getenv("ZHIPUAI_API_URL")
+            or os.getenv("ZAI_BASE_URL")
             or "https://api.z.ai/api/paas/v4"
         ).rstrip("/")
 
     def _get_api_key(self) -> str:
-        key = os.getenv("GLM_API_KEY") or os.getenv("ZHIPUAI_API_KEY") or os.getenv("ZAI_API_KEY")
+        key = os.getenv("GLM_API_KEY") or os.getenv("ZAI_API_KEY")
         if not key:
-            raise RuntimeError("GLM_API_KEY/ZHIPUAI_API_KEY (or ZAI_API_KEY) is not configured")
+            raise RuntimeError("GLM_API_KEY (or ZAI_API_KEY) is not configured")
         return key.strip()
 
     def run(self, **kwargs) -> Dict[str, Any]:

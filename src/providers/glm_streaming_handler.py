@@ -55,7 +55,7 @@ def chat_completions_create_with_continuation(
 
     Args:
         prompt: User prompt
-        sdk_client: ZhipuAI SDK client
+        sdk_client: zai-sdk client
         model: Model name
         system_prompt: Optional system prompt
         messages: Optional pre-built messages (alternative to prompt)

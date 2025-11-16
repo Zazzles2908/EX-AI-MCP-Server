@@ -28,6 +28,29 @@ app = Server("exai-mcp")
 router = MiniMaxM2Router()
 registry_instance = get_registry_instance()
 
+def _ensure_providers_configured():
+    """Ensure providers are configured."""
+    from src.providers.registry_core import get_registry_instance
+    from src.providers.base import ProviderType
+    from src.providers.glm_provider import GLMProvider
+    from src.providers.kimi import KimiProvider
+
+    registry = get_registry_instance()
+
+    # Register Kimi provider class
+    try:
+        registry.register_provider(ProviderType.KIMI, KimiProvider)
+        logger.info("Registered Kimi provider")
+    except Exception as e:
+        logger.warning(f"Failed to register Kimi provider: {e}")
+
+    # Register GLM provider class
+    try:
+        registry.register_provider(ProviderType.GLM, GLMProvider)
+        logger.info("Registered GLM provider")
+    except Exception as e:
+        logger.warning(f"Failed to register GLM provider: {e}")
+
 # Build tools from registry
 from tools.registry import ToolRegistry
 
@@ -66,31 +89,11 @@ for name, tool_obj in loaded_tools.items():
 # SERVER_TOOLS should be a dict of tool objects for ToolExecutor
 SERVER_TOOLS = loaded_tools
 
+# Ensure providers are configured AFTER all tools are loaded
+_ensure_providers_configured()
+
 # Export TOOLS for MCP compatibility
 TOOLS = TOOLS
-
-def _ensure_providers_configured():
-    """Ensure providers are configured."""
-    from src.providers.registry_core import get_registry_instance
-    from src.providers.base import ProviderType
-    from src.providers.glm_provider import GLMProvider
-    from src.providers.kimi import KimiProvider
-
-    registry = get_registry_instance()
-
-    # Register Kimi provider class
-    try:
-        registry.register_provider(ProviderType.KIMI, KimiProvider)
-        logger.info("Registered Kimi provider")
-    except Exception as e:
-        logger.warning(f"Failed to register Kimi provider: {e}")
-
-    # Register GLM provider class
-    try:
-        registry.register_provider(ProviderType.GLM, GLMProvider)
-        logger.info("Registered GLM provider")
-    except Exception as e:
-        logger.warning(f"Failed to register GLM provider: {e}")
 
 def register_provider_specific_tools():
     """Register provider-specific tools."""

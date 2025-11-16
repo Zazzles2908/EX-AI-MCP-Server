@@ -105,7 +105,7 @@ class ListModelsTool(BaseTool):
         # Map provider types to friendly names and their models (only Kimi/GLM)
         provider_info = {
             ProviderType.KIMI: {"name": "Moonshot Kimi", "env_key": "KIMI_API_KEY"},
-            ProviderType.GLM: {"name": "ZhipuAI GLM", "env_key": "GLM_API_KEY"},
+            ProviderType.GLM: {"name": "Z.ai GLM", "env_key": "GLM_API_KEY"},
         }
 
         # Check each native provider type
@@ -116,44 +116,47 @@ class ListModelsTool(BaseTool):
             provider = registry.get_provider(provider_type)
             is_configured = provider is not None
 
-            output_lines.append(f"## {info['name']} {'✅' if is_configured else '❌'}")
+            output_lines.append(f"## {info['name']} {'[OK]' if is_configured else '[FAIL]'}")
 
             if is_configured:
                 output_lines.append("**Status**: Configured and available")
                 output_lines.append("\n**Models**:")
 
                 # Get models from the provider's model configurations
-                for model_name, capabilities in provider.get_model_configurations().items():
-                    # Get description and context from the ModelCapabilities object
-                    description = capabilities.description or "No description available"
-                    context_window = capabilities.context_window
+                for model_name in provider.list_models():
+                    capabilities = provider.get_model_capabilities(model_name)
+                    if capabilities:  # Only process if capabilities found
+                        # Get description and context from the ModelCapabilities object
+                        description = capabilities.description or "No description available"
+                        context_window = capabilities.context_window
 
-                    # Format context window
-                    if context_window >= 1_000_000:
-                        context_str = f"{context_window // 1_000_000}M context"
-                    elif context_window >= 1_000:
-                        context_str = f"{context_window // 1_000}K context"
-                    else:
-                        context_str = f"{context_window} context" if context_window > 0 else "unknown context"
+                        # Format context window
+                        if context_window >= 1_000_000:
+                            context_str = f"{context_window // 1_000_000}M context"
+                        elif context_window >= 1_000:
+                            context_str = f"{context_window // 1_000}K context"
+                        else:
+                            context_str = f"{context_window} context" if context_window > 0 else "unknown context"
 
-                    output_lines.append(f"- `{model_name}` - {context_str}")
+                        output_lines.append(f"- `{model_name}` - {context_str}")
 
-                    # Extract key capability from description
-                    if "Ultra-fast" in description:
-                        output_lines.append("  - Fast processing, quick iterations")
-                    elif "Deep reasoning" in description:
-                        output_lines.append("  - Extended reasoning with thinking mode")
-                    elif "Strong reasoning" in description:
-                        output_lines.append("  - Logical problems, systematic analysis")
-                    elif "EXTREMELY EXPENSIVE" in description:
-                        output_lines.append("  - ⚠️ Professional grade (very expensive)")
+                        # Extract key capability from description
+                        if "Ultra-fast" in description:
+                            output_lines.append("  - Fast processing, quick iterations")
+                        elif "Deep reasoning" in description:
+                            output_lines.append("  - Extended reasoning with thinking mode")
+                        elif "Strong reasoning" in description:
+                            output_lines.append("  - Logical problems, systematic analysis")
+                        elif "EXTREMELY EXPENSIVE" in description:
+                            output_lines.append("  - [WARNING] Professional grade (very expensive)")
                     elif "Advanced reasoning" in description:
                         output_lines.append("  - Advanced reasoning and complex analysis")
 
                 # Show aliases for this provider
                 aliases = []
-                for model_name, capabilities in provider.get_model_configurations().items():
-                    if capabilities.aliases:
+                for model_name in provider.list_models():
+                    capabilities = provider.get_model_capabilities(model_name)
+                    if capabilities and capabilities.aliases:
                         for alias in capabilities.aliases:
                             aliases.append(f"- `{alias}` → `{model_name}`")
 

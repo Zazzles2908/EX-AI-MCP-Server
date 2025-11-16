@@ -14,10 +14,10 @@ from typing import Dict, Optional
 logger = logging.getLogger(__name__)
 
 # Model-specific token limits
-# Based on official documentation from Moonshot AI and ZhipuAI
+# Based on official documentation from Moonshot AI and Z.ai
 # Sources:
 # - Moonshot: https://platform.moonshot.ai/docs/pricing/chat
-# - ZhipuAI: https://github.com/zai-org/GLM-4.5 (README.md)
+# - Z.ai: https://github.com/zai-org/GLM-4.5 (README.md)
 # - User corrections: 2025-10-21
 MODEL_TOKEN_LIMITS = {
     # ============================================================================
@@ -107,7 +107,7 @@ MODEL_TOKEN_LIMITS = {
     },
 
     # ============================================================================
-    # GLM Models (ZhipuAI)
+    # GLM Models (Z.ai)
     # ============================================================================
     # GLM-4.6 - 200K context (per user correction and GitHub README)
     'glm-4.6': {
@@ -146,6 +146,36 @@ MODEL_TOKEN_LIMITS = {
         'max_output_tokens': 114688,
         'default_output_tokens': 8192,  # Vision model
         'provider': 'glm'
+    },
+
+    # ============================================================================
+    # MiniMax Models (Z.ai)
+    # ============================================================================
+    # Based on official MiniMax API documentation
+    # Reference: https://platform.minimax.io/docs/api-reference/text-anthropic-api
+    'MiniMax-M2': {
+        'max_context_tokens': 8192,   # Anthropic-compatible context window
+        'max_output_tokens': 4096,    # Per documentation examples
+        'default_output_tokens': 2048,
+        'provider': 'minimax'
+    },
+    'MiniMax-M2-Stable': {
+        'max_context_tokens': 8192,   # Anthropic-compatible context window  
+        'max_output_tokens': 4096,    # Per documentation examples
+        'default_output_tokens': 2048,
+        'provider': 'minimax'
+    },
+    'abab6.5s-chat': {
+        'max_context_tokens': 8192,   # Standard context for chat models
+        'max_output_tokens': 4096,
+        'default_output_tokens': 2048,
+        'provider': 'minimax'
+    },
+    'abab6.5g-chat': {
+        'max_context_tokens': 8192,   # Standard context for chat models
+        'max_output_tokens': 4096,
+        'default_output_tokens': 2048,
+        'provider': 'minimax'
     },
 }
 

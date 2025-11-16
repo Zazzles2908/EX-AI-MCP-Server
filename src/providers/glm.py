@@ -1,4 +1,4 @@
-"""GLM (ZhipuAI) provider implementation."""
+"""GLM (Z.ai) provider implementation."""
 
 import logging
 import os
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class GLMModelProvider(ModelProvider):
-    """Provider implementation for GLM models (ZhipuAI)."""
+    """Provider implementation for GLM models (Z.ai)."""
 
     DEFAULT_BASE_URL = os.getenv("GLM_API_URL", "https://api.z.ai/api/paas/v4")
 
@@ -33,9 +33,8 @@ class GLMModelProvider(ModelProvider):
         try:
             from zai import ZaiClient  # Official Z.ai SDK (compatible with MCP 1.20.0)
             self._use_sdk = True
-            # CRITICAL FIX: Use zai-sdk instead of zhipuai for MCP 1.20.0 compatibility
+            # CRITICAL FIX: Using zai-sdk for MCP 1.20.0 compatibility
             # zai-sdk requires PyJWT>=2.8.0 (compatible with MCP 1.20.0's PyJWT>=2.10.1)
-            # zhipuai requires PyJWT<2.9.0 (INCOMPATIBLE with MCP 1.20.0)
             self._sdk_client = ZaiClient(
                 api_key=self.api_key,
                 base_url=self.base_url,

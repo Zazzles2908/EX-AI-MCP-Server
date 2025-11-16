@@ -283,7 +283,7 @@ class ToolExecutor:
         tool_lower = tool_name.lower()
         if "kimi" in tool_lower or "moonshot" in tool_lower:
             return "KIMI"
-        elif "glm" in tool_lower or "zhipu" in tool_lower:
+        elif "glm" in tool_lower:
             return "GLM"
         return None
 
@@ -352,7 +352,28 @@ class ToolExecutor:
             log_error(ErrorCode.TOOL_EXECUTION_ERROR, error_msg, req_id, exc_info=True)
             # Get tool name for error reporting
             tool_name = tool.get_name() if hasattr(tool, 'get_name') else str(tool)
-            raise ToolExecutionError(tool_name, e) from e
+            logger.error(f"[{req_id}] Tool '{tool_name}' failed but continuing workflow: {str(e)}")
+            # FIXED: Don't raise exception - return error gracefully to allow workflow continuation
+            # This prevents a single tool failure from terminating the entire agent workflow
+            success = False
+            error_msg = f"Tool '{tool_name}' unavailable: {str(e)}"
+            
+            # Send error response to client
+            try:
+                await _safe_send(
+                    ws,
+                    {
+                        "op": "error",
+                        "request_id": req_id,
+                        "error": {
+                            "code": "TOOL_EXECUTION_ERROR",
+                            "message": error_msg
+                        }
+                    },
+                    resilient_ws_manager=resilient_ws_manager
+                )
+            except Exception as send_error:
+                logger.warning(f"[{req_id}] Failed to send error response: {send_error}")
 
         finally:
             # Cleanup progress task

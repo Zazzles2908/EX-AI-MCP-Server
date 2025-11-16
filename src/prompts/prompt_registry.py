@@ -28,7 +28,7 @@ class PromptRegistry:
     Architecture:
     - Base prompts: Universal prompts that work with all providers
     - Kimi variants: Optimized for OpenAI-compatible SDK (concise, English-focused)
-    - GLM variants: Optimized for ZhipuAI SDK (supports Chinese, different format)
+    - GLM variants: Optimized for zai-sdk (supports Chinese, different format)
     
     Usage:
         registry = PromptRegistry()

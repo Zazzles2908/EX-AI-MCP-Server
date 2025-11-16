@@ -74,7 +74,7 @@ class ModelProviderRegistry:
         # Native APIs first (prioritize Kimi/GLM per project usage), then custom endpoints, then catch-all providers
         self.PROVIDER_PRIORITY_ORDER = [
             ProviderType.KIMI,  # Direct Kimi/Moonshot access (preferred)
-            ProviderType.GLM,  # Direct GLM/ZhipuAI access (preferred)
+            ProviderType.GLM,  # Direct GLM/Z.ai access (preferred)
             ProviderType.CUSTOM,  # Local/self-hosted models
             ProviderType.OPENROUTER,  # Catch-all for cloud models (optional)
         ]
@@ -173,14 +173,17 @@ class ModelProviderRegistry:
                 if not api_key:
                     return None
                 # Initialize non-custom provider with API key and optional base_url from env for specific providers
-                if provider_type in (ProviderType.KIMI, ProviderType.GLM):
+                if provider_type in (ProviderType.KIMI, ProviderType.GLM, ProviderType.MINIMAX):
                     # Support canonical and vendor-specific environment variable names
                     # KIMI: prefer KIMI_API_URL, fallback to MOONSHOT_API_URL
-                    # GLM:  prefer GLM_API_URL,  fallback to ZHIPUAI_API_URL
+                    # GLM:  prefer ZAI_API_KEY,  fallback to GLM_API_KEY
+                    # MINIMAX: use MINIMAX_M2_KEY
                     if provider_type == ProviderType.KIMI:
                         base_url = os.getenv("KIMI_API_URL") or os.getenv("MOONSHOT_API_URL")
-                    else:
-                        base_url = os.getenv("GLM_API_URL") or os.getenv("ZHIPUAI_API_URL")
+                    elif provider_type == ProviderType.GLM:
+                        base_url = os.getenv("GLM_API_URL") or os.getenv("ZAI_BASE_URL")
+                    else:  # MINIMAX
+                        base_url = os.getenv("MINIMAX_API_URL") or "https://api.minimax.io/anthropic"
                     if base_url:
                         provider = provider_class(api_key=api_key, base_url=base_url)
                     else:
@@ -267,7 +270,8 @@ class ModelProviderRegistry:
         # Map provider types to their environment variable names
         key_map = {
             ProviderType.KIMI: ["KIMI_API_KEY", "MOONSHOT_API_KEY"],
-            ProviderType.GLM: ["GLM_API_KEY", "ZHIPUAI_API_KEY"],
+            ProviderType.GLM: ["ZAI_API_KEY", "GLM_API_KEY"],
+            ProviderType.MINIMAX: ["MINIMAX_M2_KEY", "MINIMAX_API_KEY"],
             ProviderType.CUSTOM: ["CUSTOM_API_KEY"],
             ProviderType.OPENROUTER: ["OPENROUTER_API_KEY"],
         }
@@ -505,6 +509,10 @@ class ModelProviderRegistry:
     def get_glm_provider(self) -> Optional[ModelProvider]:
         """Helper to get GLM provider."""
         return self.get_provider(ProviderType.GLM)
+
+    def get_minimax_provider(self) -> Optional[ModelProvider]:
+        """Helper to get MiniMax provider."""
+        return self.get_provider(ProviderType.MINIMAX)
 
     # ================================================================================
     # Telemetry

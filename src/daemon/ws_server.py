@@ -624,9 +624,11 @@ async def main_async() -> None:
     # Previously, providers were only configured on first client request (lazy loading)
     # This caused cold start delays and intermittent failures
     try:
-        print("[STARTUP] DEBUG: Reached provider configuration code", flush=True)
-        import sys
-        print("[STARTUP] DEBUG: Python sys.path = " + str(sys.path[:3]), flush=True)
+        # Disable debug output for stdio mode to maintain clean JSON protocol
+        if not os.getenv("NO_DEBUG_OUTPUT"):
+            print("[STARTUP] DEBUG: Reached provider configuration code", flush=True)
+            import sys
+            print("[STARTUP] DEBUG: Python sys.path = " + str(sys.path[:3]), flush=True)
         logger.info("[STARTUP] Configuring providers during daemon startup...")
         _ensure_providers_configured()
         register_provider_specific_tools()

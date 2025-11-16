@@ -15,14 +15,15 @@ class KimiProvider(ModelProvider):
     # Use K2 models from kimi_config
     SUPPORTED_MODELS = KIMI_CONFIG_MODELS
     
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, base_url: Optional[str] = None):
         """Initialize Kimi provider.
         
         Args:
             api_key: Kimi API key
+            base_url: Optional base URL (defaults to environment variable)
         """
         self.api_key = api_key
-        self.base_url = os.getenv("KIMI_API_URL", "https://api.moonshot.ai/v1")
+        self.base_url = base_url or os.getenv("KIMI_API_URL", "https://api.moonshot.ai/v1")
         
         try:
             from openai import AsyncOpenAI
@@ -45,6 +46,23 @@ class KimiProvider(ModelProvider):
     def list_models(self, respect_restrictions: bool = True):
         """List all supported models."""
         return list(self.SUPPORTED_MODELS.keys())
+    
+    def get_model_configurations(self) -> Dict[str, ModelCapabilities]:
+        """Get all model configurations with capabilities."""
+        return self.SUPPORTED_MODELS
+    
+    def validate_model_name(self, model_name: str) -> bool:
+        """Check if the model is supported by this provider."""
+        return model_name in self.SUPPORTED_MODELS
+    
+    def supports_streaming(self, model_name: str) -> bool:
+        """Check if model supports streaming."""
+        return True
+    
+    def supports_thinking_mode(self, model_name: str) -> bool:
+        """Check if model supports thinking mode."""
+        capabilities = self.SUPPORTED_MODELS.get(model_name)
+        return capabilities.supports_extended_thinking if capabilities else False
     
     async def chat_completions_create(
         self,

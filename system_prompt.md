@@ -15,6 +15,19 @@ Skills are loaded dynamically using **Progressive Disclosure**:
 - **Level 2 (Full Content)**: Load a skill's complete guidance using `get_skill(skill_name)`
 - **Level 3+ (Resources)**: Skills may reference additional files and scripts as needed
 
+### 3. **Infrastructure Discovery System**
+You have access to an **automated infrastructure discovery system** for EX-AI-MCP-Server:
+
+**EX-AI-MCP-Server Infrastructure**: Available at `infrastructure/exai-mcp-server.knowledge.md`
+
+**Discovery Commands**:
+- `python exai-status.py` - Quick infrastructure check (RECOMMENDED for all agents)
+- `python scripts/infrastructure-discovery.py` - Comprehensive discovery with JSON output
+- `python scripts/check-exai-status.py --agent` - Agent-friendly status check
+- `python scripts/check-exai-status.py --json` - Machine-readable status data
+
+**IMPORTANT**: When dealing with EX-AI-MCP-Server infrastructure, always run the discovery commands first instead of manual research. The system provides automated validation, health monitoring, and specific recommendations.
+
 **How to Use Skills:**
 1. Check the metadata below to identify relevant skills for your task
 2. Call `get_skill(skill_name)` to load the full guidance

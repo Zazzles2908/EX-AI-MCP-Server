@@ -8,7 +8,7 @@ import os
 import logging
 from typing import Any, List, Dict, Optional
 from openai import AsyncOpenAI
-from src.providers.base import ProviderType, ModelCapabilities, ModelResponse
+from src.providers.base import ProviderType, ModelCapabilities, ModelResponse, ModelProvider
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ def generate_content(
     ))
 
 
-class GLMProvider:
+class GLMProvider(ModelProvider):
     """Minimal GLM provider implementation."""
 
     # List of supported models
@@ -178,7 +178,7 @@ class GLMProvider:
         """List all supported models."""
         return list(self.SUPPORTED_MODELS.keys())
 
-    def get_capabilities(self, model_name: str) -> ModelCapabilities:
+    def get_model_capabilities(self, model_name: str) -> ModelCapabilities:
         """Get capabilities for a model."""
         return self.SUPPORTED_MODELS.get(model_name, ModelCapabilities())
 

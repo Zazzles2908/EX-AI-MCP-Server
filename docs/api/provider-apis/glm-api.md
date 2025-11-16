@@ -1,32 +1,49 @@
-# GLM (ZhipuAI) API Integration Guide
+# GLM (Z.ai) API Integration Guide
 
-> **Version:** 1.0.0
-> **Last Updated:** 2025-11-10
-> **Status:** ✅ **Complete**
+> **Version:** 2.0 (Updated for zai-sdk)
+> **Last Updated:** 2025-11-16
+> **Status:** ✅ **Complete - zai-sdk Migration**
 
 ## 🎯 Overview
 
-This guide covers GLM (ZhipuAI) provider integration with the EX-AI MCP Server, including available models, API usage, authentication, and best practices.
+This guide covers GLM (Z.ai) provider integration with the EX-AI MCP Server, including available models, API usage, authentication, and best practices. **Updated to use zai-sdk==0.0.4 exclusively.**
 
 ---
 
 ## 📊 GLM Provider Overview
 
 ### Available Models
-- **GLM-4.6** - Latest flagship model (128K context, 8K output)
+- **GLM-4.6** - Latest flagship model (200K context, 8K output)
 - **GLM-4.5** - Balanced performance model
 - **GLM-4.5-flash** - Fast response model
 - **GLM-4** - Stable production model
 
 ### API Endpoint
 ```
-https://z.ai/api/paas/v4/chat/completions
+https://api.z.ai/api/paas/v4
+```
+
+### SDK Integration
+```python
+from zai import ZaiClient
+
+# Initialize client
+client = ZaiClient(
+    api_key="your-api-key",
+    base_url="https://api.z.ai/api/paas/v4"
+)
+
+# Chat completion
+response = client.chat.completions.create(
+    model="glm-4.5-flash",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
 ```
 
 ### Authentication
 ```python
 headers = {
-    "Authorization": f"Bearer {GLM_API_KEY}",
+    "Authorization": f"Bearer {ZAI_API_KEY}",
     "Content-Type": "application/json"
 }
 ```
@@ -62,25 +79,196 @@ config = {
 
 ## 💻 Code Examples
 
-### Basic Chat
+### Basic Chat (zai-sdk)
 ```python
-import requests
+from zai import ZaiClient
 
-response = requests.post(
-    "https://z.ai/api/paas/v4/chat/completions",
-    headers={
-        "Authorization": f"Bearer {GLM_API_KEY}",
-        "Content-Type": "application/json"
-    },
-    json={
-        "model": "glm-4.6",
-        "messages": [
-            {"role": "user", "content": "Hello, GLM!"}
-        ]
-    }
+# Initialize client
+client = ZaiClient(
+    api_key="your-api-key",
+    base_url="https://api.z.ai/api/paas/v4"
 )
 
-data = response.json()
+# Chat completion
+response = client.chat.completions.create(
+    model="glm-4.6",
+    messages=[
+        {"role": "user", "content": "Hello, GLM!"}
+    ],
+    temperature=0.3,
+    max_tokens=4000
+)
+
+print(response.choices[0].message.content)
+```
+
+### Streaming Chat (zai-sdk)
+```python
+from zai import ZaiClient
+
+client = ZaiClient(api_key="your-api-key")
+
+# Streaming response
+stream = client.chat.completions.create(
+    model="glm-4.5-flash",
+    messages=[{"role": "user", "content": "Tell me a story"}],
+    stream=True
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="")
+```
+
+### File Upload (zai-sdk)
+```python
+from zai import ZaiClient
+
+client = ZaiClient(api_key="your-api-key")
+
+# Upload file
+with open("document.pdf", "rb") as f:
+    file_response = client.files.create(file=f, purpose="file")
+    file_id = file_response.id
+
+# Use file in chat
+response = client.chat.completions.create(
+    model="glm-4.6",
+    messages=[
+        {
+            "role": "user", 
+            "content": [
+                {"type": "text", "text": "Summarize this document"},
+                {"type": "image_url", "image_url": {"url": f"file://{file_id}"}}
+            ]
+        }
+    ]
+)
+```
+
+---
+
+## 🔐 Environment Variables
+
+### Primary (Recommended)
+```bash
+ZAI_API_KEY=your-api-key
+ZAI_BASE_URL=https://api.z.ai/api/paas/v4
+```
+
+### Backward Compatibility
+```bash
+GLM_API_KEY=your-api-key
+GLM_API_URL=https://api.z.ai/api/paas/v4
+```
+
+### Legacy Fallback
+```bash
+ZHIPUAI_API_KEY=your-api-key
+ZHIPUAI_API_URL=https://api.z.ai/api/paas/v4
+```
+
+---
+
+## ⚡ Best Practices
+
+### 1. Use zai-sdk Instead of HTTP
+- ✅ **Recommended**: Use `from zai import ZaiClient`
+- ❌ **Avoid**: Raw HTTP requests (legacy approach)
+
+### 2. Handle Errors Gracefully
+```python
+from zai import ZaiClient
+from zai.core import ZaiError
+
+try:
+    client = ZaiClient(api_key="your-key")
+    response = client.chat.completions.create(
+        model="glm-4.5-flash",
+        messages=[{"role": "user", "content": "Hello"}]
+    )
+except ZaiError as e:
+    print(f"Error: {e}")
+```
+
+### 3. Configure Timeouts
+```python
+from zai import ZaiClient
+
+client = ZaiClient(
+    api_key="your-key",
+    timeout=60.0,  # 60 second timeout
+    max_retries=3
+)
+```
+
+### 4. Use Appropriate Models
+- **GLM-4.6**: Complex reasoning, long context
+- **GLM-4.5**: Balanced performance
+- **GLM-4.5-flash**: Fast responses, real-time chat
+
+---
+
+## 🆕 Recent Changes (2025-11-16)
+
+### Migration from zhipuai to zai-sdk
+- ✅ **Updated**: All imports now use `from zai import ZaiClient`
+- ✅ **Updated**: Base URL changed to `https://api.z.ai/api/paas/v4`
+- ✅ **Updated**: Environment variables prioritize `ZAI_API_KEY`
+- ✅ **Maintained**: Backward compatibility with legacy variables
+
+### SDK Capabilities
+The zai-sdk provides comprehensive functionality:
+- Chat completions with streaming
+- File upload and management
+- Image processing
+- Audio processing
+- Web search
+- Tool calling
+- Batch processing
+- Embeddings
+- Moderations
+
+---
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Import Error**
+```python
+# Make sure zai-sdk is installed
+pip install zai-sdk==0.0.4
+
+# Then import correctly
+from zai import ZaiClient  # Not zhipuai!
+```
+
+**Authentication Error**
+```python
+# Use correct environment variable
+import os
+api_key = os.getenv("ZAI_API_KEY")  # Primary
+# or
+api_key = os.getenv("GLM_API_KEY")   # Backward compatibility
+```
+
+**API Endpoint**
+```python
+# Always use the non-China endpoint
+base_url = "https://api.z.ai/api/paas/v4"  # ✅ Correct
+# base_url = "https://open.bigmodel.cn"       # ❌ Old China endpoint
+```
+
+---
+
+## 📚 Additional Resources
+
+- **Z.ai Official Documentation**: https://docs.z.ai
+- **zai-sdk GitHub**: https://github.com/zai-org/zai-sdk
+- **EX-AI Architecture**: `docs/architecture/SDK_ARCHITECTURE_FINAL.md`
+
+**Last Updated**: 2025-11-16 (zai-sdk migration complete)
 print(data["choices"][0]["message"]["content"])
 ```
 

@@ -8,6 +8,7 @@ class ProviderType(Enum):
     """Provider type enumeration."""
     GLM = "glm"
     KIMI = "kimi"
+    MINIMAX = "minimax"
     CUSTOM = "custom"
     OPENROUTER = "openrouter"
     OPENAI = "openai"

@@ -53,7 +53,7 @@ PROVIDER_LIMITS = {
         "supports_download": False,
         "persistent_files": False,
         "session_bound": True,
-        "description": "GLM (ZhipuAI) - Session-bound files, 20MB limit"
+        "description": "GLM (Z.ai) - Session-bound files, 20MB limit"
     },
     "supabase_only": {
         "max_size_mb": 5000,  # 5GB Supabase limit
@@ -781,7 +781,7 @@ def upload_file_with_provider(
         )
     elif provider == PROVIDER_GLM:
         # FIX: Force Kimi for GLM requests since GLM uploads often fail
-        # GLM/ZhipuAI has session-bound files that may not persist properly
+        # GLM/Z.ai has session-bound files that may not persist properly
         logger.warning(
             f"[UPLOAD_FIX] Routing GLM file request to Kimi for better reliability. "
             f"File: {filename}, Original provider: GLM, New provider: Kimi"

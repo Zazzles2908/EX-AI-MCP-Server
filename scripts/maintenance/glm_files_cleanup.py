@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Wrapper entrypoint for GLM (ZhipuAI) files cleanup utility.
+Wrapper entrypoint for GLM (Z.ai) files cleanup utility.
 
 This keeps backwards compatibility while relocating the runnable entry under scripts/maintenance/.
 Delegates to tools/providers/glm/glm_files_cleanup.py:main().

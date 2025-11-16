@@ -1,7 +1,7 @@
 """
 Unified Provider Interface
 
-Abstracts SDK differences between Kimi (OpenAI-compatible) and GLM (ZhipuAI) providers
+Abstracts SDK differences between Kimi (OpenAI-compatible) and GLM (Z.ai) providers
 while maintaining provider-specific optimizations.
 
 Phase 1.4 Implementation - Unified Provider Interface
@@ -132,10 +132,10 @@ class KimiAdapter:
 
 class GLMAdapter:
     """
-    Adapter for GLM (ZhipuAI) provider.
+    Adapter for GLM (Z.ai) provider.
     
     Format: Concatenated prompt string
-    SDK: ZhipuAI SDK (from zhipuai import ZhipuAI)
+    SDK: zai-sdk==0.0.4 (from zai import ZaiClient)
     """
     
     def __init__(self):
@@ -193,7 +193,7 @@ class GLMAdapter:
     
     def handle_error(self, error: Exception) -> Dict[str, Any]:
         """
-        Handle GLM/ZhipuAI-specific errors.
+        Handle GLM/Z.ai-specific errors.
         
         Args:
             error: Exception from GLM API

@@ -32,7 +32,7 @@ class HybridPlatformManager:
 
         # Initialize SDK clients for health monitoring and advanced features (Phase 4: 2025-10-09)
         # Moonshot uses OpenAI-compatible SDK
-        # ZhipuAI uses native zhipuai SDK
+        # Z.ai uses zai-sdk==0.0.4 (official SDK)
         self.moonshot_client = None
         self.zai_client = None
 
@@ -51,16 +51,16 @@ class HybridPlatformManager:
                 # Initialization failed - fall back to None
                 pass
 
-        # Initialize ZhipuAI client if API key is available
+        # Initialize Z.ai client if API key is available
         if self.zai_api_key:
             try:
-                from zhipuai import ZhipuAI
-                self.zai_client = ZhipuAI(
+                from zai import ZaiClient
+                self.zai_client = ZaiClient(
                     api_key=self.zai_api_key,
                     base_url=self.zai_base_url
                 )
             except ImportError:
-                # ZhipuAI SDK not installed - fall back to None
+                # zai-sdk not installed - fall back to None
                 pass
             except Exception:
                 # Initialization failed - fall back to None
@@ -101,7 +101,7 @@ class HybridPlatformManager:
             # No SDK client - check if API key is present
             moonshot_ok = bool(self.moonshot_api_key)
 
-        # Check ZhipuAI/GLM health
+        # Check Z.ai/GLM health
         if self.zai_client:
             try:
                 # Try to list models as a lightweight health check

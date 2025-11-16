@@ -1,7 +1,7 @@
 """
 Provider-Specific Prompt Variants
 
-Optimized prompts for Kimi (OpenAI-compatible) and GLM (ZhipuAI) providers.
+Optimized prompts for Kimi (OpenAI-compatible) and GLM (Z.ai) providers.
 These variants are designed to maximize token efficiency and response quality
 for each provider's specific characteristics.
 

@@ -394,10 +394,13 @@ class RequestRouter:
                 logger.info(f"[DEBUG_ROUTER] execute_tool returned: success={success}, outputs_type={type(outputs)}, error_msg={error_msg}")
             except asyncio.TimeoutError:
                 logger.error(f"[DEBUG_ROUTER] execute_tool TIMED OUT after 30s")
-                raise
+                # FIXED: Handle timeout gracefully instead of raising
+                success, outputs, error_msg = False, None, "Tool execution timed out"
             except Exception as e:
                 logger.error(f"[DEBUG_ROUTER] Exception during execute_tool: {type(e).__name__}: {e}", exc_info=True)
-                raise
+                # FIXED: Handle exceptions gracefully to allow workflow continuation
+                success, outputs, error_msg = False, None, f"Tool execution failed: {str(e)}"
+                logger.info(f"[DEBUG_ROUTER] Error handled gracefully, workflow will continue")
 
             # Set result in future and send response
             if success:
@@ -427,11 +430,16 @@ class RequestRouter:
 
         except Exception as e:
             logger.error(f"Error handling tool call: {e}", exc_info=True)
-            await _safe_send(
-                ws,
-                create_error_response(ErrorCode.INTERNAL_ERROR, str(e), request_id=req_id),
-                resilient_ws_manager=resilient_ws_manager
-            )
+            # FIXED: Send error response but don't raise exception to allow workflow continuation
+            try:
+                await _safe_send(
+                    ws,
+                    create_error_response(ErrorCode.INTERNAL_ERROR, str(e), request_id=req_id),
+                    resilient_ws_manager=resilient_ws_manager
+                )
+            except Exception as send_error:
+                logger.warning(f"Failed to send error response: {send_error}")
+            # NOTE: We don't re-raise the exception to allow workflow to continue
 
     async def _handle_cancel(
         self,

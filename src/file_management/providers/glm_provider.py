@@ -1,7 +1,7 @@
 """
 GLM File Provider Implementation
 
-Adapter for GLM (ZhipuAI) file operations implementing FileProviderInterface.
+Adapter for GLM (Z.ai) file operations implementing FileProviderInterface.
 Wraps existing GLM provider upload/download logic.
 """
 
@@ -32,7 +32,7 @@ class GLMFileProvider:
     """
     GLM file provider implementation
     
-    Implements FileProviderInterface for GLM (ZhipuAI) file operations.
+    Implements FileProviderInterface for GLM (Z.ai) file operations.
     Wraps existing GLMModelProvider upload/download logic.
     
     Attributes:
@@ -60,7 +60,7 @@ class GLMFileProvider:
         metadata: FileUploadMetadata
     ) -> FileReference:
         """
-        Upload a file to GLM (ZhipuAI)
+        Upload a file to GLM (Z.ai)
         
         Args:
             file_path: Absolute path to the file to upload
@@ -179,7 +179,7 @@ class GLMFileProvider:
         destination: str
     ) -> bool:
         """
-        Download a file from GLM (ZhipuAI)
+        Download a file from GLM (Z.ai)
         
         Note: GLM doesn't currently support file download via API.
         This method is a placeholder for future implementation.
@@ -195,7 +195,7 @@ class GLMFileProvider:
             FileDownloadError: Download not supported by GLM
         """
         raise FileDownloadError(
-            "GLM (ZhipuAI) does not support file download via API",
+            "GLM (Z.ai) does not support file download via API",
             "glm",
             "DOWNLOAD_NOT_SUPPORTED"
         )
@@ -205,7 +205,7 @@ class GLMFileProvider:
         file_ref: FileReference
     ) -> bool:
         """
-        Delete a file from GLM (ZhipuAI)
+        Delete a file from GLM (Z.ai)
         
         Note: GLM file deletion is handled via the files API.
         This method wraps that functionality.

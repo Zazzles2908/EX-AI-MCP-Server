@@ -93,7 +93,7 @@ def chat_completions_create_messages_with_session(
 
     Args:
         messages: Message array in OpenAI format
-        sdk_client: ZhipuAI SDK client
+        sdk_client: zai-sdk client
         model: Model name (default: glm-4.5-flash)
         temperature: Temperature (default 0.3)
         tools: Optional tools for function calling

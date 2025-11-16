@@ -1,7 +1,7 @@
 """GLM model configuration and validation.
 
 Last Updated: 2025-10-09
-Last Verified: 2025-10-09 (against open.bigmodel.cn documentation and zhipuai SDK)
+Last Verified: 2025-10-09 (against open.bigmodel.cn documentation and zai-sdk)
 """
 
 import logging
