@@ -247,6 +247,8 @@ private_keys/
 *.env.local
 .env.production
 .env.staging
+.env.docker
+.env.patched
 
 # EX-AI MCP specific
 data/uploads/
