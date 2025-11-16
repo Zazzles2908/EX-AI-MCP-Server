@@ -35,8 +35,8 @@
     "content": "Fixed KimiProvider inheritance issue. Made KimiProvider inherit from ModelProvider base class and added the import. This should resolve the 'list_models' method missing error. Rebuilding Docker container to apply fix."
   },
   {
-    "timestamp": "2025-11-17T07:16:17.358224",
-    "category": "enhanced_parameter_testing",
-    "content": "User performed extensive parameter testing and discovered major improvements:\n\n1. tracer with precision mode: 6518 chars of AI analysis\n2. thinkdeep with thinking_mode: max: 1534 chars of AI reasoning  \n3. analyze with use_assistant_model: True: 974 chars of analysis\n4. Key parameters: use_assistant_model: True, thinking_mode: max, trace_mode: precision\n5. Model registry inconsistent but AI tools work anyway\n6. Chat tool still broken with dependency issues\n\nThis significantly improves the AI capabilities assessment - more tools provide real AI with proper parameters."
+    "timestamp": "2025-11-16T22:23:42.103700",
+    "category": "investigation_findings",
+    "content": "Investigated EX-AI MCP Server project and discovered multiple false claims in documentation:\n\n1. File organization: Claims files moved to outputs/ but 9+ _result_restarted.json files in root directory\n2. Container health: Claims all containers healthy but exai-mcp-stdio is unhealthy  \n3. Volume mounts: Broken/missing volume mounts prevent proper file organization\n4. Mini-Agent processes creating file pollution when tool calls fail/restart\n\nRoot cause: Mini-Agent connected to EXAI MCP via docker exec, writing failed tool results to project root instead of organized outputs directory."
   }
 ]

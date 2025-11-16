@@ -1,0 +1,38 @@
+# Mini-Agent Configuration for EX-AI MCP Server
+# Fixes file output pollution by directing all tool results to organized directories
+
+project:
+  name: "EX-AI MCP Server"
+  version: "2.0.1"  # Updated to reflect fixes
+  
+output_directories:
+  # Organized output directory structure
+  root: "./outputs"
+  tool_results: "./outputs/tool_results"
+  agent_outputs: "./outputs/agent_outputs"
+  downloads: "./outputs/downloads"
+  temp: "./outputs/temp"
+
+# Environment variables to control where tools write output
+env:
+  # Override default paths to prevent root directory pollution
+  EXAI_OUTPUT_DIR: "./outputs"
+  EXAI_TOOL_RESULTS_DIR: "./outputs/tool_results"
+  EXAI_AGENT_OUTPUTS_DIR: "./outputs/agent_outputs"
+  EXAI_DOWNLOADS_DIR: "./outputs/downloads"
+  EXAI_TEMP_DIR: "./outputs/temp"
+  
+  # Ensure tool result files go to proper directories
+  EXAI_RESULT_FILE_PATTERN: "./outputs/tool_results/{tool_name}_result_{timestamp}.json"
+  EXAI_AGENT_RESULT_PATTERN: "./outputs/agent_outputs/{tool_name}_result_{timestamp}.json"
+
+# Mini-Agent specific settings
+mini_agent:
+  workspace: "./"
+  # Ensure all tool executions use organized output directories
+  working_directory: "./outputs"
+  # Prevent file pollution in project root
+  restrict_file_writing: true
+  
+# MCP Server connection (already configured in .mcp.json)
+# This ensures proper file path handling when calling EXAI MCP tools

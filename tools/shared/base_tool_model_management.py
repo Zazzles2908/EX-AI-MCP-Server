@@ -1,5 +1,5 @@
 """
-Model Management Mixin for Zen MCP Tools
+Model Management Mixin for EX-AI MCP Tools
 
 This module provides model provider integration, model selection logic,
 and model context resolution for tools.

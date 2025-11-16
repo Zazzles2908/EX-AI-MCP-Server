@@ -1,0 +1,1 @@
+"[TextContent(type='text', text='{\"model\": \"glm-4.5-flash\", \"messages\": [{\"role\": \"user\", \"content\": \"Test GLM after server restart\"}], \"temperature\": 0.3}', annotations=None, meta=None)]"

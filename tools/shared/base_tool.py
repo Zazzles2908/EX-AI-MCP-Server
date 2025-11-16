@@ -120,7 +120,7 @@ class BaseTool(
     ABC
 ):
     """
-    Abstract base class for all Zen MCP tools.
+    Abstract base class for all EX-AI MCP tools.
     
     This class defines the interface that all tools must implement and provides
     common functionality for request handling, model creation, and response formatting.

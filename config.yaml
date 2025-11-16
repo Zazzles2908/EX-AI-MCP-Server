@@ -1,0 +1,37 @@
+# EX-AI MCP Server - Mini-Agent Project Configuration
+# =================================================
+
+# Project Configuration
+project:
+  name: "EX-AI MCP Server"
+  description: "Enterprise-grade MCP server with native protocol support"
+  version: "2.0.0"
+
+# System Prompt Configuration
+system_prompt:
+  # Primary system prompt file
+  path: "system_prompt.md"
+  # Fallback locations if primary not found
+  fallback_paths:
+    - "prompts.md"
+    - "system_prompt.txt"
+  # Auto-inject skills metadata
+  inject_skills_metadata: true
+
+# MCP Configuration  
+tools:
+  enable_mcp: true
+  # Project-local MCP config
+  mcp_config_path: ".mcp.json"
+
+# Workspace Configuration
+workspace:
+  auto_detect: true
+  follow_symlinks: false
+
+# Development Configuration
+development:
+  auto_save: true
+  backup_before_changes: true
+  generate_diffs: true
+  enable_git_integration: true

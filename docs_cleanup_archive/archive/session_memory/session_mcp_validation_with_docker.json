@@ -1,0 +1,40 @@
+{
+  "session_id": "mcp_validation_with_docker",
+  "start_time": "2025-11-15T09:50:46.206575+00:00",
+  "project_path": ".",
+  "operations": [
+    {
+      "timestamp": "2025-11-15T09:50:49.214590+00:00",
+      "type": "mcp_init_docker",
+      "description": "EX-AI MCP Server initialization with Docker daemon",
+      "details": {}
+    },
+    {
+      "timestamp": "2025-11-15T09:50:56.215687+00:00",
+      "type": "docker_status",
+      "description": "Docker containers including EX-AI MCP server are running",
+      "details": {}
+    }
+  ],
+  "mcp_validation": {},
+  "issues_found": [
+    {
+      "timestamp": "2025-11-15T09:50:56.215520+00:00",
+      "severity": "low",
+      "description": "Tools response format unexpected",
+      "resolution": "{'jsonrpc': '2.0', 'id': 2, 'error': {'code': -32602, 'message': 'Invalid request parameters', 'data': ''}}"
+    }
+  ],
+  "fixes_applied": [],
+  "tools_tested": [],
+  "file_examinations": [],
+  "decisions": [
+    {
+      "timestamp": "2025-11-15T09:50:56.215701+00:00",
+      "decision": "Use Docker daemon for MCP connectivity",
+      "reasoning": "EX-AI MCP requires Docker daemon to be running for tool access"
+    }
+  ],
+  "end_time": "2025-11-15T09:50:56.216408+00:00",
+  "duration_seconds": 10.009839
+}

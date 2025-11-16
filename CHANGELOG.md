@@ -53,10 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Native MCP Server**: Implemented direct MCP protocol support without shim layer
   - Created dual-mode operation: --mode stdio, --mode websocket, --mode both
   - Integrated `src/daemon/mcp_server.py` into main daemon process
-  - Native stdio support for direct Claude Code connection
+  - Native stdio support for direct MCP client connections
 
 - **CLI Argument Parsing**: Added command-line mode selection
-  - `--mode websocket`: Custom EXAI WebSocket protocol (legacy mode)
+  - `--mode websocket`: Custom EX-AI WebSocket protocol (legacy mode)
   - `--mode stdio`: Native MCP protocol over stdio (NEW)
   - `--mode both`: Dual protocol support (NEW)
   - Parsing implemented in `src/daemon/ws_server.py:590-600`
@@ -67,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Depends on Redis for conversation storage
   - Command: `python -m src.daemon.ws_server --mode stdio`
 
-- **Claude Code Configuration**: Updated .mcp.json for direct connection
+- **MCP Client Configuration**: Updated .mcp.json for direct connection
   - Changed from WebSocket shim to direct Docker exec
   - Command: `docker exec -i exai-mcp-stdio python -m src.daemon.ws_server --mode stdio`
   - Eliminates protocol translation layer
@@ -124,7 +124,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Option 3 integration: Fully implemented
 
 ### Breaking Changes
-- **MCP Connection**: Claude Code must use new Docker exec command
+- **MCP Connection**: MCP clients must use new Docker exec command
 - **Daemon Startup**: New --mode parameter controls protocol selection
 - **Process Architecture**: No longer requires separate shim process
 
@@ -297,13 +297,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added comprehensive `inputSchema` for parameter validation
 
 ### Changed
-- Simplified MCP server configuration to use direct stdio (like gh-mcp)
+- Simplified MCP server configuration to use direct stdio
 - Removed complex WebSocket shim setup
 - Streamlined configuration in `.mcp.json`
 
 ### Verified
 - ✅ Tools/list returns proper format with all required fields
-- ✅ Compatible with Claude web application (claude.ai)
+- ✅ Compatible with MCP clients
 - ✅ Follows MCP protocol version 2024-11-05
 
 ## [1.0.0] - 2025-11-05
