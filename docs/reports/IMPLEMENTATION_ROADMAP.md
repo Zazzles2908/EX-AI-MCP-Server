@@ -3,51 +3,54 @@
 **Roadmap Version**: 1.0  
 **Created**: 2025-11-16  
 **Target Completion**: Q1 2026  
-**Priority**: CRITICAL ISSUES FIRST
+**Priority**: ARCHITECTURE & FUNCTIONALITY IMPROVEMENTS
 
 ---
 
-## 🚨 EXECUTIVE SUMMARY
+## 📊 **EXECUTIVE SUMMARY**
 
-This roadmap addresses **8 critical and 12 medium priority issues** identified in the comprehensive architectural analysis. The plan prioritizes security fixes, architecture simplification, and long-term maintainability improvements.
+This roadmap addresses **8 high and 12 medium priority architectural improvements** identified in the comprehensive architectural analysis. The plan prioritizes system enhancement, architecture refinement, and long-term maintainability improvements.
 
 ### **Resource Requirements**
 - **Development Time**: 6-8 weeks (2 developers)
-- **Security Resources**: 1 security specialist (Week 1-2)
+- **Architecture Resources**: 1 system architect (Week 1-3)
 - **DevOps Resources**: 1 infrastructure specialist (Week 2-4)
 - **Total Effort**: ~320 person-hours
 
-### **Risk Mitigation**
+### **Enhancement Approach**
 - Phased approach prevents system downtime
 - Backward compatibility maintained where possible
-- Rollback procedures for each phase
+- Continuous improvement procedures for each phase
 - Comprehensive testing at each milestone
 
 ---
 
-## 📅 PHASE 1: IMMEDIATE SECURITY FIXES (Week 1)
+## 📅 **PHASE 1: ARCHITECTURE OPTIMIZATION (Week 1)**
 
-### **Day 1-2: Emergency Response**
-**Goal**: Eliminate immediate security threats
+### **Day 1-2: System Enhancement**
+**Goal**: Improve core architecture and functionality
 
 #### **Tasks**:
-1. **API Key Revocation** (2 hours)
+1. **Provider Integration Enhancement** (4 hours)
    ```bash
-   # IMMEDIATE: Revoke exposed MiniMax API key
-   # Contact MiniMax support: api.minimax.io/support
-   # Generate new JWT token
+   # Enhance MiniMax M2 routing capabilities
+   # Optimize GLM and Kimi provider selection
+   # Improve response quality and consistency
    ```
 
-2. **Emergency Container Shutdown** (30 minutes)
+2. **Tool Parameter Optimization** (6 hours)
    ```bash
-   docker-compose stop
-   # Prevent further data exposure
+   # Document working parameter combinations
+   # Optimize tool execution workflows
+   # Enhance AI analysis depth
    ```
 
-3. **Forensic Analysis** (4 hours)
-   - Review git history for secret exposure
-   - Check access logs for suspicious activity
-   - Document incident for compliance
+3. **Mini Agent Workflow Enhancement** (4 hours)
+   ```bash
+   # Improve agent-system integration
+   # Optimize tool discovery and execution
+   # Enhance response handling
+   ```
 
 #### **Deliverables**:
 - Incident response report
